@@ -2557,7 +2557,7 @@ function renderExTabMiniChart(safeId, exName) {
   if(c1&&volPts.length){
     const _v1Min=Math.min(...volPts.map(p=>p.val)),_v1Max=Math.max(...volPts.map(p=>p.val)),_v1Pad=(_v1Max-_v1Min)*0.1||1;
     const mopts1=Object.assign({},mopts('#ff8c42'),{scales:Object.assign({},mopts('#ff8c42').scales,{y:Object.assign({},mopts('#ff8c42').scales.y,{min:_v1Min-_v1Pad})})});
-    c1._chartInst=new Chart(c1.getContext('2d'),{type:'line',data:{labels:volPts.map(p=>p.date),datasets:[{data:volPts.map(p=>p.val),borderColor:'#ff8c42',backgroundColor:'rgba(255,140,66,.08)',pointBackgroundColor:'#ff8c42',pointRadius:2,tension:.35,fill:true,borderWidth:1.5}]},options:mopts1,plugins:chevPlugin('#ff8c42','extabVolChev'+safeId)});
+    c1._chartInst=new Chart(c1.getContext('2d'),{type:'line',data:{labels:volPts.map(p=>p.date),datasets:[{data:volPts.map(p=>p.val),borderColor:'#ff8c42',backgroundColor:'rgba(255,140,66,.08)',pointBackgroundColor:'#ff8c42',pointRadius:2,tension:0,fill:true,borderWidth:1.5}]},options:mopts1,plugins:chevPlugin('#ff8c42','extabVolChev'+safeId)});
   }
 
   const c3=document.getElementById('extab-volprog-canvas-'+safeId);
@@ -2567,7 +2567,7 @@ function renderExTabMiniChart(safeId, exName) {
 
   const c2=document.getElementById('extab-canvas-'+safeId);
   if(c2&&weightPts.length){
-    c2._chartInst=new Chart(c2.getContext('2d'),{type:'line',data:{labels:weightPts.map(p=>p.date),datasets:[{data:weightPts.map(p=>p.val),borderColor:'#e8ff47',backgroundColor:'rgba(232,255,71,.08)',pointBackgroundColor:weightPts.map((_,i)=>i===weightPts.length-1?'#fff':'#e8ff47'),pointRadius:weightPts.map((_,i)=>i===weightPts.length-1?3:2),tension:.35,fill:true,borderWidth:1.5}]},options:mopts('#e8ff47'),plugins:chevPlugin('#e8ff47','extabWtChev'+safeId)});
+    c2._chartInst=new Chart(c2.getContext('2d'),{type:'line',data:{labels:weightPts.map(p=>p.date),datasets:[{data:weightPts.map(p=>p.val),borderColor:'#e8ff47',backgroundColor:'rgba(232,255,71,.08)',pointBackgroundColor:weightPts.map((_,i)=>i===weightPts.length-1?'#fff':'#e8ff47'),pointRadius:weightPts.map((_,i)=>i===weightPts.length-1?3:2),tension:0,fill:true,borderWidth:1.5}]},options:mopts('#e8ff47'),plugins:chevPlugin('#e8ff47','extabWtChev'+safeId)});
   }
 
   const allPts=volPts.length>=weightPts.length?volPts:weightPts;
@@ -2640,7 +2640,7 @@ function renderExTabCharts(safeId, exName) {
     if (rmCanvas._chartInst) rmCanvas._chartInst.destroy();
     rmCanvas._chartInst = new Chart(rmCanvas.getContext('2d'), {
       type: 'line',
-      data: { labels: rmPts.map(p => p.date), datasets: [{ data: rmPts.map(p => p.val), borderColor: '#ff8c42', backgroundColor: 'rgba(255,140,66,.08)', pointBackgroundColor: rmPts.map((_,i) => i===rmPts.length-1 ? '#fff' : '#ff8c42'), pointRadius: rmPts.map((_,i) => i===rmPts.length-1 ? 3 : 2), tension: .35, fill: true, borderWidth: 1.5 }] },
+      data: { labels: rmPts.map(p => p.date), datasets: [{ data: rmPts.map(p => p.val), borderColor: '#ff8c42', backgroundColor: 'rgba(255,140,66,.08)', pointBackgroundColor: rmPts.map((_,i) => i===rmPts.length-1 ? '#fff' : '#ff8c42'), pointRadius: rmPts.map((_,i) => i===rmPts.length-1 ? 3 : 2), tension:0, fill: true, borderWidth: 1.5 }] },
       options: miniOpts('#ff8c42'),
       plugins: lastValPlugin('#ff8c42')
     });
@@ -2662,7 +2662,7 @@ function renderExTabCharts(safeId, exName) {
     if (wtCanvas._chartInst) wtCanvas._chartInst.destroy();
     wtCanvas._chartInst = new Chart(wtCanvas.getContext('2d'), {
       type: 'line',
-      data: { labels: weightPts.map(p => p.date), datasets: [{ data: weightPts.map(p => p.val), borderColor: '#e8ff47', backgroundColor: 'rgba(232,255,71,.08)', pointBackgroundColor: weightPts.map((_,i) => i===weightPts.length-1 ? '#fff' : '#e8ff47'), pointRadius: weightPts.map((_,i) => i===weightPts.length-1 ? 3 : 2), tension: .35, fill: true, borderWidth: 1.5 }] },
+      data: { labels: weightPts.map(p => p.date), datasets: [{ data: weightPts.map(p => p.val), borderColor: '#e8ff47', backgroundColor: 'rgba(232,255,71,.08)', pointBackgroundColor: weightPts.map((_,i) => i===weightPts.length-1 ? '#fff' : '#e8ff47'), pointRadius: weightPts.map((_,i) => i===weightPts.length-1 ? 3 : 2), tension:0, fill: true, borderWidth: 1.5 }] },
       options: miniOpts('#e8ff47'),
       plugins: lastValPlugin('#e8ff47')
     });
@@ -3565,7 +3565,7 @@ function renderMiniChart(cardId, exName) {
       if (weightPts.length >= 2) {
         c1._chartInst = new Chart(c1.getContext('2d'), {
           type:'line',
-          data:{labels:weightPts.map(p=>p.date),datasets:[{data:weightPts.map(p=>p.val),borderColor:'#e8ff47',backgroundColor:'rgba(232,255,71,.08)',pointBackgroundColor:'#e8ff47',tension:.35,fill:true,borderWidth:1.5,pointRadius:2}]},
+          data:{labels:weightPts.map(p=>p.date),datasets:[{data:weightPts.map(p=>p.val),borderColor:'#e8ff47',backgroundColor:'rgba(232,255,71,.08)',pointBackgroundColor:'#e8ff47',tension:0,fill:true,borderWidth:1.5,pointRadius:2}]},
           options: {responsive:true,maintainAspectRatio:false,layout:{padding:{top:28}},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{ticks:{color:'#555',font:{size:9}},grid:{display:false}},y:{ticks:{color:'#555',font:{size:9}},grid:{color:'#1e1e1e'}}}},
           plugins:[{id:'wtPointLabel',afterDraw(chart){const ctx=chart.ctx;const ds=chart.data.datasets[0];const meta=chart.getDatasetMeta(0);const sel=chart._selectedIdx;meta.data.forEach((pt,idx)=>{const r=ds.pointRadius?.[idx]??ds.pointRadius;if(r<5)return;ctx.save();const chevSize=7;ctx.strokeStyle='#e8ff47';ctx.lineWidth=1.5;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(pt.x-chevSize/2,pt.y-r-8);ctx.lineTo(pt.x,pt.y-r-4);ctx.lineTo(pt.x+chevSize/2,pt.y-r-8);ctx.stroke();ctx.restore();});}}]
         });
@@ -3580,7 +3580,7 @@ function renderMiniChart(cardId, exName) {
         const volChartOpts2=Object.assign({},volChartOpts,{scales:Object.assign({},volChartOpts.scales,{y:Object.assign({},volChartOpts.scales.y,{min:_mv2Min-_mv2Pad})})});
         c2._chartInst = new Chart(c2.getContext('2d'), {
           type:'line',
-          data:{labels:volPts.map(p=>p.date),datasets:[{data:volPts.map(p=>p.val),borderColor:'#ff8c42',backgroundColor:'rgba(255,140,66,.08)',pointBackgroundColor:'#ff8c42',pointRadius:2,tension:.35,fill:true,borderWidth:1.5}]},
+          data:{labels:volPts.map(p=>p.date),datasets:[{data:volPts.map(p=>p.val),borderColor:'#ff8c42',backgroundColor:'rgba(255,140,66,.08)',pointBackgroundColor:'#ff8c42',pointRadius:2,tension:0,fill:true,borderWidth:1.5}]},
           options: volChartOpts2,
           plugins:[{id:'volPointLabel',afterDraw(chart){const ctx=chart.ctx;const ds=chart.data.datasets[0];const meta=chart.getDatasetMeta(0);meta.data.forEach((pt,idx)=>{const r=ds.pointRadius?.[idx]??ds.pointRadius;if(r<5)return;ctx.save();const chevSize=7;ctx.strokeStyle='#ff8c42';ctx.lineWidth=1.5;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(pt.x-chevSize/2,pt.y-r-8);ctx.lineTo(pt.x,pt.y-r-4);ctx.lineTo(pt.x+chevSize/2,pt.y-r-8);ctx.stroke();ctx.restore();});}}]
         });
@@ -3686,7 +3686,7 @@ function refreshCardMiniCharts(cardId) {
       const chartOpts = {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{ticks:{color:'#555',font:{size:9}},grid:{display:false}},y:{ticks:{color:'#555',font:{size:9}},grid:{color:'#1e1e1e'}}}};
       c1._chartInst = new Chart(c1.getContext('2d'), {
         type:'line',
-        data:{labels:weightPts.map(p=>p.date),datasets:[{data:weightPts.map(p=>p.val),borderColor:'#e8ff47',backgroundColor:'rgba(232,255,71,.08)',pointBackgroundColor:'#e8ff47',tension:.35,fill:true,borderWidth:1.5,pointRadius:2}]},
+        data:{labels:weightPts.map(p=>p.date),datasets:[{data:weightPts.map(p=>p.val),borderColor:'#e8ff47',backgroundColor:'rgba(232,255,71,.08)',pointBackgroundColor:'#e8ff47',tension:0,fill:true,borderWidth:1.5,pointRadius:2}]},
         options: {responsive:true,maintainAspectRatio:false,layout:{padding:{top:28}},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{ticks:{color:'#555',font:{size:9}},grid:{display:false}},y:{ticks:{color:'#555',font:{size:9}},grid:{color:'#1e1e1e'}}}},
         plugins:[{id:'wtPointLabel',afterDraw(chart){const ctx=chart.ctx;const ds=chart.data.datasets[0];const meta=chart.getDatasetMeta(0);const sel=chart._selectedIdx;meta.data.forEach((pt,idx)=>{const r=ds.pointRadius?.[idx]??ds.pointRadius;if(r<5)return;ctx.save();const chevSize=7;ctx.strokeStyle='#e8ff47';ctx.lineWidth=1.5;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(pt.x-chevSize/2,pt.y-r-8);ctx.lineTo(pt.x,pt.y-r-4);ctx.lineTo(pt.x+chevSize/2,pt.y-r-8);ctx.stroke();ctx.restore();});}}]
       });
@@ -3705,7 +3705,7 @@ function refreshCardMiniCharts(cardId) {
       const volChartOpts2b=Object.assign({},volChartOpts,{scales:Object.assign({},volChartOpts.scales,{y:Object.assign({},volChartOpts.scales.y,{min:_vc2Min-_vc2Pad})})});
       c2._chartInst = new Chart(c2.getContext('2d'), {
         type:'line',
-        data:{labels:volPts.map(p=>p.date),datasets:[{data:volPts.map(p=>p.val),borderColor:'#ff8c42',backgroundColor:'rgba(255,140,66,.08)',pointBackgroundColor:volPts.map((_,i)=>i===volPts.length-1?'#fff':'#ff8c42'),pointRadius:volPts.map((_,i)=>i===volPts.length-1?3:2),tension:.35,fill:true,borderWidth:1.5}]},
+        data:{labels:volPts.map(p=>p.date),datasets:[{data:volPts.map(p=>p.val),borderColor:'#ff8c42',backgroundColor:'rgba(255,140,66,.08)',pointBackgroundColor:volPts.map((_,i)=>i===volPts.length-1?'#fff':'#ff8c42'),pointRadius:volPts.map((_,i)=>i===volPts.length-1?3:2),tension:0,fill:true,borderWidth:1.5}]},
         options: volChartOpts2b,
         plugins:[{id:'volBarLabels',afterDraw(chart){const ctx=chart.ctx;const sel=chart._selectedIdx;chart.data.datasets.forEach((ds,i)=>{chart.getDatasetMeta(i).data.forEach((bar,idx)=>{if(idx!==sel)return;const val=ds.data[idx];if(!val)return;ctx.save();const chevSize=7;ctx.strokeStyle='#ff8c42';ctx.lineWidth=1.5;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(bar.x-chevSize/2,bar.y-8);ctx.lineTo(bar.x,bar.y-4);ctx.lineTo(bar.x+chevSize/2,bar.y-8);ctx.stroke();ctx.restore();});});}}]
       });
@@ -6830,7 +6830,7 @@ function renderStrengthChart() {
         backgroundColor: 'rgba(255,140,66,.08)',
         pointBackgroundColor: volPts.map((_,i) => i===volPts.length-1 ? '#fff' : '#ff8c42'),
         pointRadius: volPts.map((_,i) => i===volPts.length-1 ? 3 : 2),
-        tension: .35, fill: true, borderWidth: 1.5
+        tension:0, fill: true, borderWidth: 1.5
       }]
     },
     options: {
@@ -7171,7 +7171,7 @@ function renderExProgressChart() {
         backgroundColor: color + '14',
         pointBackgroundColor: pts.map((_,i) => i===lastIdx ? '#fff' : color),
         pointRadius: pts.map((_,i) => i===lastIdx ? 6 : 2),
-        tension: .35,
+        tension:0,
         fill: true,
         borderWidth: 1.5
       }]
