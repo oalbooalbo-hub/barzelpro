@@ -4191,7 +4191,7 @@ function openKgEditor(inputEl, exId) {
       if (done.length) { prevKg = Math.max(...done.map(s => s.kg)); break; }
     }
   }
-  document.getElementById('kgEditorPrev').textContent = prevKg > 0 ? `prev: ${prevKg}kg` : '';
+  document.getElementById('kgEditorPrev').innerHTML = prevKg > 0 ? `<span style="color:#ff8c42;font-weight:700;">prev: ${prevKg}kg</span>` : '';
   document.getElementById('kgEditorOverlay').classList.add('open');
 }
 function closeKgEditor() {
@@ -5309,7 +5309,10 @@ function loadWorkout(idx) {
     w.exercises.forEach(exData => {
       const ex = getAllExercises().find(e=>e.label===exData.name||e.name===exData.name)
         || {name:exData.name,label:exData.name,muscle:'Chest',custom:true};
-      addExerciseCard(ex);
+      // Pass the sets from the chosen workout (undone) so they prefill correctly
+      const sourceSets = (exData.sets||[]).filter(s=>!s.ignored).map(s=>({kg:s.kg,reps:s.reps,done:false}));
+      const sessionDataOverride = sourceSets.length ? {sets:sourceSets, completed:false} : null;
+      addExerciseCard(ex, false, sessionDataOverride);
       const cards = document.querySelectorAll('#exerciseList .exercise-card');
       const card = cards[cards.length-1];
       if (card) {
