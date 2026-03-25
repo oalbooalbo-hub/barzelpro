@@ -1067,6 +1067,8 @@ const MUSCLES = ['All','Chest','Back','Legs','Shoulders','Arms','Core'];
 // ══════════════════════════════════════════════════════
 let workouts = JSON.parse(localStorage.getItem('ironlog_workouts') || '[]');
 let deletedWorkouts = JSON.parse(localStorage.getItem('ironlog_deleted_workouts') || '[]');
+// Restore session start time in case page was refreshed mid-workout
+window._sessionStartTime = localStorage.getItem('ironlog_session_start') ? parseInt(localStorage.getItem('ironlog_session_start')) : null;
 let exerciseCounter = 0, setCounters = {}, pickerTargetId = null, activeMuscle = 'All';
 let volumeChartInst, strengthChartInst, exHistMiniChartInst;
 let volumeRange = 'week', strengthRange = 'week', globalRange = 'week', strengthMuscle = 'Chest';
@@ -1635,9 +1637,9 @@ function renderTodayPlanCard() {
   const todayMfilterMuscles = ['All', ...BODY_ORDER.filter(m => muscleCounts[m])];
   const todayMfilterRow = Object.keys(muscleCounts).length > 1
     ? `<div id="${filterId}" data-muscles='${JSON.stringify(todayMfilterMuscles)}' data-idx="0" style="display:flex;align-items:center;justify-content:center;border-top:1px solid var(--border);padding:2px 0;">
-        <button onclick="calPlanCycleFilter('${detId}',-1)" style="background:transparent;border:none;color:#fff;font-size:18px;font-weight:700;padding:4px 6px;cursor:pointer;flex-shrink:0;line-height:1;">‹</button>
-        <div id="${filterLabelId}" style="min-width:72px;text-align:center;font-family:'Bebas Neue';font-size:15px;letter-spacing:1.5px;color:#fff;transition:color .15s;">ALL</div>
-        <button onclick="calPlanCycleFilter('${detId}',1)" style="background:transparent;border:none;color:#fff;font-size:18px;font-weight:700;padding:4px 6px;cursor:pointer;flex-shrink:0;line-height:1;">›</button>
+        <button onclick="calPlanCycleFilter('${detId}',-1)" style="background:transparent;border:none;color:#fff;font-size:24px;font-weight:400;padding:0 10px;cursor:pointer;flex-shrink:0;display:flex;align-items:flex-end;height:36px;padding-bottom:6px;">‹</button>
+        <div id="${filterLabelId}" style="min-width:80px;text-align:center;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:.5px;color:#fff;transition:color .15s;display:flex;align-items:center;justify-content:center;height:36px;">ALL</div>
+        <button onclick="calPlanCycleFilter('${detId}',1)" style="background:transparent;border:none;color:#fff;font-size:24px;font-weight:400;padding:0 10px;cursor:pointer;flex-shrink:0;display:flex;align-items:flex-end;height:36px;padding-bottom:6px;">›</button>
       </div>`
     : '';
 
@@ -1791,6 +1793,7 @@ function resetWorkoutState() {
   _todayMuscleFilter = null;
   _todayHideDone = false;
   window._sessionStartTime = null;
+  localStorage.removeItem('ironlog_session_start');
   window._createNewMode = false;
   const _db2 = document.getElementById('dateBadge');
   if (_db2) { _db2.style.cursor = ''; _db2.style.opacity = ''; }
@@ -2117,7 +2120,7 @@ function renderExercisesTab() {
       const bestWt = ex.bestWt > 0 ? parseFloat(ex.bestWt.toFixed(2)) : null;
       const rmArrow = ex.prevRM > 0 && ex.lastRM > ex.prevRM ? '<span style="color:#4caf50;font-size:9px;margin-left:3px;">▲</span>' : ex.prevRM > 0 && ex.lastRM < ex.prevRM ? '<span style="color:#ff4444;font-size:9px;margin-left:3px;">▼</span>' : '<span style="font-size:9px;margin-left:3px;visibility:hidden;">▲</span>';
       const wtArrow = ex.prevWt > 0 && ex.lastWt > ex.prevWt ? '<span style="color:#4caf50;font-size:9px;margin-left:3px;">▲</span>' : ex.prevWt > 0 && ex.lastWt < ex.prevWt ? '<span style="color:#ff4444;font-size:9px;margin-left:3px;">▼</span>' : '<span style="font-size:9px;margin-left:3px;visibility:hidden;">▲</span>';
-      const statsHtml = hasHistory ? `<div style="font-size:11px;text-align:right;">${bestWt !== null ? `<div style="color:#e8ff47;font-weight:700;display:flex;justify-content:space-between;gap:8px;"><span>MAX</span><span>${bestWt}kg${wtArrow}</span></div>` : ''}${bestRM !== null ? `<div style="color:#ff8c42;font-weight:700;margin-top:2px;display:flex;justify-content:space-between;gap:8px;"><span>1RM</span><span>${bestRM}kg${rmArrow}</span></div>` : ''}</div>` : '';
+      const statsHtml = hasHistory ? `<div style="font-size:11px;text-align:right;min-width:120px;">${bestWt !== null ? `<div style="color:#e8ff47;font-weight:700;display:flex;justify-content:flex-end;gap:6px;"><span>MAX</span><span style="min-width:72px;text-align:right;">${bestWt}kg${wtArrow}</span></div>` : '<div style="height:18px;"></div>'}${bestRM !== null ? `<div style="color:#ff8c42;font-weight:700;margin-top:2px;display:flex;justify-content:flex-end;gap:6px;"><span>1RM</span><span style="min-width:72px;text-align:right;">${bestRM}kg${rmArrow}</span></div>` : '<div style="height:18px;margin-top:2px;"></div>'}</div>` : '';
       const chevHtml = hasHistory ? `<span id="${safeId}-chev" style="color:var(--muted);font-size:11px;transition:transform .2s;">&#9660;</span>` : '';
       listHtml += `<div data-exname="${ex.name.replace(/"/g,'&quot;')}" style="margin-bottom:8px;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;">
@@ -2826,7 +2829,7 @@ function renderWorkoutsTab() {
     const isHidden = _hiddenLoadWorkouts.includes(w.name);
     const exDetails = w.exercises.map(e => {
       const isHebrew = /[\u0590-\u05FF]/.test(e.name);
-      const content = `<span style="flex:1;color:var(--text);font-weight:600;${isHebrew?'text-align:right;direction:rtl;':''}">${e.name}</span><span style="display:inline-flex;align-items:center;gap:0;flex-shrink:0;"><span style="color:var(--muted);font-family:'Bebas Neue';font-size:16px;line-height:1;width:16px;text-align:center;">X</span><span style="color:var(--muted);font-family:'Bebas Neue';font-size:16px;line-height:1;width:20px;text-align:left;">${(e.sets||[]).length}</span></span>`;
+      const content = `<span style="flex:1;color:var(--text);font-weight:600;${isHebrew?'text-align:right;direction:rtl;':''}">${e.name}</span><span style="display:inline-flex;align-items:center;gap:0;flex-shrink:0;"><span style="color:var(--muted);font-family:'Bebas Neue';font-size:16px;line-height:1;width:16px;text-align:center;">X</span><span style="color:var(--muted);font-family:'Bebas Neue';font-size:16px;line-height:1;width:20px;text-align:left;">${(e.sets||[]).filter(s=>!s.ignored).length}</span></span>`;
       const exMuscle = e.muscle || getAllExercises().find(x=>x.name===e.name||x.label===e.name)?.muscle || '';
       return `<div class="ldet-ex-row" data-muscle="${exMuscle}" style="padding:7px 14px;border-top:1px solid var(--border);font-size:12px;color:var(--text);display:flex;align-items:center;gap:8px;transition:background .2s;">${content}</div>`;
     }).join('');
@@ -2841,9 +2844,9 @@ function renderWorkoutsTab() {
     const mfilterMuscles = ['All', ..._BODY_ORDER.filter(m => muscleCounts[m])];
     const mfilterRow = Object.keys(muscleCounts).length > 1
       ? `<div id="wtab-mfilter-${i}" data-muscles='${JSON.stringify(mfilterMuscles)}' data-idx="0" style="display:flex;align-items:center;justify-content:center;border-top:1px solid var(--border);padding:2px 0;">
-          <button onclick="wtabCycleFilter('wtab-ldet-${i}',-1)" style="background:transparent;border:none;color:#fff;font-size:18px;font-weight:700;padding:4px 6px;cursor:pointer;flex-shrink:0;line-height:1;">‹</button>
-          <div id="wtab-mfilter-label-${i}" style="min-width:72px;text-align:center;font-family:'Bebas Neue';font-size:15px;letter-spacing:1.5px;color:#fff;transition:color .15s;">ALL</div>
-          <button onclick="wtabCycleFilter('wtab-ldet-${i}',1)" style="background:transparent;border:none;color:#fff;font-size:18px;font-weight:700;padding:4px 6px;cursor:pointer;flex-shrink:0;line-height:1;">›</button>
+          <button onclick="wtabCycleFilter('wtab-ldet-${i}',-1)" style="background:transparent;border:none;color:#fff;font-size:24px;font-weight:400;padding:0 10px;cursor:pointer;flex-shrink:0;display:flex;align-items:flex-end;height:36px;padding-bottom:6px;">‹</button>
+          <div id="wtab-mfilter-label-${i}" style="min-width:80px;text-align:center;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:.5px;color:#fff;transition:color .15s;display:flex;align-items:center;justify-content:center;height:36px;">ALL</div>
+          <button onclick="wtabCycleFilter('wtab-ldet-${i}',1)" style="background:transparent;border:none;color:#fff;font-size:24px;font-weight:400;padding:0 10px;cursor:pointer;flex-shrink:0;display:flex;align-items:flex-end;height:36px;padding-bottom:6px;">›</button>
         </div>`
       : '';
     html += `<div class="load-hist-item">
@@ -3860,9 +3863,16 @@ function markSetDone(btn, exId) {
     return;
   }
   btn.classList.toggle('done');
-  // Track start time from first set marked done
+  // Track start time from first set marked done — persist to survive refresh
   if (btn.classList.contains('done') && !window._sessionStartTime) {
-    window._sessionStartTime = Date.now();
+    const existing = localStorage.getItem('ironlog_session_start');
+    if (!existing) {
+      const now = Date.now();
+      window._sessionStartTime = now;
+      localStorage.setItem('ironlog_session_start', String(now));
+    } else {
+      window._sessionStartTime = parseInt(existing);
+    }
   }
   // If exercise is hidden, unhide it now that a set is done
   if (btn.classList.contains('done')) {
@@ -4575,9 +4585,8 @@ function openExHistoryByName(exName) {
       if(set.kg*(1+set.reps/30)>bestV)bestV=set.kg*(1+set.reps/30);
     }));
     const bests = `<div class="exhist-best">
-      <div class="exhist-best-box"><span class="exhist-best-val">${bestW}<span style="font-size:13px;color:var(--muted)">kg</span></span><span class="exhist-best-label">Best Weight</span></div>
-      <div class="exhist-best-box"><span class="exhist-best-val">${bestR}</span><span class="exhist-best-label">Best Reps</span></div>
-      <div class="exhist-best-box"><span class="exhist-best-val">${Math.round(bestV)}<span style="font-size:13px;color:var(--muted)">kg</span></span><span class="exhist-best-label">Best Set 1RM</span></div>
+      <div class="exhist-best-box"><span class="exhist-best-val">${bestW}<span style="font-size:13px;color:var(--muted)">kg</span></span><span class="exhist-best-label" style="color:#fff;">Best Weight</span></div>
+      <div class="exhist-best-box"><span class="exhist-best-val">${Math.round(bestV)}<span style="font-size:13px;color:var(--muted)">kg</span></span><span class="exhist-best-label" style="color:#fff;">Best 1RM</span></div>
     </div>`;
     const sessHTML = sessions.map(s=>{
       const _sd=s.ex.sets; const vol = _sd.length ? Math.round(Math.max(..._sd.filter(s=>!s.ignored).map(set=>set.kg*(1+set.reps/30)))) : 0;
@@ -4629,9 +4638,8 @@ function openExHistory(cardId) {
     });
 
     const bests = `<div class="exhist-best">
-      <div class="exhist-best-box"><span class="exhist-best-val">${bestW}<span style="font-size:13px;color:var(--muted)">kg</span></span><span class="exhist-best-label">Best Weight</span></div>
-      <div class="exhist-best-box"><span class="exhist-best-val">${bestR}</span><span class="exhist-best-label">Best Reps</span></div>
-      <div class="exhist-best-box"><span class="exhist-best-val">${Math.round(bestV)}<span style="font-size:13px;color:var(--muted)">kg</span></span><span class="exhist-best-label">Best Set 1RM</span></div>
+      <div class="exhist-best-box"><span class="exhist-best-val">${bestW}<span style="font-size:13px;color:var(--muted)">kg</span></span><span class="exhist-best-label" style="color:#fff;">Best Weight</span></div>
+      <div class="exhist-best-box"><span class="exhist-best-val">${Math.round(bestV)}<span style="font-size:13px;color:var(--muted)">kg</span></span><span class="exhist-best-label" style="color:#fff;">Best 1RM</span></div>
     </div>`;
 
     const sessHTML = sessions.map(s=>{
@@ -4930,8 +4938,10 @@ function confirmSave() {
   const hasStars = allStars.length > 0;
   document.getElementById('summaryOverlay').classList.remove('open');
   const _endTime = Date.now();
-  const _startTime = window._sessionStartTime || _endTime;
+  const _storedStart = localStorage.getItem('ironlog_session_start');
+  const _startTime = window._sessionStartTime || (_storedStart ? parseInt(_storedStart) : _endTime);
   window._sessionStartTime = null;
+  localStorage.removeItem('ironlog_session_start');
   const _durMs = _endTime - _startTime;
   const _durMins = Math.round(_durMs / 60000);
   const _durStr = _durMins < 1 ? 'under 1 min' : _durMins === 1 ? '1 min' : `${_durMins} min`;
@@ -5123,7 +5133,7 @@ function openLoadHistory(showHidden) {
     const exDetails = w.exercises.map((e,ei)=>{
       const isHebrew = /[\u0590-\u05FF]/.test(e.name);
       const nameStyle = isHebrew ? 'direction:rtl;text-align:right;unicode-bidi:embed;' : '';
-      const content = `<span style="flex:1;color:var(--text);font-weight:600;${isHebrew?'text-align:right;direction:rtl;':''}">${e.name}</span><span style="display:inline-flex;align-items:center;gap:0;flex-shrink:0;"><span style="color:var(--muted);font-family:'Bebas Neue';font-size:16px;line-height:1;width:16px;text-align:center;">X</span><span style="color:var(--muted);font-family:'Bebas Neue';font-size:16px;line-height:1;width:20px;text-align:left;">${(e.sets||[]).length}</span></span>`;
+      const content = `<span style="flex:1;color:var(--text);font-weight:600;${isHebrew?'text-align:right;direction:rtl;':''}">${e.name}</span><span style="display:inline-flex;align-items:center;gap:0;flex-shrink:0;"><span style="color:var(--muted);font-family:'Bebas Neue';font-size:16px;line-height:1;width:16px;text-align:center;">X</span><span style="color:var(--muted);font-family:'Bebas Neue';font-size:16px;line-height:1;width:20px;text-align:left;">${(e.sets||[]).filter(s=>!s.ignored).length}</span></span>`;
       const exMuscle = e.muscle || getAllExercises().find(x=>x.name===e.name||x.label===e.name)?.muscle || '';
       return `<div class="ldet-ex-row" data-muscle="${exMuscle}" style="padding:7px 14px;border-top:1px solid var(--border);font-size:12px;color:var(--text);display:flex;align-items:center;gap:8px;transition:background .2s;">${content}</div>`;
     }).join('');
@@ -5350,7 +5360,7 @@ function renderHistory() {
     const svgStar = (color) => `<svg width="13" height="13" viewBox="0 0 24 24" fill="${color}" xmlns="http://www.w3.org/2000/svg"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>`;
     let weightPRCount = 0, volPRCount = 0, volumePRCount = 0;
     const exRows = w.exercises.map((e,ei)=>{
-      const chips = e.sets.map(s=>`<span class="hcard-set-chip${s.done?' done':''}${s.ignored?' ignored':''}">${s.kg}×${s.reps}${(s.ignored&&s.done)?' <span style="font-size:8px;font-weight:700;color:#ff69b4;letter-spacing:.3px;">IGN</span>':''}</span>`).join('<span style="color:#333;margin:0 2px;">·</span>');
+      const chips = e.sets.filter(s=>!s.ignored).map(s=>`<span class="hcard-set-chip${s.done?' done':''}">${s.kg}×${s.reps}</span>`).join('<span style="color:#333;margin:0 2px;">·</span>');
       const muscle = e.muscle || getAllExercises().find(x=>x.name===e.name||x.label===e.name)?.muscle || '';
       // Compare against all OTHER workouts for this exercise
       const maxKg = Math.max(0,...e.sets.filter(s=>s.done&&!s.ignored).map(s=>s.kg));
@@ -7450,6 +7460,11 @@ function closeCalendar() {
   document.getElementById('calendarOverlay').classList.remove('open');
   selectedCalDay = null;
   localStorage.removeItem('ironlog_modal');
+  // Refresh today plan card in case a workout was planned for today
+  const startScreen = document.getElementById('today-start-screen');
+  if (startScreen && startScreen.style.display !== 'none') {
+    try { renderTodayPlanCard(); } catch(e) {}
+  }
   // If workouts tab is currently active, re-render it to reflect current state
   const activeTab = localStorage.getItem('ironlog_active_tab');
   if (activeTab === 'workouts') try { renderWorkoutsTab(); } catch(e) {}
@@ -8180,7 +8195,7 @@ function renderCalDayWorkouts(ws) {
 
     let weightPRCount = 0, volPRCount = 0, volumePRCount = 0;
     const exRows = w.exercises.map((e,ei) => {
-      const chips = e.sets.map(s=>`<span class="hcard-set-chip${s.done?' done':''}${s.ignored?' ignored':''}">${s.kg}×${s.reps}${(s.ignored&&s.done)?' <span style="font-size:8px;font-weight:700;color:#ff69b4;letter-spacing:.3px;">IGN</span>':''}</span>`).join('<span style="color:#333;margin:0 2px;">·</span>');
+      const chips = e.sets.filter(s=>!s.ignored).map(s=>`<span class="hcard-set-chip${s.done?' done':''}">${s.kg}×${s.reps}</span>`).join('<span style="color:#333;margin:0 2px;">·</span>');
       const muscle = e.muscle || getAllExercises().find(x=>x.name===e.name||x.label===e.name)?.muscle || '';
       const maxKg = Math.max(0,...e.sets.filter(s=>s.done&&!s.ignored).map(s=>s.kg));
       const vol = e.sets.filter(s=>s.done&&!s.ignored).reduce((a,s)=>Math.max(a,s.kg*(1+s.reps/30)),0);
@@ -9307,7 +9322,7 @@ window.addEventListener('load', function() {
         <div style="font-family:'DM Sans';font-size:13px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">CONTACT</div>
         <div style="font-size:13px;color:var(--text);font-weight:600;margin-bottom:4px;">Oded Albo</div>
         <a href="mailto:oalbooalbo@gmail.com" style="font-size:13px;color:#7ec8e3;text-decoration:none;">oalbooalbo@gmail.com</a>
-<!-- YOUR ORIGINAL HTML CONTENT HERE ODED END -->
+<!-- YOUR ORIGINAL HTML CONTENT HERE ODED END pppppppppppppppppppppppppppppppppppppppppppppp -->
 <button id="installBtn" style="display:none;position:fixed;bottom:20px;right:20px;z-index:999;">
 Install App
 </button>
