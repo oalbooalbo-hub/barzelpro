@@ -30,6 +30,7 @@
 <body>
 
 <!-- YOUR ORIGINAL HTML CONTENT HERE ODED BEGIN -->
+<!-- YOUR ORIGINAL HTML CONTENT HERE ODED END pppppppppppppppppppppppppppppppppppppppppppppp -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1794,6 +1795,7 @@ function resetWorkoutState() {
   _todayHideDone = false;
   window._sessionStartTime = null;
   localStorage.removeItem('ironlog_session_start');
+  localStorage.removeItem('ironlog_wip_plan_id');
   window._createNewMode = false;
   const _db2 = document.getElementById('dateBadge');
   if (_db2) { _db2.style.cursor = ''; _db2.style.opacity = ''; }
@@ -7917,11 +7919,12 @@ function renderCalDayContent(key, ws, cs) {
       const _calMfilterMuscles = ['All', ...BODY_ORDER_C.filter(m => muscleCounts[m])];
       const calMfilterRow = Object.keys(muscleCounts).length > 1
         ? `<div id="${filterId}" data-muscles='${JSON.stringify(_calMfilterMuscles)}' data-idx="0" style="display:flex;align-items:center;justify-content:center;border-top:1px solid var(--border);padding:2px 0;">
-            <button onclick="calPlanCycleFilter('${detId}',-1)" style="background:transparent;border:none;color:#fff;font-size:18px;font-weight:700;padding:4px 6px;cursor:pointer;flex-shrink:0;line-height:1;">‹</button>
-            <div id="${filterLabelId}" style="min-width:72px;text-align:center;font-family:'Bebas Neue';font-size:15px;letter-spacing:1.5px;color:#fff;transition:color .15s;">ALL</div>
-            <button onclick="calPlanCycleFilter('${detId}',1)" style="background:transparent;border:none;color:#fff;font-size:18px;font-weight:700;padding:4px 6px;cursor:pointer;flex-shrink:0;line-height:1;">›</button>
+            <button onclick="calPlanCycleFilter('${detId}',-1)" style="background:transparent;border:none;color:#fff;font-size:24px;font-weight:400;padding:0 10px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;height:36px;padding-bottom:6px;">‹</button>
+            <div id="${filterLabelId}" style="min-width:80px;text-align:center;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:.5px;color:#fff;transition:color .15s;display:flex;align-items:center;justify-content:center;height:36px;">ALL</div>
+            <button onclick="calPlanCycleFilter('${detId}',1)" style="background:transparent;border:none;color:#fff;font-size:24px;font-weight:400;padding:0 10px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;height:36px;padding-bottom:6px;">›</button>
           </div>`
         : '';
+      const isWip = localStorage.getItem('ironlog_wip_plan_id') === p.planId;
       html += `<div class="load-hist-item" style="margin-bottom:8px;">
         <div style="display:flex;align-items:stretch;gap:6px;padding:10px 10px 10px 12px;">
           <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
@@ -7935,12 +7938,14 @@ function renderCalDayContent(key, ws, cs) {
           <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;justify-content:space-between;">
             <div style="display:flex;flex-direction:column;gap:4px;align-items:stretch;">
               <div style="display:flex;flex-direction:row;gap:4px;align-items:center;justify-content:flex-end;">
-                <button onclick="deletePlannedWorkout('${p.planId}')" style="background:transparent;border:none;color:#555;cursor:pointer;padding:5px;border-radius:6px;display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M3 5h14M8 5V3h4v2M5 5l1 11a1 1 0 001 1h6a1 1 0 001-1l1-11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><line x1="8" y1="9" x2="8" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="12" y1="9" x2="12" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
-                ${!isFutureDay ? `<button onclick="loadPlannedWorkout('${p.planId}')" style="background:transparent;border:1px solid #ff8c42;border-radius:7px;color:#ff8c42;font-size:13px;font-weight:700;padding:7px 0;cursor:pointer;white-space:nowrap;min-width:52px;text-align:center;">Go</button>` : ''}
+                ${isWip ? '' : `<button onclick="deletePlannedWorkout('${p.planId}')" style="background:transparent;border:none;color:#555;cursor:pointer;padding:5px;border-radius:6px;display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M3 5h14M8 5V3h4v2M5 5l1 11a1 1 0 001 1h6a1 1 0 001-1l1-11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><line x1="8" y1="9" x2="8" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="12" y1="9" x2="12" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>`}
+                ${!isFutureDay ? (isWip
+                  ? `<button onclick="showWipToast()" style="background:transparent;border:1px solid #34d399;border-radius:7px;color:#34d399;font-size:13px;font-weight:700;padding:7px 0;cursor:pointer;white-space:nowrap;min-width:52px;text-align:center;">WIP</button>`
+                  : `<button onclick="loadPlannedWorkout('${p.planId}')" style="background:transparent;border:1px solid #ff8c42;border-radius:7px;color:#ff8c42;font-size:13px;font-weight:700;padding:7px 0;cursor:pointer;white-space:nowrap;min-width:52px;text-align:center;">Go</button>`) : ''}
               </div>
-              <div style="display:flex;flex-direction:row;gap:6px;align-items:center;">
+              ${isWip ? '' : `<div style="display:flex;flex-direction:row;gap:6px;align-items:center;">
               <button onclick="replacePlannedWorkout('${p.planId}','${key}')" style="background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--muted);font-size:12px;font-weight:700;padding:6px 8px;cursor:pointer;width:100%;">Replace</button>
-              </div>
+              </div>`}
             </div>
             <table style="border-collapse:collapse;margin-top:auto;padding-top:4px;width:100%;border:1px solid var(--border);border-radius:6px;overflow:hidden;">
               <tr><td style="font-size:14px;font-family:'Bebas Neue';color:var(--muted);letter-spacing:.5px;padding:4px 8px 4px 8px;white-space:nowrap;border-bottom:1px solid var(--border);">EX</td><td style="font-family:'Bebas Neue';font-size:14px;color:var(--text);text-align:right;padding:4px 8px;border-bottom:1px solid var(--border);">${totalEx}</td></tr>
@@ -8576,6 +8581,21 @@ function deletePlannedWorkout(planId) {
     if (selectedCalDay) selectCalDay(selectedCalDay);
   };
 }
+function showWipToast() {
+  const overlay = document.createElement('div');
+  overlay.className = 'delete-confirm-overlay';
+  overlay.innerHTML = `
+    <div class="delete-confirm-sheet">
+      <div class="delete-confirm-title" style="color:#34d399;">WORK IN PROGRESS</div>
+      <div class="delete-confirm-sub">This workout is currently in progress on Today tab.</div>
+      <div class="delete-confirm-btns">
+        <button class="btn-del-cancel" style="flex:1;" id="_wipClose">Close</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#_wipClose').onclick = () => overlay.remove();
+}
+
 function loadPlannedWorkout(planId) {
   const plan = plannedWorkouts.find(p=>p.planId===planId);
   if (!plan) return;
@@ -8588,6 +8608,7 @@ function loadPlannedWorkout(planId) {
       const ex = getAllExercises().find(e=>e.name===exData.name||e.label===exData.name) || {name:exData.name,label:exData.name,muscle:exData.muscle||'Chest',custom:true};
       addExerciseCard(ex);
     });
+    localStorage.setItem('ironlog_wip_plan_id', planId);
     closeCalendar(); switchTab('log'); showToast('Planned workout loaded!');
   };
   if (!anySetDone) { doLoad(); return; }
@@ -9325,7 +9346,6 @@ window.addEventListener('load', function() {
         <div style="font-family:'DM Sans';font-size:13px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">CONTACT</div>
         <div style="font-size:13px;color:var(--text);font-weight:600;margin-bottom:4px;">Oded Albo</div>
         <a href="mailto:oalbooalbo@gmail.com" style="font-size:13px;color:#7ec8e3;text-decoration:none;">oalbooalbo@gmail.com</a>
-<!-- YOUR ORIGINAL HTML CONTENT HERE ODED END pppppppppppppppppppppppppppppppppppppppppppppp -->
 <button id="installBtn" style="display:none;position:fixed;bottom:20px;right:20px;z-index:999;">
 Install App
 </button>
