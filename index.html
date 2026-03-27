@@ -656,13 +656,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <div id="todayMuscleChipsFixed" style="display:flex;gap:6px;flex-shrink:0;background:var(--bg);z-index:3;padding-right:6px;"></div>
       <div id="todayMuscleChips" style="display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;scrollbar-width:none;flex:1;"></div>
     </div>
-    <div class="time-pills" id="todayTimePills" style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:10px;">
-      <button class="time-pill" data-range="day" onclick="setTodayMiniRange(this)">1D</button>
-      <button class="time-pill" data-range="week" onclick="setTodayMiniRange(this)">1W</button>
-      <button class="time-pill" data-range="month" onclick="setTodayMiniRange(this)">1M</button>
-      <button class="time-pill" data-range="3month" onclick="setTodayMiniRange(this)">3M</button>
-      <button class="time-pill active" data-range="year" onclick="setTodayMiniRange(this)">1Y</button>
-    </div>
     <div id="exerciseList"></div>
     <div class="add-ex-row">
       <button class="btn-add-exercise" onclick="enterPickMode(_todayMuscleFilter)">+ ADD EXERCISE</button>
@@ -736,13 +729,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <button onclick="exitPickMode()" style="background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:'DM Sans';font-size:12px;font-weight:700;padding:5px 10px;cursor:pointer;flex-shrink:0;white-space:nowrap;">◀ Back</button>
   </div>
   <div class="section-title" id="exercises-tab-title"><span>ALL</span> EXERCISES</div>
-  <div class="time-pills" id="exTabTimePills" style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:10px;">
-    <button class="time-pill" data-range="day" onclick="setExTabRange(this)">1D</button>
-    <button class="time-pill active" data-range="week" onclick="setExTabRange(this)">1W</button>
-    <button class="time-pill" data-range="month" onclick="setExTabRange(this)">1M</button>
-    <button class="time-pill" data-range="3month" onclick="setExTabRange(this)">3M</button>
-    <button class="time-pill" data-range="year" onclick="setExTabRange(this)">1Y</button>
-  </div>
   <div id="exercisesTabContent"></div>
 </div>
 
@@ -1093,7 +1079,6 @@ window._sessionStartTime = localStorage.getItem('ironlog_session_start') ? parse
 let exerciseCounter = 0, setCounters = {}, pickerTargetId = null, activeMuscle = 'All';
 let volumeChartInst, strengthChartInst, exHistMiniChartInst;
 let volumeRange = 'week', strengthRange = 'week', globalRange = 'week', strengthMuscle = 'Chest';
-let exTabRange = 'year', todayMiniRange = 'year';
 let lastTimerSecs = (parseInt(localStorage.getItem('ironlog_timer_secs')) || 60);
 let cardioLog = JSON.parse(localStorage.getItem('ironlog_cardio') || '[]'); // [{date, type, mins}]
 let lastCardioType = localStorage.getItem('ironlog_cardio_type') || 'Run';
@@ -2077,13 +2062,12 @@ function renderExercisesTab() {
   const hiddenEx = JSON.parse(localStorage.getItem('ironlog_hidden_ex') || '[]');
   const VALID_MUSCLES = ['Chest','Back','Legs','Shoulders','Arms','Core'];
   const normalizeMuscle = m => VALID_MUSCLES.includes(m) ? m : 'Chest';
-  const rangeFilteredWorkouts = filterByRange(workouts.filter(w => !w._draft && !w._template), exTabRange);
   // Seed exMap with all custom exercises so new ones show even without history
   customExercises.forEach(ex => {
     if (hiddenEx.includes(ex.name)) return;
     if (!exMap[ex.name]) exMap[ex.name] = { muscle: normalizeMuscle(ex.muscle), count: 0, lastDate: 0, bestRM: 0, bestVol: 0, bestWt: 0, sessions: [] };
   });
-  rangeFilteredWorkouts.forEach(w => {
+  workouts.filter(w => !w._draft && !w._template).forEach(w => {
     w.exercises.forEach(e => {
       if (hiddenEx.includes(e.name)) return;
       if (!exMap[e.name]) {
@@ -2189,13 +2173,6 @@ function renderExercisesTab() {
         <div id="extab-big-volprog-${safeId}" style="font-family:'DM Sans';font-size:12px;font-weight:700;color:#a78bfa;padding:2px 0 4px;display:none;"></div>
         <div class="ex-mini-chart-wrap"><canvas id="extab-volprog-canvas-${safeId}"></canvas></div>
         <div id="extab-scrubber-wrap-${safeId}" class="mini-scrubber-wrap">
-          <div style="display:flex;gap:4px;margin-bottom:8px;" id="extab-range-pills-${safeId}">
-            ${['day','week','month','3month','year'].map((r,i)=>{
-              const lbl=['1D','1W','1M','3M','1Y'][i];
-              const active = r==='year';
-              return `<div onclick="setMiniChartRange('${safeId}','${r}',this,'extab')" style="flex:1;text-align:center;padding:3px 0;border-radius:5px;border:1px solid ${active?'var(--accent)':'var(--border)'};background:${active?'rgba(232,255,71,.12)':'transparent'};color:${active?'var(--accent)':'var(--muted)'};font-family:'DM Sans';font-size:10px;font-weight:700;cursor:pointer;transition:all .15s;">${lbl}</div>`;
-            }).join('')}
-          </div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
             <span id="extab-scrub-date-${safeId}" class="mini-scrubber-date"></span>
             <span class="mini-scrubber-label" style="margin-bottom:0;">Select Day</span>
@@ -2559,12 +2536,10 @@ function toggleExTabCard(safeId) {
 }
 
 function renderExTabMiniChart(safeId, exName) {
-  const range = _getMiniRange(safeId);
   // Key by timestamp for correct chronological sorting
   const weightMap = new Map(), volMap = new Map(), volumeMap = new Map();
   const weightLabelMap = new Map(), volLabelMap = new Map();
-  const filteredWorkouts = filterByRange([...workouts].filter(w=>!w._draft), range);
-  filteredWorkouts.forEach(w => {
+  [...workouts].filter(w=>!w._draft).forEach(w => {
     w.exercises.filter(e => e.name === exName).forEach(e => {
       const done = doneSets(e.sets);
       const mx = done.length ? Math.max(0,...done.map(s=>s.kg)) : 0;
@@ -3383,13 +3358,6 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
           <div class="ex-mini-chart-wrap"><canvas id="mini-volprog-canvas-${id}"></canvas></div>
         </div>
         <div id="mini-scrubber-wrap-${id}" class="mini-scrubber-wrap">
-          <div style="display:flex;gap:4px;margin-bottom:8px;" id="mini-range-pills-${id}">
-            ${['day','week','month','3month','year'].map((r,i)=>{
-              const lbl=['1D','1W','1M','3M','1Y'][i];
-              const active = r==='year';
-              return `<div onclick="setMiniChartRange('${id}','${r}',this)" style="flex:1;text-align:center;padding:3px 0;border-radius:5px;border:1px solid ${active?'var(--accent)':'var(--border)'};background:${active?'rgba(232,255,71,.12)':'transparent'};color:${active?'var(--accent)':'var(--muted)'};font-family:'DM Sans';font-size:10px;font-weight:700;cursor:pointer;transition:all .15s;">${lbl}</div>`;
-            }).join('')}
-          </div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
             <span id="mini-scrub-date-${id}" class="mini-scrubber-date"></span>
             <span class="mini-scrubber-label" style="margin-bottom:0;">Select Day</span>
@@ -3585,42 +3553,10 @@ function onMiniScrub(cardId, idx) {
   const pctEl = document.getElementById(`mini-scrub-pct-${cardId}`) || document.getElementById(`extab-scrub-pct-${cardId}`);
   if (pctEl) pctEl.innerHTML = '';
 }
-const _miniChartRanges = {}; // cardId -> range
-
-function setMiniChartRange(cardId, range, btn, type) {
-  _miniChartRanges[cardId] = range;
-  // Update pill styles
-  const pillsWrap = btn.parentElement;
-  if (pillsWrap) {
-    pillsWrap.querySelectorAll('div').forEach(p => {
-      const isActive = p === btn;
-      p.style.borderColor = isActive ? 'var(--accent)' : 'var(--border)';
-      p.style.background = isActive ? 'rgba(232,255,71,.12)' : 'transparent';
-      p.style.color = isActive ? 'var(--accent)' : 'var(--muted)';
-    });
-  }
-  // Re-render the chart
-  const card = document.getElementById(cardId) || document.querySelector(`[id^="${cardId}"]`);
-  const exName = card?.dataset?.exname || document.querySelector(`[data-exname]`)?.dataset?.exname;
-  if (type === 'extab') {
-    // Find the exname from the closest data-exname ancestor
-    const exCard = btn.closest('[data-exname]');
-    if (exCard) renderExTabMiniChart(cardId, exCard.dataset.exname);
-  } else {
-    if (card) renderMiniChart(cardId, card.dataset.exname);
-  }
-}
-
-function _getMiniRange(cardId) {
-  return _miniChartRanges[cardId] || todayMiniRange || 'year';
-}
-
 function renderMiniChart(cardId, exName) {
-  const range = _getMiniRange(cardId);
   const weightMap = new Map(), volMap = new Map(), volumeMap = new Map();
   const weightLabelMap = new Map(), volLabelMap = new Map();
-  const filteredWorkouts = filterByRange([...workouts].filter(w => !w._draft && !w._template), range);
-  filteredWorkouts.forEach(w => {
+  [...workouts].filter(w => !w._draft && !w._template).forEach(w => {
     w.exercises.filter(e => e.name===exName).forEach(e => {
       const done = doneSets(e.sets);
       const mx = done.length ? parseFloat(Math.max(0,...done.map(s=>s.kg)).toFixed(2)) : 0;
@@ -6519,28 +6455,6 @@ function startFinishTimer() {
 
 function stopFinishTimer() {
   if (_finishTimerInterval) { clearInterval(_finishTimerInterval); _finishTimerInterval = null; }
-}
-
-function setExTabRange(btn) {
-  exTabRange = btn.dataset.range;
-  document.querySelectorAll('#exTabTimePills .time-pill').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  renderExercisesTab();
-}
-
-function setTodayMiniRange(btn) {
-  todayMiniRange = btn.dataset.range;
-  document.querySelectorAll('#todayTimePills .time-pill').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  // Update all exercise cards with new range and re-render open ones
-  document.querySelectorAll('#exerciseList .exercise-card').forEach(card => {
-    const id = card.id;
-    _miniChartRanges[id] = todayMiniRange;
-    if (card.dataset.open === 'true') {
-      const exName = card.dataset.exname;
-      if (exName) setTimeout(() => renderMiniChart(id, exName), 50);
-    }
-  });
 }
 
 function updateProgressWorkoutCount() {
