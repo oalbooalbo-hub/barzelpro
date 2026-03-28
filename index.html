@@ -6,7 +6,9 @@
 
 <!-- PWA -->
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0a0a0a">
+<!-- meta name="theme-color" content="#0a0a0a" -->
+<meta name="theme-color" content="#000000">
+
 
 <!-- iOS -->
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -2908,7 +2910,7 @@ function renderWorkoutsTab() {
           <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;justify-content:space-between;">
           <div style="position:relative;display:inline-block;">
             ${window._replacePlanId
-              ? `<button onclick="const w=workouts[${i}];if(w){const _rpk=window._replacePlanKey;const idx=plannedWorkouts.findIndex(p=>p.planId===window._replacePlanId);if(idx!==-1){plannedWorkouts[idx]={...plannedWorkouts[idx],name:w.name,exercises:w.exercises};savePlanned();}window._replacePlanId=null;window._replacePlanKey=null;if(_rpk){const [_ry,_rm,_rd]=_rpk.split('-').map(Number);calYear=_ry;calMonth=_rm;selectedCalDay=_rpk;openCalendar();setTimeout(()=>selectCalDay(_rpk),100);}showToast('Plan replaced!');}" style="background:transparent;border:none;color:var(--accent);font-size:12px;font-weight:700;font-style:italic;padding:6px 8px;cursor:pointer;width:100%;">Select</button>`
+              ? `<button onclick="const w=workouts[${i}];if(w){const _rpk=window._replacePlanKey;const idx=plannedWorkouts.findIndex(p=>p.planId===window._replacePlanId);if(idx!==-1){plannedWorkouts[idx]={...plannedWorkouts[idx],name:w.name,exercises:w.exercises};savePlanned();}window._replacePlanId=null;window._replacePlanKey=null;if(_rpk){const [_ry,_rm,_rd]=_rpk.split('-').map(Number);calYear=_ry;calMonth=_rm;selectedCalDay=_rpk;openCalendar();setTimeout(()=>selectCalDay(_rpk),100);}else{switchTab('log');setTimeout(()=>{renderTodayPlanCard();showToast('Plan replaced!');},50);}}" style="background:transparent;border:none;color:var(--accent);font-size:12px;font-weight:700;font-style:italic;padding:6px 8px;cursor:pointer;width:100%;">Select</button>`
               : window._planStrengthKey
               ? `<button onclick="const w=workouts[${i}];if(w){const _psk=window._planStrengthKey;if(!_psk){return;}const [_sy,_sm,_sd]=_psk.split('-').map(Number);plannedWorkouts.push({planId:Date.now().toString(),name:w.name,date:new Date(_sy,_sm,_sd).getTime(),exercises:w.exercises.map(e=>({name:e.name,muscle:e.muscle||'Chest'}))});savePlanned();window._planStrengthKey=null;calYear=_sy;calMonth=_sm;selectedCalDay=_psk;openCalendar();setTimeout(()=>selectCalDay(_psk),100);showToast('Workout planned!');}" style="background:transparent;border:none;color:var(--accent);font-size:12px;font-weight:700;font-style:italic;padding:6px 8px;cursor:pointer;width:100%;">Select</button>`
               : window._loadFromToday
