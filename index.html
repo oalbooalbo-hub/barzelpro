@@ -1079,6 +1079,7 @@ window._sessionStartTime = localStorage.getItem('ironlog_session_start') ? parse
 let exerciseCounter = 0, setCounters = {}, pickerTargetId = null, activeMuscle = 'All';
 let volumeChartInst, strengthChartInst, exHistMiniChartInst;
 let volumeRange = 'week', strengthRange = 'week', globalRange = 'week', strengthMuscle = 'Chest';
+let exTabRange = 'week', todayMiniRange = 'week';
 let lastTimerSecs = (parseInt(localStorage.getItem('ironlog_timer_secs')) || 60);
 let cardioLog = JSON.parse(localStorage.getItem('ironlog_cardio') || '[]'); // [{date, type, mins}]
 let lastCardioType = localStorage.getItem('ironlog_cardio_type') || 'Run';
@@ -2062,12 +2063,13 @@ function renderExercisesTab() {
   const hiddenEx = JSON.parse(localStorage.getItem('ironlog_hidden_ex') || '[]');
   const VALID_MUSCLES = ['Chest','Back','Legs','Shoulders','Arms','Core'];
   const normalizeMuscle = m => VALID_MUSCLES.includes(m) ? m : 'Chest';
+  const rangeFilteredWorkouts = filterByRange(workouts.filter(w => !w._draft && !w._template), exTabRange);
   // Seed exMap with all custom exercises so new ones show even without history
   customExercises.forEach(ex => {
     if (hiddenEx.includes(ex.name)) return;
     if (!exMap[ex.name]) exMap[ex.name] = { muscle: normalizeMuscle(ex.muscle), count: 0, lastDate: 0, bestRM: 0, bestVol: 0, bestWt: 0, sessions: [] };
   });
-  workouts.filter(w => !w._draft && !w._template).forEach(w => {
+  rangeFilteredWorkouts.forEach(w => {
     w.exercises.forEach(e => {
       if (hiddenEx.includes(e.name)) return;
       if (!exMap[e.name]) {
@@ -2109,6 +2111,12 @@ function renderExercisesTab() {
   Object.values(byMuscle).forEach(arr => arr.sort((a, b) => b.count - a.count));
 
   const available = MUSCLE_ORDER.filter(m => byMuscle[m]?.length);
+
+  // No data for selected period
+  if (!available.length && exTabRange !== 'year') {
+    el.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--muted);font-size:13px;font-weight:600;">No data for this period</div>`;
+    return;
+  }
 
   // Default to first muscle or keep current selection
   if (!window._exTabMuscle) window._exTabMuscle = available[0] || MUSCLE_ORDER[0];
@@ -2173,6 +2181,14 @@ function renderExercisesTab() {
         <div id="extab-big-volprog-${safeId}" style="font-family:'DM Sans';font-size:12px;font-weight:700;color:#a78bfa;padding:2px 0 4px;display:none;"></div>
         <div class="ex-mini-chart-wrap"><canvas id="extab-volprog-canvas-${safeId}"></canvas></div>
         <div id="extab-scrubber-wrap-${safeId}" class="mini-scrubber-wrap">
+          <div style="display:flex;gap:4px;margin-bottom:8px;" id="extab-range-pills-${safeId}">
+            ${['week','month','3month','6month','year'].map((r,i)=>{
+              const lbl=['1W','1M','3M','6M','1Y'][i];
+              const defaultRange = localStorage.getItem('ironlog_mini_range') || '3month';
+              const active = r===defaultRange;
+              return `<div onclick="setMiniChartRange('${safeId}','${r}',this,'extab')" style="flex:1;text-align:center;padding:3px 0;border-radius:5px;border:1px solid ${active?'var(--accent)':'var(--border)'};background:${active?'rgba(232,255,71,.12)':'transparent'};color:${active?'var(--accent)':'var(--muted)'};font-family:'DM Sans';font-size:10px;font-weight:700;cursor:pointer;transition:all .15s;">${lbl}</div>`;
+            }).join('')}
+          </div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
             <span id="extab-scrub-date-${safeId}" class="mini-scrubber-date"></span>
             <span class="mini-scrubber-label" style="margin-bottom:0;">Select Day</span>
@@ -2475,10 +2491,10 @@ function openWeekSummary(weekStartStr) {
     const sets = w.exercises.reduce((a,e)=>a+e.sets.filter(s=>s.done&&!s.ignored).length,0);
     return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #1e1e1e;">
       <div>
-        <div style="font-family:'Bebas Neue';font-size:16px;letter-spacing:.5px;">${w.name||'Workout'}</div>
+        <div style="font-family:'DM Sans';font-size:14px;font-weight:700;color:var(--accent);">${w.name||'Workout'}</div>
         <div style="font-size:11px;color:var(--muted);">${d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})}</div>
       </div>
-      <div style="font-size:12px;color:var(--muted);font-weight:600;">${sets} sets</div>
+      <div style="font-size:12px;color:var(--accent);font-weight:700;">${sets} sets</div>
     </div>`;
   }).join('');
 
@@ -2486,7 +2502,7 @@ function openWeekSummary(weekStartStr) {
     const d = new Date(c.date);
     return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #1e1e1e;">
       <div>
-        <div style="font-family:'Bebas Neue';font-size:16px;letter-spacing:.5px;">${c.type||'Cardio'}</div>
+        <div style="font-family:'DM Sans';font-size:14px;font-weight:700;color:#7ec8e3;">${c.type||'Cardio'}</div>
         <div style="font-size:11px;color:var(--muted);">${d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})}</div>
       </div>
       <div style="font-size:12px;color:#7ec8e3;font-weight:600;">${c.mins||0} min</div>
@@ -2494,17 +2510,17 @@ function openWeekSummary(weekStartStr) {
   }).join('');
 
   document.getElementById('weekSummaryContent').innerHTML = `
-    <div style="font-family:'Bebas Neue';font-size:13px;letter-spacing:1px;color:var(--muted);margin-bottom:4px;">WEEK SUMMARY</div>
+    <div style="font-family:'DM Sans';font-size:13px;letter-spacing:1px;color:var(--muted);margin-bottom:4px;font-weight:700;">WEEK SUMMARY</div>
     <div style="font-family:'DM Sans';font-size:20px;font-weight:700;letter-spacing:0;margin-bottom:16px;">${fmt(weekStart)} – ${fmt(weekEnd)}</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;">
       <div style="background:var(--surface2);border-radius:10px;padding:12px;text-align:center;">
         <div style="font-family:'Bebas Neue';font-size:32px;color:${woAch?'var(--accent)':'var(--text)'};">${totalWorkouts}</div>
-        <div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.5px;">STRENGTH</div>
+        <div style="font-size:10px;color:var(--accent);font-weight:700;letter-spacing:.5px;">STRENGTH</div>
         ${woAch?'<div style="font-size:10px;color:var(--accent);margin-top:2px;">✓ Target met</div>':''}
       </div>
       <div style="background:var(--surface2);border-radius:10px;padding:12px;text-align:center;">
         <div style="font-family:'Bebas Neue';font-size:32px;color:${cardioAch?'#7ec8e3':'var(--text)'};">${totalMins}<span style="font-size:16px;">m</span></div>
-        <div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.5px;">CARDIO</div>
+        <div style="font-size:10px;color:#7ec8e3;font-weight:700;letter-spacing:.5px;">CARDIO</div>
         ${cardioAch?'<div style="font-size:10px;color:#7ec8e3;margin-top:2px;">✓ Target met</div>':''}
       </div>
     </div>
@@ -2536,10 +2552,12 @@ function toggleExTabCard(safeId) {
 }
 
 function renderExTabMiniChart(safeId, exName) {
+  const range = _getMiniRange(safeId);
   // Key by timestamp for correct chronological sorting
   const weightMap = new Map(), volMap = new Map(), volumeMap = new Map();
   const weightLabelMap = new Map(), volLabelMap = new Map();
-  [...workouts].filter(w=>!w._draft).forEach(w => {
+  const filteredWorkouts = filterByRange([...workouts].filter(w=>!w._draft), range);
+  filteredWorkouts.forEach(w => {
     w.exercises.filter(e => e.name === exName).forEach(e => {
       const done = doneSets(e.sets);
       const mx = done.length ? Math.max(0,...done.map(s=>s.kg)) : 0;
@@ -3358,6 +3376,14 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
           <div class="ex-mini-chart-wrap"><canvas id="mini-volprog-canvas-${id}"></canvas></div>
         </div>
         <div id="mini-scrubber-wrap-${id}" class="mini-scrubber-wrap">
+          <div style="display:flex;gap:4px;margin-bottom:8px;" id="mini-range-pills-${id}">
+            ${['week','month','3month','6month','year'].map((r,i)=>{
+              const lbl=['1W','1M','3M','6M','1Y'][i];
+              const defaultRange = localStorage.getItem('ironlog_mini_range') || '3month';
+              const active = r===defaultRange;
+              return `<div onclick="setMiniChartRange('${id}','${r}',this)" style="flex:1;text-align:center;padding:3px 0;border-radius:5px;border:1px solid ${active?'var(--accent)':'var(--border)'};background:${active?'rgba(232,255,71,.12)':'transparent'};color:${active?'var(--accent)':'var(--muted)'};font-family:'DM Sans';font-size:10px;font-weight:700;cursor:pointer;transition:all .15s;">${lbl}</div>`;
+            }).join('')}
+          </div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
             <span id="mini-scrub-date-${id}" class="mini-scrubber-date"></span>
             <span class="mini-scrubber-label" style="margin-bottom:0;">Select Day</span>
@@ -3553,10 +3579,42 @@ function onMiniScrub(cardId, idx) {
   const pctEl = document.getElementById(`mini-scrub-pct-${cardId}`) || document.getElementById(`extab-scrub-pct-${cardId}`);
   if (pctEl) pctEl.innerHTML = '';
 }
+const _miniChartRanges = {}; // cardId -> range
+
+function setMiniChartRange(cardId, range, btn, type) {
+  _miniChartRanges[cardId] = range;
+  localStorage.setItem('ironlog_mini_range', range); // persist for future cards
+  // Update pill styles
+  const pillsWrap = btn.parentElement;
+  if (pillsWrap) {
+    pillsWrap.querySelectorAll('div').forEach(p => {
+      const isActive = p === btn;
+      p.style.borderColor = isActive ? 'var(--accent)' : 'var(--border)';
+      p.style.background = isActive ? 'rgba(232,255,71,.12)' : 'transparent';
+      p.style.color = isActive ? 'var(--accent)' : 'var(--muted)';
+    });
+  }
+  // Re-render the chart
+  const card = document.getElementById(cardId) || document.querySelector(`[id^="${cardId}"]`);
+  const exName = card?.dataset?.exname || document.querySelector(`[data-exname]`)?.dataset?.exname;
+  if (type === 'extab') {
+    const exCard = btn.closest('[data-exname]');
+    if (exCard) renderExTabMiniChart(cardId, exCard.dataset.exname);
+  } else {
+    if (card) renderMiniChart(cardId, card.dataset.exname);
+  }
+}
+
+function _getMiniRange(cardId) {
+  return _miniChartRanges[cardId] || localStorage.getItem('ironlog_mini_range') || '3month';
+}
+
 function renderMiniChart(cardId, exName) {
+  const range = _getMiniRange(cardId);
   const weightMap = new Map(), volMap = new Map(), volumeMap = new Map();
   const weightLabelMap = new Map(), volLabelMap = new Map();
-  [...workouts].filter(w => !w._draft && !w._template).forEach(w => {
+  const filteredWorkouts = filterByRange([...workouts].filter(w => !w._draft && !w._template), range);
+  filteredWorkouts.forEach(w => {
     w.exercises.filter(e => e.name===exName).forEach(e => {
       const done = doneSets(e.sets);
       const mx = done.length ? parseFloat(Math.max(0,...done.map(s=>s.kg)).toFixed(2)) : 0;
@@ -5379,6 +5437,32 @@ function loadWorkout(idx) {
 // ══════════════════════════════════════════════════════
 //  HISTORY TAB
 // ══════════════════════════════════════════════════════
+function deleteDraftWorkout(wi) {
+  const histWorkouts = workouts.filter(w => !w._template);
+  const w = histWorkouts[wi];
+  if (!w || !w._draft) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'delete-confirm-overlay';
+  overlay.innerHTML = `
+    <div class="delete-confirm-sheet">
+      <div class="delete-confirm-title">Delete Draft?</div>
+      <div class="delete-confirm-sub">"${w.name}" will be permanently deleted.</div>
+      <div class="delete-confirm-btns">
+        <button class="btn-del-cancel" id="_ddCancel">Cancel</button>
+        <button class="btn-del-yes" id="_ddConfirm">Delete</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#_ddCancel').onclick = () => overlay.remove();
+  overlay.querySelector('#_ddConfirm').onclick = () => {
+    overlay.remove();
+    const idx = workouts.indexOf(w);
+    if (idx !== -1) workouts.splice(idx, 1);
+    localStorage.setItem('ironlog_workouts', JSON.stringify(workouts));
+    renderHistory();
+  };
+}
+
 function renderHistory() {
   updateTrashCount();
   const el = document.getElementById('historyList');
@@ -5471,6 +5555,7 @@ function renderHistory() {
           <div class="hcard-date">${fmt(w.date)}</div>
         </div>
         <span class="hcard-chevron" id="hchev-${wi}">▾</span>
+        ${w._draft ? `<button onclick="event.stopPropagation();deleteDraftWorkout(${wi})" style="background:transparent;border:none;color:#555;cursor:pointer;padding:4px;display:flex;align-items:center;justify-content:center;margin-left:4px;"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M3 5h14M8 5V3h4v2M5 5l1 11a1 1 0 001 1h6a1 1 0 001-1l1-11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><line x1="8" y1="9" x2="8" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="12" y1="9" x2="12" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>` : ''}
       </div>
       ${prSummary}
       <div class="hcard-muscles">${(()=>{
@@ -6003,6 +6088,7 @@ function exportData() {
     deletedWorkouts: deletedWorkouts,
     cardioLog: cardioLog,
     customExercises: customExercises,
+    plannedWorkouts: plannedWorkouts,
     settings: {
       workoutWeekTarget: workoutWeekTarget,
       cardioWeekTarget: cardioWeekTarget,
@@ -6059,6 +6145,13 @@ function importData(input) {
         const newEx = data.customExercises.filter(e => !existingNames.has(e.name));
         customExercises.push(...newEx);
         localStorage.setItem('ironlog_custom_ex', JSON.stringify(customExercises));
+      }
+      // Merge planned workouts
+      if (Array.isArray(data.plannedWorkouts)) {
+        const existingIds = new Set(plannedWorkouts.map(p => p.planId));
+        const newP = data.plannedWorkouts.filter(p => !existingIds.has(p.planId));
+        plannedWorkouts.push(...newP);
+        savePlanned();
       }
       input.value = '';
       closeDataModal();
@@ -6283,12 +6376,14 @@ function filterByRange(data, range) {
   const startOfWeek = new Date(today); startOfWeek.setDate(today.getDate() - today.getDay());
   const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
   const startOf3Month = new Date(today.getFullYear(), today.getMonth() - 2, 1);
+  const startOf6Month = new Date(today.getFullYear(), today.getMonth() - 5, 1);
   const startOfYear = new Date(today.getFullYear(), 0, 1);
   const cutoff = {
     'day': today.getTime(),
     'week': startOfWeek.getTime(),
     'month': startOfMonth.getTime(),
     '3month': startOf3Month.getTime(),
+    '6month': startOf6Month.getTime(),
     'year': startOfYear.getTime(),
     'max': 0
   }[range] ?? 0;
@@ -6455,6 +6550,28 @@ function startFinishTimer() {
 
 function stopFinishTimer() {
   if (_finishTimerInterval) { clearInterval(_finishTimerInterval); _finishTimerInterval = null; }
+}
+
+function setExTabRange(btn) {
+  exTabRange = btn.dataset.range;
+  document.querySelectorAll('#exTabTimePills .time-pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderExercisesTab();
+}
+
+function setTodayMiniRange(btn) {
+  todayMiniRange = btn.dataset.range;
+  document.querySelectorAll('#todayTimePills .time-pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  // Update all exercise cards with new range and re-render open ones
+  document.querySelectorAll('#exerciseList .exercise-card').forEach(card => {
+    const id = card.id;
+    _miniChartRanges[id] = todayMiniRange;
+    if (card.dataset.open === 'true') {
+      const exName = card.dataset.exname;
+      if (exName) setTimeout(() => renderMiniChart(id, exName), 50);
+    }
+  });
 }
 
 function updateProgressWorkoutCount() {
