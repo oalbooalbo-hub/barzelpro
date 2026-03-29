@@ -2468,7 +2468,7 @@ function openPickerForExTab(muscle) {
 
 function openWeekSummary(weekStartStr) {
   const weekStart = new Date(weekStartStr);
-  const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate()+6); weekEnd.setHours(23,59,59,999);
+  const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate()+6);
   const fmt = d => d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
   
   // Collect workouts and cardio in this week
@@ -3414,10 +3414,8 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
   updateTodayMuscleChips();
   saveSession();
 
-  // History / no-history state — use workout-name-aware lookup
-  const _currentWorkoutName = document.getElementById('workoutName')?.value?.trim() || '';
-  const _lastData = getLastSetsForWorkout(ex.label, _currentWorkoutName);
-  const lastSets = _lastData.sets;
+  // History / no-history state
+  const lastSets = getLastSets(ex.label);
   const hasHistory = lastSets.length > 0;
   card.dataset.defaultSets = JSON.stringify(lastSets);
   const hasAnyHistory = workouts.filter(w=>!w._draft&&!w._template).some(w=>w.exercises.some(e=>e.name===ex.label));
@@ -3483,17 +3481,6 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
         if (lastRow) { lastRow.dataset.ignored = '1'; lastRow.classList.add('ignored'); }
       }
     });
-    // Also restore comment from same-name workout
-    if (_lastData.comment) {
-      const box = body.querySelector(`#comment-${id}`);
-      if (box) {
-        box.value = _lastData.comment;
-        if (/[\u0590-\u05FF]/.test(_lastData.comment)) { box.style.direction='rtl'; box.style.textAlign='right'; }
-        updateNoteBtn(id);
-        const noteArea = document.getElementById(`comment-area-${id}`);
-        if (noteArea) noteArea.classList.add('open');
-      }
-    }
     setTimeout(() => { updateVolProgressBar(id); updateIgnoreButtons(id); }, 50);
   } else {
     addSet(id);
@@ -3628,14 +3615,7 @@ function renderMiniChart(cardId, exName) {
   const range = _getMiniRange(cardId);
   const weightMap = new Map(), volMap = new Map(), volumeMap = new Map();
   const weightLabelMap = new Map(), volLabelMap = new Map();
-  const _currentWName = document.getElementById('workoutName')?.value?.trim() || '';
-  let allW = [...workouts].filter(w => !w._draft && !w._template);
-  // Filter to same-name workouts if name is set and has history
-  if (_currentWName) {
-    const sameNameW = allW.filter(w => w.name === _currentWName);
-    if (sameNameW.some(w => w.exercises.some(e => e.name === exName))) allW = sameNameW;
-  }
-  const filteredWorkouts = filterByRange(allW, range);
+  const filteredWorkouts = filterByRange([...workouts].filter(w => !w._draft && !w._template), range);
   filteredWorkouts.forEach(w => {
     w.exercises.filter(e => e.name===exName).forEach(e => {
       const done = doneSets(e.sets);
@@ -4047,10 +4027,9 @@ function toggleDone(id) {
       return !(parseFloat(inp[0]?.value) || 0) && !(parseInt(inp[1]?.value) || 0);
     });
     if (allEmpty && exName) {
-      const _wName = document.getElementById('workoutName')?.value?.trim() || '';
-      const _lastD = getLastSetsForWorkout(exName, _wName);
-      const lastSets = _lastD.sets;
+      const lastSets = getLastSets(exName);
       if (lastSets.length) {
+        // Remove existing empty rows and re-add with last values
         setRows.forEach(r => r.remove());
         lastSets.forEach(s => addSet(id, s.kg, s.reps));
         setTimeout(() => updateVolProgressBar(id), 50);
@@ -4290,13 +4269,12 @@ function openKgEditor(inputEl, exId) {
   const card = document.getElementById(exId);
   const exName = card ? (card.dataset.exname || '') : '';
   document.getElementById('kgEditorLabel').textContent = exName;
-  // Prev session kg hint — use same workout name context
+  // Prev session kg hint for this exercise
   const exNameKey = card ? (card.dataset.exname || '') : '';
-  const _wNameKg = document.getElementById('workoutName')?.value?.trim() || '';
   let prevKg = null;
-  const _sameNameWKg = workouts.filter(w=>!w._draft&&!w._template&&w.name===_wNameKg).sort((a,b)=>b.date-a.date);
-  const _searchWKg = _sameNameWKg.length ? _sameNameWKg : workouts.filter(w=>!w._draft&&!w._template);
-  for (const w of _searchWKg) {
+  for (const w of workouts) {
+    if (w._draft) continue;
+    if (w._template) continue;
     const prevEx = w.exercises.find(e => e.name === exNameKey || e.label === exNameKey);
     if (prevEx) {
       const done = prevEx.sets.filter(s => s.done && !s.ignored);
@@ -4679,23 +4657,6 @@ function getLastSets(exName) {
   return [];
 }
 
-function getLastSetsForWorkout(exName, workoutName) {
-  // First try to find in a workout with the same name (most recent)
-  const sameNameW = workouts.filter(w=>!w._draft&&!w._template&&w.name===workoutName)
-    .sort((a,b)=>b.date-a.date);
-  for (const w of sameNameW) {
-    const m = w.exercises.find(e=>e.name===exName);
-    if (m?.sets?.length) return { sets: m.sets, comment: m.comment||'' };
-  }
-  // Fallback: any workout containing this exercise
-  for (const w of workouts) {
-    if (w._draft || w._template) continue;
-    const m = w.exercises.find(e=>e.name===exName);
-    if (m?.sets?.length) return { sets: m.sets, comment: m.comment||'' };
-  }
-  return { sets: [], comment: '' };
-}
-
 // ══════════════════════════════════════════════════════
 //  EXERCISE HISTORY MODAL
 // ══════════════════════════════════════════════════════
@@ -4717,11 +4678,8 @@ function openExHistoryByName(exName) {
       <div class="exhist-best-box"><span class="exhist-best-val">${bestW}<span style="font-size:13px;color:var(--muted)">kg</span></span><span class="exhist-best-label" style="color:#fff;">Best Weight</span></div>
       <div class="exhist-best-box"><span class="exhist-best-val">${Math.round(bestV)}<span style="font-size:13px;color:var(--muted)">kg</span></span><span class="exhist-best-label" style="color:#fff;">Best 1RM</span></div>
     </div>`;
-    const _currentWName3 = document.getElementById('workoutName')?.value?.trim() || '';
     const sessHTML = sessions.map(s=>{
       const _sd=s.ex.sets; const vol = _sd.length ? Math.round(Math.max(..._sd.filter(s=>!s.ignored).map(set=>set.kg*(1+set.reps/30)))) : 0;
-      const isSameWorkout = _currentWName3 && s.workout.name === _currentWName3;
-      const nameColor = isSameWorkout ? 'var(--accent)' : 'var(--text)';
       const setsHTML = s.ex.sets.map((set,i)=>`
         <div class="exhist-set-row">
           <span class="exhist-set-num">S${i+1}</span>
@@ -4733,7 +4691,7 @@ function openExHistoryByName(exName) {
         </div>`).join('');
       return `<div class="exhist-session">
         <div class="exhist-session-header">
-          <span class="exhist-session-name" style="color:${nameColor};">${s.workout.name}</span>
+          <span class="exhist-session-name">${s.workout.name}</span>
           <span class="exhist-session-date">${fmt(s.workout.date)} · ${vol}kg 1RM</span>
         </div>
         <div class="exhist-sets">${setsHTML}</div>
@@ -4774,11 +4732,8 @@ function openExHistory(cardId) {
       <div class="exhist-best-box"><span class="exhist-best-val">${Math.round(bestV)}<span style="font-size:13px;color:var(--muted)">kg</span></span><span class="exhist-best-label" style="color:#fff;">Best 1RM</span></div>
     </div>`;
 
-    const _currentWName2 = document.getElementById('workoutName')?.value?.trim() || '';
     const sessHTML = sessions.map(s=>{
       const _sd=s.ex.sets; const vol = _sd.length ? Math.round(Math.max(..._sd.filter(s=>!s.ignored).map(set=>set.kg*(1+set.reps/30)))) : 0;
-      const isSameWorkout = _currentWName2 && s.workout.name === _currentWName2;
-      const nameColor = isSameWorkout ? 'var(--accent)' : 'var(--text)';
       const setsHTML = s.ex.sets.map((set,i)=>`
         <div class="exhist-set-row">
           <span class="exhist-set-num">S${i+1}</span>
@@ -4790,13 +4745,15 @@ function openExHistory(cardId) {
         </div>`).join('');
       return `<div class="exhist-session">
         <div class="exhist-session-header">
-          <span class="exhist-session-name" style="color:${nameColor};">${s.workout.name}</span>
+          <span class="exhist-session-name">${s.workout.name}</span>
           <span class="exhist-session-date">${fmt(s.workout.date)} · ${vol}kg 1RM</span>
         </div>
         <div class="exhist-sets">${setsHTML}</div>
         ${s.ex.comment?`<div class="exhist-comment">${s.ex.comment}</div>`:''}
       </div>`;
     }).join('');
+
+    body.innerHTML = bests + sessHTML;
   }
   document.getElementById('exHistoryOverlay').classList.add('open');
 }
@@ -7773,7 +7730,7 @@ function renderCalendar() {
   // Compute weekly workout counts
   const weeklyWorkouts = new Map();
   const deletedIds = new Set(deletedWorkouts.map(dw=>dw.id));
-  workouts.filter(w=>!w._draft && !w._template && !deletedIds.has(w.id)).forEach(w => {
+  workouts.filter(w=>!w._draft && !deletedIds.has(w.id)).forEach(w => {
     const d = new Date(w.date);
     if (d.getFullYear()===calYear && d.getMonth()===calMonth) {
       const dayOfWeek = d.getDay();
