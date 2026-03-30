@@ -350,7 +350,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .prog-accordion.open .prog-acc-chev{transform:rotate(180deg);border-color:var(--accent);color:var(--accent);}
 .prog-acc-body{padding-top:10px;}
 .prog-acc-close{display:none;}
-.prog-acc-info-btn{display:none;}
+.prog-acc-info-btn{display:none;margin-right:6px;}
 .prog-accordion.open .prog-acc-info-btn{display:inline-flex;}
 .prog-acc-placeholder{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:14px;opacity:0;pointer-events:none;height:49px;}
 @keyframes accSlideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
@@ -3210,6 +3210,10 @@ function applyTodayFilters() {
 
 function filterTodayByMuscle(muscle) {
   _todayMuscleFilter = (muscle === null || _todayMuscleFilter === muscle) ? null : muscle;
+  // Collapse all expanded exercise cards first
+  document.querySelectorAll('#exerciseList .exercise-card[data-open="true"]').forEach(c => {
+    toggleCardCollapse(c.id);
+  });
   applyTodayFilters();
   updateTodayMuscleChips();
 }
