@@ -2654,6 +2654,20 @@ function renderExTabMiniChart(safeId, exName) {
   const _nodataEl=document.getElementById('extab-nodata-'+safeId);
   if(_nodataEl) _nodataEl.style.display=hasRangeData?'none':'block';
 
+  // Collapse/restore all chart wrap heights to prevent empty canvases blocking pill taps
+  ['extab-canvas-','extab-vol-canvas-','extab-volprog-canvas-'].forEach(p=>{
+    const c=document.getElementById(p+safeId);
+    if(c){
+      const wrap=c.closest('.ex-mini-chart-wrap');
+      if(wrap){wrap.style.height=hasRangeData?'':'0';wrap.style.overflow=hasRangeData?'':'hidden';}
+    }
+  });
+  // Also hide chart titles when no data
+  const _body=document.getElementById(safeId+'-body');
+  if(_body){
+    _body.querySelectorAll('.ex-mini-chart-title').forEach(el=>el.style.visibility=hasRangeData?'':'hidden');
+  }
+
   // Destroy old instances
   ['extab-canvas-','extab-vol-canvas-','extab-volprog-canvas-'].forEach(p=>{
     const c=document.getElementById(p+safeId); if(c&&c._chartInst){c._chartInst.destroy();c._chartInst=null;}
@@ -5613,7 +5627,8 @@ function renderHistory() {
     el.innerHTML = `<div class="empty-state"><span style="color:#fff;">No workouts recorded.</span></div>`;
     return;
   }
-  const histWorkouts = workouts.filter(w => !w._template);
+  const _deletedIds = new Set(deletedWorkouts.map(dw => dw.id));
+  const histWorkouts = workouts.filter(w => !w._template && !w._draft && !_deletedIds.has(w.id));
   el.innerHTML = histWorkouts.map((w,wi) => {
     const realWi = workouts.indexOf(w);
     const tsTotal = w.exercises.reduce((a,e)=>a+e.sets.filter(s=>!s.ignored).length,0);
@@ -6226,22 +6241,27 @@ function closeDataModal() {
 
 function exportData() {
   const data = {
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
     workouts: workouts,
     deletedWorkouts: deletedWorkouts,
     cardioLog: cardioLog,
     customExercises: customExercises,
+    plannedWorkouts: plannedWorkouts,
+    customCardioTypes: customCardioTypes,
+    hiddenExercises: JSON.parse(localStorage.getItem('ironlog_hidden_ex') || '[]'),
     settings: {
       workoutWeekTarget: workoutWeekTarget,
       cardioWeekTarget: cardioWeekTarget,
       lastTimerSecs: lastTimerSecs,
+      lastCardioType: localStorage.getItem('ironlog_cardio_type') || '',
+      lastCardioDuration: localStorage.getItem('ironlog_cardio_dur') || '',
+      miniChartRange: miniChartRange,
     }
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  const date = new Date().toISOString().slice(0, 10);
   a.href = url;
   a.download = `Barzel_Pro_my_data.json`;
   document.body.appendChild(a);
@@ -6258,7 +6278,7 @@ function importData(input) {
   reader.onload = function(e) {
     try {
       const data = JSON.parse(e.target.result);
-      if (!data.workouts && !data.cardioLog && !data.customExercises) {
+      if (!data.workouts && !data.cardioLog && !data.customExercises && !data.plannedWorkouts) {
         showToast('Invalid backup file'); return;
       }
       // Merge workouts (avoid duplicates by id)
@@ -6289,9 +6309,43 @@ function importData(input) {
         customExercises.push(...newEx);
         localStorage.setItem('ironlog_custom_ex', JSON.stringify(customExercises));
       }
+      // Merge planned workouts (avoid duplicates by planId)
+      if (Array.isArray(data.plannedWorkouts)) {
+        const existingPlanIds = new Set((plannedWorkouts||[]).map(p => p.planId));
+        const newP = data.plannedWorkouts.filter(p => !existingPlanIds.has(p.planId));
+        plannedWorkouts.push(...newP);
+        savePlanned();
+      }
+      // Merge custom cardio types
+      if (Array.isArray(data.customCardioTypes)) {
+        const existingTypes = new Set(customCardioTypes);
+        data.customCardioTypes.forEach(t => { if (!existingTypes.has(t)) customCardioTypes.push(t); });
+        saveCustomCardioTypes();
+      }
+      // Merge hidden exercises
+      if (Array.isArray(data.hiddenExercises)) {
+        const hidden = JSON.parse(localStorage.getItem('ironlog_hidden_ex') || '[]');
+        const existingHidden = new Set(hidden);
+        data.hiddenExercises.forEach(h => { if (!existingHidden.has(h)) hidden.push(h); });
+        localStorage.setItem('ironlog_hidden_ex', JSON.stringify(hidden));
+      }
+      // Restore settings (only if not already set locally)
+      if (data.settings) {
+        const s = data.settings;
+        if (s.workoutWeekTarget) { workoutWeekTarget = s.workoutWeekTarget; localStorage.setItem('ironlog_workout_target', s.workoutWeekTarget); }
+        if (s.cardioWeekTarget)  { cardioWeekTarget  = s.cardioWeekTarget;  localStorage.setItem('ironlog_cardio_target',  s.cardioWeekTarget); }
+        if (s.lastTimerSecs)     { lastTimerSecs     = s.lastTimerSecs;     localStorage.setItem('ironlog_last_timer',     s.lastTimerSecs); }
+        if (s.lastCardioType)    localStorage.setItem('ironlog_cardio_type', s.lastCardioType);
+        if (s.lastCardioDuration)localStorage.setItem('ironlog_cardio_dur',  s.lastCardioDuration);
+        if (s.miniChartRange)    { miniChartRange    = s.miniChartRange;    localStorage.setItem('ironlog_mini_range',     s.miniChartRange); }
+      }
       input.value = '';
       closeDataModal();
+      // Refresh all views
       renderHistory();
+      renderCalendar();
+      if (typeof switchProgressView === 'function') switchProgressView('history');
+      if (typeof renderStrengthProgress === 'function') renderStrengthProgress();
       showToast('Data imported successfully!');
     } catch(err) {
       showToast('Failed to read file');
