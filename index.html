@@ -1736,6 +1736,7 @@ function renderTodayPlanCard() {
           ? `<button onclick="showWipToast()" style="background:transparent;border:1px solid #34d399;border-radius:7px;color:#34d399;font-size:16px;font-weight:700;padding:7px 14px;cursor:pointer;white-space:nowrap;font-family:'DM Sans';">WIP</button>`
           : `<button onclick="loadOrSwitchWorkouts()" style="background:transparent;border:1px solid rgba(255,140,66,.4);border-radius:7px;color:#ff8c42;font-size:16px;font-weight:700;padding:7px 14px;cursor:pointer;white-space:nowrap;font-family:'DM Sans';">Go</button>`
         }
+        ${(()=>{ const durations=workouts.filter(x=>!x._draft&&!x._template&&x.name===plan.name&&x.durationMins>0).slice(0,3).map(x=>x.durationMins); if(!durations.length) return '<div style="height:4px;"></div>'; const avg=durations.reduce((a,b)=>a+b,0)/durations.length; const rounded=Math.ceil(avg/5)*5; return `<div style="display:flex;align-items:center;justify-content:center;gap:3px;padding:2px 0;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#7ec8e3" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg><span style="font-size:11px;color:#7ec8e3;font-weight:700;">~${rounded}m</span></div>`; })()}
         <table style="border-collapse:collapse;border:1px solid var(--border);border-radius:6px;overflow:hidden;width:100%;">
           <tr><td style="font-size:14px;font-family:'Bebas Neue';color:var(--muted);letter-spacing:.5px;padding:4px 8px;border-bottom:1px solid var(--border);white-space:nowrap;">EX</td><td style="font-family:'Bebas Neue';font-size:14px;color:var(--text);text-align:right;padding:4px 8px;border-bottom:1px solid var(--border);">${totalEx}</td></tr>
           <tr><td style="font-size:14px;font-family:'Bebas Neue';color:var(--muted);letter-spacing:.5px;padding:4px 8px;white-space:nowrap;">SETS</td><td style="font-family:'Bebas Neue';font-size:14px;color:var(--text);text-align:right;padding:4px 8px;">${totalSets}</td></tr>
@@ -3005,7 +3006,8 @@ function renderWorkoutsTab() {
             + '</div>'
             }
           </div>
-            <div style="border-top:1px solid rgba(255,255,255,0.2);margin-top:28px;padding-top:4px;">
+            ${(()=>{ const durations=workouts.filter(x=>!x._draft&&!x._template&&x.name===w.name&&x.durationMins>0).slice(0,3).map(x=>x.durationMins); if(!durations.length) return '<div style="height:4px;"></div>'; const avg=durations.reduce((a,b)=>a+b,0)/durations.length; const rounded=Math.ceil(avg/5)*5; return `<div style="display:flex;align-items:center;justify-content:center;gap:3px;padding:4px 0 0;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#7ec8e3" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg><span style="font-size:11px;color:#7ec8e3;font-weight:700;">~${rounded}m</span></div>`; })()}
+            <div style="border-top:1px solid rgba(255,255,255,0.2);margin-top:4px;padding-top:4px;">
             <table style="border-collapse:collapse;width:100%;">
               <tr>
                 <td style="font-size:14px;font-family:'Bebas Neue';color:var(--muted);letter-spacing:.5px;padding:1px 4px 1px 0;white-space:nowrap;">EX</td>
@@ -5216,6 +5218,8 @@ function confirmSave() {
   const _durMs = _endTime - _startTime;
   const _durMins = Math.round(_durMs / 60000);
   const _durStr = _durMins < 1 ? 'under 1 min' : _durMins === 1 ? '1 min' : `${_durMins} min`;
+  // Attach duration to pending workout so it gets saved
+  if (window._pendingWorkout) window._pendingWorkout.durationMins = _durMins;
   const svgStar = (color, size) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="${color}" xmlns="http://www.w3.org/2000/svg"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>`;
   const cel = document.createElement('div');
   cel.id = 'celebrationOverlay';
@@ -5713,6 +5717,7 @@ function renderHistory() {
           <div class="hcard-name" style="${(()=>{ const cur=(document.getElementById('workoutName')?.value||'').trim(); return (cur && w.name && w.name.trim()===cur) ? 'color:#34d399;' : ''; })()}">${w.name}${w._draft?` <span style="font-family:'DM Sans';font-size:11px;font-weight:700;background:rgba(126,200,227,.12);border:1px solid rgba(126,200,227,.4);color:#7ec8e3;border-radius:4px;padding:1px 6px;vertical-align:middle;letter-spacing:.3px;text-transform:uppercase;">DRAFT</span>`:''}</div>
           <div class="hcard-date">${fmt(w.date)}</div>
         </div>
+        ${w.durationMins > 0 ? `<div style="display:flex;align-items:center;gap:4px;margin-right:8px;flex-shrink:0;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg><span style="font-size:11px;color:var(--muted);font-weight:600;">${w.durationMins < 60 ? w.durationMins + 'm' : Math.floor(w.durationMins/60) + 'h ' + (w.durationMins%60 ? w.durationMins%60+'m' : '')}</span></div>` : ''}
         ${w._draft ? `<button onclick="event.stopPropagation();deleteWorkout(${realWi})" style="background:transparent;border:none;color:#555;cursor:pointer;padding:5px;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:color .2s;flex-shrink:0;" onmouseover="this.style.color='#ff4747'" onmouseout="this.style.color='#555'"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>` : ''}
         <span class="hcard-chevron" id="hchev-${wi}">▾</span>
       </div>
@@ -5730,6 +5735,7 @@ function renderHistory() {
           <div class="hcard-stat"><div class="hcard-stat-val" style="${draftColor}">${exStat}</div><div class="hcard-stat-label">Exercises</div></div>
           <div class="hcard-stat"><div class="hcard-stat-val" style="${draftColor}">${ts}</div><div class="hcard-stat-label">Sets</div></div>
           <div class="hcard-stat"><div class="hcard-stat-val" style="${draftColor}">${bodyPartsCount}</div><div class="hcard-stat-label">Body Parts</div></div>
+          ${w.durationMins > 0 ? `<div class="hcard-stat"><div class="hcard-stat-val" style="${draftColor}">${w.durationMins < 60 ? w.durationMins + 'm' : Math.floor(w.durationMins/60) + 'h' + (w.durationMins%60 ? ' ' + w.durationMins%60 + 'm' : '')}</div><div class="hcard-stat-label">Duration</div></div>` : ''}
         </div>
         ${(()=>{
           const MUSCLE_ORDER = ['Chest','Back','Legs','Shoulders','Arms','Core'];
@@ -6322,13 +6328,8 @@ function importData(input) {
         data.customCardioTypes.forEach(t => { if (!existingTypes.has(t)) customCardioTypes.push(t); });
         saveCustomCardioTypes();
       }
-      // Merge hidden exercises
-      if (Array.isArray(data.hiddenExercises)) {
-        const hidden = JSON.parse(localStorage.getItem('ironlog_hidden_ex') || '[]');
-        const existingHidden = new Set(hidden);
-        data.hiddenExercises.forEach(h => { if (!existingHidden.has(h)) hidden.push(h); });
-        localStorage.setItem('ironlog_hidden_ex', JSON.stringify(hidden));
-      }
+      // Clear hidden exercises list so imported exercises all appear visible
+      localStorage.removeItem('ironlog_hidden_ex');
       // Restore settings (only if not already set locally)
       if (data.settings) {
         const s = data.settings;
@@ -6342,8 +6343,10 @@ function importData(input) {
       input.value = '';
       closeDataModal();
       // Refresh all views
+      window._exTabMuscle = null; // reset so first available muscle is selected
       renderHistory();
       renderCalendar();
+      renderExercisesTab();
       if (typeof switchProgressView === 'function') switchProgressView('history');
       if (typeof renderStrengthProgress === 'function') renderStrengthProgress();
       showToast('Data imported successfully!');
@@ -8282,7 +8285,7 @@ function renderCalDayContent(key, ws, cs) {
             <span style="font-size:10px;color:var(--accent);font-weight:600;letter-spacing:.5px;margin-bottom:2px;">Planned strength</span>
             <div class="load-hist-name" onclick="toggleLoadDetail('${detId}',null)" style="cursor:pointer;">${p.name}</div>
             <div style="flex:1;position:relative;">
-              <div onclick="toggleLoadDetail('${detId}',null)" style="height:55px;margin-top:8px;cursor:pointer;" title="Toggle details"><canvas id="${chartId}" style="pointer-events:none;"></canvas></div>
+              <div onclick="toggleLoadDetail('${detId}',null)" style="height:75px;margin-top:4px;cursor:pointer;" title="Toggle details"><canvas id="${chartId}" style="pointer-events:none;"></canvas></div>
             </div>
             <div id="${xlabId}" style="display:flex;justify-content:space-around;padding:2px 0 0;"></div>
           </div>
@@ -8297,6 +8300,7 @@ function renderCalDayContent(key, ws, cs) {
               ${isWip ? '' : `<div style="display:flex;flex-direction:row;gap:6px;align-items:center;">
               <button onclick="replacePlannedWorkout('${p.planId}','${key}')" style="background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--muted);font-size:12px;font-weight:700;padding:6px 8px;cursor:pointer;width:100%;">Replace</button>
               </div>`}
+            ${(()=>{ const durations=workouts.filter(x=>!x._draft&&!x._template&&x.name===p.name&&x.durationMins>0).slice(0,3).map(x=>x.durationMins); if(!durations.length) return '<div style="height:4px;"></div>'; const avg=durations.reduce((a,b)=>a+b,0)/durations.length; const rounded=Math.ceil(avg/5)*5; return `<div style="display:flex;align-items:center;justify-content:center;gap:3px;padding:2px 0;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#7ec8e3" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg><span style="font-size:11px;color:#7ec8e3;font-weight:700;">~${rounded}m</span></div>`; })()}
             </div>
             <table style="border-collapse:collapse;margin-top:auto;padding-top:4px;width:100%;border:1px solid var(--border);border-radius:6px;overflow:hidden;">
               <tr><td style="font-size:14px;font-family:'Bebas Neue';color:var(--muted);letter-spacing:.5px;padding:4px 8px 4px 8px;white-space:nowrap;border-bottom:1px solid var(--border);">EX</td><td style="font-family:'Bebas Neue';font-size:14px;color:var(--text);text-align:right;padding:4px 8px;border-bottom:1px solid var(--border);">${totalEx}</td></tr>
@@ -8635,8 +8639,9 @@ function renderCalDayWorkouts(ws) {
       <div class="hcard-header" onclick="toggleCalHistCard('cal-hbody-${wi}','cal-hchev-${wi}',${wi})">
         <div style="flex:1;display:flex;align-items:center;">
           <div class="hcard-name" style="color:var(--accent);">${w.name}${w._draft?` <span style="font-family:'DM Sans';font-size:11px;font-weight:700;background:rgba(126,200,227,.12);border:1px solid rgba(126,200,227,.4);color:#7ec8e3;border-radius:4px;padding:1px 6px;vertical-align:middle;letter-spacing:.3px;text-transform:uppercase;">DRAFT</span>`:''}</div>
-          ${completedBadge}
         </div>
+        ${w.durationMins > 0 ? `<div style="display:flex;align-items:center;gap:4px;margin-right:8px;flex-shrink:0;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg><span style="font-size:11px;color:#fff;font-weight:600;">${w.durationMins < 60 ? w.durationMins + 'm' : Math.floor(w.durationMins/60) + 'h' + (w.durationMins%60 ? ' ' + w.durationMins%60 + 'm' : '')}</span></div>` : ''}
+        ${completedBadge}
         <span class="hcard-chevron" id="cal-hchev-${wi}" style="display:none;">▾</span>
       </div>
       ${prSummary}
@@ -8646,6 +8651,7 @@ function renderCalDayWorkouts(ws) {
           <div class="hcard-stat"><div class="hcard-stat-val" style="${draftColor}">${exStat}</div><div class="hcard-stat-label">Exercises</div></div>
           <div class="hcard-stat"><div class="hcard-stat-val" style="${draftColor}">${ts}</div><div class="hcard-stat-label">Sets</div></div>
           <div class="hcard-stat"><div class="hcard-stat-val" style="${draftColor}">${bodyPartsCount}</div><div class="hcard-stat-label">Body Parts</div></div>
+          ${w.durationMins > 0 ? `<div class="hcard-stat"><div class="hcard-stat-val" style="${draftColor}">${w.durationMins < 60 ? w.durationMins + 'm' : Math.floor(w.durationMins/60) + 'h' + (w.durationMins%60 ? ' ' + w.durationMins%60 + 'm' : '')}</div><div class="hcard-stat-label">Duration</div></div>` : ''}
         </div>
         ${(()=>{
           const MUSCLE_ORDER = ['Chest','Back','Legs','Shoulders','Arms','Core'];
@@ -9710,7 +9716,7 @@ window.addEventListener('load', function() {
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:16px 20px;text-align:left;margin-top:16px;">
         <div style="font-family:'DM Sans';font-size:13px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">CONTACT</div>
         <div style="font-size:13px;color:var(--text);font-weight:600;margin-bottom:4px;">Oded Albo</div>
-        <a href="/cdn-cgi/l/email-protection#7c131d101e13131d101e133c1b111d1510521f1311" style="font-size:13px;color:#7ec8e3;text-decoration:none;"><span class="__cf_email__" data-cfemail="1b747a777974747a7779745b7c767a727735787476">[email&#160;protected]</span></a>
+        <a href="mailto:oalbooalbo@gmail.com" style="font-size:13px;color:#7ec8e3;text-decoration:none;">oalbooalbo@gmail.com</a>
       </div>
     </div>
   </div>
