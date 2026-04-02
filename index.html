@@ -883,14 +883,20 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <div id="kgEditorLabel" style="font-family:'Bebas Neue';font-size:28px;letter-spacing:1.5px;color:var(--text);"></div>
       <div style="font-size:11px;color:var(--muted);" id="kgEditorPrev"></div>
     </div>
-    <div style="display:flex;align-items:baseline;justify-content:center;gap:6px;margin-bottom:10px;min-height:56px;">
-      <span id="kgEditorDisplay" style="font-family:'Bebas Neue';font-size:52px;letter-spacing:2px;color:var(--accent);line-height:1;">—</span>
-      <span style="font-family:'Bebas Neue';font-size:22px;color:var(--muted);">kg</span>
+    <div style="position:relative;display:flex;align-items:flex-end;justify-content:center;margin-bottom:10px;min-height:56px;">
+      <div style="display:flex;align-items:baseline;justify-content:center;gap:6px;">
+        <span id="kgEditorDisplay" style="font-family:'Bebas Neue';font-size:52px;letter-spacing:2px;color:var(--accent);line-height:1;">—</span>
+        <span style="font-family:'Bebas Neue';font-size:22px;color:var(--muted);">kg</span>
+      </div>
+      <div style="position:absolute;right:0;bottom:4px;width:40px;">
+        <button onclick="kgPadReset()" style="width:100%;background:transparent;border:1px solid #555;border-radius:8px;color:#aaa;font-family:'DM Sans';font-size:11px;font-weight:700;padding:6px 0;cursor:pointer;letter-spacing:.3px;">RST</button>
+      </div>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:10px;">
-      <button onclick="kgPadAdd(1.25)" style="flex:1;background:transparent;border:1px solid rgba(232,255,71,.3);border-radius:8px;color:var(--accent);font-family:'DM Sans';font-size:13px;font-weight:700;padding:9px 0;cursor:pointer;">+1.25</button>
-      <button onclick="kgPadAdd(2.5)"  style="flex:1;background:transparent;border:1px solid rgba(232,255,71,.3);border-radius:8px;color:var(--accent);font-family:'DM Sans';font-size:13px;font-weight:700;padding:9px 0;cursor:pointer;">+2.5</button>
-      <button onclick="kgPadAdd(5)"    style="flex:1;background:transparent;border:1px solid rgba(232,255,71,.3);border-radius:8px;color:var(--accent);font-family:'DM Sans';font-size:13px;font-weight:700;padding:9px 0;cursor:pointer;">+5</button>
+      <button onclick="kgPadToggleSign()" id="kgSignToggle" style="flex:0 0 auto;width:40px;background:transparent;border:1px solid #333;border-radius:8px;font-family:'DM Sans';font-size:14px;font-weight:700;padding:9px 0;cursor:pointer;text-align:center;"><span style="color:#f87171;">-</span><span style="color:#555;">/</span><span style="color:var(--accent);">+</span></button>
+      <button onclick="kgPadAdd(1.25)" id="kgAddBtn1" style="flex:1;background:transparent;border:1px solid rgba(232,255,71,.3);border-radius:8px;color:var(--accent);font-family:'DM Sans';font-size:13px;font-weight:700;padding:9px 0;cursor:pointer;">+1.25</button>
+      <button onclick="kgPadAdd(2.5)"  id="kgAddBtn2" style="flex:1;background:transparent;border:1px solid rgba(232,255,71,.3);border-radius:8px;color:var(--accent);font-family:'DM Sans';font-size:13px;font-weight:700;padding:9px 0;cursor:pointer;">+2.5</button>
+      <button onclick="kgPadAdd(5)"    id="kgAddBtn3" style="flex:1;background:transparent;border:1px solid rgba(232,255,71,.3);border-radius:8px;color:var(--accent);font-family:'DM Sans';font-size:13px;font-weight:700;padding:9px 0;cursor:pointer;">+5</button>
     </div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px;">
       <button class="kg-pad-btn" onclick="kgPadPress('1')">1</button>
@@ -4417,16 +4423,59 @@ function openKgEditor(inputEl, exId) {
     }
   }
   document.getElementById('kgEditorPrev').innerHTML = prevKg > 0 ? `<span style="color:#ff8c42;font-weight:700;">prev: ${prevKg}kg</span>` : '';
+  window._kgEditorPrevKg = prevKg;
+  // Reset sign mode to + on every open
+  _kgSignMode = 1;
+  const _toggle = document.getElementById('kgSignToggle');
+  if (_toggle) _toggle.innerHTML = '<span style="color:#555;">-/</span><span style="color:var(--accent);">+</span>';
+  ['kgAddBtn1','kgAddBtn2','kgAddBtn3'].forEach((id, i) => {
+    const b = document.getElementById(id);
+    if (!b) return;
+    b.textContent = ['+1.25','+2.5','+5'][i];
+    b.style.color = 'var(--accent)';
+    b.style.borderColor = 'rgba(232,255,71,.3)';
+  });
   document.getElementById('kgEditorOverlay').classList.add('open');
 }
 function closeKgEditor() {
   document.getElementById('kgEditorOverlay').classList.remove('open');
   window._kgEditorInput = null;
 }
+let _kgSignMode = 1; // 1 = plus, -1 = minus
+
+function kgPadReset() {
+  const prev = window._kgEditorPrevKg;
+  if (!prev || prev <= 0) return;
+  const display = document.getElementById('kgEditorDisplay');
+  window._kgEditorVal = String(prev);
+  display.textContent = window._kgEditorVal;
+}
+
+function kgPadToggleSign() {
+  _kgSignMode = _kgSignMode === 1 ? -1 : 1;
+  const toggle = document.getElementById('kgSignToggle');
+  const btn1 = document.getElementById('kgAddBtn1');
+  const btn2 = document.getElementById('kgAddBtn2');
+  const btn3 = document.getElementById('kgAddBtn3');
+  const isMinus = _kgSignMode === -1;
+  if (toggle) toggle.innerHTML = isMinus
+    ? '<span style="color:#f87171;">-</span><span style="color:#555;">/+</span>'
+    : '<span style="color:#555;">-/</span><span style="color:var(--accent);">+</span>';
+  [btn1, btn2, btn3].forEach((b, i) => {
+    if (!b) return;
+    const vals = [1.25, 2.5, 5];
+    const label = isMinus ? `-${vals[i]}` : `+${vals[i]}`;
+    b.textContent = label;
+    b.style.color = isMinus ? '#f87171' : 'var(--accent)';
+    b.style.borderColor = isMinus ? 'rgba(248,113,113,.3)' : 'rgba(232,255,71,.3)';
+  });
+}
+
 function kgPadAdd(amount) {
   const display = document.getElementById('kgEditorDisplay');
   const cur = parseFloat(window._kgEditorVal) || 0;
-  const newVal = parseFloat((cur + amount).toFixed(2));
+  const newVal = parseFloat((cur + _kgSignMode * amount).toFixed(2));
+  if (newVal < 0) return;
   window._kgEditorVal = String(newVal);
   display.textContent = window._kgEditorVal;
 }
