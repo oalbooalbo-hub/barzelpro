@@ -2,40 +2,6 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<!-- PWA -->
-<link rel="manifest" href="manifest.json">
-<!-- meta name="theme-color" content="#0a0a0a" -->
-<meta name="theme-color" content="#000000">
-
-
-<!-- iOS -->
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
-<link rel="apple-touch-icon" href="icon-192.png">
-
-<!-- Performance -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://cdnjs.cloudflare.com">
-
-<title>BARZELPRO</title>
-
-<!-- Fonts -->
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-
-<style>
-/* KEEP YOUR ORIGINAL CSS HERE */
-</style>
-</head>
-
-<body>
-
-<!-- YOUR ORIGINAL HTML CONTENT HERE ODED BEGIN -->
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -917,9 +883,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <div id="kgEditorLabel" style="font-family:'Bebas Neue';font-size:28px;letter-spacing:1.5px;color:var(--text);"></div>
       <div style="font-size:11px;color:var(--muted);" id="kgEditorPrev"></div>
     </div>
-    <div style="display:flex;align-items:baseline;justify-content:center;gap:6px;margin-bottom:20px;min-height:56px;">
+    <div style="display:flex;align-items:baseline;justify-content:center;gap:6px;margin-bottom:10px;min-height:56px;">
       <span id="kgEditorDisplay" style="font-family:'Bebas Neue';font-size:52px;letter-spacing:2px;color:var(--accent);line-height:1;">—</span>
       <span style="font-family:'Bebas Neue';font-size:22px;color:var(--muted);">kg</span>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <button onclick="kgPadAdd(1.25)" style="flex:1;background:transparent;border:1px solid rgba(232,255,71,.3);border-radius:8px;color:var(--accent);font-family:'DM Sans';font-size:13px;font-weight:700;padding:9px 0;cursor:pointer;">+1.25</button>
+      <button onclick="kgPadAdd(2.5)"  style="flex:1;background:transparent;border:1px solid rgba(232,255,71,.3);border-radius:8px;color:var(--accent);font-family:'DM Sans';font-size:13px;font-weight:700;padding:9px 0;cursor:pointer;">+2.5</button>
+      <button onclick="kgPadAdd(5)"    style="flex:1;background:transparent;border:1px solid rgba(232,255,71,.3);border-radius:8px;color:var(--accent);font-family:'DM Sans';font-size:13px;font-weight:700;padding:9px 0;cursor:pointer;">+5</button>
     </div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px;">
       <button class="kg-pad-btn" onclick="kgPadPress('1')">1</button>
@@ -4452,6 +4423,13 @@ function closeKgEditor() {
   document.getElementById('kgEditorOverlay').classList.remove('open');
   window._kgEditorInput = null;
 }
+function kgPadAdd(amount) {
+  const display = document.getElementById('kgEditorDisplay');
+  const cur = parseFloat(window._kgEditorVal) || 0;
+  const newVal = parseFloat((cur + amount).toFixed(2));
+  window._kgEditorVal = String(newVal);
+  display.textContent = window._kgEditorVal;
+}
 function kgPadPress(char) {
   const display = document.getElementById('kgEditorDisplay');
   let val = window._kgEditorVal || '';
@@ -5706,9 +5684,9 @@ function renderHistory() {
     const prSummary = (weightPRCount > 0 || volPRCount > 0 || volumePRCount > 0) ? `
       <div style="display:flex;align-items:center;padding:5px 14px 6px;border-top:1px solid var(--border);gap:0;">
         <span style="font-size:10px;font-weight:700;color:${w._draft?'#666':'var(--muted)'};letter-spacing:.5px;margin-right:8px;flex-shrink:0;">PROGRESS</span>
-        ${weightPRCount>0?'<span onclick="event.stopPropagation();filterHistoryByPR('+realWi+',\'max\')" data-pr="max" class="hcard-pr-chip" style="display:inline-flex;align-items:center;width:72px;gap:3px;font-size:11px;font-weight:700;cursor:pointer;border-radius:5px;padding:2px 4px;color:'+(w._draft?'#666':'#e8ff47')+'"><span style=\"min-width:18px;text-align:right\">'+weightPRCount+'</span>'+svgStar(w._draft?'#666':'#e8ff47')+'<span>MAX</span></span>':''}
-        ${volPRCount>0?'<span onclick="event.stopPropagation();filterHistoryByPR('+realWi+',\'1rm\')" data-pr="1rm" class="hcard-pr-chip" style="display:inline-flex;align-items:center;width:72px;gap:3px;font-size:11px;font-weight:700;cursor:pointer;border-radius:5px;padding:2px 4px;color:'+(w._draft?'#666':'#ff8c42')+'"><span style=\"min-width:18px;text-align:right\">'+volPRCount+'</span>'+svgStar(w._draft?'#666':'#ff8c42')+'<span>1RM</span></span>':''}
-        ${volumePRCount>0?'<span onclick="event.stopPropagation();filterHistoryByPR('+realWi+',\'vol\')" data-pr="vol" class="hcard-pr-chip" style="display:inline-flex;align-items:center;width:64px;gap:3px;font-size:11px;font-weight:700;cursor:pointer;border-radius:5px;padding:2px 4px;color:'+(w._draft?'#666':'#a78bfa')+'"><span style=\"min-width:18px;text-align:right\">'+volumePRCount+'</span>'+svgStar(w._draft?'#666':'#a78bfa')+'<span>VOL</span></span>':''}
+        ${weightPRCount>0?'<span onclick="event.stopPropagation();filterHistoryByPR('+wi+',\'max\')" data-pr="max" class="hcard-pr-chip" style="display:inline-flex;align-items:center;width:72px;gap:3px;font-size:11px;font-weight:700;cursor:pointer;border-radius:5px;padding:2px 4px;color:'+(w._draft?'#666':'#e8ff47')+'"><span style=\"min-width:18px;text-align:right\">'+weightPRCount+'</span>'+svgStar(w._draft?'#666':'#e8ff47')+'<span>MAX</span></span>':''}
+        ${volPRCount>0?'<span onclick="event.stopPropagation();filterHistoryByPR('+wi+',\'1rm\')" data-pr="1rm" class="hcard-pr-chip" style="display:inline-flex;align-items:center;width:72px;gap:3px;font-size:11px;font-weight:700;cursor:pointer;border-radius:5px;padding:2px 4px;color:'+(w._draft?'#666':'#ff8c42')+'"><span style=\"min-width:18px;text-align:right\">'+volPRCount+'</span>'+svgStar(w._draft?'#666':'#ff8c42')+'<span>1RM</span></span>':''}
+        ${volumePRCount>0?'<span onclick="event.stopPropagation();filterHistoryByPR('+wi+',\'vol\')" data-pr="vol" class="hcard-pr-chip" style="display:inline-flex;align-items:center;width:64px;gap:3px;font-size:11px;font-weight:700;cursor:pointer;border-radius:5px;padding:2px 4px;color:'+(w._draft?'#666':'#a78bfa')+'"><span style=\"min-width:18px;text-align:right\">'+volumePRCount+'</span>'+svgStar(w._draft?'#666':'#a78bfa')+'<span>VOL</span></span>':''}
       </div>` : '';
     const draftColor = w._draft ? 'color:#888' : '';
     return `<div class="history-card" id="hcard-${wi}">
@@ -5728,7 +5706,7 @@ function renderHistory() {
           const m = e.muscle || getAllExercises().find(x=>x.name===e.name||x.label===e.name)?.muscle || 'Other';
           counts[m] = (counts[m]||0) + 1;
         });
-        return Object.entries(counts).map(([m,c])=>`<button class="hcard-muscle-chip" data-muscle="${m}" onclick="event.stopPropagation();filterHistoryByMuscle(${realWi},'${m}')">${displayMuscle(m)} <strong style="${w._draft?'color:#666':''}">${c}</strong></button>`).join('');
+        return Object.entries(counts).map(([m,c])=>`<button class="hcard-muscle-chip" data-muscle="${m}" onclick="event.stopPropagation();filterHistoryByMuscle(${wi},'${m}')">${displayMuscle(m)} <strong style="${w._draft?'color:#666':''}">${c}</strong></button>`).join('');
       })()}</div>
       <div class="hcard-body collapsed" id="hbody-${wi}" style="max-height:0;">
         <div class="hcard-stats">
@@ -9716,7 +9694,7 @@ window.addEventListener('load', function() {
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:16px 20px;text-align:left;margin-top:16px;">
         <div style="font-family:'DM Sans';font-size:13px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">CONTACT</div>
         <div style="font-size:13px;color:var(--text);font-weight:600;margin-bottom:4px;">Oded Albo</div>
-        <a href="mailto:oalbooalbo@gmail.com" style="font-size:13px;color:#7ec8e3;text-decoration:none;">oalbooalbo@gmail.com</a>
+        <a href="/cdn-cgi/l/email-protection#7c131d101e13131d101e133c1b111d1510521f1311" style="font-size:13px;color:#7ec8e3;text-decoration:none;"><span class="__cf_email__" data-cfemail="1b747a777974747a7779745b7c767a727735787476">[email&#160;protected]</span></a>
       </div>
     </div>
   </div>
@@ -9784,85 +9762,6 @@ document.getElementById("installBtn").addEventListener("click", async () => {
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("sw.js");
 }
-</script>
-
-</body>
-</html>
-<!-- YOUR ORIGINAL HTML CONTENT HERE ODED END pppppppppppppppppppppppppppppppppppppppppppppp -->
-<button id="installBtn" style="display:none;position:fixed;bottom:20px;right:20px;z-index:999;">
-Install App
-</button>
-
-<!-- DB -->
-<script src="db.js"></script>
-
-<!-- Chart Manager -->
-<script type="module">
-let chartLoaded = false;
-let chartLoadingPromise = null;
-
-function loadChartJS() {
-  if (chartLoaded) return Promise.resolve();
-
-  if (chartLoadingPromise) return chartLoadingPromise;
-
-  chartLoadingPromise = new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js";
-
-    script.onload = () => {
-      chartLoaded = true;
-      resolve();
-    };
-
-    script.onerror = reject;
-
-    document.body.appendChild(script);
-  });
-
-  return chartLoadingPromise;
-}
-
-window.createChart = async function(ctx, config) {
-  await loadChartJS();
-  return new Chart(ctx, config);
-};
-</script>
-
-<!-- Install prompt -->
-<script>
-let deferredPrompt;
-
-window.addEventListener("beforeinstallprompt", e => {
-  e.preventDefault();
-  deferredPrompt = e;
-  document.getElementById("installBtn").style.display = "block";
-});
-
-document.getElementById("installBtn").addEventListener("click", async () => {
-  if (!deferredPrompt) return;
-  deferredPrompt.prompt();
-  await deferredPrompt.userChoice;
-});
-</script>
-
-<!-- Service Worker -->
-<script>
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("service-worker.js");
-}
-</script>
-
-<!-- YOUR ORIGINAL JS (IMPORTANT: replace all new Chart with createChart) -->
-<script>
-/*
-EXAMPLE:
-OLD:
-new Chart(ctx, config);
-
-NEW:
-await createChart(ctx, config);
-*/
 </script>
 
 </body>
