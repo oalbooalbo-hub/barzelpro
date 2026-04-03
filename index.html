@@ -770,6 +770,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       </div>
       <div class="chart-wrap"><canvas id="bestBodyPartChart"></canvas></div>
       <div id="bestBodyPartMetricPills" style="display:flex;gap:6px;padding:8px 0 0;justify-content:center;"></div>
+      <div id="bestBodyPartExList" style="margin-top:8px;max-height:220px;overflow-y:auto;scrollbar-width:none;"></div>
     </div>
   </div>
 
@@ -856,6 +857,36 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
         <div style="width:1px;background:var(--border);margin:0 2px;"></div>
         <div onclick="setVolumeChartMode('abs')" id="volChartModeAbs" style="flex:1;text-align:center;padding:5px 8px;border-radius:6px;border:1px solid var(--accent);background:rgba(232,255,71,.15);color:var(--accent);font-family:'DM Sans';font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;">#</div>
         <div onclick="setVolumeChartMode('pct')" id="volChartModePct" style="flex:1;text-align:center;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'DM Sans';font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;">%</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WORK CAPACITY -->
+  <div class="chart-card prog-accordion" id="acc-capacity">
+    <div class="prog-acc-header" onclick="toggleProgressCard('acc-capacity')">
+      <span class="chart-title" style="margin-bottom:0;">WORK CAPACITY</span>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span class="prog-acc-chev"><svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" width="12" height="12"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      </div>
+    </div>
+    <div class="prog-acc-body" style="display:none;">
+      <div id="cap-big-display" style="text-align:center;padding:4px 0 4px;">
+        <span id="cap-big-val" style="font-family:'Bebas Neue';font-size:22px;color:#e8ff47;letter-spacing:1px;"></span>
+        <span id="cap-big-pct" style="font-family:'DM Sans';font-size:14px;font-weight:700;margin-left:8px;"></span>
+      </div>
+      <div class="chart-wrap" style="margin-bottom:0;"><canvas id="capacityChart"></canvas></div>
+      <div style="display:flex;gap:6px;padding:8px 0 10px;justify-content:center;">
+        <div onclick="setCapacityMetric('vol')" id="capMetricVol" style="flex:1;text-align:center;padding:5px 8px;border-radius:6px;border:1px solid var(--accent);background:rgba(232,255,71,.15);color:var(--accent);font-family:'DM Sans';font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;">VOL</div>
+        <div onclick="setCapacityMetric('time')" id="capMetricTime" style="flex:1;text-align:center;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'DM Sans';font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;">Time</div>
+        <div onclick="setCapacityMetric('ratio')" id="capMetricRatio" style="flex:1;text-align:center;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'DM Sans';font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;">VOL/Time</div>
+      </div>
+      <div id="capacityWorkoutList" style="max-height:180px;overflow-y:auto;border-top:1px solid var(--border);padding-top:4px;scrollbar-width:none;"></div>
+      <div id="cap-scrubber-wrap" style="display:none;padding:8px 0 2px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <span id="cap-scrub-date" style="font-size:12px;font-weight:700;color:var(--text);"></span>
+          <span style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.8px;">SELECT DAY</span>
+        </div>
+        <input type="range" id="capScrubber" min="0" value="0" step="1" style="width:100%;accent-color:#555;cursor:pointer;height:3px;" oninput="onCapScrub(this.value)">
       </div>
     </div>
   </div>
@@ -3234,7 +3265,7 @@ function updateTodayMuscleChips() {
   wrap.style.display = 'flex';
   const MUSCLE_ABBR = { Chest:'CH', Back:'BA', Legs:'LE', Shoulders:'SH', Arms:'AR', Core:'AB' };
   const allActive = !_todayMuscleFilter;
-  const anyDone = !!(document.querySelector('#exerciseList .set-done-btn.done') || document.querySelector('#exerciseList .exercise-card.completed'));
+  const anyDone = true;
 
   // Fixed chips — Hide ✓ only shown when not in new workout creation flow
   const showHideChip = !window._isNewWorkoutFlow;
@@ -4005,36 +4036,57 @@ function toggleCardCollapse(id) {
   const chevBtn = document.getElementById(`chev-${id}`);
   const isOpen = card.dataset.open === 'true';
   if (isOpen) {
-    // Save nothing - just restore scroll to where the card is
+    // Restore all hidden cards with smooth expand
+    document.querySelectorAll('#exerciseList .exercise-card').forEach(c => {
+      if (c.id !== id && c.style.height === '0px') {
+        c.style.transition = 'height .4s ease, opacity .4s ease, margin-bottom .4s ease';
+        c.style.height = c.scrollHeight + 'px';
+        c.style.opacity = '1';
+        c.style.marginBottom = '';
+        setTimeout(() => {
+          c.style.transition = '';
+          c.style.height = '';
+          c.style.overflow = '';
+          c.style.opacity = '';
+          c.style.marginBottom = '';
+        }, 420);
+      }
+    });
     const savedY = parseInt(card.dataset.scrollY || '0');
     body.style.maxHeight = '0'; body.style.opacity = '0'; body.classList.add('collapsed'); body.classList.remove('open');
     card.dataset.open = 'false';
     chevBtn?.classList.remove('open');
     const impSec = document.getElementById(`imp-section-${id}`);
     if (impSec) impSec.style.display = 'none';
-    // Blink chevron red if timer is running
     if (_timers[id]?.running) chevBtn?.classList.add('timer-active');
     if (card.classList.contains('completed'))
       document.getElementById(`complete-bar-${id}`).style.display='flex';
     setFocusMode(null);
-    // Restore scroll so card is visible
-    setTimeout(() => {
-      window.scrollTo({ top: savedY, behavior: 'smooth' });
-    }, 50);
+    setTimeout(() => { window.scrollTo({ top: savedY, behavior: 'smooth' }); }, 50);
   } else {
     // Save current scroll position before expanding
     card.dataset.scrollY = window.scrollY;
-    // Collapse any other open card first
-    document.querySelectorAll('#exerciseList .exercise-card[data-open="true"]').forEach(c => {
+    // Smoothly collapse other cards so selected one slides up naturally
+    document.querySelectorAll('#exerciseList .exercise-card').forEach(c => {
       if (c.id !== id) {
-        const b = document.getElementById(`body-${c.id}`);
-        const ch = document.getElementById(`chev-${c.id}`);
-        b.style.maxHeight = '0'; b.style.opacity = '0'; b.classList.add('collapsed'); b.classList.remove('open');
-        c.dataset.open = 'false';
-        ch?.classList.remove('open');
-        if (_timers[c.id]?.running) ch?.classList.add('timer-active');
-        if (c.classList.contains('completed'))
-          document.getElementById(`complete-bar-${c.id}`).style.display='flex';
+        const currentH = c.offsetHeight;
+        c.style.overflow = 'hidden';
+        c.style.height = currentH + 'px';
+        c.style.transition = 'height .7s cubic-bezier(.4,0,.2,1), opacity .5s ease, margin-bottom .7s cubic-bezier(.4,0,.2,1)';
+        requestAnimationFrame(() => {
+          c.style.height = '0';
+          c.style.marginBottom = '0';
+          c.style.opacity = '0';
+        });
+        if (c.dataset.open === 'true') {
+          const b = document.getElementById(`body-${c.id}`);
+          const ch = document.getElementById(`chev-${c.id}`);
+          if (b) { b.style.transition = 'none'; b.style.maxHeight = '0'; b.style.opacity = '0'; b.classList.add('collapsed'); b.classList.remove('open'); requestAnimationFrame(() => { b.style.transition = ''; }); }
+          c.dataset.open = 'false';
+          ch?.classList.remove('open');
+          if (_timers[c.id]?.running) ch?.classList.add('timer-active');
+          if (c.classList.contains('completed')) { const cb = document.getElementById(`complete-bar-${c.id}`); if(cb) cb.style.display='flex'; }
+        }
       }
     });
     body.style.maxHeight = '4000px'; body.style.opacity = '1'; body.classList.remove('collapsed'); body.classList.add('open');
@@ -4077,10 +4129,20 @@ function toggleCardCollapse(id) {
     if (miniInner5) miniInner5.style.display = 'none';
     if (miniBtn5) miniBtn5.textContent = '▼ Graph';
     setTimeout(() => refreshCardMiniCharts(id), 80);
-    // Smooth scroll card into view below sticky name bar after animation
+    // Card is now the only visible one — scroll so it sits right below the pills
     setTimeout(() => {
-      card.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 350);
+      const chipsWrap = document.getElementById('todayMuscleChipsWrap');
+      const actionsRow = document.querySelector('.today-actions');
+      let stickyBottom = 0;
+      [actionsRow, chipsWrap].forEach(el => {
+        if (el && getComputedStyle(el).display !== 'none') {
+          stickyBottom = Math.max(stickyBottom, el.getBoundingClientRect().bottom);
+        }
+      });
+      if (!stickyBottom) stickyBottom = 120;
+      const targetScrollY = window.scrollY + card.getBoundingClientRect().top - stickyBottom - 2;
+      window.scrollTo({ top: targetScrollY, behavior: 'smooth' });
+    }, 720);
   }
 }
 
@@ -4119,6 +4181,7 @@ function markSetDone(btn, exId) {
   }
   if (_todayHideDone) applyTodayFilters();
   checkFinishReady();
+  updateTodayMuscleChips();
   refreshCardMiniCharts(exId);
   updateMarkDoneBtn(exId);
   updateVolProgressBar(exId);
@@ -4202,35 +4265,38 @@ function toggleDone(id) {
     // Build improvement badges
     let hasWeightImp = false, hasVolImp = false, hasVolumeImp = false, weightDiff = 0, volDiff = 0, volumeDiff = 0;
     if (exName) {
-      // Find last completed (non-draft) session for this exercise
-      for (const w of workouts) {
-        if (w._draft) continue;
-        if (w._template) continue;
+      // Find best previous (non-draft, non-template) session for this exercise
+      let prevMx = 0, prevVol = 0, prevVolKgReps = 0;
+      const curWorkoutName = (document.getElementById('workoutName')?.value || '').trim();
+      // Current session done sets
+      const curDone = [];
+      card.querySelectorAll('.set-row').forEach(row=>{
+        if(row.dataset.ignored==='1') return;
+        const inp=row.querySelectorAll('.set-input');
+        const rsD=row.querySelector('.reps-spin-val'); const rpD=rsD?(parseInt(rsD.dataset.reps)||0):(parseInt(inp[1]?.value)||0);
+        curDone.push({kg:parseFloat(inp[0]?.value)||0, reps:rpD, done:!!row.querySelector('.set-done-btn.done')});
+      });
+      const activeSets = curDone.filter(s=>s.done).length > 0 ? curDone.filter(s=>s.done) : curDone;
+      const curMx = activeSets.length ? Math.max(0,...activeSets.map(s=>s.kg)) : 0;
+      const curVolVal = activeSets.length ? Math.max(...activeSets.map(s=>s.kg*(1+s.reps/30))) : 0;
+      const curVolKgReps = Math.round(activeSets.reduce((a,s)=>a+s.kg*s.reps,0));
+      // Build best prev from ALL saved workouts (same name preferred, then any)
+      const _effSets = (sets) => { const ds=sets.filter(s=>s.done&&!s.ignored); return ds.length ? ds : sets.filter(s=>!s.ignored); };
+      const savedW = workouts.filter(w=>!w._draft&&!w._template);
+      savedW.forEach(w => {
         const prevEx = w.exercises.find(e=>e.name===exName);
-        if (prevEx) {
-          const prevDoneRaw = doneSets(prevEx.sets);
-          const prevDone = prevDoneRaw.length > 0 ? prevDoneRaw : prevEx.sets.filter(s=>!s.ignored);
-          const prevMx = prevDone.length ? Math.max(0,...prevDone.map(s=>s.kg)) : 0;
-          const prevVol = prevDone.length ? Math.max(...prevDone.map(s=>s.kg*(1+s.reps/30))) : 0;
-          const prevVolKgReps = prevDone.reduce((a,s)=>a+s.kg*s.reps,0);
-          // Current session done sets
-          const curDone = [];
-          card.querySelectorAll('.set-row').forEach(row=>{
-            if(row.dataset.ignored==='1') return;
-            const inp=row.querySelectorAll('.set-input');
-            const rsD=row.querySelector('.reps-spin-val'); const rpD=rsD?(parseInt(rsD.dataset.reps)||0):(parseInt(inp[1]?.value)||0);
-            curDone.push({kg:parseFloat(inp[0]?.value)||0, reps:rpD, done:!!row.querySelector('.set-done-btn.done')});
-          });
-          const activeSets = curDone.filter(s=>s.done).length > 0 ? curDone.filter(s=>s.done) : curDone;
-          const curMx = activeSets.length ? Math.max(0,...activeSets.map(s=>s.kg)) : 0;
-          const curVol = activeSets.length ? Math.max(...activeSets.map(s=>s.kg*(1+s.reps/30))) : 0;
-          const curVolKgReps = Math.round(activeSets.reduce((a,s)=>a+s.kg*s.reps,0));
-          if (curMx > prevMx && prevMx > 0) { weightDiff = curMx - prevMx; hasWeightImp = true; }
-          if (curVol > prevVol && prevVol > 0) { volDiff = curVol - prevVol; hasVolImp = true; }
-          if (curVolKgReps > prevVolKgReps && prevVolKgReps > 0) { volumeDiff = curVolKgReps - prevVolKgReps; hasVolumeImp = true; }
-          break;
-        }
-      }
+        if (!prevEx) return;
+        const pd = _effSets(prevEx.sets);
+        const mx = pd.length ? Math.max(0,...pd.map(s=>s.kg)) : 0;
+        const vl = pd.length ? Math.max(...pd.map(s=>s.kg*(1+s.reps/30))) : 0;
+        const vr = pd.reduce((a,s)=>a+s.kg*s.reps,0);
+        if (mx > prevMx) prevMx = mx;
+        if (vl > prevVol) prevVol = vl;
+        if (vr > prevVolKgReps) prevVolKgReps = vr;
+      });
+      if (curMx > prevMx && prevMx > 0) { weightDiff = curMx - prevMx; hasWeightImp = true; }
+      if (curVolVal > prevVol && prevVol > 0) { volDiff = curVolVal - prevVol; hasVolImp = true; }
+      if (curVolKgReps > prevVolKgReps && prevVolKgReps > 0) { volumeDiff = curVolKgReps - prevVolKgReps; hasVolumeImp = true; }
     }
     // Show improvement: stars in minimized bar (fixed positions), diff section in expanded
     const svgStarImp = (color, size=14) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="${color}" xmlns="http://www.w3.org/2000/svg"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>`;
@@ -5158,7 +5224,8 @@ function saveWorkoutToList() {
             <button onclick="document.getElementById('postSaveOptions').remove();document.getElementById('_saveBlackScreen')?.remove();document.querySelectorAll('.tab').forEach(t=>{t.style.opacity='';t.style.pointerEvents=''});const _db=document.getElementById('dateBadge');if(_db){_db.style.opacity='';_db.style.cursor='';}actionsRowRestore();loadWorkout(0);switchTab('log');" style="width:100%;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:16px;font-weight:700;padding:16px;cursor:pointer;text-align:center;">Start the workout now</button>
             <button onclick="${exitOnclick}" style="width:100%;background:transparent;border:1px solid var(--border);border-radius:10px;color:#fff;font-family:'DM Sans';font-size:16px;font-weight:700;padding:16px;cursor:pointer;text-align:center;">Exit</button>
           `;
-        actionsRow.parentNode.insertBefore(optDiv, actionsRow);
+        if (actionsRow.parentNode) actionsRow.parentNode.insertBefore(optDiv, actionsRow);
+        else document.getElementById('today-workout-area')?.prepend(optDiv);
         document.querySelectorAll('.tab').forEach((t, i) => {
           const tabName = ['log','workouts','exercises','progress'][i];
           const isActive = _wasFromWorkouts ? tabName === 'workouts' : false;
@@ -5675,25 +5742,27 @@ function renderHistory() {
     const exRows = w.exercises.map((e,ei)=>{
       const chips = e.sets.filter(s=>!s.ignored).map(s=>`<span class="hcard-set-chip${s.done?' done':''}">${s.kg}×${s.reps}</span>`).join('<span style="color:#333;margin:0 2px;">·</span>');
       const muscle = e.muscle || getAllExercises().find(x=>x.name===e.name||x.label===e.name)?.muscle || '';
-      // Compare against all OTHER workouts for this exercise
-      const maxKg = Math.max(0,...e.sets.filter(s=>s.done&&!s.ignored).map(s=>s.kg));
-      const vol = e.sets.filter(s=>s.done&&!s.ignored).reduce((a,s)=>Math.max(a,s.kg*(1+s.reps/30)),0);
-      let prevMaxKg=0, prevVol=0;
-      histWorkouts.filter((pw,i)=>i!==wi&&pw.date<w.date).forEach(pw=>{
+      // Always recalculate from data (source of truth)
+      const _eff = (sets) => { const ds=sets.filter(s=>s.done&&!s.ignored); return ds.length ? ds : sets.filter(s=>!s.ignored); };
+      const _eSets = _eff(e.sets);
+      const maxKg = Math.max(0,..._eSets.map(s=>s.kg));
+      const vol = _eSets.reduce((a,s)=>Math.max(a,s.kg*(1+s.reps/30)),0);
+      const rawVol = _eSets.reduce((a,s)=>a+s.kg*s.reps,0);
+      let prevMaxKg=0, prevVol=0, prevRawVol=0;
+      histWorkouts.filter(pw => pw !== w && pw.date < w.date).forEach(pw=>{
         pw.exercises.filter(pe=>pe.name===e.name).forEach(pe=>{
-          const dSets=pe.sets.filter(s=>s.done&&!s.ignored);
-          const mx=Math.max(0,...dSets.map(s=>s.kg));
-          const v=dSets.length?Math.max(...dSets.map(s=>s.kg*(1+s.reps/30))):0;
+          const pSets=_eff(pe.sets);
+          const mx=Math.max(0,...pSets.map(s=>s.kg));
+          const v=pSets.length?Math.max(...pSets.map(s=>s.kg*(1+s.reps/30))):0;
+          const rv=pSets.reduce((a,s)=>a+s.kg*s.reps,0);
           if(mx>prevMaxKg) prevMaxKg=mx;
           if(v>prevVol) prevVol=v;
+          if(rv>prevRawVol) prevRawVol=rv;
         });
       });
-      const isFirstTime = prevMaxKg===0 && prevVol===0;
+      const isFirstTime = prevMaxKg===0 && prevVol===0 && prevRawVol===0;
       const weightPR = maxKg>0 && !isFirstTime && maxKg>prevMaxKg;
       const volPR = vol>0 && !isFirstTime && vol>prevVol;
-      const rawVol = e.sets.filter(s=>s.done&&!s.ignored).reduce((a,s)=>a+s.kg*s.reps,0);
-      let prevRawVol=0;
-      histWorkouts.filter((pw,i)=>i!==wi&&pw.date<w.date).forEach(pw=>{ pw.exercises.filter(pe=>pe.name===e.name).forEach(pe=>{ const rv=pe.sets.filter(s=>s.done&&!s.ignored).reduce((a,s)=>a+s.kg*s.reps,0); if(rv>prevRawVol) prevRawVol=rv; }); });
       const volumePR = rawVol>0 && !isFirstTime && rawVol>prevRawVol;
       if(weightPR) weightPRCount++;
       if(volPR) volPRCount++;
@@ -5744,7 +5813,7 @@ function renderHistory() {
           <div class="hcard-name" style="${(()=>{ const cur=(document.getElementById('workoutName')?.value||'').trim(); return (cur && w.name && w.name.trim()===cur) ? 'color:#34d399;' : ''; })()}">${w.name}${w._draft?` <span style="font-family:'DM Sans';font-size:11px;font-weight:700;background:rgba(126,200,227,.12);border:1px solid rgba(126,200,227,.4);color:#7ec8e3;border-radius:4px;padding:1px 6px;vertical-align:middle;letter-spacing:.3px;text-transform:uppercase;">DRAFT</span>`:''}</div>
           <div class="hcard-date">${fmt(w.date)}</div>
         </div>
-        ${w.durationMins > 0 ? `<div style="display:flex;align-items:center;gap:4px;margin-right:8px;flex-shrink:0;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg><span style="font-size:11px;color:var(--muted);font-weight:600;">${w.durationMins < 60 ? w.durationMins + 'm' : Math.floor(w.durationMins/60) + 'h ' + (w.durationMins%60 ? w.durationMins%60+'m' : '')}</span></div>` : ''}
+        ${w.durationMins > 0 ? `<div style="display:flex;align-items:center;gap:4px;margin-right:8px;flex-shrink:0;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7ec8e3" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg><span style="font-size:11px;color:#7ec8e3;font-weight:600;">${w.durationMins}m</span></div>` : ''}
         ${w._draft ? `<button onclick="event.stopPropagation();deleteWorkout(${realWi})" style="background:transparent;border:none;color:#555;cursor:pointer;padding:5px;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:color .2s;flex-shrink:0;" onmouseover="this.style.color='#ff4747'" onmouseout="this.style.color='#555'"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>` : ''}
         <span class="hcard-chevron" id="hchev-${wi}">▾</span>
       </div>
@@ -5762,7 +5831,7 @@ function renderHistory() {
           <div class="hcard-stat"><div class="hcard-stat-val" style="${draftColor}">${exStat}</div><div class="hcard-stat-label">Exercises</div></div>
           <div class="hcard-stat"><div class="hcard-stat-val" style="${draftColor}">${ts}</div><div class="hcard-stat-label">Sets</div></div>
           <div class="hcard-stat"><div class="hcard-stat-val" style="${draftColor}">${bodyPartsCount}</div><div class="hcard-stat-label">Body Parts</div></div>
-          ${w.durationMins > 0 ? `<div class="hcard-stat"><div class="hcard-stat-val" style="${draftColor}">${w.durationMins < 60 ? w.durationMins + 'm' : Math.floor(w.durationMins/60) + 'h' + (w.durationMins%60 ? ' ' + w.durationMins%60 + 'm' : '')}</div><div class="hcard-stat-label">Duration</div></div>` : ''}
+          ${w.durationMins > 0 ? `<div class="hcard-stat"><div class="hcard-stat-val" style="${draftColor}">${w.durationMins}m</div><div class="hcard-stat-label">Duration</div></div>` : ''}
         </div>
         ${(()=>{
           const MUSCLE_ORDER = ['Chest','Back','Legs','Shoulders','Arms','Core'];
@@ -5803,12 +5872,13 @@ function toggleHcardExHistory(id, exName) {
     return;
   }
   // Build history table for this exercise across all workouts
+  const _effSets = (sets) => { const ds=sets.filter(s=>s.done&&!s.ignored); return ds.length ? ds : sets.filter(s=>!s.ignored); };
   const sessions = [];
   workouts.filter(w => !w._draft && !w._template).forEach(w => {
     w.exercises.filter(e => e.name === exName).forEach(e => {
-      const done = e.sets.filter(s => s.done && !s.ignored);
-      if (!done.length) return;
-      sessions.push({ date: w.date, sets: done });
+      const sets = _effSets(e.sets);
+      if (!sets.length) return;
+      sessions.push({ date: w.date, sets });
     });
   });
   sessions.sort((a, b) => b.date - a.date);
@@ -6781,7 +6851,7 @@ function updateProgressWorkoutCount() {
 }
 
 function toggleProgressCard(id) {
-  const cards = ['acc-best','acc-exercise','acc-volume','acc-workouts'];
+  const cards = ['acc-best','acc-exercise','acc-volume','acc-workouts','acc-capacity'];
   const activeSlot = document.getElementById('acc-active-slot');
   const isOpen = document.getElementById(id).classList.contains('open');
   const openId = cards.find(cid => document.getElementById(cid)?.classList.contains('open'));
@@ -6833,6 +6903,7 @@ function toggleProgressCard(id) {
       if (id === 'acc-workouts') setTimeout(renderVolumeChart, 50);
       if (id === 'acc-best') setTimeout(renderBestBodyPartChart, 50);
       if (id === 'acc-volume') setTimeout(renderVolumeProgressChart, 50);
+      if (id === 'acc-capacity') setTimeout(initCapacityCard, 50);
       if (id === 'acc-exercise') setTimeout(() => {
         if (!exProgressExercise) {
           const exList = _getExercisesForMuscle(exProgressMuscle);
@@ -6857,12 +6928,13 @@ function toggleProgressCard(id) {
 
 function renderProgress() {
   updateProgressWorkoutCount();
-  const cards = ['acc-best','acc-exercise','acc-volume','acc-workouts'];
+  const cards = ['acc-best','acc-exercise','acc-volume','acc-workouts','acc-capacity'];
   const openId = cards.find(id => document.getElementById(id)?.classList.contains('open'));
   if (openId === 'acc-workouts') renderVolumeChart();
   if (openId === 'acc-best') renderBestBodyPartChart();
   if (openId === 'acc-volume') renderVolumeProgressChart();
   if (openId === 'acc-exercise') renderExProgressChart();
+  if (openId === 'acc-capacity') { renderCapacityWorkoutList(); renderCapacityChart(); }
   setTimeout(syncProgressChartDates, 50);
 }
 
@@ -6886,6 +6958,155 @@ function setVolumeChartMode(mode) {
   if (pctBtn) { pctBtn.style.borderColor = mode==='pct' ? 'var(--accent)' : 'var(--border)'; pctBtn.style.background = mode==='pct' ? 'rgba(232,255,71,.15)' : 'transparent'; pctBtn.style.color = mode==='pct' ? 'var(--accent)' : 'var(--muted)'; }
   renderVolumeChart();
 }
+
+// ── WORK CAPACITY ─────────────────────────────────────
+let _capMetric = 'vol';
+let _capSelectedNames = new Set();
+let _capChartInst = null;
+let _capPts = [];
+
+function setCapacityMetric(metric) {
+  _capMetric = metric;
+  const metricColors = { vol: 'var(--accent)', time: '#7ec8e3', ratio: '#a78bfa' };
+  const metricIds = { vol: 'capMetricVol', time: 'capMetricTime', ratio: 'capMetricRatio' };
+  Object.keys(metricIds).forEach(m => {
+    const el = document.getElementById(metricIds[m]);
+    if (!el) return;
+    const active = m === metric;
+    const col = metricColors[m];
+    el.style.borderColor = active ? col : 'var(--border)';
+    el.style.background = active ? col + '22' : 'transparent';
+    el.style.color = active ? col : 'var(--muted)';
+  });
+  renderCapacityChart();
+}
+
+function renderCapacityWorkoutList() {
+  const el = document.getElementById('capacityWorkoutList');
+  if (!el) return;
+  const all = workouts.filter(w => !w._draft && !w._template && w.name);
+  // Count within current global range
+  const rangeFiltered = filterByRange(all, globalRange);
+  const countMap = {};
+  rangeFiltered.forEach(w => { const n = w.name.trim(); countMap[n] = (countMap[n]||0) + 1; });
+  // All-time unique names sorted by in-range count high first
+  const allNames = [...new Set(all.map(w => w.name.trim()))];
+  const names = allNames.sort((a,b) => (countMap[b]||0) - (countMap[a]||0));
+  if (!names.length) { el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:12px;padding:8px 0;">No workouts recorded yet</div>'; return; }
+  if (_capSelectedNames.size === 0) names.forEach(n => _capSelectedNames.add(n));
+  el.innerHTML = names.map(name => {
+    const checked = _capSelectedNames.has(name);
+    const count = countMap[name] || 0;
+    const safeName = name.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 2px;border-bottom:1px solid var(--border);">
+      <span style="font-family:'DM Sans';font-size:13px;font-weight:600;color:${count>0?'var(--text)':'var(--muted)'};flex:1;">${name}</span>
+      <span style="font-family:'Bebas Neue';font-size:13px;color:${count>0?'#34d399':'#333'};margin-right:10px;">×${count}</span>
+      <label class="clr-checkbox"><input type="checkbox" ${checked?'checked':''} onchange="toggleCapacityName('${safeName}',this.checked)"><span class="clr-cb-box"><svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></label>
+    </div>`;
+  }).join('');
+}
+
+
+function toggleCapacityName(name, checked) {
+  if (checked) _capSelectedNames.add(name);
+  else _capSelectedNames.delete(name);
+  renderCapacityChart();
+}
+
+function renderCapacityChart() {
+  const canvas = document.getElementById('capacityChart');
+  if (!canvas) return;
+  if (_capChartInst) { _capChartInst.destroy(); _capChartInst = null; }
+  const color = _capMetric === 'time' ? '#7ec8e3' : _capMetric === 'ratio' ? '#a78bfa' : '#e8ff47';
+  const yLabel = _capMetric === 'vol' ? 'kg' : _capMetric === 'time' ? 'min' : 'kg/min';
+  const filtered = workouts.filter(w => !w._draft && !w._template && w.name && _capSelectedNames.has(w.name.trim()));
+  const rangeFiltered = filterByRange(filtered, globalRange);
+  const sorted = [...rangeFiltered].sort((a,b) => a.date - b.date);
+  _capPts = sorted.map(w => {
+    const vol = w.exercises.reduce((a,e) => a + e.sets.filter(s=>s.done&&!s.ignored).reduce((b,s) => b+s.kg*s.reps, 0), 0);
+    const mins = w.durationMins || 0;
+    let val = 0;
+    if (_capMetric === 'vol') val = Math.round(vol);
+    else if (_capMetric === 'time') val = mins;
+    else val = mins > 0 ? parseFloat((vol/mins).toFixed(1)) : 0;
+    return { label: fmtShort(w.date), val, name: w.name };
+  }).filter(p => p.val > 0);
+
+  const bigVal = document.getElementById('cap-big-val');
+  const bigPct = document.getElementById('cap-big-pct');
+  const scrubWrap = document.getElementById('cap-scrubber-wrap');
+  const scrub = document.getElementById('capScrubber');
+  if (!_capPts.length) {
+    canvas.style.display = 'none';
+    if (bigVal) bigVal.textContent = '';
+    if (bigPct) bigPct.textContent = '';
+    if (scrubWrap) scrubWrap.style.display = 'none';
+    return;
+  }
+  canvas.style.display = '';
+  _capChartInst = new Chart(canvas.getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: _capPts.map(p => p.label),
+      datasets: [{
+        data: _capPts.map(p => p.val),
+        borderColor: color, backgroundColor: color + '18',
+        pointBackgroundColor: _capPts.map((_,i) => i===_capPts.length-1 ? '#fff' : color),
+        pointRadius: _capPts.map((_,i) => i===_capPts.length-1 ? 4 : 2),
+        tension: 0.1, fill: true, borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      layout: { padding: { top: 20 } },
+      plugins: { legend: { display: false }, tooltip: { enabled: false } },
+      scales: {
+        x: { ticks: { color: '#555', font: { size: 9 } }, grid: { display: false } },
+        y: { ticks: { color: '#555', font: { size: 9 } }, grid: { color: '#1e1e1e' } }
+      }
+    }
+  });
+  if (scrubWrap && scrub) {
+    scrubWrap.style.display = 'block';
+    scrub.max = _capPts.length - 1;
+    scrub.value = _capPts.length - 1;
+    onCapScrub(_capPts.length - 1);
+  }
+}
+
+function onCapScrub(idx) {
+  const i = parseInt(idx);
+  if (!_capPts || !_capPts.length) return;
+  const color = _capMetric === 'time' ? '#7ec8e3' : _capMetric === 'ratio' ? '#a78bfa' : '#e8ff47';
+  const yLabel = _capMetric === 'vol' ? 'kg' : _capMetric === 'time' ? 'min' : 'kg/min';
+  if (_capChartInst) {
+    _capChartInst._selectedIdx = i;
+    _capChartInst.data.datasets[0].pointRadius = _capPts.map((_,j) => j===i ? 6 : 2);
+    _capChartInst.data.datasets[0].pointBackgroundColor = _capPts.map((_,j) => j===i ? '#fff' : color);
+    _capChartInst.update('none');
+  }
+  const dateEl = document.getElementById('cap-scrub-date');
+  if (dateEl) dateEl.textContent = _capPts[i]?.label || '';
+  const bigVal = document.getElementById('cap-big-val');
+  const bigPct = document.getElementById('cap-big-pct');
+  const pt = _capPts[i];
+  if (bigVal) { bigVal.innerHTML = `${pt.val}<span style="font-size:11px;font-weight:500;letter-spacing:.5px;"> ${yLabel}</span>`; bigVal.style.color = color; }
+  if (bigPct) {
+    const prev = i > 0 ? _capPts.slice(0,i).reverse().find(p=>p.val>0)?.val : null;
+    if (prev) {
+      const pct = Math.round((pt.val - prev) / prev * 100);
+      bigPct.textContent = '(' + (pct>=0?'+':'') + pct + '%)';
+      bigPct.style.color = pct > 0 ? '#4caf50' : pct < 0 ? '#ff4444' : '#888';
+    } else { bigPct.textContent = i === 0 ? '(first session)' : ''; bigPct.style.color = 'var(--muted)'; }
+  }
+}
+
+function initCapacityCard() {
+  _capSelectedNames.clear();
+  renderCapacityWorkoutList();
+  renderCapacityChart();
+}
+
 
 function renderVolumeChart() {
   const base = filterByRange(workouts.filter(w=>!w._draft&&!w._template), globalRange);
@@ -6928,7 +7149,7 @@ function renderVolumeChart() {
   const maxVal = Math.max(...displayData);
   const allSame = minVal === maxVal && minVal > 0;
   const colors = ['#e8ff47','#7ec8e3','#ff8c42','#a78bfa','#34d399','#f87171','#fbbf24'];
-  const yAxisOpts = { ticks: { color: '#666', font: { size: 9 }, stepSize: useAbsolute ? 1 : undefined, callback: v => useAbsolute ? v : v + '%' }, grid: { color: '#1a1a1a' }, afterFit: axis => { axis.width = 36; } };
+  const yAxisOpts = { display: false, ticks: { color: '#666', font: { size: 9 }, stepSize: useAbsolute ? 1 : undefined, callback: v => useAbsolute ? v : v + '%' }, grid: { display: false }, afterFit: axis => { axis.width = 0; } };
   if (volumeChartInst) volumeChartInst.destroy();
   volumeChartInst = new Chart(document.getElementById('volumeChart').getContext('2d'), {
     type: 'bar',
@@ -6964,7 +7185,7 @@ function renderVolumeChart() {
               const yAxis = chart.scales.y;
               ctx.save();
               ctx.fillStyle = isMin ? '#ff4444' : '#fff';
-              ctx.font = 'bold 10px DM Sans, sans-serif';
+              ctx.font = 'bold 14px DM Sans, sans-serif';
               ctx.textAlign = 'center';
               ctx.textBaseline = 'bottom';
               ctx.fillText(useAbsolute ? '0' : '0%', bar.x, yAxis.bottom - 2);
@@ -6974,7 +7195,7 @@ function renderVolumeChart() {
             if (!val) return;
             ctx.save();
             ctx.fillStyle = isMin ? '#ff4444' : '#fff';
-            ctx.font = 'bold 10px DM Sans, sans-serif';
+            ctx.font = 'bold 14px DM Sans, sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'bottom';
             ctx.fillText(label, bar.x, bar.y - 3);
@@ -6994,6 +7215,7 @@ function renderVolumeChart() {
 }
 
 let bestBodyPartMetric = 'max'; // 'max' | '1rm' | 'vol'
+let bestBodyPartMuscle = null; // selected body part for exercise list
 let bestBodyPartChartInst = null;
 
 function setBestBodyPartMetric(metric) {
@@ -7092,17 +7314,31 @@ function renderBestBodyPartChart() {
     },
     options: {
       responsive: true, maintainAspectRatio: false,
-      layout: { padding: { top: 16 } },
+      layout: { padding: { top: 28 } },
       plugins: { legend: { display: false }, tooltip: { enabled: false } },
+      onClick(evt, elements) {
+        let idx = elements?.[0]?.index;
+        if (idx === undefined) {
+          const chart = bestBodyPartChartInst;
+          if (chart && evt.x !== undefined) {
+            const xScale = chart.scales.x;
+            for (let i = 0; i < BODY_ORDER.length; i++) {
+              if (Math.abs(xScale.getPixelForValue(i) - evt.x) < 28) { idx = i; break; }
+            }
+          }
+        }
+        if (idx >= 0 && idx < BODY_ORDER.length) setBestBodyPartMuscle(BODY_ORDER[idx]);
+      },
       scales: {
         x: { ticks: { color: (ctx) => colors[ctx.index % colors.length], font: { size: 10 }, maxRotation: 0 }, grid: { color: '#1a1a1a' } },
-        y: { ticks: { color: '#666', font: { size: 9 } }, grid: { color: '#1a1a1a' }, afterFit: axis => { axis.width = 36; } }
+        y: { display: false, ticks: { color: '#666', font: { size: 9 }, precision: 0, stepSize: 1 }, grid: { display: false }, afterFit: axis => { axis.width = 0; } }
       }
     },
     plugins: [{
       id: 'bestBarLabels',
       afterDraw(chart) {
         const ctx = chart.ctx;
+        const selectedIdx = BODY_ORDER.indexOf(bestBodyPartMuscle);
         chart.data.datasets.forEach((dataset, i) => {
           chart.getDatasetMeta(i).data.forEach((bar, idx) => {
             const val = data[idx];
@@ -7110,7 +7346,7 @@ function renderBestBodyPartChart() {
             if (val === 0) {
               ctx.save();
               ctx.fillStyle = '#444';
-              ctx.font = 'bold 10px DM Sans, sans-serif';
+              ctx.font = 'bold 14px DM Sans, sans-serif';
               ctx.textAlign = 'center';
               ctx.textBaseline = 'bottom';
               ctx.fillText('—', bar.x, chart.scales.y.bottom - 2);
@@ -7119,20 +7355,146 @@ function renderBestBodyPartChart() {
             }
             ctx.save();
             ctx.fillStyle = isMin ? '#ff4444' : '#fff';
-            ctx.font = 'bold 10px DM Sans, sans-serif';
+            ctx.font = 'bold 14px DM Sans, sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'bottom';
             ctx.fillText(val, bar.x, bar.y - 3);
             ctx.restore();
+            // Draw small V above number for selected body part
+            if (idx === selectedIdx) {
+              ctx.save();
+              const s = 5;
+              ctx.strokeStyle = '#ffffff';
+              ctx.lineWidth = 1.5;
+              ctx.lineCap = 'round';
+              ctx.lineJoin = 'round';
+              ctx.beginPath();
+              ctx.moveTo(bar.x - s, bar.y - 22);
+              ctx.lineTo(bar.x, bar.y - 18);
+              ctx.lineTo(bar.x + s, bar.y - 22);
+              ctx.stroke();
+              ctx.restore();
+            }
           });
         });
       }
     }]
   });
+
+  // Build per-exercise PR data for the list
+  const exPRs = {};
+  const _eff2 = (sets) => { const ds=sets.filter(s=>s.done&&!s.ignored); return ds.length ? ds : sets.filter(s=>!s.ignored); };
+  base.forEach(w => {
+    w.exercises.forEach(e => {
+      const m = e.muscle || 'Chest';
+      if (!BODY_ORDER.includes(m)) return;
+      const eSets = _eff2(e.sets);
+      if (!eSets.length) return;
+      let prevMaxKg=0, prevVol=0, prevRawVol=0;
+      allW.filter(pw=>pw.date<w.date).forEach(pw=>{
+        pw.exercises.filter(pe=>pe.name===e.name).forEach(pe=>{
+          const pSets=_eff2(pe.sets);
+          const mx=pSets.length?Math.max(0,...pSets.map(s=>s.kg)):0;
+          const v=pSets.length?Math.max(...pSets.map(s=>s.kg*(1+s.reps/30))):0;
+          const rv=pSets.reduce((a,s)=>a+s.kg*s.reps,0);
+          if(mx>prevMaxKg) prevMaxKg=mx; if(v>prevVol) prevVol=v; if(rv>prevRawVol) prevRawVol=rv;
+        });
+      });
+      if (prevMaxKg===0 && prevVol===0 && prevRawVol===0) return;
+      const maxKg=Math.max(0,...eSets.map(s=>s.kg));
+      const vol=Math.max(...eSets.map(s=>s.kg*(1+s.reps/30)));
+      const rawVol=eSets.reduce((a,s)=>a+s.kg*s.reps,0);
+      const isPR=(bestBodyPartMetric==='max'&&maxKg>prevMaxKg)||(bestBodyPartMetric==='1rm'&&vol>prevVol)||(bestBodyPartMetric==='vol'&&rawVol>prevRawVol);
+      if (!isPR) return;
+      if (!exPRs[e.name]) exPRs[e.name]={muscle:m,count:0,bestVal:0,date:0,sessions:[]};
+      exPRs[e.name].count++;
+      const val=bestBodyPartMetric==='max'?maxKg:bestBodyPartMetric==='1rm'?parseFloat(vol.toFixed(2)):Math.round(rawVol);
+      exPRs[e.name].sessions.push({date:w.date, val});
+      if(w.date>exPRs[e.name].date){exPRs[e.name].bestVal=val;exPRs[e.name].date=w.date;}
+    });
+  });
+
+  // Render body part scrollbar
+  const muscleColors2 = {Chest:'#e8ff47',Back:'#7ec8e3',Legs:'#ff8c42',Shoulders:'#a78bfa',Arms:'#34d399',Core:'#f87171'};
+  const musclesWithPRs = BODY_ORDER.filter(m => Object.values(exPRs).some(d=>d.muscle===m));
+  if (!bestBodyPartMuscle || !musclesWithPRs.includes(bestBodyPartMuscle)) bestBodyPartMuscle = musclesWithPRs[0] || null;
+  const listEl = document.getElementById('bestBodyPartExList');
+  renderBestBodyPartExList(exPRs, listEl);
 }
 
+function setBestBodyPartMuscle(muscle) {
+  bestBodyPartMuscle = muscle;
+  if (bestBodyPartChartInst) bestBodyPartChartInst.update('none');
+  // Rebuild exPRs
+  const BODY_ORDER2 = ['Chest','Back','Legs','Shoulders','Arms','Core'];
+  const allW2 = workouts.filter(w=>!w._draft&&!w._template).slice().sort((a,b)=>a.date-b.date);
+  const base2 = filterByRange(allW2, globalRange);
+  const exPRs2 = {};
+  const _eff3 = (sets) => { const ds=sets.filter(s=>s.done&&!s.ignored); return ds.length ? ds : sets.filter(s=>!s.ignored); };
+  base2.forEach(w => {
+    w.exercises.forEach(e => {
+      const m = e.muscle||'Chest';
+      if (!BODY_ORDER2.includes(m)) return;
+      const eSets=_eff3(e.sets); if (!eSets.length) return;
+      let prevMaxKg=0,prevVol=0,prevRawVol=0;
+      allW2.filter(pw=>pw.date<w.date).forEach(pw=>{ pw.exercises.filter(pe=>pe.name===e.name).forEach(pe=>{ const pSets=_eff3(pe.sets); const mx=pSets.length?Math.max(0,...pSets.map(s=>s.kg)):0; const v=pSets.length?Math.max(...pSets.map(s=>s.kg*(1+s.reps/30))):0; const rv=pSets.reduce((a,s)=>a+s.kg*s.reps,0); if(mx>prevMaxKg)prevMaxKg=mx; if(v>prevVol)prevVol=v; if(rv>prevRawVol)prevRawVol=rv; }); });
+      if(prevMaxKg===0&&prevVol===0&&prevRawVol===0) return;
+      const maxKg=Math.max(0,...eSets.map(s=>s.kg)); const vol=Math.max(...eSets.map(s=>s.kg*(1+s.reps/30))); const rawVol=eSets.reduce((a,s)=>a+s.kg*s.reps,0);
+      const isPR=(bestBodyPartMetric==='max'&&maxKg>prevMaxKg)||(bestBodyPartMetric==='1rm'&&vol>prevVol)||(bestBodyPartMetric==='vol'&&rawVol>prevRawVol);
+      if (!isPR) return;
+      if (!exPRs2[e.name]) exPRs2[e.name]={muscle:m,count:0,bestVal:0,date:0,sessions:[]};
+      exPRs2[e.name].count++;
+      const val=bestBodyPartMetric==='max'?maxKg:bestBodyPartMetric==='1rm'?parseFloat(vol.toFixed(2)):Math.round(rawVol);
+      exPRs2[e.name].sessions.push({date:w.date, val});
+      if(w.date>exPRs2[e.name].date){exPRs2[e.name].bestVal=val;exPRs2[e.name].date=w.date;}
+    });
+  });
+  renderBestBodyPartExList(exPRs2, document.getElementById('bestBodyPartExList'));
+}
 
-let _strengthPts = [];
+function renderBestBodyPartExList(exPRs, listEl) {
+  if (!listEl || !bestBodyPartMuscle) return;
+  const metricColor = {max:'#e8ff47','1rm':'#ff8c42',vol:'#a78bfa'};
+  const muscleColors2 = {Chest:'#e8ff47',Back:'#7ec8e3',Legs:'#ff8c42',Shoulders:'#a78bfa',Arms:'#34d399',Core:'#f87171'};
+  const col = metricColor[bestBodyPartMetric] || '#e8ff47';
+  const muscleCol = muscleColors2[bestBodyPartMuscle] || col;
+  const filtered = Object.entries(exPRs).filter(([,d])=>d.muscle===bestBodyPartMuscle).sort((a,b)=>b[1].count-a[1].count);
+  const header = `<div style="padding:8px 4px 4px;font-family:'DM Sans';font-size:10px;font-weight:700;letter-spacing:.8px;color:${muscleCol};text-transform:uppercase;">${displayMuscle(bestBodyPartMuscle)}</div>`;
+  if (!filtered.length) {
+    listEl.innerHTML = header + `<div style="padding:12px 4px;text-align:center;color:var(--muted);font-size:12px;">No records for this period</div>`;
+    return;
+  }
+  const unitLabel = bestBodyPartMetric==='vol' ? 'kg·rep' : 'kg';
+  listEl.innerHTML = header + filtered.map(([name, d], idx) => {
+    const safeId = `prex-${idx}-${name.replace(/[^a-z0-9]/gi,'_').substring(0,12)}`;
+    const sessions = (d.sessions||[]).slice().sort((a,b)=>b.date-a.date);
+    const sessionsHtml = sessions.map(s=>`
+      <div style="display:flex;justify-content:space-between;padding:4px 8px;font-size:11px;">
+        <span style="color:var(--text);font-weight:600;">${fmtShort(s.date)}</span>
+        <span style="color:${col};font-weight:700;">${s.val}${unitLabel}</span>
+      </div>`).join('');
+    return `<div style="border-bottom:1px solid var(--border);">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 4px;">
+        <span style="font-family:'DM Sans';font-size:13px;font-weight:600;color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${name}">${name}</span>
+        <span style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:8px;">
+          <span onclick="togglePRExDetail('${safeId}')" style="font-family:'DM Sans';font-size:12px;font-weight:700;color:${col};background:${col}22;border:1px solid ${col}55;border-radius:5px;padding:1px 8px;cursor:pointer;">
+            ×${d.count}
+          </span>
+        </span>
+      </div>
+      <div id="${safeId}" style="display:none;background:var(--surface2);border-radius:6px;margin:0 4px 6px;overflow:hidden;">${sessionsHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+function togglePRExDetail(id) {
+  const el = document.getElementById(id);
+  const chev = document.getElementById(id + '-chev');
+  if (!el) return;
+  const open = el.style.display !== 'none';
+  el.style.display = open ? 'none' : 'block';
+  if (chev) chev.style.transform = open ? '' : 'rotate(180deg)';
+}
 
 function onStrengthScrub(idx) {
   const i = parseInt(idx);
@@ -7710,7 +8072,7 @@ function renderVolumeProgressChart() {
         plugins:{ legend:{display:false}, tooltip:{enabled:false} },
         scales:{
           x:{ ticks:{color:'#444',font:{size:9}}, grid:{color:'#1a1a1a'} },
-          y:{ min:0, max:1, ticks:{color:_vpc0Color+'80',font:{size:9}}, grid:{color:'#1a1a1a'}, title:{display:false}, afterFit: axis => { axis.width = 36; } }
+          y:{ display: false, min:0, max:1, ticks:{color:_vpc0Color+'80',font:{size:9}}, grid:{display:false}, title:{display:false} }
         }
       }
     });
@@ -7744,10 +8106,10 @@ function renderVolumeProgressChart() {
       scales: {
         x: { ticks: { color: '#666', font: { size: 9 }, maxTicksLimit: globalRange === 'week' ? 7 : 6, autoSkip: globalRange !== 'week', maxRotation: 0 }, grid: { color: '#1a1a1a' } },
         y: {
+          display: false,
           ticks: { color: _vpColor, font: { size: 9 } },
-          grid: { color: '#1a1a1a' },
-          title: { display: false },
-          afterFit: axis => { axis.width = 36; }
+          grid: { display: false },
+          title: { display: false }
         }
       }
     },
@@ -8584,27 +8946,30 @@ function renderCalDayWorkouts(ws) {
     const draftColor = w._draft ? 'color:#888' : '';
 
     let weightPRCount = 0, volPRCount = 0, volumePRCount = 0;
+    const _calEff = (sets) => { const ds=sets.filter(s=>s.done&&!s.ignored); return ds.length ? ds : sets.filter(s=>!s.ignored); };
+    const calHistW = workouts.filter(pw=>!pw._draft&&!pw._template);
     const exRows = w.exercises.map((e,ei) => {
       const chips = e.sets.filter(s=>!s.ignored).map(s=>`<span class="hcard-set-chip${s.done?' done':''}">${s.kg}×${s.reps}</span>`).join('<span style="color:#333;margin:0 2px;">·</span>');
       const muscle = e.muscle || getAllExercises().find(x=>x.name===e.name||x.label===e.name)?.muscle || '';
-      const maxKg = Math.max(0,...e.sets.filter(s=>s.done&&!s.ignored).map(s=>s.kg));
-      const vol = e.sets.filter(s=>s.done&&!s.ignored).reduce((a,s)=>Math.max(a,s.kg*(1+s.reps/30)),0);
-      let prevMaxKg=0, prevVol=0;
-      workouts.filter((pw,i)=>i!==wi&&pw.date<w.date).forEach(pw=>{
+      const _eSets = _calEff(e.sets);
+      const maxKg = Math.max(0,..._eSets.map(s=>s.kg));
+      const vol = _eSets.reduce((a,s)=>Math.max(a,s.kg*(1+s.reps/30)),0);
+      const rawVol = _eSets.reduce((a,s)=>a+s.kg*s.reps,0);
+      let prevMaxKg=0, prevVol=0, prevRawVol=0;
+      calHistW.filter(pw=>pw!==w&&pw.date<w.date).forEach(pw=>{
         pw.exercises.filter(pe=>pe.name===e.name).forEach(pe=>{
-          const dSets=pe.sets.filter(s=>s.done&&!s.ignored);
-          const mx=Math.max(0,...dSets.map(s=>s.kg));
-          const v=dSets.length?Math.max(...dSets.map(s=>s.kg*(1+s.reps/30))):0;
+          const pSets=_calEff(pe.sets);
+          const mx=Math.max(0,...pSets.map(s=>s.kg));
+          const v=pSets.length?Math.max(...pSets.map(s=>s.kg*(1+s.reps/30))):0;
+          const rv=pSets.reduce((a,s)=>a+s.kg*s.reps,0);
           if(mx>prevMaxKg) prevMaxKg=mx;
           if(v>prevVol) prevVol=v;
+          if(rv>prevRawVol) prevRawVol=rv;
         });
       });
-      const isFirstTime = prevMaxKg===0 && prevVol===0;
+      const isFirstTime = prevMaxKg===0 && prevVol===0 && prevRawVol===0;
       const weightPR = maxKg>0 && !isFirstTime && maxKg>prevMaxKg;
       const volPR = vol>0 && !isFirstTime && vol>prevVol;
-      const rawVol = e.sets.filter(s=>s.done&&!s.ignored).reduce((a,s)=>a+s.kg*s.reps,0);
-      let prevRawVol=0;
-      workouts.filter((pw,i)=>i!==wi&&pw.date<w.date).forEach(pw=>{ pw.exercises.filter(pe=>pe.name===e.name).forEach(pe=>{ const rv=pe.sets.filter(s=>s.done&&!s.ignored).reduce((a,s)=>a+s.kg*s.reps,0); if(rv>prevRawVol) prevRawVol=rv; }); });
       const volumePR = rawVol>0 && !isFirstTime && rawVol>prevRawVol;
       if(weightPR) weightPRCount++;
       if(volPR) volPRCount++;
@@ -8667,7 +9032,7 @@ function renderCalDayWorkouts(ws) {
         <div style="flex:1;display:flex;align-items:center;">
           <div class="hcard-name" style="color:var(--accent);">${w.name}${w._draft?` <span style="font-family:'DM Sans';font-size:11px;font-weight:700;background:rgba(126,200,227,.12);border:1px solid rgba(126,200,227,.4);color:#7ec8e3;border-radius:4px;padding:1px 6px;vertical-align:middle;letter-spacing:.3px;text-transform:uppercase;">DRAFT</span>`:''}</div>
         </div>
-        ${w.durationMins > 0 ? `<div style="display:flex;align-items:center;gap:4px;margin-right:8px;flex-shrink:0;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg><span style="font-size:11px;color:#fff;font-weight:600;">${w.durationMins < 60 ? w.durationMins + 'm' : Math.floor(w.durationMins/60) + 'h' + (w.durationMins%60 ? ' ' + w.durationMins%60 + 'm' : '')}</span></div>` : ''}
+        ${w.durationMins > 0 ? `<div style="display:flex;align-items:center;gap:4px;margin-right:8px;flex-shrink:0;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg><span style="font-size:11px;color:#fff;font-weight:600;">${w.durationMins}m</span></div>` : ''}
         ${completedBadge}
         <span class="hcard-chevron" id="cal-hchev-${wi}" style="display:none;">▾</span>
       </div>
@@ -8678,7 +9043,7 @@ function renderCalDayWorkouts(ws) {
           <div class="hcard-stat"><div class="hcard-stat-val" style="${draftColor}">${exStat}</div><div class="hcard-stat-label">Exercises</div></div>
           <div class="hcard-stat"><div class="hcard-stat-val" style="${draftColor}">${ts}</div><div class="hcard-stat-label">Sets</div></div>
           <div class="hcard-stat"><div class="hcard-stat-val" style="${draftColor}">${bodyPartsCount}</div><div class="hcard-stat-label">Body Parts</div></div>
-          ${w.durationMins > 0 ? `<div class="hcard-stat"><div class="hcard-stat-val" style="${draftColor}">${w.durationMins < 60 ? w.durationMins + 'm' : Math.floor(w.durationMins/60) + 'h' + (w.durationMins%60 ? ' ' + w.durationMins%60 + 'm' : '')}</div><div class="hcard-stat-label">Duration</div></div>` : ''}
+          ${w.durationMins > 0 ? `<div class="hcard-stat"><div class="hcard-stat-val" style="${draftColor}">${w.durationMins}m</div><div class="hcard-stat-label">Duration</div></div>` : ''}
         </div>
         ${(()=>{
           const MUSCLE_ORDER = ['Chest','Back','Legs','Shoulders','Arms','Core'];
