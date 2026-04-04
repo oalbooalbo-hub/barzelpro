@@ -159,8 +159,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .btn-add-set:hover{border-color:var(--accent);color:var(--accent);}
 .btn-note{background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:'DM Sans';font-size:12px;font-weight:600;padding:6px 12px;cursor:pointer;transition:all .2s;}
 .btn-note:hover,.btn-note.has-note{border-color:var(--accent);color:var(--accent);}
-.btn-hist{background:transparent;border:1px solid #333;border-radius:8px;color:#555;font-family:'DM Sans';font-size:12px;font-weight:600;padding:6px 12px;cursor:pointer;transition:all .2s;}
-.btn-hist.has-data{border-color:#444;color:#666;}
+.btn-hist{background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:'DM Sans';font-size:12px;font-weight:600;padding:6px 12px;cursor:pointer;transition:all .2s;}
+.btn-hist.has-data{border-color:var(--border);color:var(--muted);}
 .btn-hist.no-data{border-color:#222;color:#333;}
 .btn-timer{background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:12px;font-weight:600;padding:6px 9px;cursor:pointer;transition:all .2s;flex-shrink:0;line-height:1.5;}
 .btn-timer:hover,.btn-timer.active{border-color:#7ec8e3;color:#7ec8e3;}
@@ -649,7 +649,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <!-- Export -->
       <div style="margin-bottom:14px;">
         <div style="font-family:'Bebas Neue';font-size:14px;letter-spacing:1px;color:var(--muted);margin-bottom:8px;">EXPORT</div>
-        <button onclick="exportData()" style="width:100%;background:rgba(232,255,71,.1);border:1px solid rgba(232,255,71,.35);border-radius:10px;color:var(--accent);font-family:'Bebas Neue';font-size:17px;letter-spacing:1.5px;padding:13px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;">
+        <button onclick="exportDataWithDialog()" style="width:100%;background:rgba(232,255,71,.1);border:1px solid rgba(232,255,71,.35);border-radius:10px;color:var(--accent);font-family:'Bebas Neue';font-size:17px;letter-spacing:1.5px;padding:13px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;">
           <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M10 3v10M6 9l4 4 4-4M4 15h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
           DOWNLOAD BACKUP
         </button>
@@ -690,7 +690,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <span style="font-family:'DM Sans';font-size:12px;font-weight:600;color:#ff8c42;">Select an exercise</span>
     <button onclick="exitPickMode()" style="background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:'DM Sans';font-size:12px;font-weight:700;padding:5px 10px;cursor:pointer;flex-shrink:0;white-space:nowrap;">◀ Back</button>
   </div>
-  <div class="section-title" id="exercises-tab-title"><span>ALL</span> EXERCISES</div>
   <div id="exercisesTabContent"></div>
 </div>
 
@@ -699,8 +698,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <div style="position:sticky;top:0;z-index:25;background:var(--bg);padding-bottom:8px;">
   <!-- GRAPHS + HISTORY segment toggle -->
   <div style="display:flex;gap:0;margin-bottom:8px;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
-    <button id="progress-seg-graphs" onclick="switchProgressView('graphs')" style="flex:1;padding:12px 16px;cursor:pointer;border:none;background:var(--accent);color:#000;font-family:'DM Sans';font-size:18px;font-weight:700;letter-spacing:0;transition:all .2s;">GRAPHS</button>
-    <button id="progress-seg-history" onclick="switchProgressView('history')" style="flex:1;padding:12px 16px;cursor:pointer;border:none;background:transparent;color:var(--muted);font-family:'DM Sans';font-size:18px;font-weight:700;letter-spacing:0;transition:all .2s;">HISTORY</button>
+    <button id="progress-seg-graphs" onclick="switchProgressView('graphs')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:var(--accent);color:#000;font-family:'DM Sans';font-size:15px;font-weight:700;letter-spacing:0;transition:all .2s;">GRAPHS</button>
+    <button id="progress-seg-history" onclick="switchProgressView('history')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:transparent;color:var(--muted);font-family:'DM Sans';font-size:15px;font-weight:700;letter-spacing:0;transition:all .2s;">HISTORY</button>
   </div>
   </div>
   <!-- HISTORY content (collapsible) -->
@@ -708,12 +707,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
       <div style="font-family:'DM Sans';font-size:14px;font-weight:700;color:var(--muted);letter-spacing:0;">WORKOUT HISTORY</div>
       <div style="display:flex;gap:6px;align-items:center;">
-        <button onclick="clearAllHistory()" style="background:transparent;border:1px solid #2a2a2a;border-radius:8px;color:#555;padding:6px 10px;cursor:pointer;font-size:12px;font-weight:700;font-family:'DM Sans';transition:all .2s;line-height:1;" title="Clear all history">Clear All</button>
+        <button onclick="clearAllHistory()" style="background:transparent;border:1px solid #2a2a2a;border-radius:8px;color:#555;padding:6px 10px;cursor:pointer;font-size:13px;transition:all .2s;display:flex;align-items:center;justify-content:center;line-height:1;" title="Clear all history"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg></button>
         <button onclick="openDataModal()" style="background:transparent;border:1px solid #2a2a2a;border-radius:8px;color:#555;padding:6px 10px;cursor:pointer;font-size:13px;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:5px;line-height:1;" title="Export / Import data">
           <svg width="15" height="15" viewBox="0 0 20 20" fill="none"><path d="M10 3v10M6 9l4 4 4-4M4 15h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
         <button onclick="openTrash()" id="trashBtn" style="background:transparent;border:1px solid #2a2a2a;border-radius:8px;color:#555;padding:6px 10px;cursor:pointer;font-size:13px;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:5px;line-height:1;" title="Trash">
-          <svg width="15" height="15" viewBox="0 0 20 20" fill="none"><path d="M3 5h14M8 5V3h4v2M5 5l1 11a1 1 0 001 1h6a1 1 0 001-1l1-11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span style="font-size:14px;line-height:1;">♻</span>
           <span id="trashCount" style="font-size:11px;font-weight:700;"></span>
         </button>
       </div>
@@ -1107,7 +1106,7 @@ function saveCardio() { localStorage.setItem('ironlog_cardio', JSON.stringify(ca
 
 
 // ── AUTO-DRAFT SAVE ─────────────────────────────
-let _draftId = localStorage.getItem('ironlog_draft_id') || null;
+let _draftId = localStorage.getItem('ironlog_draft_id') ? parseInt(localStorage.getItem('ironlog_draft_id')) : null;
 let _wtabMuscleFilter = null; // body part filter for workouts tab
 let plannedWorkouts = (() => { try { return JSON.parse(localStorage.getItem('ironlog_planned') || '[]') || []; } catch(e) { return []; } })();
 function savePlanned() { localStorage.setItem('ironlog_planned', JSON.stringify(plannedWorkouts)); }
@@ -1131,9 +1130,10 @@ function autoSaveDraft() {
   // Remove previous draft if exists
   if (_draftId) workouts = workouts.filter(w => w.id !== _draftId);
   _draftId = Date.now();
-  localStorage.setItem('ironlog_draft_id', _draftId);
+  localStorage.setItem('ironlog_draft_id', String(_draftId));
   workouts.unshift({id:_draftId, name, date:_draftId, exercises, _draft:true});
   save();
+  renderHistory();
 }
 
 function clearDraft() {
@@ -2131,6 +2131,9 @@ function makeListRow(ex) {
 // ══════════════════════════════════════════════════════
 //  TABS
 // ══════════════════════════════════════════════════════
+let _exTabView = 'created'; // 'created' or 'library'
+let _wTabView = 'created'; // 'created' or 'library'
+
 function renderExercisesTab() {
   const el = document.getElementById('exercisesTabContent');
   if (!el) return;
@@ -2273,7 +2276,9 @@ function renderExercisesTab() {
   });
 
   if (!exes.length) {
-    listHtml = `<div style="text-align:center;padding:24px 0 16px;font-size:13px;color:#fff;">No exercises yet for this muscle group.</div>`;
+    const _emptyColor = MUSCLE_COLORS[selected] || '#fff';
+    const _emptyLabel = MUSCLE_LABELS[selected] || selected;
+    listHtml = `<div class="empty-state"><span style="color:#fff;">No custom exercises created for <span style="color:${_emptyColor};font-weight:700;">${_emptyLabel}</span></span></div>`;
   }
 
   const searchHtml = ``;
@@ -2283,11 +2288,33 @@ function renderExercisesTab() {
   const _btnBorder = _exEmpty ? 'var(--accent)' : 'var(--border)';
   const addBtnHtml = `<button onclick="openNewExModal('${selected}')" style="width:100%;margin-top:4px;background:transparent;border:1px dashed ${_btnBorder};border-radius:10px;color:${_btnColor};font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='${_btnBorder}';this.style.color='${_btnColor}'">
     <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-    New Exercise
+    Create New Exercise
   </button>`;
 
-  el.innerHTML = searchHtml + pillsHtml + listHtml + addBtnHtml;
+  const toggleHtml = `<div style="display:flex;gap:0;margin-bottom:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+    <button onclick="switchExTabView('created')" id="exTab-seg-created" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_exTabView==='created'?'var(--accent)':'transparent'};color:${_exTabView==='created'?'#000':'var(--muted)'};font-family:'DM Sans';font-size:15px;font-weight:700;transition:all .2s;">CREATED</button>
+    <button onclick="switchExTabView('library')" id="exTab-seg-library" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_exTabView==='library'?'var(--accent)':'transparent'};color:${_exTabView==='library'?'#000':'var(--muted)'};font-family:'DM Sans';font-size:15px;font-weight:700;transition:all .2s;">LIBRARY</button>
+  </div>`;
+
+  el.innerHTML = toggleHtml + (_exTabView === 'created' ? searchHtml + pillsHtml + listHtml + addBtnHtml : pillsHtml + `<div class="empty-state" style="padding:32px 0;"><span style="color:var(--muted);">Library coming soon.</span></div>`);
   // Cards always start collapsed (minimized view by default)
+}
+
+function switchWTabView(view) {
+  _wTabView = view;
+  window._keepWorkoutsTabState = true;
+  renderWorkoutsTab();
+}
+
+function _initWTabView() {
+  _wTabView = 'created';
+  const all = workouts.filter(w => !w._draft && !w._template);
+  if (!all.length) _wTabView = 'library';
+}
+
+function switchExTabView(view) {
+  _exTabView = view;
+  renderExercisesTab();
 }
 
 function filterExTabSearch(query) {
@@ -2838,6 +2865,10 @@ function switchProgressView(view) {
     if (graphsContent) graphsContent.style.display='block';
     if (historyContent) historyContent.style.display='none';
   } else {
+    // Close any open accordion before switching to history
+    const openCard = document.querySelector('.prog-accordion.open');
+    if (openCard) toggleProgressCard(openCard.id);
+    document.getElementById('prog-info-float')?.remove();
     if (historyBtn) { historyBtn.style.background='var(--accent)'; historyBtn.style.color='#000'; }
     if (graphsBtn) { graphsBtn.style.background='transparent'; graphsBtn.style.color='var(--muted)'; }
     if (historyContent) historyContent.style.display='block';
@@ -2875,12 +2906,22 @@ function switchTab(tab) {
   }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-'+tab).classList.add('active');
-  if (tab==='workouts') renderWorkoutsTab();
-  if (tab==='exercises') renderExercisesTab();
+  if (tab==='workouts') { _initWTabView(); renderWorkoutsTab(); }
+  if (tab==='exercises') {
+    _exTabView = 'created';
+    if (!customExercises.length) _exTabView = 'library';
+    renderExercisesTab();
+  }
   if (tab==='progress') {
     renderProgress();
     renderHistory();
     switchProgressView('graphs');
+  }
+  // Close any open progress accordion when leaving progress tab
+  if (tab !== 'progress') {
+    const openCard = document.querySelector('.prog-accordion.open');
+    if (openCard) toggleProgressCard(openCard.id);
+    document.getElementById('prog-info-float')?.remove();
   }
   if (tab==='log') checkFinishReady();
   if (tab !== 'log' && tab !== 'exercises') { if (!window._createNewMode) window._activeTabHighlight = null; if (tab !== 'workouts') window._loadFromToday = false; }
@@ -2937,7 +2978,7 @@ function renderWorkoutsTab() {
 
   const all = workouts.filter(w => !w._draft);
   if (!all.length) {
-    el.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding:10px 0 6px;"><span style="font-family:'DM Sans';font-size:20px;font-weight:700;letter-spacing:0;color:var(--text);">MAIN <span style="color:var(--muted);">LIST</span></span></div><div class="empty-state"><span style="color:#fff;">No workouts defined yet.</span></div><button onclick="startNewWorkout(true);" style="width:100%;margin-top:12px;background:transparent;border:1px dashed var(--accent);border-radius:10px;color:var(--accent);font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Create New Workout</button>`;
+    el.innerHTML = `<div style="display:flex;gap:0;margin-bottom:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;"><button onclick="switchWTabView('created')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:var(--accent);color:#000;font-family:'DM Sans';font-size:15px;font-weight:700;transition:all .2s;">CREATED</button><button onclick="switchWTabView('library')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:transparent;color:var(--muted);font-family:'DM Sans';font-size:15px;font-weight:700;transition:all .2s;">LIBRARY</button></div><div class="empty-state"><span style="color:#fff;">No custom workouts created</span></div><button onclick="startNewWorkout(true);" style="width:100%;margin-top:12px;background:transparent;border:1px dashed var(--accent);border-radius:10px;color:var(--accent);font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Create New Workout</button>`;
     return;
   }
 
@@ -2956,7 +2997,8 @@ function renderWorkoutsTab() {
   const hiddenCount = deduped.filter(w => _hiddenLoadWorkouts.includes(w.name)).length;
   const showingHidden = !!window._showHiddenWorkoutsTab;
   let sorted = deduped.filter(w => showingHidden ? _hiddenLoadWorkouts.includes(w.name) : !_hiddenLoadWorkouts.includes(w.name));
-  const _mainListTitle = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding:10px 0 6px;"><span style="font-family:'DM Sans';font-size:20px;font-weight:700;letter-spacing:0;color:var(--text);">MAIN <span style="color:var(--muted);">LIST</span></span>${hiddenCount > 0 ? `<button onclick="window._showHiddenWorkoutsTab=true;window._keepWorkoutsTabState=true;renderWorkoutsTab()" style="background:transparent;border:none;color:#fff;font-family:'DM Sans';font-size:11px;font-weight:600;cursor:pointer;padding:0;">Hidden workouts ▶</button>` : ''}</div>`;
+  const _wToggleHtml = `<div style="display:flex;gap:0;margin-bottom:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;"><button onclick="switchWTabView('created')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_wTabView==='created'?'var(--accent)':'transparent'};color:${_wTabView==='created'?'#000':'var(--muted)'};font-family:'DM Sans';font-size:15px;font-weight:700;transition:all .2s;">CREATED</button><button onclick="switchWTabView('library')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_wTabView==='library'?'var(--accent)':'transparent'};color:${_wTabView==='library'?'#000':'var(--muted)'};font-family:'DM Sans';font-size:15px;font-weight:700;transition:all .2s;">LIBRARY</button></div>`;
+  const _mainListTitle = _wToggleHtml + (hiddenCount > 0 ? `<div style="display:flex;justify-content:flex-end;margin-bottom:6px;"><button onclick="window._showHiddenWorkoutsTab=true;window._keepWorkoutsTabState=true;renderWorkoutsTab()" style="background:transparent;border:none;color:#fff;font-family:'DM Sans';font-size:11px;font-weight:600;cursor:pointer;padding:0;">Hidden workouts ▶</button></div>` : '');
 
 
   const toggleHiddenBtn = '';
@@ -2977,7 +3019,7 @@ function renderWorkoutsTab() {
 
   let html = _replaceNotice||'';
   if (showingHidden) html += `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding:10px 0 6px;"><span style="font-family:'DM Sans';font-size:20px;font-weight:700;letter-spacing:0;color:var(--text);">HIDDEN <span style="color:var(--muted);">WORKOUTS</span></span><button onclick="window._showHiddenWorkoutsTab=false;window._keepWorkoutsTabState=true;renderWorkoutsTab()" style="background:transparent;border:none;color:#fff;font-family:'DM Sans';font-size:11px;font-weight:600;cursor:pointer;padding:0;">◀ Main List</button></div>`;
-  else html += `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding:10px 0 6px;"><span style="font-family:'DM Sans';font-size:20px;font-weight:700;letter-spacing:0;color:var(--text);">MAIN <span style="color:var(--muted);">LIST</span></span>${hiddenCount > 0 ? `<button onclick="window._showHiddenWorkoutsTab=true;window._keepWorkoutsTabState=true;renderWorkoutsTab()" style="background:transparent;border:none;color:#fff;font-family:'DM Sans';font-size:11px;font-weight:600;cursor:pointer;padding:0;">Hidden workouts ▶</button>` : ''}</div>`;
+  else html += _mainListTitle;
   sorted.forEach(w => {
     const i = workouts.indexOf(w);
     const isHidden = _hiddenLoadWorkouts.includes(w.name);
@@ -3058,6 +3100,10 @@ function renderWorkoutsTab() {
   });
 
   const createNewBtn = !showingHidden ? `<button onclick="startNewWorkout(true);" style="width:100%;margin-top:4px;background:transparent;border:1px dashed var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Create New Workout</button>` : '';
+  if (_wTabView === 'library') {
+    el.innerHTML = _wToggleHtml + `<div class="empty-state" style="padding:32px 0;"><span style="color:var(--muted);">Library coming soon.</span></div>`;
+    return;
+  }
   el.innerHTML = html + createNewBtn + toggleHiddenBtn;
 
   // Render mini bar charts
@@ -3440,7 +3486,8 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
       <div class="ex-footer-row">
         <button class="btn-add-set" onclick="addSet('${id}');updateVolProgressBar('${id}')" title="Add set">+</button>
         <button class="btn-note" id="note-btn-${id}" onclick="toggleComment('${id}')">Note</button>
-        <button class="btn-reset-sets" id="reset-btn-${id}" onclick="resetCardSets('${id}')" style="display:none;background:transparent;border:1px solid #333;border-radius:8px;color:#888;font-family:'DM Sans';font-size:12px;font-weight:600;padding:6px 12px;cursor:pointer;transition:all .2s;">Reset</button>
+        <button class="btn-hist" id="footer-hist-btn-${id}" onclick="openExHistory('${id}')" style="display:none;">History</button>
+        <button class="btn-reset-sets" id="reset-btn-${id}" onclick="resetCardSets('${id}')" style="display:none;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:'DM Sans';font-size:12px;font-weight:600;padding:6px 12px;cursor:pointer;transition:all .2s;">Reset</button>
         <div style="flex:1;"></div>
         <button class="workouts-flow-only" id="wflow-close-btn-${id}" onclick="toggleCardCollapse('${id}')" style="background:transparent;border:1px solid rgba(232,255,71,.4);border-radius:8px;color:var(--accent);font-family:'DM Sans';font-size:12px;font-weight:700;padding:6px 12px;cursor:pointer;display:none;">Close</button>
         <span id="timer-close-label-${id}" onclick="toggleTimer('${id}')" style="display:none;font-size:12px;font-weight:600;color:#7ec8e3;cursor:pointer;padding:6px 4px;">close</span>
@@ -3465,10 +3512,6 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
         <button onclick="toggleMiniChart('${id}')" style="background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:10px;font-weight:700;padding:2px 7px;cursor:pointer;letter-spacing:.5px;line-height:1.4;" id="mini-chart-toggle-${id}">▼ Graph</button>
       </div>
       <div id="mini-chart-inner-${id}" style="display:none;">
-        <div style="display:flex;justify-content:flex-start;padding:0 0 8px;">
-          <button class="btn-hist" id="hist-btn-${id}" onclick="openExHistory('${id}')">History</button>
-        </div>
-        <!-- Graph selector pills -->
         <div id="mini-graph-pills-${id}" style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:8px;">
           <div onclick="selectMiniGraph('${id}','wt')" id="mini-gpill-wt-${id}" style="flex:1;text-align:center;padding:6px 4px;cursor:pointer;font-family:'DM Sans';font-size:11px;font-weight:700;color:#e8ff47;border-bottom:2px solid #e8ff47;transition:all .15s;">Max Wt</div>
           <div onclick="selectMiniGraph('${id}','rm')" id="mini-gpill-rm-${id}" style="flex:1;text-align:center;padding:6px 4px;cursor:pointer;font-family:'DM Sans';font-size:11px;font-weight:700;color:#444;border-bottom:2px solid transparent;transition:all .15s;">1RM</div>
@@ -3532,8 +3575,14 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
   card.dataset.defaultSets = JSON.stringify(lastSets);
   const hasAnyHistory = workouts.filter(w=>!w._draft&&!w._template).some(w=>w.exercises.some(e=>e.name===ex.label));
   const histBtn = body.querySelector(`#hist-btn-${id}`);
-  if (hasAnyHistory) { histBtn.classList.add('has-data'); histBtn.style.pointerEvents=''; }
-  else { histBtn.classList.remove('has-data'); histBtn.classList.add('no-data'); histBtn.style.pointerEvents='none'; }
+  const footerHistBtn = document.getElementById(`footer-hist-btn-${id}`);
+  if (hasAnyHistory) {
+    if (histBtn) { histBtn.classList.add('has-data'); histBtn.style.pointerEvents=''; }
+    if (footerHistBtn) { footerHistBtn.style.display=''; footerHistBtn.classList.add('has-data'); }
+  } else {
+    if (histBtn) { histBtn.classList.remove('has-data'); histBtn.classList.add('no-data'); histBtn.style.pointerEvents='none'; }
+    if (footerHistBtn) footerHistBtn.style.display='none';
+  }
 
   if (hasHistory) {
     renderMiniChart(id, ex.label);
@@ -4028,19 +4077,16 @@ function refreshCardMiniCharts(cardId) {
 function setFocusMode(activeId) {
   const allCards = document.querySelectorAll('#exerciseList .exercise-card');
   const nameRow = document.querySelector('.workout-name-row');
-  const actionsRow = document.querySelector('.today-actions');
   const addRow = document.querySelector('.add-ex-row');
   if (activeId) {
     allCards.forEach(c => {
       if (c.id !== activeId) c.classList.add('focus-mode-dimmed');
     });
     if (nameRow) nameRow.classList.add('focus-mode-hidden');
-    if (actionsRow) actionsRow.classList.add('focus-mode-hidden');
     if (addRow) addRow.classList.add('focus-mode-hidden');
   } else {
     allCards.forEach(c => c.classList.remove('focus-mode-dimmed'));
     if (nameRow) nameRow.classList.remove('focus-mode-hidden');
-    if (actionsRow) actionsRow.classList.remove('focus-mode-hidden');
     if (addRow) addRow.classList.remove('focus-mode-hidden');
   }
 }
@@ -4051,9 +4097,18 @@ function toggleCardCollapse(id) {
   const chevBtn = document.getElementById(`chev-${id}`);
   const isOpen = card.dataset.open === 'true';
   if (isOpen) {
-    // Restore all hidden cards with smooth expand
+    // Restore all hidden/collapsed cards
     document.querySelectorAll('#exerciseList .exercise-card').forEach(c => {
-      if (c.id !== id && c.style.height === '0px') {
+      if (c.id === id) return;
+      if (c.style.display === 'none') {
+        c.style.display = '';
+        c.style.opacity = '0';
+        requestAnimationFrame(() => {
+          c.style.transition = 'opacity .4s ease';
+          c.style.opacity = '1';
+          setTimeout(() => { c.style.transition = ''; c.style.opacity = ''; }, 420);
+        });
+      } else if (c.style.height === '0px') {
         c.style.transition = 'height .4s ease, opacity .4s ease, margin-bottom .4s ease';
         c.style.height = c.scrollHeight + 'px';
         c.style.opacity = '1';
@@ -4081,9 +4136,18 @@ function toggleCardCollapse(id) {
   } else {
     // Save current scroll position before expanding
     card.dataset.scrollY = window.scrollY;
-    // Smoothly collapse other cards so selected one slides up naturally
-    document.querySelectorAll('#exerciseList .exercise-card').forEach(c => {
-      if (c.id !== id) {
+    // Collapse ALL other cards (above and below) with animation
+    // Completed cards: just fade (don't height-collapse so complete-bar stays visible)
+    const allCards = [...document.querySelectorAll('#exerciseList .exercise-card')];
+    allCards.forEach((c) => {
+      if (c.id === id) return;
+      const isCompleted = c.classList.contains('completed');
+      if (isCompleted) {
+        // Just fade, keep height so complete-bar is visible
+        c.style.transition = 'opacity .5s ease';
+        requestAnimationFrame(() => { c.style.opacity = '0'; });
+        setTimeout(() => { c.style.display = 'none'; }, 500);
+      } else {
         const currentH = c.offsetHeight;
         c.style.overflow = 'hidden';
         c.style.height = currentH + 'px';
@@ -4093,15 +4157,16 @@ function toggleCardCollapse(id) {
           c.style.marginBottom = '0';
           c.style.opacity = '0';
         });
-        if (c.dataset.open === 'true') {
-          const b = document.getElementById(`body-${c.id}`);
-          const ch = document.getElementById(`chev-${c.id}`);
-          if (b) { b.style.transition = 'none'; b.style.maxHeight = '0'; b.style.opacity = '0'; b.classList.add('collapsed'); b.classList.remove('open'); requestAnimationFrame(() => { b.style.transition = ''; }); }
-          c.dataset.open = 'false';
-          ch?.classList.remove('open');
-          if (_timers[c.id]?.running) ch?.classList.add('timer-active');
-          if (c.classList.contains('completed')) { const cb = document.getElementById(`complete-bar-${c.id}`); if(cb) cb.style.display='flex'; }
-        }
+      }
+      // Collapse body if open
+      if (c.dataset.open === 'true') {
+        const b = document.getElementById(`body-${c.id}`);
+        const ch = document.getElementById(`chev-${c.id}`);
+        if (b) { b.style.transition = 'none'; b.style.maxHeight = '0'; b.style.opacity = '0'; b.classList.add('collapsed'); b.classList.remove('open'); requestAnimationFrame(() => { b.style.transition = ''; }); }
+        c.dataset.open = 'false';
+        ch?.classList.remove('open');
+        if (_timers[c.id]?.running) ch?.classList.add('timer-active');
+        if (c.classList.contains('completed')) { const cb = document.getElementById(`complete-bar-${c.id}`); if(cb) cb.style.display='flex'; }
       }
     });
     body.style.maxHeight = '4000px'; body.style.opacity = '1'; body.classList.remove('collapsed'); body.classList.add('open');
@@ -4144,7 +4209,7 @@ function toggleCardCollapse(id) {
     if (miniInner5) miniInner5.style.display = 'none';
     if (miniBtn5) miniBtn5.textContent = '▼ Graph';
     setTimeout(() => refreshCardMiniCharts(id), 80);
-    // Card is now the only visible one — scroll so it sits right below the pills
+    // Scroll card to sit right below the pills — wait for collapse animation
     setTimeout(() => {
       const chipsWrap = document.getElementById('todayMuscleChipsWrap');
       const actionsRow = document.querySelector('.today-actions');
@@ -5286,6 +5351,10 @@ function doSaveWorkout() {
   if (!window._pendingWorkout) return;
   window._pendingPRs = [];
   clearDraft();
+  // Remove all draft workouts from history and recycle bin
+  workouts = workouts.filter(w => !w._draft);
+  deletedWorkouts = deletedWorkouts.filter(dw => !dw._draft);
+  saveDeleted();
   workouts.unshift({id:Date.now(), ...window._pendingWorkout});
   // Ensure this workout name appears in Workouts tab (remove from deleted names if present)
   const _savedName = (window._pendingWorkout.name || '').trim();
@@ -5693,9 +5762,10 @@ function loadWorkout(idx) {
     w.exercises.forEach(exData => {
       const ex = getAllExercises().find(e=>e.label===exData.name||e.name===exData.name)
         || {name:exData.name,label:exData.name,muscle:'Chest',custom:true};
-      // Pass the sets from the chosen workout (undone) so they prefill correctly
-      const sourceSets = (exData.sets||[]).filter(s=>!s.ignored).map(s=>({kg:s.kg,reps:s.reps,done:false}));
-      const sessionDataOverride = sourceSets.length || exData.comment ? {sets:sourceSets, completed:false, comment:exData.comment||''} : null;
+      // For drafts, preserve done/ignored state; for regular workouts load as undone
+      const isDraft = !!w._draft;
+      const sourceSets = (exData.sets||[]).filter(s=>!s.ignored).map(s=>({kg:s.kg,reps:s.reps,done:isDraft?!!s.done:false}));
+      const sessionDataOverride = sourceSets.length || exData.comment ? {sets:sourceSets, completed:isDraft&&exData.sets?.every(s=>s.ignored||s.done), comment:exData.comment||''} : null;
       addExerciseCard(ex, false, sessionDataOverride);
       const cards = document.querySelectorAll('#exerciseList .exercise-card');
       const card = cards[cards.length-1];
@@ -5741,7 +5811,7 @@ function renderHistory() {
     return;
   }
   const _deletedIds = new Set(deletedWorkouts.map(dw => dw.id));
-  const histWorkouts = workouts.filter(w => !w._template && !w._draft && !_deletedIds.has(w.id));
+  const histWorkouts = workouts.filter(w => !w._template && !_deletedIds.has(w.id));
   el.innerHTML = histWorkouts.map((w,wi) => {
     const realWi = workouts.indexOf(w);
     const tsTotal = w.exercises.reduce((a,e)=>a+e.sets.filter(s=>!s.ignored).length,0);
@@ -6193,6 +6263,10 @@ function clearAllHistory() {
     <div class="delete-confirm-sheet">
       <div class="delete-confirm-title">Delete Data</div>
       <div class="delete-confirm-sub" style="margin-bottom:14px;">Select what to clear:</div>
+      <div style="display:flex;align-items:center;gap:12px;cursor:pointer;padding:10px 14px;margin-bottom:6px;border-bottom:1px solid var(--border);" onclick="const all=document.querySelectorAll('#_clrHistory,#_clrWorkouts,#_clrExercises,#_clrPlanned,#_clrCardio,#_clrRecordedCardio');const anyUnchecked=[...all].some(c=>!c.checked);all.forEach(c=>c.checked=anyUnchecked);this.querySelector('.clr-cb-box').style.background=anyUnchecked?'var(--accent)':'';this.querySelector('.clr-cb-box').style.borderColor=anyUnchecked?'var(--accent)':'var(--border)';">
+        <span class="clr-cb-box" style="width:20px;height:20px;border-radius:5px;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span style="font-family:'DM Sans';font-size:14px;font-weight:700;color:var(--text);">Select All</span>
+      </div>
       <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px;">
         <label style="display:flex;align-items:center;gap:12px;cursor:pointer;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;">
           <label class="clr-checkbox" for="_clrHistory"><input type="checkbox" id="_clrHistory"><span class="clr-cb-box"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></label>
@@ -6240,12 +6314,13 @@ function clearAllHistory() {
     overlay.remove();
     const msgs = [];
     if (doHistory) {
-      // Move real (non-template) workouts to recycle bin, including drafts
+      // Permanently delete all non-template workouts (including from recycle bin)
       const toTrash = workouts.filter(w => !w._template);
       const toKeep = workouts.filter(w => w._template);
-      // Ensure a _template exists for each unique name so Workouts tab is unaffected
       const existingTemplateNames = new Set(toKeep.filter(w => w._template).map(w => (w.name||'').trim().toLowerCase()));
-      toTrash.forEach(w => { w._deletedAt = Date.now(); deletedWorkouts.unshift(w); });
+      // Also remove matching workouts from recycle bin
+      const toTrashIds = new Set(toTrash.map(w => w.id));
+      deletedWorkouts = deletedWorkouts.filter(dw => !toTrashIds.has(dw.id));
       const newTemplates = [];
       const seen = new Set(existingTemplateNames);
       toTrash.forEach(w => {
@@ -6253,20 +6328,20 @@ function clearAllHistory() {
         if (!seen.has(key)) { seen.add(key); newTemplates.push({ id: Date.now() + Math.random(), name: w.name, date: Date.now(), exercises: w.exercises || [], _template: true }); }
       });
       workouts = [...toKeep, ...newTemplates];
-      // Clear draft state since drafts are now trashed
       _draftId = null;
       localStorage.removeItem('ironlog_draft_id');
       localStorage.removeItem('ironlog_session');
       save(); saveDeleted();
-      msgs.push(`${toTrash.length} workout${toTrash.length!==1?'s':''} moved to recycle bin`);
+      msgs.push(`${toTrash.length} workout${toTrash.length!==1?'s':''} deleted`);
     }
     if (doWorkouts) {
-      // Remove _template entries and hide all workout names from Workouts tab
       const _allNames = [...new Set(workouts.filter(w => !w._draft && !w._template).map(w => w.name).filter(Boolean))];
       let _deletedTabNames = JSON.parse(localStorage.getItem('ironlog_deleted_tab_names') || '[]');
       _allNames.forEach(n => { if (!_deletedTabNames.includes(n)) _deletedTabNames.push(n); });
       localStorage.setItem('ironlog_deleted_tab_names', JSON.stringify(_deletedTabNames));
       workouts = workouts.filter(w => !w._template);
+      deletedWorkouts = [];
+      saveDeleted();
       localStorage.removeItem('ironlog_hidden_load');
       save();
       msgs.push('Workouts list cleared');
@@ -6357,14 +6432,77 @@ function closeDataModal() {
   document.getElementById('dataModalOverlay').classList.remove('open');
 }
 
-function exportData() {
+function exportDataWithDialog() {
+  const overlay = document.createElement('div');
+  overlay.className = 'delete-confirm-overlay';
+  overlay.innerHTML = `
+    <div class="delete-confirm-sheet" style="max-width:340px;">
+      <div class="delete-confirm-title">Download Backup</div>
+      <div class="delete-confirm-sub" style="margin-bottom:16px;line-height:1.6;">Do you want to merge with a previous backup first?<br><span style="color:var(--muted);font-size:12px;">Merging adds back any workouts, exercises or history that were deleted from the current data.</span></div>
+      <div class="delete-confirm-btns" style="flex-direction:column;gap:8px;">
+        <button class="btn-del-yes" id="_exportMergeBtn" style="background:rgba(232,255,71,.15);border-color:rgba(232,255,71,.4);color:var(--accent);">Merge with previous backup first</button>
+        <button class="btn-del-cancel" id="_exportDirectBtn" style="width:100%;">Download current data only</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#_exportDirectBtn').onclick = () => { overlay.remove(); exportData(); };
+  overlay.querySelector('#_exportMergeBtn').onclick = () => {
+    overlay.remove();
+    // Trigger file picker to select previous backup, then merge and download
+    const input = document.createElement('input');
+    input.type = 'file'; input.accept = '.json';
+    input.onchange = e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        try {
+          const prev = JSON.parse(ev.target.result);
+          // Merge previous backup INTO current data (add back anything missing)
+          if (Array.isArray(prev.workouts)) {
+            const ids = new Set(workouts.map(w => w.id));
+            prev.workouts.filter(w => !ids.has(w.id)).forEach(w => workouts.push(w));
+          }
+          if (Array.isArray(prev.deletedWorkouts)) {
+            const ids = new Set(deletedWorkouts.map(w => w.id));
+            prev.deletedWorkouts.filter(w => !ids.has(w.id)).forEach(w => deletedWorkouts.push(w));
+          }
+          if (Array.isArray(prev.cardioLog)) {
+            const keys = new Set(cardioLog.map(c => `${c.date}-${c.type}-${c.mins}`));
+            prev.cardioLog.filter(c => !keys.has(`${c.date}-${c.type}-${c.mins}`)).forEach(c => cardioLog.push(c));
+          }
+          if (Array.isArray(prev.customExercises)) {
+            const names = new Set(customExercises.map(e => e.name));
+            prev.customExercises.filter(e => !names.has(e.name)).forEach(e => customExercises.push(e));
+          }
+          if (Array.isArray(prev.plannedWorkouts)) {
+            const ids = new Set((plannedWorkouts||[]).map(p => p.planId));
+            prev.plannedWorkouts.filter(p => !ids.has(p.planId)).forEach(p => plannedWorkouts.push(p));
+          }
+          exportData(true);
+        } catch { showToast('Invalid backup file'); }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  };
+}
+
+function exportData(merged = false) {
+  // Strip any emoji from exercise names before exporting
+  const stripEmoji = str => (str||'').replace(/[\u{1F000}-\u{1FFFF}]|[\u{2600}-\u{27FF}]|[\uD800-\uDBFF][\uDC00-\uDFFF]/gu, '').trim();
+  const cleanWorkouts = workouts.map(w => ({
+    ...w,
+    exercises: (w.exercises||[]).map(e => ({ ...e, name: stripEmoji(e.name), label: stripEmoji(e.label||e.name) }))
+  }));
+  const cleanCustomEx = customExercises.map(({ emoji, equipment, custom, ...e }) => ({ ...e, name: stripEmoji(e.name), label: stripEmoji(e.label||e.name) }));
   const data = {
     version: 2,
     exportedAt: new Date().toISOString(),
-    workouts: workouts,
+    workouts: cleanWorkouts,
     deletedWorkouts: deletedWorkouts,
     cardioLog: cardioLog,
-    customExercises: customExercises,
+    customExercises: cleanCustomEx,
     plannedWorkouts: plannedWorkouts,
     customCardioTypes: customCardioTypes,
     hiddenExercises: JSON.parse(localStorage.getItem('ironlog_hidden_ex') || '[]'),
@@ -6381,7 +6519,7 @@ function exportData() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `Barzel_Pro_my_data.json`;
+  a.download = merged ? `Barzel_Pro_merged_backup.json` : `Barzel_Pro_my_data.json`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -6648,10 +6786,20 @@ function restoreWorkout(wi) {
     w.exercises.forEach(exData => {
       const ex = getAllExercises().find(e=>e.label===exData.name||e.name===exData.name)
         || {name:exData.name,label:exData.name,muscle:'Chest',custom:true};
-      addExerciseCard(ex);
+      const isDraft = !!w._draft;
+      const sourceSets = (exData.sets||[]).filter(s=>!s.ignored).map(s=>({kg:s.kg,reps:s.reps,done:isDraft?!!s.done:false}));
+      const sessionDataOverride = sourceSets.length || exData.comment ? {sets:sourceSets, completed:isDraft&&exData.sets?.every(s=>s.ignored||s.done), comment:exData.comment||''} : null;
+      addExerciseCard(ex, false, sessionDataOverride);
       const cards = document.querySelectorAll('#exerciseList .exercise-card');
       const card = cards[cards.length-1];
-      if (card) setTimeout(()=>{ if(card.dataset.open==='true') toggleCardCollapse(card.id); },50);
+      if (card) {
+        setTimeout(()=>{ if(card.dataset.open==='true') toggleCardCollapse(card.id); },50);
+        if (exData.comment) setTimeout(() => {
+          const noteArea = document.getElementById(`comment-area-${card.id}`);
+          if (noteArea) noteArea.classList.add('open');
+          updateNoteBtn(card.id);
+        }, 100);
+      }
     });
     switchTab('log');
     showToast(`"${w.name}" loaded!`);
