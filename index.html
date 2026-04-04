@@ -555,7 +555,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, sendPasswordResetEmail } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getFirestore, doc, getDoc, setDoc, getDocs, collection, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyCOBuHNhOBZiPNDuxxiiFAwBbmiWeiPDjU",
@@ -584,6 +584,7 @@ window._fbDoc = doc;
 window._fbGetDoc = getDoc;
 window._fbSetDoc = setDoc;
 window._fbServerTimestamp = serverTimestamp;
+window._fbFirestoreExtra = { getDocs, collection };
 
 async function getUserRole(uid) {
   const userRef = doc(db, 'users', uid);
@@ -803,6 +804,7 @@ function hidAuthScreen() {
       <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px;">
         <div style="font-family:'Bebas Neue';font-size:14px;letter-spacing:1px;color:var(--muted);margin-bottom:8px;">ACCOUNT</div>
         <button id="auth-signout-btn" onclick="window._fbSignOut && window._fbSignOut()" style="display:none;width:100%;background:transparent;border:1px solid #333;border-radius:10px;color:#888;font-family:'DM Sans';font-size:14px;font-weight:600;padding:13px;cursor:pointer;transition:all .2s;">Sign Out</button>
+        <button id="admin-panel-btn" onclick="closeDataModal();openAdminPanel()" style="display:none;width:100%;margin-top:8px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.35);border-radius:10px;color:#a78bfa;font-family:'DM Sans';font-size:14px;font-weight:600;padding:13px;cursor:pointer;transition:all .2s;">⚙️ Admin Panel</button>
       </div>
     </div>
   </div>
@@ -1241,7 +1243,7 @@ let customCardioTypes = JSON.parse(localStorage.getItem('ironlog_cardio_custom')
 function saveCustomCardioTypes() { localStorage.setItem('ironlog_cardio_custom', JSON.stringify(customCardioTypes)); }
 function getAllCardioTypes() { return ['Run','Walk','Incline','Swim','Bike',...customCardioTypes,'Other']; }
 let workoutWeekTarget = parseInt(localStorage.getItem('ironlog_workout_target') || '3');
-function saveCardio() { localStorage.setItem('ironlog_cardio', JSON.stringify(cardioLog)); if(window._currentUser) syncToFirestore(); }
+function saveCardio() { localStorage.setItem('ironlog_cardio', JSON.stringify(cardioLog)); if(window._currentUser) if(window.syncToFirestore) window.syncToFirestore(); }
 
 
 // ── AUTO-DRAFT SAVE ─────────────────────────────
@@ -2202,7 +2204,7 @@ function clearSession() {
 
 function save() { localStorage.setItem('ironlog_workouts', JSON.stringify(workouts)); }
 function saveDeleted() { localStorage.setItem('ironlog_deleted_workouts', JSON.stringify(deletedWorkouts)); }
-function saveCustom() { localStorage.setItem('ironlog_custom_ex', JSON.stringify(customExercises)); if(window._currentUser) syncToFirestore(); }
+function saveCustom() { localStorage.setItem('ironlog_custom_ex', JSON.stringify(customExercises)); if(window._currentUser) if(window.syncToFirestore) window.syncToFirestore(); }
 function showToast(msg, opts) {
   const t = document.getElementById('toast');
   const duration = opts?.duration ?? 2400;
@@ -5521,7 +5523,7 @@ function doSaveWorkout() {
   checkFinishReady();
   localStorage.removeItem('ironlog_session');
   // Sync to Firestore after local save
-  syncToFirestore();
+  if(window.syncToFirestore) window.syncToFirestore();
 }
 
 function confirmSave() {
@@ -10517,6 +10519,38 @@ if ("serviceWorker" in navigator) {
 }
 </script>
 
+<!-- ADMIN PANEL -->
+<div id="adminPanelOverlay" style="display:none;position:fixed;inset:0;z-index:9000;background:#0a0a0a;overflow-y:auto;">
+  <div style="max-width:430px;margin:0 auto;padding:16px;">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 0 20px;">
+      <div>
+        <div style="font-family:'Bebas Neue';font-size:28px;color:#a78bfa;letter-spacing:1px;">ADMIN PANEL</div>
+        <div style="font-size:11px;color:#555;letter-spacing:2px;">USER MANAGEMENT</div>
+      </div>
+      <button onclick="closeAdminPanel()" style="background:transparent;border:1px solid #2a2a2a;border-radius:8px;color:#888;font-size:18px;width:36px;height:36px;cursor:pointer;">✕</button>
+    </div>
+
+    <!-- Stats -->
+    <div id="adminStats" style="display:flex;gap:8px;margin-bottom:20px;"></div>
+
+    <!-- Search -->
+    <input id="adminSearch" type="text" placeholder="Search by name or email..." oninput="filterAdminUsers(this.value)" style="width:100%;background:#141414;border:1px solid #2a2a2a;border-radius:10px;color:#f0f0f0;font-family:'DM Sans';font-size:14px;padding:12px;outline:none;margin-bottom:16px;box-sizing:border-box;"/>
+
+    <!-- Role filter pills -->
+    <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;">
+      <button onclick="filterAdminByRole('all')" id="adminRoleAll" style="background:#a78bfa;color:#000;border:none;border-radius:20px;padding:5px 14px;font-family:'DM Sans';font-size:12px;font-weight:700;cursor:pointer;">All</button>
+      <button onclick="filterAdminByRole('super_admin')" id="adminRoleSuper" style="background:transparent;color:#888;border:1px solid #333;border-radius:20px;padding:5px 14px;font-family:'DM Sans';font-size:12px;font-weight:700;cursor:pointer;">Super Admin</button>
+      <button onclick="filterAdminByRole('ops_admin')" id="adminRoleOps" style="background:transparent;color:#888;border:1px solid #333;border-radius:20px;padding:5px 14px;font-family:'DM Sans';font-size:12px;font-weight:700;cursor:pointer;">Ops Admin</button>
+      <button onclick="filterAdminByRole('coach')" id="adminRoleCoach" style="background:transparent;color:#888;border:1px solid #333;border-radius:20px;padding:5px 14px;font-family:'DM Sans';font-size:12px;font-weight:700;cursor:pointer;">Coach</button>
+      <button onclick="filterAdminByRole('client')" id="adminRoleClient" style="background:transparent;color:#888;border:1px solid #333;border-radius:20px;padding:5px 14px;font-family:'DM Sans';font-size:12px;font-weight:700;cursor:pointer;">Client</button>
+    </div>
+
+    <!-- Users list -->
+    <div id="adminUsersList"></div>
+  </div>
+</div>
+
 </div><!-- /app-root -->
 
 <script>
@@ -10591,63 +10625,55 @@ async function handleForgotPassword() {
 }
 
 // Add sign-out to settings/my data area
-window._onAuthReady = async (user) => {
+window._onAuthReady = (user) => {
   const signOutBtn = document.getElementById('auth-signout-btn');
   if (signOutBtn) {
     signOutBtn.style.display = '';
     signOutBtn.textContent = `Sign Out (${user.email || user.displayName || 'user'})`;
   }
+  // Show admin panel button for admins
+  const adminBtn = document.getElementById('admin-panel-btn');
+  if (adminBtn && ['super_admin', 'ops_admin'].includes(window._currentUserData?.role)) {
+    adminBtn.style.display = '';
+  }
   if (typeof showToast === 'function') showToast('☁ Loading your data...');
-  const loaded = await loadFromFirestore(user.uid);
-  if (loaded && typeof showToast === 'function') showToast('☁ Data loaded from cloud');
+  window.loadFromFirestore(user.uid).then(loaded => {
+    if (loaded && typeof showToast === 'function') showToast('☁ Data loaded from cloud');
+  });
 };
 
-// ══════════════════════════════════════════════════════
-//  FIRESTORE SYNC
-// ══════════════════════════════════════════════════════
-
-async function syncToFirestore() {
-  if (!window._currentUser) return;
+// Firestore sync - exposed as window globals, called from regular scripts
+window.syncToFirestore = function() {
+  if (!window._currentUser || !window._fbDb) return;
   const uid = window._currentUser.uid;
-  const db = window._fbDb;
-  const doc = window._fbDoc;
-  const setDoc = window._fbSetDoc;
-  if (!db || !doc || !setDoc) return;
-  try {
-    const userDataRef = doc(db, 'userData', uid);
-    await setDoc(userDataRef, {
-      workouts: workouts.filter(w => !w._draft),
-      deletedWorkouts: deletedWorkouts,
-      cardioLog: cardioLog,
-      customExercises: customExercises,
-      plannedWorkouts: plannedWorkouts || [],
-      customCardioTypes: customCardioTypes || [],
-      settings: {
-        workoutWeekTarget: workoutWeekTarget,
-        cardioWeekTarget: cardioWeekTarget,
-        lastTimerSecs: lastTimerSecs,
-        miniChartRange: miniChartRange,
-      },
-      updatedAt: new Date().toISOString()
-    });
-    showToast('☁ Synced to cloud');
-  } catch(e) {
-    console.warn('Firestore sync failed:', e.message);
-  }
-}
+  window._fbDoc(window._fbDb, 'userData', uid);
+  const ref = window._fbDoc(window._fbDb, 'userData', uid);
+  window._fbSetDoc(ref, {
+    workouts: workouts.filter(w => !w._draft),
+    deletedWorkouts: deletedWorkouts,
+    cardioLog: cardioLog,
+    customExercises: customExercises,
+    plannedWorkouts: plannedWorkouts || [],
+    customCardioTypes: customCardioTypes || [],
+    settings: {
+      workoutWeekTarget: workoutWeekTarget,
+      cardioWeekTarget: cardioWeekTarget,
+      lastTimerSecs: lastTimerSecs,
+      miniChartRange: miniChartRange,
+    },
+    updatedAt: new Date().toISOString()
+  }).then(() => {
+    if (typeof showToast === 'function') showToast('☁ Synced to cloud');
+  }).catch(e => console.warn('Firestore sync failed:', e.message));
+};
 
-async function loadFromFirestore(uid) {
-  const db = window._fbDb;
-  const doc = window._fbDoc;
-  const getDoc = window._fbGetDoc;
-  if (!db || !doc || !getDoc) return false;
-  try {
-    const snap = await getDoc(doc(db, 'userData', uid));
+window.loadFromFirestore = function(uid) {
+  if (!window._fbDb) return Promise.resolve(false);
+  const ref = window._fbDoc(window._fbDb, 'userData', uid);
+  return window._fbGetDoc(ref).then(snap => {
     if (!snap.exists()) return false;
     const data = snap.data();
-    // Merge: Firestore wins for workouts/history, localStorage wins for in-progress session
     if (Array.isArray(data.workouts) && data.workouts.length > 0) {
-      // Merge — keep local drafts, take cloud for everything else
       const localDrafts = workouts.filter(w => w._draft);
       const cloudIds = new Set(data.workouts.map(w => w.id));
       const localOnly = workouts.filter(w => !w._draft && !cloudIds.has(w.id));
@@ -10682,36 +10708,130 @@ async function loadFromFirestore(uid) {
       if (s.miniChartRange) { miniChartRange = s.miniChartRange; localStorage.setItem('ironlog_mini_range', s.miniChartRange); }
     }
     return true;
-  } catch(e) {
-    console.warn('Firestore load failed:', e.message);
-    return false;
+  }).catch(e => { console.warn('Firestore load failed:', e.message); return false; });
+};
+
+// ══════════════════════════════════════════════════════
+//  ADMIN PANEL
+// ══════════════════════════════════════════════════════
+let _adminUsers = [];
+let _adminRoleFilter = 'all';
+
+function openAdminPanel() {
+  const role = window._currentUserData?.role;
+  if (!['super_admin', 'ops_admin'].includes(role)) {
+    showToast('Access denied'); return;
   }
+  document.getElementById('adminPanelOverlay').style.display = 'block';
+  loadAdminUsers();
 }
 
-// Called when Firebase auth is ready
+function closeAdminPanel() {
+  document.getElementById('adminPanelOverlay').style.display = 'none';
+}
+
+function loadAdminUsers() {
+  const list = document.getElementById('adminUsersList');
+  list.innerHTML = '<div style="text-align:center;padding:40px;color:#555;font-size:13px;">Loading users...</div>';
+  if (!window._fbDb) return;
+
+  // Use Firestore getDocs to fetch all users
+  const { getDocs, collection } = window._fbFirestoreExtra || {};
+  if (!getDocs || !collection) {
+    list.innerHTML = '<div style="color:#ff4747;padding:16px;font-size:13px;">Firestore not ready</div>';
+    return;
+  }
+  getDocs(collection(window._fbDb, 'users')).then(snap => {
+    _adminUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderAdminUsers();
+    renderAdminStats();
+  }).catch(e => {
+    list.innerHTML = `<div style="color:#ff4747;padding:16px;font-size:13px;">Error: ${e.message}</div>`;
+  });
+}
+
+function renderAdminStats() {
+  const counts = { super_admin: 0, ops_admin: 0, coach: 0, client: 0 };
+  _adminUsers.forEach(u => { if (counts[u.role] !== undefined) counts[u.role]++; });
+  const colors = { super_admin: '#a78bfa', ops_admin: '#7ec8e3', coach: '#34d399', client: '#e8ff47' };
+  const labels = { super_admin: 'Super Admin', ops_admin: 'Ops Admin', coach: 'Coach', client: 'Client' };
+  document.getElementById('adminStats').innerHTML = Object.entries(counts).map(([role, count]) =>
+    `<div style="flex:1;background:#141414;border:1px solid #2a2a2a;border-radius:10px;padding:10px;text-align:center;">
+      <div style="font-size:20px;font-weight:700;color:${colors[role]};">${count}</div>
+      <div style="font-size:10px;color:#555;font-weight:600;margin-top:2px;">${labels[role].toUpperCase()}</div>
+    </div>`
+  ).join('');
+}
+
+function filterAdminByRole(role) {
+  _adminRoleFilter = role;
+  ['all','super_admin','ops_admin','coach','client'].forEach(r => {
+    const btn = document.getElementById('adminRole' + (r === 'all' ? 'All' : r === 'super_admin' ? 'Super' : r === 'ops_admin' ? 'Ops' : r === 'coach' ? 'Coach' : 'Client'));
+    if (btn) { btn.style.background = r === role ? '#a78bfa' : 'transparent'; btn.style.color = r === role ? '#000' : '#888'; }
+  });
+  renderAdminUsers();
+}
+
+function filterAdminUsers(q) {
+  renderAdminUsers(q.toLowerCase());
+}
+
+function renderAdminUsers(search = '') {
+  const roleColors = { super_admin: '#a78bfa', ops_admin: '#7ec8e3', coach: '#34d399', client: '#e8ff47' };
+  const roleLabels = { super_admin: 'Super Admin', ops_admin: 'Ops Admin', coach: 'Coach', client: 'Client' };
+  const myRole = window._currentUserData?.role;
+  const myUid = window._currentUser?.uid;
+
+  let users = _adminUsers.filter(u => {
+    if (_adminRoleFilter !== 'all' && u.role !== _adminRoleFilter) return false;
+    if (search && !`${u.email} ${u.displayName}`.toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  if (!users.length) {
+    document.getElementById('adminUsersList').innerHTML = '<div style="text-align:center;padding:40px;color:#555;font-size:13px;">No users found</div>';
+    return;
+  }
+
+  document.getElementById('adminUsersList').innerHTML = users.map(u => {
+    const isSelf = u.id === myUid;
+    const canEdit = myRole === 'super_admin' || (myRole === 'ops_admin' && u.role === 'client');
+    const color = roleColors[u.role] || '#888';
+    const initials = (u.displayName || u.email || '?').slice(0, 2).toUpperCase();
+    return `<div style="background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:14px;margin-bottom:10px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:40px;height:40px;border-radius:50%;background:${color}22;border:1px solid ${color}55;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:${color};flex-shrink:0;">${initials}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:700;font-size:14px;color:#f0f0f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${u.displayName || '—'} ${isSelf ? '<span style="color:#555;font-size:11px;">(you)</span>' : ''}</div>
+          <div style="font-size:12px;color:#666;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${u.email || u.id}</div>
+        </div>
+        <span style="background:${color}22;color:${color};border:1px solid ${color}44;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;flex-shrink:0;">${roleLabels[u.role] || u.role}</span>
+      </div>
+      ${canEdit && !isSelf ? `<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">
+        ${['super_admin','ops_admin','coach','client'].filter(r => r !== u.role).map(r =>
+          `<button onclick="changeUserRole('${u.id}','${r}')" style="flex:1;min-width:80px;background:transparent;border:1px solid ${roleColors[r]}44;border-radius:7px;color:${roleColors[r]};font-family:'DM Sans';font-size:11px;font-weight:700;padding:6px;cursor:pointer;">→ ${roleLabels[r]}</button>`
+        ).join('')}
+      </div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function changeUserRole(uid, newRole) {
+  if (!window._fbDb || !window._fbDoc || !window._fbSetDoc) return;
+  const ref = window._fbDoc(window._fbDb, 'users', uid);
+  window._fbSetDoc(ref, { role: newRole }, { merge: true }).then(() => {
+    const user = _adminUsers.find(u => u.id === uid);
+    if (user) user.role = newRole;
+    renderAdminUsers(document.getElementById('adminSearch')?.value?.toLowerCase() || '');
+    renderAdminStats();
+    showToast(`Role updated to ${newRole}`);
+  }).catch(e => showToast('Error: ' + e.message));
+}
+
 // Enter key on password field
 document.getElementById('auth-password')?.addEventListener('keydown', e => {
   if (e.key === 'Enter') handleAuthSubmit();
 });
-
-// Called when Firebase auth is ready - defined after Firestore sync functions
-  // Update sign out button
-  const signOutBtn = document.getElementById('auth-signout-btn');
-  if (signOutBtn) {
-    signOutBtn.style.display = '';
-    signOutBtn.textContent = `Sign Out (${user.email || user.displayName || 'user'})`;
-  }
-  // Load data from Firestore and merge with local
-  showToast('☁ Loading your data...');
-  const loaded = await loadFromFirestore(user.uid);
-  if (loaded) {
-    // Re-render current tab to show merged data
-    const activeTab = localStorage.getItem('ironlog_active_tab') || 'log';
-    if (typeof renderHistory === 'function') renderHistory();
-    if (typeof renderCalendar === 'function' && activeTab === 'calendar') renderCalendar();
-    showToast('☁ Data loaded from cloud');
-  }
-};
 </script>
 
 </body>
