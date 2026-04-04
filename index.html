@@ -1241,7 +1241,7 @@ let customCardioTypes = JSON.parse(localStorage.getItem('ironlog_cardio_custom')
 function saveCustomCardioTypes() { localStorage.setItem('ironlog_cardio_custom', JSON.stringify(customCardioTypes)); }
 function getAllCardioTypes() { return ['Run','Walk','Incline','Swim','Bike',...customCardioTypes,'Other']; }
 let workoutWeekTarget = parseInt(localStorage.getItem('ironlog_workout_target') || '3');
-function saveCardio() { localStorage.setItem('ironlog_cardio', JSON.stringify(cardioLog)); }
+function saveCardio() { localStorage.setItem('ironlog_cardio', JSON.stringify(cardioLog)); if(window._currentUser) syncToFirestore(); }
 
 
 // ── AUTO-DRAFT SAVE ─────────────────────────────
@@ -2202,7 +2202,7 @@ function clearSession() {
 
 function save() { localStorage.setItem('ironlog_workouts', JSON.stringify(workouts)); }
 function saveDeleted() { localStorage.setItem('ironlog_deleted_workouts', JSON.stringify(deletedWorkouts)); }
-function saveCustom() { localStorage.setItem('ironlog_custom_ex', JSON.stringify(customExercises)); }
+function saveCustom() { localStorage.setItem('ironlog_custom_ex', JSON.stringify(customExercises)); if(window._currentUser) syncToFirestore(); }
 function showToast(msg, opts) {
   const t = document.getElementById('toast');
   const duration = opts?.duration ?? 2400;
@@ -5511,7 +5511,7 @@ function doSaveWorkout() {
     if (p.type === 'cardio') return true;
     const d = new Date(p.date);
     if (d.getFullYear() !== _ty || d.getMonth() !== _tm || d.getDate() !== _td) return true;
-    return false; // remove any strength plan for today
+    return false;
   });
   if (plannedWorkouts.length !== _prevLen) { savePlanned(); renderTodayPlanCard(); }
   window._pendingWorkout = null;
@@ -5520,6 +5520,8 @@ function doSaveWorkout() {
   showTodayStartScreen();
   checkFinishReady();
   localStorage.removeItem('ironlog_session');
+  // Sync to Firestore after local save
+  syncToFirestore();
 }
 
 function confirmSave() {
@@ -10589,18 +10591,127 @@ async function handleForgotPassword() {
 }
 
 // Add sign-out to settings/my data area
-window._onAuthReady = (user) => {
+window._onAuthReady = async (user) => {
   const signOutBtn = document.getElementById('auth-signout-btn');
   if (signOutBtn) {
     signOutBtn.style.display = '';
     signOutBtn.textContent = `Sign Out (${user.email || user.displayName || 'user'})`;
   }
+  if (typeof showToast === 'function') showToast('☁ Loading your data...');
+  const loaded = await loadFromFirestore(user.uid);
+  if (loaded && typeof showToast === 'function') showToast('☁ Data loaded from cloud');
 };
 
+// ══════════════════════════════════════════════════════
+//  FIRESTORE SYNC
+// ══════════════════════════════════════════════════════
+
+async function syncToFirestore() {
+  if (!window._currentUser) return;
+  const uid = window._currentUser.uid;
+  const db = window._fbDb;
+  const doc = window._fbDoc;
+  const setDoc = window._fbSetDoc;
+  if (!db || !doc || !setDoc) return;
+  try {
+    const userDataRef = doc(db, 'userData', uid);
+    await setDoc(userDataRef, {
+      workouts: workouts.filter(w => !w._draft),
+      deletedWorkouts: deletedWorkouts,
+      cardioLog: cardioLog,
+      customExercises: customExercises,
+      plannedWorkouts: plannedWorkouts || [],
+      customCardioTypes: customCardioTypes || [],
+      settings: {
+        workoutWeekTarget: workoutWeekTarget,
+        cardioWeekTarget: cardioWeekTarget,
+        lastTimerSecs: lastTimerSecs,
+        miniChartRange: miniChartRange,
+      },
+      updatedAt: new Date().toISOString()
+    });
+    showToast('☁ Synced to cloud');
+  } catch(e) {
+    console.warn('Firestore sync failed:', e.message);
+  }
+}
+
+async function loadFromFirestore(uid) {
+  const db = window._fbDb;
+  const doc = window._fbDoc;
+  const getDoc = window._fbGetDoc;
+  if (!db || !doc || !getDoc) return false;
+  try {
+    const snap = await getDoc(doc(db, 'userData', uid));
+    if (!snap.exists()) return false;
+    const data = snap.data();
+    // Merge: Firestore wins for workouts/history, localStorage wins for in-progress session
+    if (Array.isArray(data.workouts) && data.workouts.length > 0) {
+      // Merge — keep local drafts, take cloud for everything else
+      const localDrafts = workouts.filter(w => w._draft);
+      const cloudIds = new Set(data.workouts.map(w => w.id));
+      const localOnly = workouts.filter(w => !w._draft && !cloudIds.has(w.id));
+      workouts = [...data.workouts, ...localOnly, ...localDrafts];
+      localStorage.setItem('ironlog_workouts', JSON.stringify(workouts));
+    }
+    if (Array.isArray(data.deletedWorkouts)) {
+      const existingIds = new Set(deletedWorkouts.map(w => w.id));
+      data.deletedWorkouts.filter(w => !existingIds.has(w.id)).forEach(w => deletedWorkouts.push(w));
+      localStorage.setItem('ironlog_deleted_workouts', JSON.stringify(deletedWorkouts));
+    }
+    if (Array.isArray(data.cardioLog) && data.cardioLog.length > 0) {
+      const existingKeys = new Set(cardioLog.map(c => `${c.date}-${c.type}-${c.mins}`));
+      data.cardioLog.filter(c => !existingKeys.has(`${c.date}-${c.type}-${c.mins}`)).forEach(c => cardioLog.push(c));
+      localStorage.setItem('ironlog_cardio', JSON.stringify(cardioLog));
+    }
+    if (Array.isArray(data.customExercises) && data.customExercises.length > 0) {
+      const existingNames = new Set(customExercises.map(e => e.name));
+      data.customExercises.filter(e => !existingNames.has(e.name)).forEach(e => customExercises.push(e));
+      localStorage.setItem('ironlog_custom_ex', JSON.stringify(customExercises));
+    }
+    if (Array.isArray(data.plannedWorkouts)) {
+      const existingPlanIds = new Set((plannedWorkouts||[]).map(p => p.planId));
+      data.plannedWorkouts.filter(p => !existingPlanIds.has(p.planId)).forEach(p => plannedWorkouts.push(p));
+      localStorage.setItem('ironlog_planned', JSON.stringify(plannedWorkouts));
+    }
+    if (data.settings) {
+      const s = data.settings;
+      if (s.workoutWeekTarget) { workoutWeekTarget = s.workoutWeekTarget; localStorage.setItem('ironlog_workout_target', s.workoutWeekTarget); }
+      if (s.cardioWeekTarget) { cardioWeekTarget = s.cardioWeekTarget; localStorage.setItem('ironlog_cardio_target', s.cardioWeekTarget); }
+      if (s.lastTimerSecs) { lastTimerSecs = s.lastTimerSecs; localStorage.setItem('ironlog_last_timer', s.lastTimerSecs); }
+      if (s.miniChartRange) { miniChartRange = s.miniChartRange; localStorage.setItem('ironlog_mini_range', s.miniChartRange); }
+    }
+    return true;
+  } catch(e) {
+    console.warn('Firestore load failed:', e.message);
+    return false;
+  }
+}
+
+// Called when Firebase auth is ready
 // Enter key on password field
 document.getElementById('auth-password')?.addEventListener('keydown', e => {
   if (e.key === 'Enter') handleAuthSubmit();
 });
+
+// Called when Firebase auth is ready - defined after Firestore sync functions
+  // Update sign out button
+  const signOutBtn = document.getElementById('auth-signout-btn');
+  if (signOutBtn) {
+    signOutBtn.style.display = '';
+    signOutBtn.textContent = `Sign Out (${user.email || user.displayName || 'user'})`;
+  }
+  // Load data from Firestore and merge with local
+  showToast('☁ Loading your data...');
+  const loaded = await loadFromFirestore(user.uid);
+  if (loaded) {
+    // Re-render current tab to show merged data
+    const activeTab = localStorage.getItem('ironlog_active_tab') || 'log';
+    if (typeof renderHistory === 'function') renderHistory();
+    if (typeof renderCalendar === 'function' && activeTab === 'calendar') renderCalendar();
+    showToast('☁ Data loaded from cloud');
+  }
+};
 </script>
 
 </body>
