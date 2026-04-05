@@ -553,21 +553,22 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .trash-select-check{width:18px;height:18px;border-radius:4px;border:1.5px solid #333;flex-shrink:0;transition:all .15s;background:transparent;}
 .trash-select-check.selected{background:var(--accent);border-color:var(--accent);background-image:url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 6l3 3 5-5' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:center;}
 </style>
+<script src="config.js"></script>
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, sendPasswordResetEmail } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getFirestore, doc, getDoc, setDoc, deleteDoc, getDocs, collection, query, where, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 // ── BRAND CONFIG ──────────────────────────────────────
-// Each brand gets its own HTML file with this section changed.
-// super_admin uses brandId = 'super' to access cross-brand dashboard.
-const BRAND_ID = 'fitzone';
+// Read from config.js (window.BRAND_CONFIG) — fallback to defaults
+const _cfg = window.BRAND_CONFIG || {};
+const BRAND_ID = _cfg.id || 'barzelpro';
 const BRAND_DEFAULTS = {
-  name: 'BARZEL',
-  subtitle: 'PRO',
-  tagline: 'WORKOUT TRACKER',
-  accentColor: '#e8ff47',
-  logoText: 'B'
+  name: _cfg.name || 'BARZEL',
+  subtitle: _cfg.subtitle !== undefined ? _cfg.subtitle : 'PRO',
+  tagline: _cfg.tagline || 'WORKOUT TRACKER',
+  accentColor: _cfg.accentColor || '#e8ff47',
+  logoText: _cfg.logoText || 'B'
 };
 window.BRAND_ID = BRAND_ID;
 window.BRAND_DEFAULTS = BRAND_DEFAULTS;
@@ -647,22 +648,41 @@ async function createUserDoc(user) {
   if (!snap.exists()) {
     const isSuperAdmin = user.uid === 'YoTIuT3nFoRpVMTupQpS9szjJ3O2';
     const initialRoles = isSuperAdmin ? { [BRAND_ID]: 'super_admin' } : { [BRAND_ID]: 'client' };
-    await setDoc(userRef, {
+
+    // Check for pending invite
+    const inviteKey = `${BRAND_ID}_${user.email?.toLowerCase().replace(/[@.]/g,'_')}`;
+    let inviteData = null;
+    try {
+      const inviteSnap = await getDoc(doc(db, 'pendingInvites', inviteKey));
+      if (inviteSnap.exists() && inviteSnap.data().status === 'pending') {
+        inviteData = inviteSnap.data();
+      }
+    } catch(e) {}
+
+    const userData = {
       uid: user.uid,
       email: user.email,
       displayName: user.displayName || '',
       brands: isSuperAdmin ? ['super', BRAND_ID] : [BRAND_ID],
-      roles: initialRoles,
+      roles: inviteData ? { [BRAND_ID]: inviteData.role } : initialRoles,
       createdAt: serverTimestamp()
-    });
+    };
+    if (inviteData?.siteId) userData.siteIds = [inviteData.siteId];
+    if (inviteData?.accountExpires) userData.accountExpires = inviteData.accountExpires;
+
+    await setDoc(userRef, userData);
+
+    // Mark invite as used
+    if (inviteData) {
+      await setDoc(doc(db, 'pendingInvites', inviteKey), { status: 'used', usedAt: new Date().toISOString() }, { merge: true });
+    }
   } else {
-    // Ensure user has an entry for this brand
     const data = snap.data();
     const roles = data.roles || {};
     const brands = data.brands || [];
     const updates = {};
     if (!roles[BRAND_ID]) {
-      updates[`roles.${BRAND_ID}`] = data.role || 'client'; // migrate old single role
+      updates[`roles.${BRAND_ID}`] = data.role || 'client';
       updates.brands = [...new Set([...brands, BRAND_ID])];
     }
     if (Object.keys(updates).length) {
@@ -671,7 +691,6 @@ async function createUserDoc(user) {
   }
   const fresh = await getDoc(userRef);
   const data = fresh.data();
-  // Expose current brand role as .role for backward compat
   data.role = data.roles?.[BRAND_ID] || data.role || 'client';
   return data;
 }
@@ -682,14 +701,47 @@ onAuthStateChanged(auth, async (user) => {
     const userData = await createUserDoc(user);
     window._currentUser = { ...user, role: userData.role };
     window._currentUserData = userData;
+
+    // ── ACCOUNT EXPIRY CHECK ──────────────────────────
+    if (userData.accountExpires) {
+      const expDate = new Date(userData.accountExpires);
+      const now = new Date();
+      if (expDate < now) {
+        // Account expired — sign out and show blocked screen
+        await signOut(auth);
+        showExpiredScreen(userData.accountExpires, 'account');
+        return;
+      }
+    }
+    // ─────────────────────────────────────────────────
+
     hidAuthScreen();
     if (typeof window._onAuthReady === 'function') window._onAuthReady(window._currentUser);
   } else {
     window._currentUser = null;
     window._currentUserData = null;
-    showAuthScreen();
+    // Only show auth if not showing expired screen
+    if (!document.getElementById('expiredScreen')?.style.display || document.getElementById('expiredScreen').style.display === 'none') {
+      showAuthScreen();
+    }
   }
 });
+
+function showExpiredScreen(expiryDate, type) {
+  // Remove existing expired screen if any
+  document.getElementById('expiredScreen')?.remove();
+  const el = document.createElement('div');
+  el.id = 'expiredScreen';
+  el.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#0a0a0a;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;';
+  const formattedDate = new Date(expiryDate).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  el.innerHTML = `
+    <img src="logo.svg" alt="Logo" style="height:48px;width:auto;margin-bottom:32px;" onerror="this.style.display='none'"/>
+    <div style="width:64px;height:64px;border-radius:50%;background:#ff474722;border:2px solid #ff4747;display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:20px;">🔒</div>
+    <div style="font-family:'Bebas Neue';font-size:28px;color:#ff4747;letter-spacing:1px;margin-bottom:8px;">ACCESS EXPIRED</div>
+    <div style="font-size:14px;color:#555;text-align:center;line-height:1.7;max-width:280px;margin-bottom:32px;">Your ${type === 'account' ? 'account' : 'coaching period'} expired on <strong style="color:#888;">${formattedDate}</strong>. Please contact your site manager to renew access.</div>
+    <button onclick="window._fbSignOut&&window._fbSignOut().then(()=>{document.getElementById('expiredScreen').remove();})" style="background:transparent;border:1px solid #333;border-radius:10px;color:#666;font-family:'DM Sans';font-size:14px;font-weight:600;padding:12px 24px;cursor:pointer;">Back to Login</button>`;
+  document.body.appendChild(el);
+}
 
 function showAuthScreen() {
   document.getElementById('auth-screen')?.style && (document.getElementById('auth-screen').style.display = 'flex');
@@ -752,6 +804,12 @@ function hidAuthScreen() {
 <!-- APP ROOT -->
 <div id="app-root" style="display:none;">
 
+<!-- EXPIRY WARNING BANNER -->
+<div id="expiryWarningBanner" style="display:none;background:#ff8c4222;border-bottom:1px solid #ff8c4266;padding:10px 16px;text-align:center;">
+  <div id="expiryWarningText" style="font-size:12px;color:#ff8c42;font-weight:600;"></div>
+  <button onclick="document.getElementById('expiryWarningBanner').style.display='none'" style="background:transparent;border:none;color:#ff8c42;font-size:16px;cursor:pointer;position:absolute;right:12px;top:50%;transform:translateY(-50%);">✕</button>
+</div>
+
 <!-- SPLASH SCREEN -->
 <div id="splashScreen" style="position:fixed;inset:0;background:#0a0a0a;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;transition:opacity .4s ease;">
   <img src="logo.svg" alt="Brand Logo" style="height:64px;width:auto;" onerror="this.style.display='none'"/>
@@ -781,7 +839,13 @@ function hidAuthScreen() {
   </div>
   <button id="userMenuAdminBtn" onclick="toggleUserMenu();openAdminPanel()" style="display:none;width:100%;background:transparent;border:none;border-radius:8px;color:#a78bfa;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;text-align:left;transition:background .15s;" onmouseover="this.style.background='#1e1e1e'" onmouseout="this.style.background='transparent'">⚙️ Admin Panel</button>
   <button id="userMenuSuperBtn" onclick="toggleUserMenu();openSuperDashboard()" style="display:none;width:100%;background:transparent;border:none;border-radius:8px;color:#ff4747;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;text-align:left;transition:background .15s;" onmouseover="this.style.background='#1e1e1e'" onmouseout="this.style.background='transparent'">🌐 Super Dashboard</button>
+  <button id="userMenuSiteManagerBtn" onclick="toggleUserMenu();openSiteManagerPanel()" style="display:none;width:100%;background:transparent;border:none;border-radius:8px;color:#a78bfa;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;text-align:left;transition:background .15s;" onmouseover="this.style.background='#1e1e1e'" onmouseout="this.style.background='transparent'">🏢 Site Manager <span id="siteManagerBadge" style="display:none;background:#ff4747;color:#fff;border-radius:10px;font-size:10px;padding:2px 6px;margin-left:4px;">0</span></button>
   <button id="userMenuCoachBtn" onclick="toggleUserMenu();openCoachPanel()" style="display:none;width:100%;background:transparent;border:none;border-radius:8px;color:#34d399;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;text-align:left;transition:background .15s;" onmouseover="this.style.background='#1e1e1e'" onmouseout="this.style.background='transparent'">👥 My Clients</button>
+  <button id="userMenuFindCoachBtn" onclick="toggleUserMenu();openFindCoach()" style="display:none;width:100%;background:transparent;border:none;border-radius:8px;color:#7ec8e3;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;text-align:left;transition:background .15s;" onmouseover="this.style.background='#1e1e1e'" onmouseout="this.style.background='transparent'">🔍 Find a Coach</button>
+  <div id="userMenuNotifications" style="display:none;border-top:1px solid #2a2a2a;margin:6px 0;padding-top:6px;">
+    <div style="font-size:10px;color:#555;font-weight:600;letter-spacing:1px;padding:4px 12px 6px;">NOTIFICATIONS</div>
+    <div id="userMenuNotifList"></div>
+  </div>
   <button onclick="toggleUserMenu();closeDataModal();openDataModal()" style="width:100%;background:transparent;border:none;border-radius:8px;color:#f0f0f0;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;text-align:left;transition:background .15s;" onmouseover="this.style.background='#1e1e1e'" onmouseout="this.style.background='transparent'">📦 My Data</button>
   <div style="height:1px;background:#2a2a2a;margin:6px 0;"></div>
   <button onclick="toggleUserMenu();window._fbSignOut&&window._fbSignOut()" style="width:100%;background:transparent;border:none;border-radius:8px;color:#ff4747;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;text-align:left;transition:background .15s;" onmouseover="this.style.background='#1e1e1e'" onmouseout="this.style.background='transparent'">Sign Out</button>
@@ -2529,12 +2593,14 @@ function renderExercisesTab() {
     Create New Exercise
   </button>`;
 
+  const _hasCoach = window._currentUserData?.coachId && window._currentUserData?.coachingExpires && new Date(window._currentUserData.coachingExpires) >= new Date();
   const toggleHtml = `<div style="display:flex;gap:0;margin-bottom:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
     <button onclick="switchExTabView('created')" id="exTab-seg-created" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_exTabView==='created'?'var(--accent)':'transparent'};color:${_exTabView==='created'?'#000':'var(--muted)'};font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">CREATED</button>
     <button onclick="switchExTabView('library')" id="exTab-seg-library" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_exTabView==='library'?'var(--accent)':'transparent'};color:${_exTabView==='library'?'#000':'var(--muted)'};font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">LIBRARY</button>
+    ${_hasCoach ? `<button onclick="switchExTabView('coach')" id="exTab-seg-coach" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_exTabView==='coach'?'#7ec8e3':'transparent'};color:${_exTabView==='coach'?'#000':'#7ec8e3'};font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">COACH</button>` : ''}
   </div>`;
 
-  el.innerHTML = toggleHtml + (_exTabView === 'created' ? searchHtml + pillsHtml + listHtml + addBtnHtml : pillsHtml + buildExerciseLibraryHtml(selected));
+  el.innerHTML = toggleHtml + (_exTabView === 'created' ? searchHtml + pillsHtml + listHtml + addBtnHtml : _exTabView === 'coach' ? buildCoachExercisesHtml() : pillsHtml + buildExerciseLibraryHtml(selected));
   // Cards always start collapsed (minimized view by default)
 }
 
@@ -3235,7 +3301,8 @@ function renderWorkoutsTab() {
   const hiddenCount = deduped.filter(w => _hiddenLoadWorkouts.includes(w.name)).length;
   const showingHidden = !!window._showHiddenWorkoutsTab;
   let sorted = deduped.filter(w => showingHidden ? _hiddenLoadWorkouts.includes(w.name) : !_hiddenLoadWorkouts.includes(w.name));
-  const _wToggleHtml = `<div style="display:flex;gap:0;margin-bottom:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;"><button onclick="switchWTabView('created')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_wTabView==='created'?'var(--accent)':'transparent'};color:${_wTabView==='created'?'#000':'var(--muted)'};font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">CREATED</button><button onclick="switchWTabView('library')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_wTabView==='library'?'var(--accent)':'transparent'};color:${_wTabView==='library'?'#000':'var(--muted)'};font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">LIBRARY</button></div>`;
+  const _wHasCoach = window._currentUserData?.coachId && window._currentUserData?.coachingExpires && new Date(window._currentUserData.coachingExpires) >= new Date();
+  const _wToggleHtml = `<div style="display:flex;gap:0;margin-bottom:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;"><button onclick="switchWTabView('created')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_wTabView==='created'?'var(--accent)':'transparent'};color:${_wTabView==='created'?'#000':'var(--muted)'};font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">CREATED</button><button onclick="switchWTabView('library')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_wTabView==='library'?'var(--accent)':'transparent'};color:${_wTabView==='library'?'#000':'var(--muted)'};font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">LIBRARY</button>${_wHasCoach?`<button onclick="switchWTabView('coach')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_wTabView==='coach'?'#7ec8e3':'transparent'};color:${_wTabView==='coach'?'#000':'#7ec8e3'};font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">COACH</button>`:''}</div>`;
   const _mainListTitle = _wToggleHtml + (hiddenCount > 0 ? `<div style="display:flex;justify-content:flex-end;margin-bottom:6px;"><button onclick="window._showHiddenWorkoutsTab=true;window._keepWorkoutsTabState=true;renderWorkoutsTab()" style="background:transparent;border:none;color:#fff;font-family:'DM Sans';font-size:11px;font-weight:600;cursor:pointer;padding:0;">Hidden workouts ▶</button></div>` : '');
 
 
@@ -3341,6 +3408,10 @@ function renderWorkoutsTab() {
   if (_wTabView === 'library') {
     el.innerHTML = _wToggleHtml + buildWorkoutLibraryHtml();
     loadWorkoutLibrary();
+    return;
+  }
+  if (_wTabView === 'coach') {
+    el.innerHTML = _wToggleHtml + buildCoachWorkoutsHtml();
     return;
   }
   el.innerHTML = html + createNewBtn + toggleHiddenBtn;
@@ -10631,21 +10702,131 @@ if ("serviceWorker" in navigator) {
 <!-- COACH PANEL -->
 <div id="coachPanelOverlay" style="display:none;position:fixed;inset:0;z-index:9000;background:#0a0a0a;overflow-y:auto;">
   <div style="max-width:430px;margin:0 auto;padding:16px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 0 20px;">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 0 12px;">
       <div>
-        <div style="font-family:'Bebas Neue';font-size:28px;color:#34d399;letter-spacing:1px;">MY CLIENTS</div>
-        <div style="font-size:11px;color:#555;letter-spacing:2px;">COACH DASHBOARD</div>
+        <div style="font-family:'Bebas Neue';font-size:28px;color:#34d399;letter-spacing:1px;">COACH PANEL</div>
+        <div style="font-size:11px;color:#555;letter-spacing:2px;">MY DASHBOARD</div>
       </div>
       <button onclick="closeCoachPanel()" style="background:transparent;border:1px solid #2a2a2a;border-radius:8px;color:#888;font-size:18px;width:36px;height:36px;cursor:pointer;">✕</button>
     </div>
-    <div id="coachClientsList" style="margin-bottom:20px;"></div>
-    <div style="border-top:1px solid #2a2a2a;padding-top:16px;">
-      <div style="font-family:'Bebas Neue';font-size:14px;letter-spacing:1px;color:#555;margin-bottom:8px;">INVITE CLIENT BY EMAIL</div>
-      <div style="display:flex;gap:8px;">
-        <input id="coachInviteEmail" type="email" placeholder="client@email.com" style="flex:1;background:#141414;border:1px solid #2a2a2a;border-radius:10px;color:#f0f0f0;font-family:'DM Sans';font-size:14px;padding:12px;outline:none;"/>
-        <button onclick="inviteClientByEmail()" style="background:#34d39922;border:1px solid #34d39955;border-radius:10px;color:#34d399;font-family:'DM Sans';font-size:13px;font-weight:700;padding:12px 16px;cursor:pointer;white-space:nowrap;">Assign</button>
+
+    <!-- Tab bar -->
+    <div style="display:flex;background:#141414;border:1px solid #2a2a2a;border-radius:10px;overflow:hidden;margin-bottom:16px;">
+      <button onclick="switchCoachTab('clients')" id="coachTabClients" style="flex:1;padding:10px;border:none;background:#34d399;color:#000;font-family:'DM Sans';font-size:12px;font-weight:700;cursor:pointer;">My Clients</button>
+      <button onclick="switchCoachTab('profile')" id="coachTabProfile" style="flex:1;padding:10px;border:none;background:transparent;color:#666;font-family:'DM Sans';font-size:12px;font-weight:700;cursor:pointer;">My Profile</button>
+      <button onclick="switchCoachTab('library')" id="coachTabLibrary" style="flex:1;padding:10px;border:none;background:transparent;color:#666;font-family:'DM Sans';font-size:12px;font-weight:700;cursor:pointer;">My Library</button>
+    </div>
+
+    <!-- CLIENTS TAB -->
+    <div id="coachTabContentClients">
+      <!-- Site switcher -->
+      <div id="coachSiteSwitcher" style="display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;"></div>
+      <div id="coachClientsList"></div>
+    </div>
+
+    <!-- PROFILE TAB -->
+    <div id="coachTabContentProfile" style="display:none;">
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <!-- Photo -->
+        <div style="display:flex;align-items:center;gap:14px;background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:14px;">
+          <div id="coachProfilePhotoPreview" style="width:64px;height:64px;border-radius:50%;background:#1e1e1e;border:2px solid #34d399;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:24px;color:#34d399;">👤</div>
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:700;color:#f0f0f0;margin-bottom:4px;">Profile Photo</div>
+            <input type="url" id="coachPhotoUrl" placeholder="Photo URL (e.g. imgur link)" style="width:100%;background:#1e1e1e;border:1px solid #333;border-radius:8px;color:#f0f0f0;font-family:'DM Sans';font-size:12px;padding:8px;outline:none;box-sizing:border-box;" oninput="previewCoachPhoto(this.value)"/>
+          </div>
+        </div>
+        <input id="coachProfileName" type="text" placeholder="Full name" style="width:100%;background:#141414;border:1px solid #2a2a2a;border-radius:10px;color:#f0f0f0;font-family:'DM Sans';font-size:14px;padding:12px;outline:none;box-sizing:border-box;"/>
+        <input id="coachProfilePhone" type="tel" placeholder="Phone number" style="width:100%;background:#141414;border:1px solid #2a2a2a;border-radius:10px;color:#f0f0f0;font-family:'DM Sans';font-size:14px;padding:12px;outline:none;box-sizing:border-box;"/>
+        <textarea id="coachProfileBio" placeholder="Bio / Resume" rows="3" style="width:100%;background:#141414;border:1px solid #2a2a2a;border-radius:10px;color:#f0f0f0;font-family:'DM Sans';font-size:14px;padding:12px;outline:none;resize:none;box-sizing:border-box;"></textarea>
+        <input id="coachProfileSpecialties" type="text" placeholder="Specialties (e.g. Strength, HIIT, Yoga)" style="width:100%;background:#141414;border:1px solid #2a2a2a;border-radius:10px;color:#f0f0f0;font-family:'DM Sans';font-size:14px;padding:12px;outline:none;box-sizing:border-box;"/>
+        <input id="coachProfileCerts" type="text" placeholder="Certifications (e.g. NASM, ACE)" style="width:100%;background:#141414;border:1px solid #2a2a2a;border-radius:10px;color:#f0f0f0;font-family:'DM Sans';font-size:14px;padding:12px;outline:none;box-sizing:border-box;"/>
+        <input id="coachProfileAvailability" type="text" placeholder="Availability (e.g. Mon-Fri 7am-8pm)" style="width:100%;background:#141414;border:1px solid #2a2a2a;border-radius:10px;color:#f0f0f0;font-family:'DM Sans';font-size:14px;padding:12px;outline:none;box-sizing:border-box;"/>
+        <button onclick="saveCoachProfile()" style="width:100%;background:#34d39922;border:1px solid #34d39966;border-radius:10px;color:#34d399;font-family:'DM Sans';font-size:14px;font-weight:700;padding:13px;cursor:pointer;">Save Profile</button>
       </div>
     </div>
+
+    <!-- LIBRARY TAB -->
+    <div id="coachTabContentLibrary" style="display:none;">
+      <div style="display:flex;gap:8px;margin-bottom:14px;">
+        <button onclick="switchCoachLibTab('exercises')" id="coachLibTabEx" style="flex:1;padding:9px;border:none;background:#34d399;color:#000;border-radius:8px;font-family:'DM Sans';font-size:12px;font-weight:700;cursor:pointer;">Exercises</button>
+        <button onclick="switchCoachLibTab('workouts')" id="coachLibTabWo" style="flex:1;padding:9px;border:none;background:#1e1e1e;color:#666;border-radius:8px;font-family:'DM Sans';font-size:12px;font-weight:700;cursor:pointer;">Workouts</button>
+      </div>
+      <button onclick="openAddCoachExercise()" id="coachLibAddBtn" style="width:100%;background:transparent;border:1px dashed #34d39966;border-radius:10px;color:#34d399;font-family:'DM Sans';font-size:13px;font-weight:700;padding:12px;cursor:pointer;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:6px;">
+        <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Add Exercise
+      </button>
+      <div id="coachLibraryList"></div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- SITE MANAGER PANEL -->
+<div id="siteManagerOverlay" style="display:none;position:fixed;inset:0;z-index:9000;background:#0a0a0a;overflow-y:auto;">
+  <div style="max-width:430px;margin:0 auto;padding:16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 0 12px;">
+      <div>
+        <div style="font-family:'Bebas Neue';font-size:28px;color:#a78bfa;letter-spacing:1px;">SITE MANAGER</div>
+        <div id="siteManagerSiteLabel" style="font-size:11px;color:#555;letter-spacing:2px;">MY SITES</div>
+      </div>
+      <button onclick="closeSiteManagerPanel()" style="background:transparent;border:1px solid #2a2a2a;border-radius:8px;color:#888;font-size:18px;width:36px;height:36px;cursor:pointer;">✕</button>
+    </div>
+
+    <!-- Site switcher -->
+    <div id="smSiteSwitcher" style="display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;"></div>
+
+    <!-- Tabs -->
+    <div style="display:flex;background:#141414;border:1px solid #2a2a2a;border-radius:10px;overflow:hidden;margin-bottom:16px;">
+      <button onclick="switchSMTab('requests')" id="smTabRequests" style="flex:1;padding:10px;border:none;background:#a78bfa;color:#000;font-family:'DM Sans';font-size:12px;font-weight:700;cursor:pointer;">
+        Requests <span id="smRequestsBadge" style="display:none;background:#ff4747;color:#fff;border-radius:8px;font-size:10px;padding:1px 5px;margin-left:3px;">0</span>
+      </button>
+      <button onclick="switchSMTab('active')" id="smTabActive" style="flex:1;padding:10px;border:none;background:transparent;color:#666;font-family:'DM Sans';font-size:12px;font-weight:700;cursor:pointer;">Active</button>
+      <button onclick="switchSMTab('coaches')" id="smTabCoaches" style="flex:1;padding:10px;border:none;background:transparent;color:#666;font-family:'DM Sans';font-size:12px;font-weight:700;cursor:pointer;">Coaches</button>
+    </div>
+
+    <!-- REQUESTS TAB -->
+    <div id="smTabContentRequests">
+      <div id="smRequestsList"></div>
+    </div>
+
+    <!-- ACTIVE CONNECTIONS TAB -->
+    <div id="smTabContentActive" style="display:none;">
+      <div id="smActiveList"></div>
+    </div>
+
+    <!-- COACHES TAB (assign/remove coaches from site) -->
+    <div id="smTabContentCoaches" style="display:none;">
+      <div style="font-size:12px;color:#555;margin-bottom:12px;">Coaches assigned to this site are visible to clients browsing for a coach.</div>
+      <div id="smCoachesList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- FIND A COACH (CLIENT) -->
+<div id="findCoachOverlay" style="display:none;position:fixed;inset:0;z-index:9000;background:#0a0a0a;overflow-y:auto;">
+  <div style="max-width:430px;margin:0 auto;padding:16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 0 12px;">
+      <div>
+        <div style="font-family:'Bebas Neue';font-size:28px;color:#7ec8e3;letter-spacing:1px;">FIND A COACH</div>
+        <div style="font-size:11px;color:#555;letter-spacing:2px;">BROWSE COACHES</div>
+      </div>
+      <button onclick="closeFindCoach()" style="background:transparent;border:1px solid #2a2a2a;border-radius:8px;color:#888;font-size:18px;width:36px;height:36px;cursor:pointer;">✕</button>
+    </div>
+    <!-- Site switcher -->
+    <div id="findCoachSiteSwitcher" style="display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;"></div>
+    <!-- Coach list -->
+    <div id="findCoachList"></div>
+  </div>
+</div>
+
+<!-- COACH PROFILE VIEW (CLIENT) -->
+<div id="coachProfileViewOverlay" style="display:none;position:fixed;inset:0;z-index:9200;background:#0a0a0a;overflow-y:auto;">
+  <div style="max-width:430px;margin:0 auto;padding:16px;">
+    <button onclick="closeCoachProfileView()" style="background:transparent;border:none;color:#555;font-size:13px;cursor:pointer;padding:0;display:flex;align-items:center;gap:4px;margin-bottom:16px;margin-top:16px;">‹ Back to coaches</button>
+    <div id="coachProfileViewContent"></div>
   </div>
 </div>
 
@@ -10696,6 +10877,7 @@ if ("serviceWorker" in navigator) {
       <button onclick="switchAdminTab('users')" id="adminTabUsers" style="flex:1;padding:10px;border:none;background:#a78bfa;color:#000;font-family:'DM Sans';font-size:12px;font-weight:700;cursor:pointer;">Users</button>
       <button onclick="switchAdminTab('sites')" id="adminTabSites" style="flex:1;padding:10px;border:none;background:transparent;color:#666;font-family:'DM Sans';font-size:12px;font-weight:700;cursor:pointer;">Sites</button>
       <button onclick="switchAdminTab('licenses')" id="adminTabLicenses" style="flex:1;padding:10px;border:none;background:transparent;color:#666;font-family:'DM Sans';font-size:12px;font-weight:700;cursor:pointer;">Licenses</button>
+      <button onclick="switchAdminTab('people')" id="adminTabPeople" style="flex:1;padding:10px;border:none;background:transparent;color:#666;font-family:'DM Sans';font-size:12px;font-weight:700;cursor:pointer;">Invite</button>
     </div>
 
     <!-- USERS TAB -->
@@ -10724,6 +10906,51 @@ if ("serviceWorker" in navigator) {
     <!-- LICENSES TAB -->
     <div id="adminTabContentLicenses" style="display:none;">
       <div id="adminLicensesList"></div>
+    </div>
+
+    <!-- INVITE & EXPORT TAB -->
+    <div id="adminTabContentPeople" style="display:none;">
+
+      <!-- Export -->
+      <div style="background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:16px;margin-bottom:16px;">
+        <div style="font-family:'Bebas Neue';font-size:14px;letter-spacing:1px;color:#555;margin-bottom:6px;">EXPORT USERS</div>
+        <div style="font-size:12px;color:#555;line-height:1.6;margin-bottom:12px;">Download a spreadsheet of all users in this brand — name, email, role, site, expiry date.</div>
+        <button onclick="exportUsersCSV()" style="width:100%;background:#a78bfa22;border:1px solid #a78bfa55;border-radius:10px;color:#a78bfa;font-family:'DM Sans';font-size:14px;font-weight:700;padding:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+          <svg width="15" height="15" viewBox="0 0 20 20" fill="none"><path d="M10 3v10M6 9l4 4 4-4M4 15h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Download Users CSV
+        </button>
+      </div>
+
+      <!-- Bulk Invite -->
+      <div style="background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:16px;">
+        <div style="font-family:'Bebas Neue';font-size:14px;letter-spacing:1px;color:#555;margin-bottom:6px;">BULK INVITE</div>
+        <div style="font-size:12px;color:#555;line-height:1.6;margin-bottom:12px;">Paste email addresses (one per line). Pick a role and optional site. Invites are queued — when users sign up they get the assigned role automatically.</div>
+
+        <textarea id="bulkInviteEmails" placeholder="email@example.com&#10;another@example.com&#10;third@example.com" rows="5" style="width:100%;background:#1e1e1e;border:1px solid #333;border-radius:10px;color:#f0f0f0;font-family:'DM Sans';font-size:13px;padding:12px;outline:none;resize:none;box-sizing:border-box;margin-bottom:10px;"></textarea>
+
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <select id="bulkInviteRole" style="flex:1;background:#1e1e1e;border:1px solid #333;border-radius:8px;color:#f0f0f0;font-family:'DM Sans';font-size:13px;padding:10px;outline:none;">
+            <option value="client">Client</option>
+            <option value="coach">Coach</option>
+            <option value="site_manager">Site Manager</option>
+            <option value="brand_admin">Brand Admin</option>
+          </select>
+          <select id="bulkInviteSite" style="flex:1;background:#1e1e1e;border:1px solid #333;border-radius:8px;color:#f0f0f0;font-family:'DM Sans';font-size:13px;padding:10px;outline:none;">
+            <option value="">No site</option>
+          </select>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <div style="flex:1;">
+            <div style="font-size:11px;color:#555;margin-bottom:4px;">Account expires (optional)</div>
+            <input type="date" id="bulkInviteExpiry" style="width:100%;background:#1e1e1e;border:1px solid #333;border-radius:8px;color:#f0f0f0;font-family:'DM Sans';font-size:13px;padding:9px;outline:none;box-sizing:border-box;"/>
+          </div>
+        </div>
+
+        <div id="bulkInviteResult" style="display:none;margin-bottom:10px;"></div>
+
+        <button onclick="runBulkInvite()" style="width:100%;background:#34d39922;border:1px solid #34d39955;border-radius:10px;color:#34d399;font-family:'DM Sans';font-size:14px;font-weight:700;padding:13px;cursor:pointer;">Send Invites</button>
+      </div>
     </div>
   </div>
 </div>
@@ -10807,9 +11034,37 @@ async function handleForgotPassword() {
 }
 
 // Add sign-out to settings/my data area
+function renderUserMenuNotifications() {
+  const unseen = _clientNotifications.filter(n => !n.seen);
+  const wrap = document.getElementById('userMenuNotifications');
+  const list = document.getElementById('userMenuNotifList');
+  if (!wrap || !list) return;
+  if (!unseen.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  const typeIcons = { coach_assignment:'📋', coach_request:'👋', coach_approved:'✅', coach_declined:'❌', coach_ended:'🔚' };
+  list.innerHTML = unseen.slice(0,5).map(n => `
+    <div onclick="dismissNotification('${n.id}')" style="padding:8px 12px;border-radius:8px;cursor:pointer;transition:background .15s;" onmouseover="this.style.background='#1e1e1e'" onmouseout="this.style.background='transparent'">
+      <div style="font-size:12px;color:#f0f0f0;line-height:1.4;">${typeIcons[n.type]||'🔔'} ${n.message}</div>
+      <div style="font-size:10px;color:#555;margin-top:2px;">${new Date(n.createdAt).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div>
+    </div>`).join('');
+}
+
+function dismissNotification(notifId) {
+  const myUid = window._currentUser?.uid;
+  if (!myUid || !window._fbDb) return;
+  window._fbSetDoc(window._fbDoc(window._fbDb,'notifications',myUid,'items',notifId), { seen:true }, { merge:true }).then(() => {
+    _clientNotifications = _clientNotifications.map(n => n.id===notifId ? {...n,seen:true} : n);
+    const unseen = _clientNotifications.filter(n=>!n.seen).length;
+    updateNotificationBadge(unseen);
+    renderUserMenuNotifications();
+  });
+}
+
 function toggleUserMenu() {
   const menu = document.getElementById('userMenuDropdown');
-  menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+  const isOpening = menu.style.display === 'none';
+  menu.style.display = isOpening ? 'block' : 'none';
+  if (isOpening) renderUserMenuNotifications();
 }
 
 // Close menu when clicking outside
@@ -10825,6 +11080,7 @@ window._onAuthReady = (user) => {
   const roleLabels = { super_admin: 'Super Admin', ops_admin: 'Ops Admin', brand_admin: 'Brand Admin', site_manager: 'Site Manager', coach: 'Coach', client: 'Client' };
   const role = window._currentUserData?.role || 'client';
   const color = roleColors[role] || '#888';
+  const now = new Date();
 
   // Show and color user icon
   const iconBtn = document.getElementById('userIconBtn');
@@ -10845,10 +11101,48 @@ window._onAuthReady = (user) => {
   if (adminBtn && ['super_admin', 'ops_admin', 'brand_admin'].includes(role)) adminBtn.style.display = 'block';
   const superBtn = document.getElementById('userMenuSuperBtn');
   if (superBtn && role === 'super_admin') superBtn.style.display = 'block';
+  const smBtn = document.getElementById('userMenuSiteManagerBtn');
+  if (smBtn && ['super_admin','brand_admin','site_manager'].includes(role)) {
+    smBtn.style.display = 'block';
+    checkPendingRequests();
+  }
   const coachBtn = document.getElementById('userMenuCoachBtn');
-  if (coachBtn && ['super_admin', 'coach', 'site_manager'].includes(role)) coachBtn.style.display = 'block';
+  if (coachBtn && ['super_admin','coach','site_manager'].includes(role)) coachBtn.style.display = 'block';
+  const findCoachBtn = document.getElementById('userMenuFindCoachBtn');
+  if (findCoachBtn && role === 'client') findCoachBtn.style.display = 'block';
   const libBtn = document.getElementById('saveToLibraryBtn');
   if (libBtn && ['super_admin', 'ops_admin', 'brand_admin', 'site_manager', 'coach'].includes(role)) libBtn.style.display = '';
+
+  // ── EXPIRY WARNINGS ───────────────────────────────
+  const warningDays = window._brandConfig?.expiryWarningDays || 7;
+
+  // Account expiry warning banner
+  if (window._currentUserData?.accountExpires) {
+    const expDate = new Date(window._currentUserData.accountExpires);
+    const daysLeft = Math.ceil((expDate - now) / 86400000);
+    if (daysLeft > 0 && daysLeft <= warningDays) {
+      showExpiryWarning(`⚠️ Your account expires in ${daysLeft} day${daysLeft!==1?'s':''} (${expDate.toLocaleDateString('en-US',{month:'short',day:'numeric'})}). Contact your site manager to renew.`);
+    }
+  }
+
+  // Coaching expiry warning banner
+  if (window._currentUserData?.coachingExpires) {
+    const cExp = new Date(window._currentUserData.coachingExpires);
+    const cDays = Math.ceil((cExp - now) / 86400000);
+    if (cDays > 0 && cDays <= warningDays) {
+      showExpiryWarning(`⚠️ Your coaching period expires in ${cDays} day${cDays!==1?'s':''} (${cExp.toLocaleDateString('en-US',{month:'short',day:'numeric'})}). Contact your site manager to extend.`);
+    }
+  }
+  // ─────────────────────────────────────────────────
+
+  // Load client assignments if active coaching
+  const hasCoach = window._currentUserData?.coachId &&
+    window._currentUserData?.coachingExpires &&
+    new Date(window._currentUserData.coachingExpires) >= now;
+  if (hasCoach) loadClientAssignments();
+
+  // Load notifications for all users
+  loadClientNotifications();
 
   // Reload in-memory data from brand-scoped localStorage keys
   workouts = JSON.parse(_LS.get('ironlog_workouts') || '[]');
@@ -10862,7 +11156,6 @@ window._onAuthReady = (user) => {
     if (typeof renderHistory === 'function') renderHistory();
     if (loaded && typeof showToast === 'function') showToast('☁ Data loaded from cloud');
   });
-  // Preload library in background
   if (typeof loadLibrary === 'function') loadLibrary();
 };
 
@@ -10938,8 +11231,128 @@ window.loadFromFirestore = function(uid) {
 };
 
 // ══════════════════════════════════════════════════════
-//  SUPER ADMIN DASHBOARD
+//  EXPORT + BULK INVITE
 // ══════════════════════════════════════════════════════
+function initBulkInvite() {
+  // Populate site dropdown
+  const siteSelect = document.getElementById('bulkInviteSite');
+  if (siteSelect && _adminSites.length) {
+    siteSelect.innerHTML = '<option value="">No site</option>' +
+      _adminSites.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+  } else if (siteSelect && !_adminSites.length) {
+    // Load sites if not loaded yet
+    loadAdminSites().then(() => {
+      siteSelect.innerHTML = '<option value="">No site</option>' +
+        _adminSites.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+    });
+  }
+}
+
+function exportUsersCSV() {
+  // Use already-loaded _adminUsers, or load them first
+  const doExport = (users) => {
+    const brandId = window.BRAND_ID;
+    const sitesMap = Object.fromEntries(_adminSites.map(s => [s.id, s.name]));
+    const rows = [
+      ['Name', 'Email', 'User ID', 'Role', 'Site', 'Account Expires', 'Coaching Expires', 'Coach ID']
+    ];
+    users.forEach(u => {
+      const siteNames = (u.siteIds || []).map(id => sitesMap[id] || id).join('; ');
+      rows.push([
+        u.displayName || '',
+        u.email || '',
+        u.uid || u.id || '',
+        u.brandRole || u.roles?.[brandId] || u.role || '',
+        siteNames,
+        u.accountExpires || '',
+        u.coachingExpires || '',
+        u.coachId || ''
+      ]);
+    });
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${brandId}_users_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast(`Exported ${users.length} users`);
+  };
+
+  if (_adminUsers.length) {
+    doExport(_adminUsers);
+  } else {
+    showToast('Loading users...');
+    const { getDocs, collection, query, where } = window._fbFirestoreExtra || {};
+    const brandId = window.BRAND_ID;
+    getDocs(query(collection(window._fbDb,'users'), where('brands','array-contains',brandId))).then(snap => {
+      const users = snap.docs.map(d => {
+        const data = { id: d.id, ...d.data() };
+        data.brandRole = data.roles?.[brandId] || data.role || 'client';
+        return data;
+      });
+      doExport(users);
+    }).catch(e => showToast('Error: ' + e.message));
+  }
+}
+
+function runBulkInvite() {
+  const raw = document.getElementById('bulkInviteEmails').value;
+  const role = document.getElementById('bulkInviteRole').value;
+  const siteId = document.getElementById('bulkInviteSite').value;
+  const expiry = document.getElementById('bulkInviteExpiry').value;
+  const brandId = window.BRAND_ID;
+
+  const emails = raw.split('\n').map(e => e.trim().toLowerCase()).filter(e => e && e.includes('@'));
+  if (!emails.length) { showToast('Paste at least one valid email'); return; }
+
+  const resultEl = document.getElementById('bulkInviteResult');
+  resultEl.style.display = 'block';
+  resultEl.innerHTML = `<div style="font-size:13px;color:#555;padding:10px 0;">Processing ${emails.length} email${emails.length!==1?'s':''}...</div>`;
+
+  const { getDocs, collection, query, where } = window._fbFirestoreExtra || {};
+  const results = { updated: [], queued: [], errors: [] };
+
+  // Check which emails already have accounts
+  getDocs(query(collection(window._fbDb,'users'), where('brands','array-contains',brandId))).then(snap => {
+    const existingUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const existingByEmail = Object.fromEntries(existingUsers.map(u => [u.email?.toLowerCase(), u]));
+
+    const promises = emails.map(email => {
+      const existing = existingByEmail[email];
+      if (existing) {
+        // User exists — update their role
+        const update = { [`roles.${brandId}`]: role, brands: [...new Set([...(existing.brands||[]), brandId])] };
+        if (siteId) update.siteIds = [...new Set([...(existing.siteIds||[]), siteId])];
+        if (expiry) update.accountExpires = expiry;
+        return window._fbSetDoc(window._fbDoc(window._fbDb,'users',existing.id), update, { merge:true })
+          .then(() => results.updated.push(email))
+          .catch(() => results.errors.push(email));
+      } else {
+        // User doesn't exist — queue as pending invite
+        const inviteData = { email, brandId, role, siteId: siteId || null, accountExpires: expiry || null, createdAt: new Date().toISOString(), status: 'pending' };
+        return window._fbSetDoc(window._fbDoc(window._fbDb,'pendingInvites',`${brandId}_${email.replace(/[@.]/g,'_')}`), inviteData)
+          .then(() => results.queued.push(email))
+          .catch(() => results.errors.push(email));
+      }
+    });
+
+    Promise.all(promises).then(() => {
+      const parts = [];
+      if (results.updated.length) parts.push(`<div style="color:#34d399;font-size:12px;margin-bottom:6px;">✓ ${results.updated.length} existing user${results.updated.length!==1?'s':''} updated</div>`);
+      if (results.queued.length) parts.push(`<div style="color:#7ec8e3;font-size:12px;margin-bottom:6px;">⏳ ${results.queued.length} invite${results.queued.length!==1?'s':''} queued — role assigned when they sign up</div>`);
+      if (results.errors.length) parts.push(`<div style="color:#ff4747;font-size:12px;">✗ ${results.errors.length} error${results.errors.length!==1?'s':''}: ${results.errors.join(', ')}</div>`);
+      resultEl.innerHTML = parts.join('') || '<div style="color:#555;font-size:12px;">No changes made</div>';
+      if (results.updated.length || results.queued.length) {
+        document.getElementById('bulkInviteEmails').value = '';
+        loadAdminUsers(); // Refresh user list
+      }
+    });
+  }).catch(e => {
+    resultEl.innerHTML = `<div style="color:#ff4747;font-size:12px;">Error: ${e.message}</div>`;
+  });
+}
 let _superBrands = [];
 let _superSites = [];
 let _superUsers = [];
@@ -11209,7 +11622,7 @@ function closeAdminPanel() {
 
 function switchAdminTab(tab) {
   _adminTab = tab;
-  ['users','sites','licenses'].forEach(t => {
+  ['users','sites','licenses','people'].forEach(t => {
     document.getElementById('adminTabContent' + t.charAt(0).toUpperCase() + t.slice(1)).style.display = t === tab ? '' : 'none';
     const btn = document.getElementById('adminTab' + t.charAt(0).toUpperCase() + t.slice(1));
     if (btn) { btn.style.background = t === tab ? '#a78bfa' : 'transparent'; btn.style.color = t === tab ? '#000' : '#666'; }
@@ -11217,6 +11630,7 @@ function switchAdminTab(tab) {
   if (tab === 'users' && !_adminUsers.length) loadAdminUsers();
   if (tab === 'sites') loadAdminSites();
   if (tab === 'licenses') loadAdminLicenses();
+  if (tab === 'people') initBulkInvite();
 }
 
 function loadAdminUsers() {
@@ -11545,7 +11959,19 @@ function loadAdminLicenses() {
 function renderAdminLicenses(licenses) {
   const myRole = window._currentUserData?.role;
   const canSetLimits = myRole === 'super_admin';
-  document.getElementById('adminLicensesList').innerHTML = ['site_manager','coach','client'].map(role => {
+  const warningDays = window._brandConfig?.expiryWarningDays || 7;
+
+  const warningConfig = canSetLimits ? `
+    <div style="background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:14px;margin-bottom:16px;">
+      <div style="font-size:11px;color:#555;font-weight:600;margin-bottom:8px;">EXPIRY WARNING DAYS</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:13px;color:#f0f0f0;">Warn users</span>
+        <input type="number" value="${warningDays}" min="1" max="30" style="width:60px;background:#1e1e1e;border:1px solid #333;border-radius:7px;color:#f0f0f0;font-family:'DM Sans';font-size:13px;padding:6px 8px;outline:none;text-align:center;" onchange="updateWarningDays(this.value)"/>
+        <span style="font-size:13px;color:#f0f0f0;">days before expiry</span>
+      </div>
+    </div>` : '';
+
+  document.getElementById('adminLicensesList').innerHTML = warningConfig + ['site_manager','coach','client'].map(role => {
     const lic = licenses[role] || { limit: 0, used: 0, locked: false };
     const pct = lic.limit > 0 ? Math.min(100, Math.round(lic.used / lic.limit * 100)) : 0;
     const barColor = lic.locked ? '#ff4747' : pct >= 90 ? '#ff8c42' : '#34d399';
@@ -11570,6 +11996,14 @@ function renderAdminLicenses(licenses) {
   }).join('');
 }
 
+function updateWarningDays(value) {
+  const brandId = window.BRAND_ID;
+  const days = parseInt(value) || 7;
+  window._fbSetDoc(window._fbDoc(window._fbDb,'brands',brandId), { expiryWarningDays: days }, { merge:true })
+    .then(() => { if (window._brandConfig) window._brandConfig.expiryWarningDays = days; showToast(`Warning set to ${days} days before expiry`); })
+    .catch(e => showToast('Error: ' + e.message));
+}
+
 function updateLicenseLimit(role, value) {
   const brandId = window.BRAND_ID;
   const ref = window._fbDoc(window._fbDb, 'brands', brandId);
@@ -11589,145 +12023,497 @@ function toggleLicenseLock(role, locked) {
 // ══════════════════════════════════════════════════════
 //  COACH PANEL
 // ══════════════════════════════════════════════════════
+let _coachSites = [];
+let _coachActiveSite = null;
+let _coachProfile = null;
+let _coachLibTab = 'exercises';
+let _coachExercises = [];
+let _coachWorkouts = [];
+
 function openCoachPanel() {
   document.getElementById('coachPanelOverlay').style.display = 'block';
-  loadCoachClients();
+  switchCoachTab('clients');
+  loadCoachSites();
+  loadCoachProfileData();
 }
 
 function closeCoachPanel() {
   document.getElementById('coachPanelOverlay').style.display = 'none';
 }
 
-function loadCoachClients() {
-  const myUid = window._currentUser?.uid;
-  const list = document.getElementById('coachClientsList');
-  if (!myUid || !window._fbDb) return;
-  const { getDocs, collection, query, where } = window._fbFirestoreExtra || {};
-  if (!getDocs || !collection || !query || !where) {
-    list.innerHTML = '<div style="color:#ff4747;padding:16px;font-size:13px;">Firestore not ready</div>';
-    return;
-  }
-  list.innerHTML = '<div style="text-align:center;padding:40px;color:#555;font-size:13px;">Loading clients...</div>';
-  getDocs(query(collection(window._fbDb, 'users'), where('coachId', '==', myUid))).then(snap => {
-    const clients = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    if (!clients.length) {
-      list.innerHTML = `<div style="text-align:center;padding:40px;color:#555;font-size:13px;">No clients assigned yet.<br>Ask an admin to assign clients to you,<br>or invite clients by email below.</div>`;
-      return;
-    }
-    list.innerHTML = clients.map(c => `
-      <div style="background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;cursor:pointer;" onclick="viewClientData('${c.id}','${c.displayName||c.email||c.id}')">
-        <div style="width:40px;height:40px;border-radius:50%;background:#e8ff4722;border:1px solid #e8ff4755;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:#e8ff47;flex-shrink:0;">${(c.displayName||c.email||'?').slice(0,2).toUpperCase()}</div>
-        <div style="flex:1;min-width:0;">
-          <div style="font-weight:700;font-size:14px;color:#f0f0f0;">${c.displayName||'—'}</div>
-          <div style="font-size:12px;color:#666;">${c.email||c.id}</div>
-        </div>
-        <span style="color:#555;font-size:18px;">›</span>
-      </div>`).join('');
-  }).catch(e => {
-    list.innerHTML = `<div style="color:#ff4747;padding:16px;font-size:13px;">Error: ${e.message}</div>`;
+function switchCoachTab(tab) {
+  ['clients','profile','library'].forEach(t => {
+    document.getElementById('coachTabContent' + t.charAt(0).toUpperCase() + t.slice(1)).style.display = t === tab ? '' : 'none';
+    const btn = document.getElementById('coachTab' + t.charAt(0).toUpperCase() + t.slice(1));
+    if (btn) { btn.style.background = t === tab ? '#34d399' : 'transparent'; btn.style.color = t === tab ? '#000' : '#666'; }
   });
+  if (tab === 'library') loadCoachLibrary();
 }
 
-function inviteClientByEmail() {
-  const email = document.getElementById('coachInviteEmail').value.trim();
-  if (!email) return;
+// ── SITES & CLIENTS ──────────────────────────────────
+function loadCoachSites() {
   const myUid = window._currentUser?.uid;
   const brandId = window.BRAND_ID;
   const { getDocs, collection, query, where } = window._fbFirestoreExtra || {};
-  if (!getDocs || !query || !collection || !where) return;
+  if (!getDocs || !window._fbDb) return;
+  getDocs(query(collection(window._fbDb, 'sites'), where('brandId','==',brandId), where('coachIds','array-contains',myUid))).then(snap => {
+    _coachSites = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (_coachSites.length) { _coachActiveSite = _coachSites[0].id; }
+    renderCoachSiteSwitcher();
+    loadCoachClients();
+  }).catch(() => loadCoachClients());
+}
 
-  // Check client license before assigning
-  window._fbGetDoc(window._fbDoc(window._fbDb, 'brands', brandId)).then(snap => {
-    const lic = snap.exists() ? snap.data().licenses?.client : null;
-    if (lic?.locked) { showToast('Client role is locked — contact super admin'); return; }
-    if (lic && lic.limit > 0 && lic.used >= lic.limit) {
-      showToast(`Client license limit reached (${lic.used}/${lic.limit})`); return;
+function renderCoachSiteSwitcher() {
+  const el = document.getElementById('coachSiteSwitcher');
+  if (!el) return;
+  if (_coachSites.length <= 1) { el.style.display = 'none'; return; }
+  el.style.display = 'flex';
+  el.innerHTML = _coachSites.map(s =>
+    `<button onclick="selectCoachSite('${s.id}')" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid ${_coachActiveSite===s.id?'#34d399':'#333'};background:${_coachActiveSite===s.id?'#34d39922':'transparent'};color:${_coachActiveSite===s.id?'#34d399':'#888'};font-family:'DM Sans';font-size:12px;font-weight:700;cursor:pointer;">${s.name}</button>`
+  ).join('');
+}
+
+function selectCoachSite(siteId) {
+  _coachActiveSite = siteId;
+  renderCoachSiteSwitcher();
+  loadCoachClients();
+}
+
+function loadCoachClients() {
+  const myUid = window._currentUser?.uid;
+  const brandId = window.BRAND_ID;
+  const list = document.getElementById('coachClientsList');
+  if (!list || !myUid || !window._fbDb) return;
+  list.innerHTML = '<div style="text-align:center;padding:40px;color:#555;font-size:13px;">Loading clients...</div>';
+  const { getDocs, collection, query, where } = window._fbFirestoreExtra || {};
+  if (!getDocs) return;
+
+  // Find active coaching connections for this coach
+  getDocs(query(collection(window._fbDb,'coachConnections'), where('coachUid','==',myUid), where('brandId','==',brandId))).then(snap => {
+    const connections = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const now = new Date();
+    const active = connections.filter(c => c.endDate && new Date(c.endDate) >= now);
+
+    if (!active.length) {
+      list.innerHTML = '<div style="text-align:center;padding:40px;color:#555;font-size:13px;">No active clients yet.<br>Clients can request you from the Find a Coach screen.</div>';
+      return;
     }
-    getDocs(query(collection(window._fbDb, 'users'), where('email', '==', email))).then(snap => {
-      if (snap.empty) { showToast('No user found with that email'); return; }
-      const clientDoc = snap.docs[0];
-      const update = { coachId: myUid, [`roles.${brandId}`]: 'client', brands: [...(clientDoc.data().brands||[]), brandId].filter((v,i,a)=>a.indexOf(v)===i) };
-      window._fbSetDoc(window._fbDoc(window._fbDb, 'users', clientDoc.id), update, { merge: true }).then(() => {
-        showToast('Client assigned to you!');
-        document.getElementById('coachInviteEmail').value = '';
-        loadCoachClients();
-      });
-    }).catch(e => showToast('Error: ' + e.message));
+
+    // Fetch client user docs
+    Promise.all(active.map(c => window._fbGetDoc(window._fbDoc(window._fbDb,'users',c.clientUid)))).then(snaps => {
+      const clients = snaps.map((s,i) => ({ ...active[i], ...( s.exists() ? s.data() : {}), uid: active[i].clientUid }));
+      const filtered = _coachActiveSite ? clients.filter(c => !c.siteId || c.siteId === _coachActiveSite) : clients;
+
+      list.innerHTML = filtered.map(c => {
+        const exp = c.endDate ? new Date(c.endDate) : null;
+        const daysLeft = exp ? Math.ceil((exp - now) / 86400000) : null;
+        const expColor = daysLeft !== null ? (daysLeft <= 7 ? '#ff8c42' : '#34d399') : '#555';
+        return `<div style="background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;cursor:pointer;" onclick="viewClientData('${c.uid}','${c.displayName||c.email||c.uid}')">
+          <div style="width:40px;height:40px;border-radius:50%;background:#e8ff4722;border:1px solid #e8ff4755;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:#e8ff47;flex-shrink:0;">${(c.displayName||c.email||'?').slice(0,2).toUpperCase()}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:700;font-size:14px;color:#f0f0f0;">${c.displayName||'—'}</div>
+            <div style="font-size:12px;color:#666;">${c.email||''}</div>
+            ${daysLeft !== null ? `<div style="font-size:11px;color:${expColor};margin-top:2px;">${daysLeft > 0 ? daysLeft + ' days left' : 'Expires today'}</div>` : ''}
+          </div>
+          <span style="color:#555;font-size:18px;">›</span>
+        </div>`;
+      }).join('') || '<div style="text-align:center;padding:20px;color:#555;font-size:13px;">No clients at this site.</div>';
+    });
+  }).catch(e => { list.innerHTML = `<div style="color:#ff4747;padding:16px;font-size:13px;">Error: ${e.message}</div>`; });
+}
+
+// ── COACH PROFILE ────────────────────────────────────
+function loadCoachProfileData() {
+  const myUid = window._currentUser?.uid;
+  if (!myUid || !window._fbDb) return;
+  window._fbGetDoc(window._fbDoc(window._fbDb,'coachProfiles',myUid)).then(snap => {
+    if (!snap.exists()) return;
+    _coachProfile = snap.data();
+    document.getElementById('coachProfileName').value = _coachProfile.name || '';
+    document.getElementById('coachProfilePhone').value = _coachProfile.phone || '';
+    document.getElementById('coachProfileBio').value = _coachProfile.bio || '';
+    document.getElementById('coachProfileSpecialties').value = (_coachProfile.specialties||[]).join(', ');
+    document.getElementById('coachProfileCerts').value = (_coachProfile.certifications||[]).join(', ');
+    document.getElementById('coachProfileAvailability').value = _coachProfile.availability || '';
+    if (_coachProfile.photoUrl) {
+      document.getElementById('coachPhotoUrl').value = _coachProfile.photoUrl;
+      previewCoachPhoto(_coachProfile.photoUrl);
+    }
   });
 }
 
+function previewCoachPhoto(url) {
+  const el = document.getElementById('coachProfilePhotoPreview');
+  if (!el) return;
+  if (url) {
+    el.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.innerHTML='👤'"/>`;
+  } else {
+    el.innerHTML = '👤';
+  }
+}
+
+function saveCoachProfile() {
+  const myUid = window._currentUser?.uid;
+  const brandId = window.BRAND_ID;
+  if (!myUid || !window._fbDb) return;
+  const profile = {
+    uid: myUid,
+    brandId,
+    name: document.getElementById('coachProfileName').value.trim(),
+    phone: document.getElementById('coachProfilePhone').value.trim(),
+    bio: document.getElementById('coachProfileBio').value.trim(),
+    specialties: document.getElementById('coachProfileSpecialties').value.split(',').map(s=>s.trim()).filter(Boolean),
+    certifications: document.getElementById('coachProfileCerts').value.split(',').map(s=>s.trim()).filter(Boolean),
+    availability: document.getElementById('coachProfileAvailability').value.trim(),
+    photoUrl: document.getElementById('coachPhotoUrl').value.trim(),
+    updatedAt: new Date().toISOString()
+  };
+  window._fbSetDoc(window._fbDoc(window._fbDb,'coachProfiles',myUid), profile, { merge: true })
+    .then(() => { _coachProfile = profile; showToast('Profile saved!'); })
+    .catch(e => showToast('Error: ' + e.message));
+}
+
+// ── COACH LIBRARY ────────────────────────────────────
+function switchCoachLibTab(tab) {
+  _coachLibTab = tab;
+  const isEx = tab === 'exercises';
+  document.getElementById('coachLibTabEx').style.background = isEx ? '#34d399' : '#1e1e1e';
+  document.getElementById('coachLibTabEx').style.color = isEx ? '#000' : '#666';
+  document.getElementById('coachLibTabWo').style.background = isEx ? '#1e1e1e' : '#34d399';
+  document.getElementById('coachLibTabWo').style.color = isEx ? '#666' : '#000';
+  document.getElementById('coachLibAddBtn').textContent = isEx ? '+ Add Exercise' : '+ Add Workout';
+  document.getElementById('coachLibAddBtn').onclick = isEx ? openAddCoachExercise : openAddCoachWorkout;
+  renderCoachLibrary();
+}
+
+function loadCoachLibrary() {
+  const myUid = window._currentUser?.uid;
+  if (!myUid || !window._fbDb || !window._fbFirestoreExtra) return;
+  const { getDocs, collection } = window._fbFirestoreExtra;
+  Promise.all([
+    getDocs(collection(window._fbDb,'coachLibrary',myUid,'exercises')).then(s => { _coachExercises = s.docs.map(d=>({id:d.id,...d.data()})); }),
+    getDocs(collection(window._fbDb,'coachLibrary',myUid,'workouts')).then(s => { _coachWorkouts = s.docs.map(d=>({id:d.id,...d.data()})); })
+  ]).then(() => renderCoachLibrary());
+}
+
+function renderCoachLibrary() {
+  const list = document.getElementById('coachLibraryList');
+  if (!list) return;
+  const items = _coachLibTab === 'exercises' ? _coachExercises : _coachWorkouts;
+  if (!items.length) {
+    list.innerHTML = `<div style="text-align:center;padding:32px;color:#555;font-size:13px;">No ${_coachLibTab} in your library yet.</div>`;
+    return;
+  }
+  list.innerHTML = items.map(item => `
+    <div style="background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:14px;margin-bottom:10px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:700;font-size:14px;color:#f0f0f0;">${item.name}</div>
+          ${item.description ? `<div style="font-size:12px;color:#555;margin-top:2px;">${item.description}</div>` : ''}
+          ${item.muscle ? `<div style="font-size:11px;color:#34d399;margin-top:3px;">${item.muscle}</div>` : ''}
+          ${item.videoUrl ? `<div style="font-size:11px;color:#7ec8e3;margin-top:3px;">📹 Video attached</div>` : ''}
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          <button onclick="assignCoachItem('${item.id}','${_coachLibTab}')" style="background:#7ec8e322;border:1px solid #7ec8e344;border-radius:7px;color:#7ec8e3;font-family:'DM Sans';font-size:11px;font-weight:700;padding:5px 8px;cursor:pointer;">Assign</button>
+          <button onclick="deleteCoachItem('${item.id}','${_coachLibTab}')" style="background:transparent;border:1px solid #333;border-radius:7px;color:#555;font-size:11px;padding:5px 8px;cursor:pointer;">✕</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function openAddCoachExercise() {
+  const overlay = document.createElement('div');
+  overlay.className = 'delete-confirm-overlay';
+  overlay.innerHTML = `<div class="delete-confirm-sheet">
+    <div class="delete-confirm-title">Add to My Library</div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+      <input id="_cexName" type="text" placeholder="Exercise name" style="background:#1a1a1a;border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans';font-size:15px;padding:12px;outline:none;"/>
+      <select id="_cexMuscle" style="background:#1a1a1a;border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans';font-size:15px;padding:12px;outline:none;">
+        <option value="">Muscle group</option>
+        ${['Chest','Back','Legs','Shoulders','Arms','Core','Compound'].map(m=>`<option value="${m}">${m}</option>`).join('')}
+      </select>
+      <input id="_cexDesc" type="text" placeholder="Description (optional)" style="background:#1a1a1a;border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans';font-size:15px;padding:12px;outline:none;"/>
+      <input id="_cexVideo" type="url" placeholder="Video URL (YouTube/Vimeo, optional)" style="background:#1a1a1a;border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans';font-size:15px;padding:12px;outline:none;"/>
+    </div>
+    <div class="delete-confirm-btns">
+      <button class="btn-del-cancel" onclick="this.closest('.delete-confirm-overlay').remove()">Cancel</button>
+      <button class="btn-del-yes" onclick="saveCoachExercise(this)">Add</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  setTimeout(() => overlay.querySelector('#_cexName').focus(), 100);
+}
+
+function openAddCoachWorkout() {
+  const overlay = document.createElement('div');
+  overlay.className = 'delete-confirm-overlay';
+  overlay.innerHTML = `<div class="delete-confirm-sheet">
+    <div class="delete-confirm-title">Add Workout to My Library</div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+      <input id="_cwoName" type="text" placeholder="Workout name" style="background:#1a1a1a;border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans';font-size:15px;padding:12px;outline:none;"/>
+      <textarea id="_cwoDesc" placeholder="Description / note to client" rows="3" style="background:#1a1a1a;border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans';font-size:15px;padding:12px;outline:none;resize:none;"></textarea>
+      <input id="_cwoVideo" type="url" placeholder="Video URL (optional)" style="background:#1a1a1a;border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans';font-size:15px;padding:12px;outline:none;"/>
+    </div>
+    <div class="delete-confirm-btns">
+      <button class="btn-del-cancel" onclick="this.closest('.delete-confirm-overlay').remove()">Cancel</button>
+      <button class="btn-del-yes" onclick="saveCoachWorkout(this)">Add</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
+function saveCoachExercise(btn) {
+  const name = document.getElementById('_cexName').value.trim();
+  if (!name) { showToast('Enter a name'); return; }
+  const myUid = window._currentUser?.uid;
+  const ref = window._fbDoc(window._fbDb,'coachLibrary',myUid,'exercises',Date.now().toString());
+  const data = { name, muscle: document.getElementById('_cexMuscle').value, description: document.getElementById('_cexDesc').value.trim(), videoUrl: document.getElementById('_cexVideo').value.trim(), createdAt: new Date().toISOString() };
+  window._fbSetDoc(ref, data).then(() => {
+    _coachExercises.push({ id: ref.id, ...data });
+    btn.closest('.delete-confirm-overlay').remove();
+    renderCoachLibrary();
+    showToast('Exercise added!');
+  }).catch(e => showToast('Error: ' + e.message));
+}
+
+function saveCoachWorkout(btn) {
+  const name = document.getElementById('_cwoName').value.trim();
+  if (!name) { showToast('Enter a name'); return; }
+  const myUid = window._currentUser?.uid;
+  const ref = window._fbDoc(window._fbDb,'coachLibrary',myUid,'workouts',Date.now().toString());
+  const data = { name, description: document.getElementById('_cwoDesc').value.trim(), videoUrl: document.getElementById('_cwoVideo').value.trim(), createdAt: new Date().toISOString() };
+  window._fbSetDoc(ref, data).then(() => {
+    _coachWorkouts.push({ id: ref.id, ...data });
+    btn.closest('.delete-confirm-overlay').remove();
+    renderCoachLibrary();
+    showToast('Workout added!');
+  }).catch(e => showToast('Error: ' + e.message));
+}
+
+function deleteCoachItem(id, type) {
+  const myUid = window._currentUser?.uid;
+  const ref = window._fbDoc(window._fbDb,'coachLibrary',myUid,type,id);
+  window._fbDeleteDoc(ref).then(() => {
+    if (type === 'exercises') _coachExercises = _coachExercises.filter(e=>e.id!==id);
+    else _coachWorkouts = _coachWorkouts.filter(w=>w.id!==id);
+    renderCoachLibrary();
+    showToast('Removed');
+  }).catch(e => showToast('Error: ' + e.message));
+}
+
+function assignCoachItem(itemId, type) {
+  // Open client picker to assign item
+  const connections = []; // will be loaded
+  const myUid = window._currentUser?.uid;
+  const brandId = window.BRAND_ID;
+  const { getDocs, collection, query, where } = window._fbFirestoreExtra || {};
+  getDocs(query(collection(window._fbDb,'coachConnections'), where('coachUid','==',myUid), where('brandId','==',brandId))).then(snap => {
+    const active = snap.docs.filter(d => new Date(d.data().endDate) >= new Date()).map(d=>({id:d.id,...d.data()}));
+    if (!active.length) { showToast('No active clients to assign to'); return; }
+    const overlay = document.createElement('div');
+    overlay.className = 'delete-confirm-overlay';
+    overlay.innerHTML = `<div class="delete-confirm-sheet">
+      <div class="delete-confirm-title">Assign to Client</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
+        ${active.map(c=>`<button onclick="doAssignToClient('${c.clientUid}','${itemId}','${type}',this)" style="background:#141414;border:1px solid #2a2a2a;border-radius:10px;color:#f0f0f0;font-family:'DM Sans';font-size:13px;font-weight:600;padding:12px;cursor:pointer;text-align:left;">${c.clientUid}</button>`).join('')}
+      </div>
+      <textarea id="_assignNote" placeholder="Note to client (optional)" rows="2" style="width:100%;background:#1a1a1a;border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans';font-size:14px;padding:10px;outline:none;resize:none;box-sizing:border-box;margin-bottom:12px;"></textarea>
+      <button class="btn-del-cancel" onclick="this.closest('.delete-confirm-overlay').remove()">Cancel</button>
+    </div>`;
+    document.body.appendChild(overlay);
+  });
+}
+
+function doAssignToClient(clientUid, itemId, type, btn) {
+  const myUid = window._currentUser?.uid;
+  const note = document.getElementById('_assignNote')?.value?.trim() || '';
+  const item = type === 'exercises' ? _coachExercises.find(e=>e.id===itemId) : _coachWorkouts.find(w=>w.id===itemId);
+  const ref = window._fbDoc(window._fbDb,'clientAssignments',clientUid,'items',Date.now().toString());
+  window._fbSetDoc(ref, {
+    coachUid: myUid, itemId, type,
+    name: item?.name || '', videoUrl: item?.videoUrl || '',
+    note, assignedAt: new Date().toISOString(), seen: false
+  }).then(() => {
+    btn.closest('.delete-confirm-overlay').remove();
+    // Create notification for client
+    const nRef = window._fbDoc(window._fbDb,'notifications',clientUid,'items',Date.now().toString());
+    window._fbSetDoc(nRef, { type:'coach_assignment', message:`Your coach sent you a new ${type==='exercises'?'exercise':'workout'}: ${item?.name||''}`, seen:false, createdAt:new Date().toISOString() });
+    showToast('Assigned to client!');
+  }).catch(e => showToast('Error: ' + e.message));
+}
+
+// ── CLIENT DATA VIEWER ────────────────────────────────
 function viewClientData(clientId, clientName) {
   document.getElementById('clientViewerOverlay').style.display = 'block';
   document.getElementById('clientViewerName').textContent = clientName;
   document.getElementById('clientViewerHistory').innerHTML = '<div style="text-align:center;padding:40px;color:#555;font-size:13px;">Loading...</div>';
   if (!window._fbDb) return;
   const brandId = window.BRAND_ID;
-  const ref = window._fbDoc(window._fbDb, 'userData', brandId, 'users', clientId);
+  const ref = window._fbDoc(window._fbDb,'userData',brandId,'users',clientId);
   window._fbGetDoc(ref).then(snap => {
     if (!snap.exists()) {
       document.getElementById('clientViewerHistory').innerHTML = '<div style="text-align:center;padding:40px;color:#555;font-size:13px;">No workout data yet.</div>';
       return;
     }
     const data = snap.data();
-    const wkts = (data.workouts || []).filter(w => !w._draft && !w._template).sort((a,b) => b.date - a.date);
+    const wkts = (data.workouts||[]).filter(w=>!w._draft&&!w._template).sort((a,b)=>b.date-a.date);
     if (!wkts.length) {
       document.getElementById('clientViewerHistory').innerHTML = '<div style="text-align:center;padding:40px;color:#555;font-size:13px;">No workouts recorded yet.</div>';
       return;
     }
-    // Render workout cards
+    const muscleColors = { Chest:'#e8ff47',Back:'#7ec8e3',Legs:'#ff8c42',Shoulders:'#a78bfa',Arms:'#34d399',Core:'#f87171',Compound:'#20d4c8' };
     document.getElementById('clientViewerHistory').innerHTML = wkts.map(w => {
       const date = new Date(w.date).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
-      const sets = w.exercises.reduce((a,e) => a + (e.sets||[]).filter(s=>s.done&&!s.ignored).length, 0);
+      const sets = w.exercises.reduce((a,e)=>a+(e.sets||[]).filter(s=>s.done&&!s.ignored).length,0);
       const muscles = [...new Set(w.exercises.map(e=>e.muscle).filter(Boolean))];
-      const muscleColors = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171', Compound:'#20d4c8' };
       return `<div style="background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:14px;margin-bottom:10px;">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;">
-          <div>
-            <div style="font-family:'Bebas Neue';font-size:18px;color:#e8ff47;letter-spacing:.5px;">${w.name||'Unnamed'}</div>
-            <div style="font-size:12px;color:#555;margin-top:1px;">${date}</div>
-          </div>
-          <div style="text-align:right;flex-shrink:0;">
-            <div style="font-size:13px;font-weight:700;color:#f0f0f0;">${w.exercises.length} ex · ${sets} sets</div>
-            ${w.durationMins > 0 ? `<div style="font-size:11px;color:#7ec8e3;margin-top:2px;">${w.durationMins}m</div>` : ''}
-          </div>
+          <div><div style="font-family:'Bebas Neue';font-size:18px;color:#e8ff47;">${w.name||'Unnamed'}</div><div style="font-size:12px;color:#555;">${date}</div></div>
+          <div style="text-align:right;"><div style="font-size:13px;font-weight:700;color:#f0f0f0;">${w.exercises.length} ex · ${sets} sets</div>${w.durationMins>0?`<div style="font-size:11px;color:#7ec8e3;">${w.durationMins}m</div>`:''}</div>
         </div>
-        <div style="display:flex;flex-wrap:wrap;gap:5px;">
-          ${muscles.map(m => `<span style="background:${(muscleColors[m]||'#888')}22;color:${muscleColors[m]||'#888'};border:1px solid ${(muscleColors[m]||'#888')}44;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;">${m}</span>`).join('')}
-        </div>
-        <div style="margin-top:10px;border-top:1px solid #1e1e1e;padding-top:8px;">
-          ${w.exercises.map(e => {
-            const done = (e.sets||[]).filter(s=>s.done&&!s.ignored);
-            if (!done.length) return '';
-            const best = Math.max(...done.map(s=>s.kg*(1+s.reps/30)));
-            return `<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px;">
-              <span style="color:#aaa;">${e.name}</span>
-              <span style="color:#f0f0f0;font-weight:600;">${done.length} sets · ${best.toFixed(1)}kg 1RM</span>
-            </div>`;
-          }).join('')}
-        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;">${muscles.map(m=>`<span style="background:${(muscleColors[m]||'#888')}22;color:${muscleColors[m]||'#888'};border:1px solid ${(muscleColors[m]||'#888')}44;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;">${m}</span>`).join('')}</div>
       </div>`;
     }).join('');
-
-    // Render stats bar
     const totalW = wkts.length;
-    const totalS = wkts.reduce((a,w) => a + w.exercises.reduce((b,e)=>b+(e.sets||[]).filter(s=>s.done&&!s.ignored).length,0), 0);
+    const totalS = wkts.reduce((a,w)=>a+w.exercises.reduce((b,e)=>b+(e.sets||[]).filter(s=>s.done&&!s.ignored).length,0),0);
     const lastDate = new Date(wkts[0].date).toLocaleDateString('en-US',{month:'short',day:'numeric'});
     document.getElementById('clientViewerStats').innerHTML = `
-      <div style="flex:1;background:#141414;border:1px solid #2a2a2a;border-radius:10px;padding:10px;text-align:center;">
-        <div style="font-size:20px;font-weight:700;color:#e8ff47;">${totalW}</div>
-        <div style="font-size:10px;color:#555;font-weight:600;">WORKOUTS</div>
+      <div style="flex:1;background:#141414;border:1px solid #2a2a2a;border-radius:10px;padding:10px;text-align:center;"><div style="font-size:20px;font-weight:700;color:#e8ff47;">${totalW}</div><div style="font-size:10px;color:#555;font-weight:600;">WORKOUTS</div></div>
+      <div style="flex:1;background:#141414;border:1px solid #2a2a2a;border-radius:10px;padding:10px;text-align:center;"><div style="font-size:20px;font-weight:700;color:#7ec8e3;">${totalS}</div><div style="font-size:10px;color:#555;font-weight:600;">TOTAL SETS</div></div>
+      <div style="flex:1;background:#141414;border:1px solid #2a2a2a;border-radius:10px;padding:10px;text-align:center;"><div style="font-size:14px;font-weight:700;color:#34d399;">${lastDate}</div><div style="font-size:10px;color:#555;font-weight:600;">LAST SESSION</div></div>`;
+  }).catch(e => { document.getElementById('clientViewerHistory').innerHTML = `<div style="color:#ff4747;padding:16px;">Error: ${e.message}</div>`; });
+}
+
+// ── FIND A COACH (CLIENT) ─────────────────────────────
+let _findCoachSites = [];
+let _findCoachActiveSite = null;
+
+function openFindCoach() {
+  document.getElementById('findCoachOverlay').style.display = 'block';
+  loadFindCoachSites();
+}
+
+function closeFindCoach() {
+  document.getElementById('findCoachOverlay').style.display = 'none';
+}
+
+function loadFindCoachSites() {
+  const myUid = window._currentUser?.uid;
+  const userData = window._currentUserData;
+  const siteIds = userData?.siteIds || [];
+  const brandId = window.BRAND_ID;
+  const { getDocs, collection, query, where } = window._fbFirestoreExtra || {};
+  if (!getDocs || !window._fbDb) return;
+
+  if (!siteIds.length) {
+    // No specific sites — show all brand sites
+    getDocs(query(collection(window._fbDb,'sites'), where('brandId','==',brandId))).then(snap => {
+      _findCoachSites = snap.docs.map(d=>({id:d.id,...d.data()}));
+      if (_findCoachSites.length) _findCoachActiveSite = _findCoachSites[0].id;
+      renderFindCoachSiteSwitcher();
+      loadFindCoachList();
+    });
+  } else {
+    Promise.all(siteIds.map(sid => window._fbGetDoc(window._fbDoc(window._fbDb,'sites',sid)))).then(snaps => {
+      _findCoachSites = snaps.filter(s=>s.exists()).map(s=>({id:s.id,...s.data()}));
+      if (_findCoachSites.length) _findCoachActiveSite = _findCoachSites[0].id;
+      renderFindCoachSiteSwitcher();
+      loadFindCoachList();
+    });
+  }
+}
+
+function renderFindCoachSiteSwitcher() {
+  const el = document.getElementById('findCoachSiteSwitcher');
+  if (!el) return;
+  if (_findCoachSites.length <= 1) { el.style.display = 'none'; return; }
+  el.style.display = 'flex';
+  el.innerHTML = _findCoachSites.map(s =>
+    `<button onclick="selectFindCoachSite('${s.id}')" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid ${_findCoachActiveSite===s.id?'#7ec8e3':'#333'};background:${_findCoachActiveSite===s.id?'#7ec8e322':'transparent'};color:${_findCoachActiveSite===s.id?'#7ec8e3':'#888'};font-family:'DM Sans';font-size:12px;font-weight:700;cursor:pointer;">${s.name}</button>`
+  ).join('');
+}
+
+function selectFindCoachSite(siteId) {
+  _findCoachActiveSite = siteId;
+  renderFindCoachSiteSwitcher();
+  loadFindCoachList();
+}
+
+function loadFindCoachList() {
+  const list = document.getElementById('findCoachList');
+  if (!list) return;
+  list.innerHTML = '<div style="text-align:center;padding:40px;color:#555;font-size:13px;">Loading coaches...</div>';
+  const site = _findCoachSites.find(s=>s.id===_findCoachActiveSite);
+  if (!site) { list.innerHTML = '<div style="text-align:center;padding:40px;color:#555;">No site selected</div>'; return; }
+  const coachIds = site.coachIds || [];
+  if (!coachIds.length) { list.innerHTML = '<div style="text-align:center;padding:40px;color:#555;font-size:13px;">No coaches at this site yet.</div>'; return; }
+
+  Promise.all(coachIds.map(uid => window._fbGetDoc(window._fbDoc(window._fbDb,'coachProfiles',uid)))).then(snaps => {
+    const coaches = snaps.filter(s=>s.exists()).map(s=>({uid:s.id,...s.data()}));
+    if (!coaches.length) { list.innerHTML = '<div style="text-align:center;padding:40px;color:#555;font-size:13px;">No coach profiles set up yet.</div>'; return; }
+    list.innerHTML = coaches.map(c => `
+      <div onclick="viewCoachProfile('${c.uid}')" style="background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;cursor:pointer;">
+        <div style="width:48px;height:48px;border-radius:50%;background:#7ec8e322;border:2px solid #7ec8e344;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;">
+          ${c.photoUrl ? `<img src="${c.photoUrl}" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.innerHTML='👤'"/>` : '👤'}
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:700;font-size:14px;color:#f0f0f0;">${c.name||'Coach'}</div>
+          ${c.specialties?.length ? `<div style="font-size:12px;color:#7ec8e3;margin-top:2px;">${c.specialties.slice(0,2).join(' · ')}</div>` : ''}
+          ${c.availability ? `<div style="font-size:11px;color:#555;margin-top:2px;">${c.availability}</div>` : ''}
+        </div>
+        <span style="color:#555;font-size:18px;">›</span>
+      </div>`).join('');
+  }).catch(e => { list.innerHTML = `<div style="color:#ff4747;padding:16px;">Error: ${e.message}</div>`; });
+}
+
+function viewCoachProfile(coachUid) {
+  document.getElementById('coachProfileViewOverlay').style.display = 'block';
+  const content = document.getElementById('coachProfileViewContent');
+  content.innerHTML = '<div style="text-align:center;padding:40px;color:#555;">Loading...</div>';
+  window._fbGetDoc(window._fbDoc(window._fbDb,'coachProfiles',coachUid)).then(snap => {
+    if (!snap.exists()) { content.innerHTML = '<div style="color:#ff4747;padding:16px;">Profile not found</div>'; return; }
+    const c = snap.data();
+    const myUid = window._currentUser?.uid;
+    content.innerHTML = `
+      <div style="text-align:center;margin-bottom:24px;">
+        <div style="width:80px;height:80px;border-radius:50%;background:#7ec8e322;border:2px solid #7ec8e3;overflow:hidden;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:32px;">
+          ${c.photoUrl ? `<img src="${c.photoUrl}" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.innerHTML='👤'"/>` : '👤'}
+        </div>
+        <div style="font-family:'Bebas Neue';font-size:24px;color:#f0f0f0;letter-spacing:1px;">${c.name||'Coach'}</div>
+        ${c.specialties?.length ? `<div style="font-size:13px;color:#7ec8e3;margin-top:4px;">${c.specialties.join(' · ')}</div>` : ''}
       </div>
-      <div style="flex:1;background:#141414;border:1px solid #2a2a2a;border-radius:10px;padding:10px;text-align:center;">
-        <div style="font-size:20px;font-weight:700;color:#7ec8e3;">${totalS}</div>
-        <div style="font-size:10px;color:#555;font-weight:600;">TOTAL SETS</div>
-      </div>
-      <div style="flex:1;background:#141414;border:1px solid #2a2a2a;border-radius:10px;padding:10px;text-align:center;">
-        <div style="font-size:14px;font-weight:700;color:#34d399;">${lastDate}</div>
-        <div style="font-size:10px;color:#555;font-weight:600;">LAST SESSION</div>
-      </div>`;
-  }).catch(e => {
-    document.getElementById('clientViewerHistory').innerHTML = `<div style="color:#ff4747;padding:16px;font-size:13px;">Error: ${e.message}</div>`;
+      ${c.bio ? `<div style="background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:14px;margin-bottom:10px;font-size:13px;color:#aaa;line-height:1.7;">${c.bio}</div>` : ''}
+      ${c.certifications?.length ? `<div style="background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:14px;margin-bottom:10px;"><div style="font-size:11px;color:#555;font-weight:600;margin-bottom:6px;">CERTIFICATIONS</div><div style="font-size:13px;color:#f0f0f0;">${c.certifications.join(', ')}</div></div>` : ''}
+      ${c.availability ? `<div style="background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:14px;margin-bottom:10px;"><div style="font-size:11px;color:#555;font-weight:600;margin-bottom:6px;">AVAILABILITY</div><div style="font-size:13px;color:#f0f0f0;">${c.availability}</div></div>` : ''}
+      ${c.phone ? `<div style="background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:14px;margin-bottom:16px;"><div style="font-size:11px;color:#555;font-weight:600;margin-bottom:6px;">PHONE</div><div style="font-size:13px;color:#7ec8e3;">${c.phone}</div></div>` : ''}
+      <button onclick="requestCoach('${coachUid}','${c.name||'Coach'}')" style="width:100%;background:#7ec8e322;border:1px solid #7ec8e366;border-radius:10px;color:#7ec8e3;font-family:'DM Sans';font-size:15px;font-weight:700;padding:14px;cursor:pointer;">Request This Coach</button>`;
   });
+}
+
+function closeCoachProfileView() {
+  document.getElementById('coachProfileViewOverlay').style.display = 'none';
+}
+
+function requestCoach(coachUid, coachName) {
+  const myUid = window._currentUser?.uid;
+  const brandId = window.BRAND_ID;
+  const siteId = _findCoachActiveSite;
+  if (!myUid || !window._fbDb) return;
+  const ref = window._fbDoc(window._fbDb,'coachRequests',`${brandId}_${myUid}_${coachUid}`);
+  window._fbSetDoc(ref, {
+    clientUid: myUid, coachUid, brandId, siteId,
+    status: 'pending', requestedAt: new Date().toISOString(),
+    clientEmail: window._currentUser?.email || '',
+    clientName: window._currentUserData?.displayName || ''
+  }).then(() => {
+    // Notify coach
+    const nRef = window._fbDoc(window._fbDb,'notifications',coachUid,'items',Date.now().toString());
+    window._fbSetDoc(nRef, { type:'coach_request', message:`${window._currentUserData?.displayName||'A client'} requested you as their coach`, clientUid:myUid, seen:false, createdAt:new Date().toISOString() });
+    showToast(`Request sent to ${coachName}!`);
+    closeCoachProfileView();
+    closeFindCoach();
+  }).catch(e => showToast('Error: ' + e.message));
 }
 
 // ══════════════════════════════════════════════════════
@@ -11961,6 +12747,437 @@ function deleteLibraryWorkout(id) {
     renderWorkoutLibraryList();
     showToast('Removed from library');
   }).catch(e => showToast('Error: ' + e.message));
+}
+
+// ══════════════════════════════════════════════════════
+//  SITE MANAGER PANEL
+// ══════════════════════════════════════════════════════
+let _smSites = [];
+let _smActiveSite = null;
+let _smTab = 'requests';
+let _smRequests = [];
+let _smConnections = [];
+let _smAllCoaches = [];
+
+function openSiteManagerPanel() {
+  const role = window._currentUserData?.role;
+  if (!['super_admin','brand_admin','site_manager'].includes(role)) { showToast('Access denied'); return; }
+  document.getElementById('siteManagerOverlay').style.display = 'block';
+  loadSMSites();
+}
+
+function closeSiteManagerPanel() {
+  document.getElementById('siteManagerOverlay').style.display = 'none';
+}
+
+function switchSMTab(tab) {
+  _smTab = tab;
+  ['requests','active','coaches'].forEach(t => {
+    document.getElementById('smTabContent' + t.charAt(0).toUpperCase() + t.slice(1)).style.display = t === tab ? '' : 'none';
+    const btn = document.getElementById('smTab' + t.charAt(0).toUpperCase() + t.slice(1));
+    if (btn) { btn.style.background = t === tab ? '#a78bfa' : 'transparent'; btn.style.color = t === tab ? '#000' : '#666'; }
+  });
+  if (tab === 'requests') loadSMRequests();
+  if (tab === 'active') loadSMActiveConnections();
+  if (tab === 'coaches') loadSMCoaches();
+}
+
+function loadSMSites() {
+  const myUid = window._currentUser?.uid;
+  const brandId = window.BRAND_ID;
+  const role = window._currentUserData?.role;
+  const { getDocs, collection, query, where } = window._fbFirestoreExtra || {};
+  if (!getDocs || !window._fbDb) return;
+
+  const q = ['super_admin','brand_admin'].includes(role)
+    ? getDocs(query(collection(window._fbDb,'sites'), where('brandId','==',brandId)))
+    : getDocs(query(collection(window._fbDb,'sites'), where('brandId','==',brandId), where('managerIds','array-contains',myUid)));
+
+  q.then(snap => {
+    _smSites = snap.docs.map(d=>({id:d.id,...d.data()}));
+    if (_smSites.length) _smActiveSite = _smSites[0].id;
+    renderSMSiteSwitcher();
+    switchSMTab('requests');
+  });
+}
+
+function renderSMSiteSwitcher() {
+  const el = document.getElementById('smSiteSwitcher');
+  const label = document.getElementById('siteManagerSiteLabel');
+  if (!el) return;
+  if (_smSites.length <= 1) {
+    el.style.display = 'none';
+    if (label && _smSites[0]) label.textContent = _smSites[0].name.toUpperCase();
+    return;
+  }
+  el.style.display = 'flex';
+  el.innerHTML = _smSites.map(s =>
+    `<button onclick="selectSMSite('${s.id}')" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid ${_smActiveSite===s.id?'#a78bfa':'#333'};background:${_smActiveSite===s.id?'#a78bfa22':'transparent'};color:${_smActiveSite===s.id?'#a78bfa':'#888'};font-family:'DM Sans';font-size:12px;font-weight:700;cursor:pointer;">${s.name}</button>`
+  ).join('');
+}
+
+function selectSMSite(siteId) {
+  _smActiveSite = siteId;
+  renderSMSiteSwitcher();
+  if (_smTab === 'requests') loadSMRequests();
+  else if (_smTab === 'active') loadSMActiveConnections();
+  else loadSMCoaches();
+}
+
+// ── PENDING REQUESTS ─────────────────────────────────
+function loadSMRequests() {
+  const list = document.getElementById('smRequestsList');
+  if (!list || !_smActiveSite) return;
+  list.innerHTML = '<div style="text-align:center;padding:40px;color:#555;font-size:13px;">Loading...</div>';
+  const { getDocs, collection, query, where } = window._fbFirestoreExtra || {};
+  if (!getDocs) return;
+
+  getDocs(query(collection(window._fbDb,'coachRequests'),
+    where('siteId','==',_smActiveSite),
+    where('status','==','pending')
+  )).then(snap => {
+    _smRequests = snap.docs.map(d=>({id:d.id,...d.data()}));
+    const badge = document.getElementById('smRequestsBadge');
+    if (badge) { badge.style.display = _smRequests.length ? 'inline' : 'none'; badge.textContent = _smRequests.length; }
+    // Update top-level badge
+    const topBadge = document.getElementById('siteManagerBadge');
+    if (topBadge) { topBadge.style.display = _smRequests.length ? 'inline' : 'none'; topBadge.textContent = _smRequests.length; }
+
+    if (!_smRequests.length) {
+      list.innerHTML = '<div style="text-align:center;padding:40px;color:#555;font-size:13px;">No pending coach requests.</div>';
+      return;
+    }
+    // Fetch client + coach names
+    Promise.all(_smRequests.map(r => Promise.all([
+      window._fbGetDoc(window._fbDoc(window._fbDb,'users',r.clientUid)),
+      window._fbGetDoc(window._fbDoc(window._fbDb,'coachProfiles',r.coachUid))
+    ]))).then(pairs => {
+      list.innerHTML = pairs.map(([clientSnap, coachSnap], i) => {
+        const req = _smRequests[i];
+        const client = clientSnap.exists() ? clientSnap.data() : {};
+        const coach = coachSnap.exists() ? coachSnap.data() : {};
+        const reqDate = req.requestedAt ? new Date(req.requestedAt).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '';
+        return `<div style="background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:14px;margin-bottom:12px;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+            <div style="flex:1;">
+              <div style="font-size:11px;color:#555;font-weight:600;margin-bottom:2px;">CLIENT</div>
+              <div style="font-weight:700;font-size:14px;color:#e8ff47;">${client.displayName||req.clientName||'Unknown'}</div>
+              <div style="font-size:12px;color:#666;">${client.email||req.clientEmail||''}</div>
+            </div>
+            <div style="color:#555;font-size:18px;">→</div>
+            <div style="flex:1;text-align:right;">
+              <div style="font-size:11px;color:#555;font-weight:600;margin-bottom:2px;">COACH</div>
+              <div style="font-weight:700;font-size:14px;color:#7ec8e3;">${coach.name||'Unknown'}</div>
+              <div style="font-size:12px;color:#666;">${reqDate}</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+            <input type="date" id="smStartDate_${req.id}" style="flex:1;background:#1e1e1e;border:1px solid #333;border-radius:8px;color:#f0f0f0;font-family:'DM Sans';font-size:12px;padding:8px;outline:none;" placeholder="Start date"/>
+            <input type="date" id="smEndDate_${req.id}" style="flex:1;background:#1e1e1e;border:1px solid #333;border-radius:8px;color:#f0f0f0;font-family:'DM Sans';font-size:12px;padding:8px;outline:none;" placeholder="End date"/>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button onclick="approveCoachRequest('${req.id}','${req.clientUid}','${req.coachUid}')" style="flex:1;background:#34d39922;border:1px solid #34d39955;border-radius:8px;color:#34d399;font-family:'DM Sans';font-size:13px;font-weight:700;padding:10px;cursor:pointer;">Approve</button>
+            <button onclick="declineCoachRequest('${req.id}','${req.clientUid}','${req.coachUid}')" style="flex:1;background:transparent;border:1px solid #333;border-radius:8px;color:#555;font-family:'DM Sans';font-size:13px;font-weight:700;padding:10px;cursor:pointer;">Decline</button>
+          </div>
+        </div>`;
+      }).join('');
+    });
+  }).catch(e => { list.innerHTML = `<div style="color:#ff4747;padding:16px;">Error: ${e.message}</div>`; });
+}
+
+function approveCoachRequest(reqId, clientUid, coachUid) {
+  const startDate = document.getElementById(`smStartDate_${reqId}`)?.value;
+  const endDate = document.getElementById(`smEndDate_${reqId}`)?.value;
+  if (!startDate || !endDate) { showToast('Set start and end dates first'); return; }
+  if (new Date(endDate) <= new Date(startDate)) { showToast('End date must be after start date'); return; }
+
+  const brandId = window.BRAND_ID;
+  const myUid = window._currentUser?.uid;
+  const connId = `${brandId}_${clientUid}`;
+
+  // Create connection
+  window._fbSetDoc(window._fbDoc(window._fbDb,'coachConnections',connId), {
+    clientUid, coachUid, brandId,
+    siteId: _smActiveSite,
+    startDate, endDate,
+    approvedBy: myUid,
+    approvedAt: new Date().toISOString(),
+    status: 'active'
+  }).then(() => {
+    // Update request status
+    window._fbSetDoc(window._fbDoc(window._fbDb,'coachRequests',reqId), { status:'approved', approvedAt:new Date().toISOString() }, { merge:true });
+    // Update user's coachId
+    window._fbSetDoc(window._fbDoc(window._fbDb,'users',clientUid), { coachId:coachUid, coachingExpires:endDate }, { merge:true });
+    // Notify client
+    window._fbSetDoc(window._fbDoc(window._fbDb,'notifications',clientUid,'items',Date.now().toString()), {
+      type:'coach_approved', message:`Your coaching session has been approved! Active until ${new Date(endDate).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`, seen:false, createdAt:new Date().toISOString()
+    });
+    // Notify coach
+    window._fbSetDoc(window._fbDoc(window._fbDb,'notifications',coachUid,'items',(Date.now()+1).toString()), {
+      type:'coach_approved', message:`You have a new client connection approved until ${new Date(endDate).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`, seen:false, createdAt:new Date().toISOString()
+    });
+    showToast('Connection approved!');
+    loadSMRequests();
+  }).catch(e => showToast('Error: ' + e.message));
+}
+
+function declineCoachRequest(reqId, clientUid, coachUid) {
+  window._fbSetDoc(window._fbDoc(window._fbDb,'coachRequests',reqId), { status:'declined', declinedAt:new Date().toISOString() }, { merge:true })
+    .then(() => {
+      // Notify client
+      window._fbSetDoc(window._fbDoc(window._fbDb,'notifications',clientUid,'items',Date.now().toString()), {
+        type:'coach_declined', message:'Your coach request was not approved. Please contact your site manager or choose another coach.', seen:false, createdAt:new Date().toISOString()
+      });
+      showToast('Request declined');
+      loadSMRequests();
+    }).catch(e => showToast('Error: ' + e.message));
+}
+
+// ── ACTIVE CONNECTIONS ────────────────────────────────
+function loadSMActiveConnections() {
+  const list = document.getElementById('smActiveList');
+  if (!list || !_smActiveSite) return;
+  list.innerHTML = '<div style="text-align:center;padding:40px;color:#555;font-size:13px;">Loading...</div>';
+  const { getDocs, collection, query, where } = window._fbFirestoreExtra || {};
+  if (!getDocs) return;
+
+  const brandId = window.BRAND_ID;
+  getDocs(query(collection(window._fbDb,'coachConnections'),
+    where('brandId','==',brandId),
+    where('siteId','==',_smActiveSite)
+  )).then(snap => {
+    _smConnections = snap.docs.map(d=>({id:d.id,...d.data()}));
+    if (!_smConnections.length) {
+      list.innerHTML = '<div style="text-align:center;padding:40px;color:#555;font-size:13px;">No active connections at this site.</div>';
+      return;
+    }
+    const now = new Date();
+    Promise.all(_smConnections.map(c => Promise.all([
+      window._fbGetDoc(window._fbDoc(window._fbDb,'users',c.clientUid)),
+      window._fbGetDoc(window._fbDoc(window._fbDb,'coachProfiles',c.coachUid))
+    ]))).then(pairs => {
+      list.innerHTML = pairs.map(([clientSnap,coachSnap],i) => {
+        const conn = _smConnections[i];
+        const client = clientSnap.exists() ? clientSnap.data() : {};
+        const coach = coachSnap.exists() ? coachSnap.data() : {};
+        const end = new Date(conn.endDate);
+        const daysLeft = Math.ceil((end - now) / 86400000);
+        const isExpired = daysLeft < 0;
+        const statusColor = isExpired ? '#ff4747' : daysLeft <= 7 ? '#ff8c42' : '#34d399';
+        const statusText = isExpired ? 'Expired' : `${daysLeft}d left`;
+        return `<div style="background:#141414;border:1px solid ${isExpired?'#ff474733':'#2a2a2a'};border-radius:12px;padding:14px;margin-bottom:10px;">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;">
+            <div>
+              <div style="font-weight:700;font-size:14px;color:#e8ff47;">${client.displayName||'Client'}</div>
+              <div style="font-size:12px;color:#7ec8e3;">→ ${coach.name||'Coach'}</div>
+            </div>
+            <span style="font-size:11px;font-weight:700;color:${statusColor};">${statusText}</span>
+          </div>
+          <div style="font-size:11px;color:#555;margin-bottom:10px;">${conn.startDate} → ${conn.endDate}</div>
+          <div style="display:flex;gap:8px;">
+            <input type="date" id="smExtDate_${conn.id}" value="${conn.endDate}" style="flex:1;background:#1e1e1e;border:1px solid #333;border-radius:8px;color:#f0f0f0;font-family:'DM Sans';font-size:12px;padding:7px;outline:none;"/>
+            <button onclick="extendConnection('${conn.id}','${conn.clientUid}')" style="background:#a78bfa22;border:1px solid #a78bfa44;border-radius:8px;color:#a78bfa;font-family:'DM Sans';font-size:12px;font-weight:700;padding:7px 12px;cursor:pointer;">Extend</button>
+            <button onclick="terminateConnection('${conn.id}','${conn.clientUid}','${conn.coachUid}')" style="background:transparent;border:1px solid #333;border-radius:8px;color:#555;font-size:12px;padding:7px 10px;cursor:pointer;">End</button>
+          </div>
+        </div>`;
+      }).join('');
+    });
+  }).catch(e => { list.innerHTML = `<div style="color:#ff4747;padding:16px;">Error: ${e.message}</div>`; });
+}
+
+function extendConnection(connId, clientUid) {
+  const newEnd = document.getElementById(`smExtDate_${connId}`)?.value;
+  if (!newEnd) { showToast('Pick a new end date'); return; }
+  window._fbSetDoc(window._fbDoc(window._fbDb,'coachConnections',connId), { endDate:newEnd }, { merge:true }).then(() => {
+    window._fbSetDoc(window._fbDoc(window._fbDb,'users',clientUid), { coachingExpires:newEnd }, { merge:true });
+    showToast('Connection extended!');
+    loadSMActiveConnections();
+  }).catch(e => showToast('Error: ' + e.message));
+}
+
+function terminateConnection(connId, clientUid, coachUid) {
+  const today = new Date().toISOString().split('T')[0];
+  window._fbSetDoc(window._fbDoc(window._fbDb,'coachConnections',connId), { endDate:today, status:'terminated' }, { merge:true }).then(() => {
+    window._fbSetDoc(window._fbDoc(window._fbDb,'users',clientUid), { coachId:null, coachingExpires:today }, { merge:true });
+    window._fbSetDoc(window._fbDoc(window._fbDb,'notifications',clientUid,'items',Date.now().toString()), {
+      type:'coach_ended', message:'Your coaching session has ended. You can request a new coach anytime.', seen:false, createdAt:new Date().toISOString()
+    });
+    window._fbSetDoc(window._fbDoc(window._fbDb,'notifications',coachUid,'items',(Date.now()+1).toString()), {
+      type:'coach_ended', message:'A coaching connection has been terminated by the site manager.', seen:false, createdAt:new Date().toISOString()
+    });
+    showToast('Connection terminated');
+    loadSMActiveConnections();
+  }).catch(e => showToast('Error: ' + e.message));
+}
+
+// ── COACHES AT SITE ───────────────────────────────────
+function loadSMCoaches() {
+  const list = document.getElementById('smCoachesList');
+  if (!list || !_smActiveSite) return;
+  list.innerHTML = '<div style="text-align:center;padding:40px;color:#555;font-size:13px;">Loading...</div>';
+  const brandId = window.BRAND_ID;
+  const { getDocs, collection, query, where } = window._fbFirestoreExtra || {};
+  if (!getDocs) return;
+
+  const site = _smSites.find(s=>s.id===_smActiveSite);
+  const siteCoachIds = site?.coachIds || [];
+
+  // Get all coaches in this brand
+  getDocs(query(collection(window._fbDb,'users'), where('brands','array-contains',brandId))).then(snap => {
+    _smAllCoaches = snap.docs.map(d=>({id:d.id,...d.data()})).filter(u => u.roles?.[brandId]==='coach');
+    if (!_smAllCoaches.length) { list.innerHTML = '<div style="text-align:center;padding:40px;color:#555;font-size:13px;">No coaches in this brand yet.</div>'; return; }
+    list.innerHTML = _smAllCoaches.map(coach => {
+      const isAssigned = siteCoachIds.includes(coach.id);
+      return `<div style="background:#141414;border:1px solid ${isAssigned?'#34d39933':'#2a2a2a'};border-radius:12px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;">
+        <div style="width:40px;height:40px;border-radius:50%;background:#7ec8e322;border:1px solid #7ec8e344;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:#7ec8e3;flex-shrink:0;">${(coach.displayName||coach.email||'?').slice(0,2).toUpperCase()}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:700;font-size:14px;color:#f0f0f0;">${coach.displayName||'—'}</div>
+          <div style="font-size:12px;color:#666;">${coach.email||''}</div>
+          ${isAssigned?'<div style="font-size:11px;color:#34d399;margin-top:2px;">Assigned to this site</div>':''}
+        </div>
+        <button onclick="toggleCoachAtSite('${coach.id}',${isAssigned})" style="background:${isAssigned?'transparent':'#34d39922'};border:1px solid ${isAssigned?'#333':'#34d39955'};border-radius:8px;color:${isAssigned?'#555':'#34d399'};font-family:'DM Sans';font-size:12px;font-weight:700;padding:7px 12px;cursor:pointer;flex-shrink:0;">${isAssigned?'Remove':'Add'}</button>
+      </div>`;
+    }).join('');
+  }).catch(e => { list.innerHTML = `<div style="color:#ff4747;padding:16px;">Error: ${e.message}</div>`; });
+}
+
+function toggleCoachAtSite(coachUid, isCurrentlyAssigned) {
+  const site = _smSites.find(s=>s.id===_smActiveSite);
+  if (!site) return;
+  const currentIds = site.coachIds || [];
+  const newIds = isCurrentlyAssigned
+    ? currentIds.filter(id=>id!==coachUid)
+    : [...new Set([...currentIds, coachUid])];
+  window._fbSetDoc(window._fbDoc(window._fbDb,'sites',_smActiveSite), { coachIds:newIds }, { merge:true }).then(() => {
+    site.coachIds = newIds;
+    showToast(isCurrentlyAssigned ? 'Coach removed from site' : 'Coach added to site');
+    loadSMCoaches();
+  }).catch(e => showToast('Error: ' + e.message));
+}
+
+function showExpiryWarning(message) {
+  const banner = document.getElementById('expiryWarningBanner');
+  const text = document.getElementById('expiryWarningText');
+  if (!banner || !text) return;
+  text.textContent = message;
+  banner.style.display = 'block';
+  banner.style.position = 'relative'; // for close button positioning
+}
+
+function checkPendingRequests() {
+  const brandId = window.BRAND_ID;
+  const { getDocs, collection, query, where } = window._fbFirestoreExtra || {};
+  if (!getDocs || !window._fbDb) return;
+  getDocs(query(collection(window._fbDb,'coachRequests'), where('brandId','==',brandId), where('status','==','pending'))).then(snap => {
+    const count = snap.size;
+    const badge = document.getElementById('siteManagerBadge');
+    if (badge) { badge.style.display = count > 0 ? 'inline' : 'none'; badge.textContent = count; }
+  }).catch(() => {});
+}
+
+// ══════════════════════════════════════════════════════
+//  CLIENT COACH SECTION
+// ══════════════════════════════════════════════════════
+let _clientAssignments = [];
+let _clientAssignmentsLoaded = false;
+let _clientNotifications = [];
+
+function loadClientAssignments() {
+  const myUid = window._currentUser?.uid;
+  if (!myUid || !window._fbDb || !window._fbFirestoreExtra) return Promise.resolve();
+  const { getDocs, collection } = window._fbFirestoreExtra;
+  return getDocs(collection(window._fbDb,'clientAssignments',myUid,'items')).then(snap => {
+    _clientAssignments = snap.docs.map(d=>({id:d.id,...d.data()}));
+    _clientAssignmentsLoaded = true;
+    // Mark all as seen
+    _clientAssignments.filter(a=>!a.seen).forEach(a => {
+      window._fbSetDoc(window._fbDoc(window._fbDb,'clientAssignments',myUid,'items',a.id), { seen:true }, { merge:true });
+    });
+  }).catch(() => {});
+}
+
+function loadClientNotifications() {
+  const myUid = window._currentUser?.uid;
+  if (!myUid || !window._fbDb || !window._fbFirestoreExtra) return;
+  const { getDocs, collection } = window._fbFirestoreExtra;
+  getDocs(collection(window._fbDb,'notifications',myUid,'items')).then(snap => {
+    _clientNotifications = snap.docs.map(d=>({id:d.id,...d.data()}));
+    const unseen = _clientNotifications.filter(n=>!n.seen).length;
+    updateNotificationBadge(unseen);
+  }).catch(() => {});
+}
+
+function updateNotificationBadge(count) {
+  let badge = document.getElementById('notificationBadge');
+  if (!badge) {
+    const iconBtn = document.getElementById('userIconBtn');
+    if (iconBtn) {
+      badge = document.createElement('span');
+      badge.id = 'notificationBadge';
+      badge.style.cssText = 'position:absolute;top:-4px;right:-4px;background:#ff4747;color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:2px 5px;min-width:16px;text-align:center;display:none;';
+      iconBtn.style.position = 'relative';
+      iconBtn.appendChild(badge);
+    }
+  }
+  if (badge) {
+    badge.style.display = count > 0 ? 'block' : 'none';
+    badge.textContent = count;
+  }
+}
+
+function buildCoachExercisesHtml() {
+  if (!_clientAssignmentsLoaded) {
+    loadClientAssignments().then(() => renderExercisesTab());
+    return '<div style="text-align:center;padding:40px;color:#555;font-size:13px;">Loading coach content...</div>';
+  }
+  const exercises = _clientAssignments.filter(a => a.type === 'exercises');
+  if (!exercises.length) {
+    return '<div class="empty-state"><span style="color:var(--muted);">Your coach hasn\'t assigned any exercises yet.</span></div>';
+  }
+  return exercises.map(item => `
+    <div style="background:#141414;border:1px solid #7ec8e333;border-radius:12px;padding:14px;margin-bottom:10px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;">
+        <div style="flex:1;">
+          <div style="font-weight:700;font-size:14px;color:#f0f0f0;">${item.name}</div>
+          ${item.note ? `<div style="font-size:12px;color:#7ec8e3;margin-top:4px;font-style:italic;">"${item.note}"</div>` : ''}
+          <div style="font-size:11px;color:#555;margin-top:4px;">${new Date(item.assignedAt).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div>
+        </div>
+        ${item.videoUrl ? `<a href="${item.videoUrl}" target="_blank" style="flex-shrink:0;background:#7ec8e322;border:1px solid #7ec8e344;border-radius:8px;color:#7ec8e3;font-size:11px;font-weight:700;padding:6px 10px;text-decoration:none;margin-left:8px;">📹 Watch</a>` : ''}
+      </div>
+      <button onclick="addCoachExToSession('${item.name}')" style="width:100%;background:#e8ff4722;border:1px solid #e8ff4744;border-radius:8px;color:#e8ff47;font-family:'DM Sans';font-size:12px;font-weight:700;padding:8px;cursor:pointer;">+ Add to Today</button>
+    </div>`).join('');
+}
+
+function buildCoachWorkoutsHtml() {
+  if (!_clientAssignmentsLoaded) {
+    loadClientAssignments().then(() => { if(typeof renderWorkoutsTab==='function') renderWorkoutsTab(); });
+    return '<div style="text-align:center;padding:40px;color:#555;font-size:13px;">Loading coach content...</div>';
+  }
+  const workoutItems = _clientAssignments.filter(a => a.type === 'workouts');
+  if (!workoutItems.length) {
+    return '<div class="empty-state"><span style="color:var(--muted);">Your coach hasn\'t assigned any workouts yet.</span></div>';
+  }
+  return workoutItems.map(item => `
+    <div style="background:#141414;border:1px solid #7ec8e333;border-radius:12px;padding:14px;margin-bottom:10px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;">
+        <div style="flex:1;">
+          <div style="font-family:'Bebas Neue';font-size:18px;color:#7ec8e3;letter-spacing:.5px;">${item.name}</div>
+          ${item.note ? `<div style="font-size:12px;color:#aaa;margin-top:4px;font-style:italic;">"${item.note}"</div>` : ''}
+          <div style="font-size:11px;color:#555;margin-top:4px;">${new Date(item.assignedAt).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div>
+        </div>
+        ${item.videoUrl ? `<a href="${item.videoUrl}" target="_blank" style="flex-shrink:0;background:#7ec8e322;border:1px solid #7ec8e344;border-radius:8px;color:#7ec8e3;font-size:11px;font-weight:700;padding:6px 10px;text-decoration:none;margin-left:8px;">📹 Watch</a>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+function addCoachExToSession(name) {
+  const ex = { name, label:name, muscle:'Chest', custom:false };
+  switchTab('log');
+  setTimeout(() => {
+    showTodayWorkoutArea();
+    addExerciseCard(ex);
+    showToast(`"${name}" added to today`);
+  }, 300);
 }
 
 // Enter key on password field
