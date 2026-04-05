@@ -637,20 +637,7 @@ async function loadBrandConfig() {
 
 function applyBrandConfig(cfg) {
   const accent = cfg.accentColor || BRAND_DEFAULTS.accentColor;
-  // Update CSS accent color
   document.documentElement.style.setProperty('--accent', accent);
-  // Update logo text
-  const logoEl = document.getElementById('brand-name-text');
-  if (logoEl && cfg.name) logoEl.textContent = cfg.name;
-  const proEl = document.getElementById('brand-subtitle-text');
-  if (proEl && cfg.subtitle !== undefined) proEl.textContent = cfg.subtitle;
-  const tagEl = document.getElementById('brand-tagline-text');
-  if (tagEl && cfg.tagline !== undefined) tagEl.textContent = cfg.tagline;
-  // Update auth screen logo too
-  const authLogo = document.getElementById('auth-brand-name');
-  if (authLogo && cfg.name) authLogo.textContent = cfg.name;
-  const authSub = document.getElementById('auth-brand-subtitle');
-  if (authSub && cfg.subtitle !== undefined) authSub.textContent = cfg.subtitle;
 }
 
 // Create or update user document with brand-aware roles
@@ -721,13 +708,7 @@ function hidAuthScreen() {
   <div style="width:100%;max-width:360px;">
     <!-- Logo -->
     <div style="text-align:center;margin-bottom:40px;">
-      <div style="display:inline-flex;flex-direction:column;align-items:flex-start;">
-        <div style="display:flex;align-items:baseline;gap:3px;">
-          <span id="auth-brand-name" style="font-family:'Bebas Neue';font-size:42px;color:#e8ff47;letter-spacing:0.5px;line-height:1;">BARZEL</span>
-          <span id="auth-brand-subtitle" style="font-family:'DM Sans';font-size:12px;font-weight:700;color:#e8ff47;letter-spacing:1px;line-height:1;">PRO</span>
-        </div>
-        <div style="font-family:'DM Sans';font-size:10px;color:#555;letter-spacing:3px;margin-top:-2px;">WORKOUT TRACKER</div>
-      </div>
+      <img id="auth-logo-img" src="logo.svg" alt="Brand Logo" style="height:56px;width:auto;display:block;margin:0 auto;" onerror="this.style.display='none'"/>
     </div>
 
     <!-- Tab toggle: Sign In / Sign Up -->
@@ -773,22 +754,12 @@ function hidAuthScreen() {
 
 <!-- SPLASH SCREEN -->
 <div id="splashScreen" style="position:fixed;inset:0;background:#0a0a0a;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;transition:opacity .4s ease;">
-  <div style="display:inline-flex;flex-direction:column;align-items:flex-start;">
-    <div style="display:flex;align-items:baseline;gap:5px;">
-      <span style="font-family:'Bebas Neue';font-size:51px;color:#e8ff47;line-height:1;letter-spacing:0.375px;">BARZEL</span>
-      <span style="font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;color:#e8ff47;letter-spacing:1.5px;line-height:1;">PRO</span>
-    </div>
-    <div style="font-family:'DM Sans';font-size:14px;color:#aaa;letter-spacing:4.5px;margin-top:-6px;">WORKOUT TRACKER</div>
-  </div>
+  <img src="logo.svg" alt="Brand Logo" style="height:64px;width:auto;" onerror="this.style.display='none'"/>
 </div>
 
 <div class="header">
   <div class="logo" onclick="openAboutModal()" style="cursor:pointer;">
-    <div style="display:flex;align-items:baseline;gap:3px;">
-      <span id="brand-name-text" style="font-family:'Bebas Neue';font-size:34px;color:var(--accent);line-height:1;letter-spacing:0.25px;">BARZEL</span>
-      <span id="brand-subtitle-text" style="font-family:'DM Sans';font-size:10px;font-weight:700;color:var(--accent);letter-spacing:1px;line-height:1;">PRO</span>
-    </div>
-    <div id="brand-tagline-text" style="font-family:'DM Sans';font-size:9px;color:#aaa;letter-spacing:3px;margin-top:-4px;">WORKOUT TRACKER</div>
+    <img id="brand-logo-img" src="logo.svg" alt="Brand Logo" style="height:36px;width:auto;display:block;" onerror="this.style.display='none'"/>
   </div>
   <div style="display:flex;align-items:center;gap:10px;">
     <div id="userIconBtn" onclick="toggleUserMenu()" style="display:none;cursor:pointer;position:relative;">
@@ -5677,9 +5648,9 @@ function confirmSave() {
   if (hasStars) {
     const starTypes = [{ label: 'MAX', color: '#e8ff47' },{ label: '1RM', color: '#ff8c42' },{ label: 'VOL', color: '#a78bfa' }];
     const starsRow = starTypes.map((t, ti) => { const count = allStars.filter(s => s.label === t.label).length; if (!count) return ''; return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;animation:starPop .8s cubic-bezier(.175,.885,.32,1.275) both;animation-delay:${ti * 0.25}s;"><div style="position:relative;width:72px;height:72px;display:flex;align-items:center;justify-content:center;">${svgStar(t.color, 72)}<span style="position:absolute;font-family:'Bebas Neue';font-size:26px;color:#000;line-height:1;margin-top:5px;">${count}</span></div><span style="font-size:12px;font-weight:700;color:${t.color};letter-spacing:.5px;text-transform:uppercase;">${t.label}</span></div>`; }).join('');
-    cel.innerHTML = `<style>@keyframes celFadeIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}@keyframes starPop{0%{opacity:0;transform:scale(0) rotate(-20deg)}60%{transform:scale(1.2) rotate(5deg)}100%{opacity:1;transform:scale(1) rotate(0deg)}}</style><div style="display:flex;flex-direction:column;align-items:center;padding-top:56px;"><div style="display:inline-flex;flex-direction:column;align-items:flex-start;"><div style="display:flex;align-items:baseline;gap:3px;"><span style="font-family:'Bebas Neue';font-size:34px;color:var(--accent);line-height:1;letter-spacing:0.25px;">BARZEL</span><span style="font-family:'DM Sans';font-size:10px;font-weight:700;color:var(--accent);letter-spacing:1px;line-height:1;">PRO</span></div><div style="font-family:'DM Sans';font-size:9px;color:#aaa;letter-spacing:3px;margin-top:-4px;">WORKOUT TRACKER</div></div></div><div style="display:flex;flex-direction:column;align-items:center;gap:24px;"><div style="font-family:'Bebas Neue';font-size:48px;letter-spacing:3px;color:#fff;text-align:center;line-height:1;">GREAT JOB</div><div style="display:flex;gap:32px;justify-content:center;align-items:flex-end;">${starsRow}</div><div style="font-size:16px;color:#7ec8e3;font-weight:600;"><span style="display:inline-flex;align-items:center;gap:6px;vertical-align:middle;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7ec8e3" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="7" x2="12" y2="12"/><line x1="12" y1="12" x2="15" y2="14"/></svg> ${_durStr}</span></div></div><button id="celCloseBtn" style="width:100%;max-width:320px;padding:15px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;letter-spacing:0;-webkit-text-stroke:0.4px currentColor;cursor:pointer;margin-bottom:40px;">CLOSE</button>`;
+    cel.innerHTML = `<style>@keyframes celFadeIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}@keyframes starPop{0%{opacity:0;transform:scale(0) rotate(-20deg)}60%{transform:scale(1.2) rotate(5deg)}100%{opacity:1;transform:scale(1) rotate(0deg)}}</style><div style="display:flex;flex-direction:column;align-items:center;padding-top:56px;">${_brandLogoHtml(36)}</div><div style="display:flex;flex-direction:column;align-items:center;gap:24px;"><div style="font-family:'Bebas Neue';font-size:48px;letter-spacing:3px;color:#fff;text-align:center;line-height:1;">GREAT JOB</div><div style="display:flex;gap:32px;justify-content:center;align-items:flex-end;">${starsRow}</div><div style="font-size:16px;color:#7ec8e3;font-weight:600;"><span style="display:inline-flex;align-items:center;gap:6px;vertical-align:middle;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7ec8e3" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="7" x2="12" y2="12"/><line x1="12" y1="12" x2="15" y2="14"/></svg> ${_durStr}</span></div></div><button id="celCloseBtn" style="width:100%;max-width:320px;padding:15px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;cursor:pointer;margin-bottom:40px;">CLOSE</button>`;
   } else {
-    cel.innerHTML = `<style>@keyframes celFadeIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}</style><div style="display:flex;flex-direction:column;align-items:center;padding-top:56px;"><div style="display:inline-flex;flex-direction:column;align-items:flex-start;"><div style="display:flex;align-items:baseline;gap:3px;"><span style="font-family:'Bebas Neue';font-size:34px;color:var(--accent);line-height:1;letter-spacing:0.25px;">BARZEL</span><span style="font-family:'DM Sans';font-size:10px;font-weight:700;color:var(--accent);letter-spacing:1px;line-height:1;">PRO</span></div><div style="font-family:'DM Sans';font-size:9px;color:#aaa;letter-spacing:3px;margin-top:-4px;">WORKOUT TRACKER</div></div></div><div style="display:flex;flex-direction:column;align-items:center;gap:16px;"><div style="font-family:'Bebas Neue';font-size:64px;letter-spacing:3px;color:#fff;text-align:center;line-height:1;">GOOD JOB</div><div style="font-size:16px;color:#7ec8e3;font-weight:600;"><span style="display:inline-flex;align-items:center;gap:6px;vertical-align:middle;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7ec8e3" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="7" x2="12" y2="12"/><line x1="12" y1="12" x2="15" y2="14"/></svg> ${_durStr}</span></div></div><button id="celCloseBtn" style="width:100%;max-width:320px;padding:15px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;letter-spacing:0;-webkit-text-stroke:0.4px currentColor;cursor:pointer;margin-bottom:40px;">CLOSE</button>`;
+    cel.innerHTML = `<style>@keyframes celFadeIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}</style><div style="display:flex;flex-direction:column;align-items:center;padding-top:56px;">${_brandLogoHtml(36)}</div><div style="display:flex;flex-direction:column;align-items:center;gap:16px;"><div style="font-family:'Bebas Neue';font-size:64px;letter-spacing:3px;color:#fff;text-align:center;line-height:1;">GOOD JOB</div><div style="font-size:16px;color:#7ec8e3;font-weight:600;"><span style="display:inline-flex;align-items:center;gap:6px;vertical-align:middle;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7ec8e3" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="7" x2="12" y2="12"/><line x1="12" y1="12" x2="15" y2="14"/></svg> ${_durStr}</span></div></div><button id="celCloseBtn" style="width:100%;max-width:320px;padding:15px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;cursor:pointer;margin-bottom:40px;">CLOSE</button>`;
   }
   document.body.appendChild(cel);
   cel.querySelector('#celCloseBtn').addEventListener('click', closeAndSave);
@@ -10552,12 +10523,8 @@ window.addEventListener('load', function() {
       <button class="modal-close" onclick="closeAboutModal()">✕</button>
     </div>
     <div class="modal-body" style="text-align:center;padding:24px 20px 32px;">
-      <div style="display:inline-flex;flex-direction:column;align-items:flex-start;justify-content:center;margin-bottom:28px;">
-        <div style="display:flex;align-items:baseline;gap:3px;">
-          <span style="font-family:'Bebas Neue';font-size:34px;color:var(--accent);line-height:1;letter-spacing:0.25px;">BARZEL</span>
-          <span style="font-family:'DM Sans';font-size:10px;font-weight:700;color:var(--accent);letter-spacing:1px;line-height:1;">PRO</span>
-        </div>
-        <div style="font-family:'DM Sans';font-size:9px;color:#aaa;letter-spacing:3px;margin-top:-4px;">WORKOUT TRACKER</div>
+      <div style="display:flex;justify-content:center;margin-bottom:28px;">
+        <img src="logo.svg" alt="Brand Logo" style="height:44px;width:auto;" onerror="this.style.display='none'"/>
       </div>
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:20px;text-align:left;margin-bottom:16px;">
         <div style="font-family:'DM Sans';font-size:13px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;">FEATURES</div>
@@ -10765,6 +10732,11 @@ if ("serviceWorker" in navigator) {
 
 <script>
 let _authTab = 'signin';
+
+// Returns an img tag for the brand logo, used everywhere logos appear in JS-generated HTML
+function _brandLogoHtml(height = 40) {
+  return `<img src="logo.svg" alt="Brand" style="height:${height}px;width:auto;display:block;" onerror="this.style.display='none'"/>`;
+}
 
 function switchAuthTab(tab) {
   _authTab = tab;
