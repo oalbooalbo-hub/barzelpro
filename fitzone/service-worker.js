@@ -1,11 +1,11 @@
-const CACHE_NAME = "barzelpro-v2";
+const CACHE_NAME = "fitzone-v1";
 
 self.addEventListener("install", event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
       return cache.addAll([
-        "/",
-        "/index.html"
+        "/barzelpro/fitzone/",
+        "/barzelpro/fitzone/index.html"
       ]);
     })
   );
