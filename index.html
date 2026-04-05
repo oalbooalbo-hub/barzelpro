@@ -555,7 +555,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, sendPasswordResetEmail } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { getFirestore, doc, getDoc, setDoc, getDocs, collection, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getFirestore, doc, getDoc, setDoc, deleteDoc, getDocs, collection, query, where, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyCOBuHNhOBZiPNDuxxiiFAwBbmiWeiPDjU",
@@ -583,8 +583,9 @@ window._fbResetPassword = (email) => sendPasswordResetEmail(auth, email);
 window._fbDoc = doc;
 window._fbGetDoc = getDoc;
 window._fbSetDoc = setDoc;
+window._fbDeleteDoc = deleteDoc;
 window._fbServerTimestamp = serverTimestamp;
-window._fbFirestoreExtra = { getDocs, collection };
+window._fbFirestoreExtra = { getDocs, collection, query, where };
 
 async function getUserRole(uid) {
   const userRef = doc(db, 'users', uid);
@@ -708,7 +709,29 @@ function hidAuthScreen() {
     </div>
     <div style="font-family:'DM Sans';font-size:9px;color:#aaa;letter-spacing:3px;margin-top:-4px;">WORKOUT TRACKER</div>
   </div>
-  <div class="date-badge" id="dateBadge" onclick="if(!window._isNewWorkoutFlow && !window._loadFromToday && !_pickMode)openCalendar()" style="cursor:pointer;user-select:none;"></div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <div id="userIconBtn" onclick="toggleUserMenu()" style="display:none;cursor:pointer;position:relative;">
+      <svg id="userIconSvg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="8" r="4"/>
+        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+      </svg>
+    </div>
+    <div class="date-badge" id="dateBadge" onclick="if(!window._isNewWorkoutFlow && !window._loadFromToday && !_pickMode)openCalendar()" style="cursor:pointer;user-select:none;"></div>
+  </div>
+</div>
+
+<!-- User menu dropdown -->
+<div id="userMenuDropdown" style="display:none;position:fixed;top:56px;right:12px;z-index:8000;background:#141414;border:1px solid #2a2a2a;border-radius:14px;padding:8px;min-width:200px;box-shadow:0 8px 32px rgba(0,0,0,.6);">
+  <div id="userMenuName" style="padding:8px 12px 12px;border-bottom:1px solid #2a2a2a;margin-bottom:6px;">
+    <div id="userMenuDisplayName" style="font-weight:700;font-size:14px;color:#f0f0f0;"></div>
+    <div id="userMenuEmail" style="font-size:11px;color:#555;margin-top:2px;"></div>
+    <div id="userMenuRole" style="font-size:11px;font-weight:700;margin-top:4px;"></div>
+  </div>
+  <button id="userMenuAdminBtn" onclick="toggleUserMenu();openAdminPanel()" style="display:none;width:100%;background:transparent;border:none;border-radius:8px;color:#a78bfa;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;text-align:left;transition:background .15s;" onmouseover="this.style.background='#1e1e1e'" onmouseout="this.style.background='transparent'">⚙️ Admin Panel</button>
+  <button id="userMenuCoachBtn" onclick="toggleUserMenu();openCoachPanel()" style="display:none;width:100%;background:transparent;border:none;border-radius:8px;color:#34d399;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;text-align:left;transition:background .15s;" onmouseover="this.style.background='#1e1e1e'" onmouseout="this.style.background='transparent'">👥 My Clients</button>
+  <button onclick="toggleUserMenu();closeDataModal();openDataModal()" style="width:100%;background:transparent;border:none;border-radius:8px;color:#f0f0f0;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;text-align:left;transition:background .15s;" onmouseover="this.style.background='#1e1e1e'" onmouseout="this.style.background='transparent'">📦 My Data</button>
+  <div style="height:1px;background:#2a2a2a;margin:6px 0;"></div>
+  <button onclick="toggleUserMenu();window._fbSignOut&&window._fbSignOut()" style="width:100%;background:transparent;border:none;border-radius:8px;color:#ff4747;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;text-align:left;transition:background .15s;" onmouseover="this.style.background='#1e1e1e'" onmouseout="this.style.background='transparent'">Sign Out</button>
 </div>
 <div class="tabs">
   <button class="tab active" onclick="switchTab('log')">Today</button>
@@ -746,6 +769,7 @@ function hidAuthScreen() {
     <div class="today-actions">
       <button class="btn-clear-workout" onclick="clearSession()">Delete</button>
       <button class="btn-load-history" onclick="window._loadFromToday=true;switchTab('workouts')">Load Workout</button>
+      <button id="saveToLibraryBtn" onclick="openAddLibraryWorkout()" style="display:none;background:transparent;border:1px solid #34d39966;border-radius:10px;color:#34d399;font-family:'DM Sans';font-size:13px;font-weight:700;padding:8px 12px;cursor:pointer;flex-shrink:0;">☁ Library</button>
       <button class="btn-finish-workout" id="finishWorkoutBtn" onclick="finishWorkout()">FINISH WORKOUT</button>
     </div>
     <div id="todayMuscleChipsWrap" style="display:none;align-items:center;gap:0;padding:8px 0 4px;">
@@ -803,7 +827,7 @@ function hidAuthScreen() {
       <!-- Account -->
       <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px;">
         <div style="font-family:'Bebas Neue';font-size:14px;letter-spacing:1px;color:var(--muted);margin-bottom:8px;">ACCOUNT</div>
-        <button id="auth-signout-btn" onclick="window._fbSignOut && window._fbSignOut()" style="display:none;width:100%;background:transparent;border:1px solid #333;border-radius:10px;color:#888;font-family:'DM Sans';font-size:14px;font-weight:600;padding:13px;cursor:pointer;transition:all .2s;">Sign Out</button>
+        <button id="auth-signout-btn" onclick="window._fbSignOut && window._fbSignOut()" style="width:100%;background:transparent;border:1px solid #333;border-radius:10px;color:#888;font-family:'DM Sans';font-size:14px;font-weight:600;padding:13px;cursor:pointer;transition:all .2s;">Sign Out</button>
         <button id="admin-panel-btn" onclick="closeDataModal();openAdminPanel()" style="display:none;width:100%;margin-top:8px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.35);border-radius:10px;color:#a78bfa;font-family:'DM Sans';font-size:14px;font-weight:600;padding:13px;cursor:pointer;transition:all .2s;">⚙️ Admin Panel</button>
       </div>
     </div>
@@ -2437,7 +2461,7 @@ function renderExercisesTab() {
     <button onclick="switchExTabView('library')" id="exTab-seg-library" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_exTabView==='library'?'var(--accent)':'transparent'};color:${_exTabView==='library'?'#000':'var(--muted)'};font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">LIBRARY</button>
   </div>`;
 
-  el.innerHTML = toggleHtml + (_exTabView === 'created' ? searchHtml + pillsHtml + listHtml + addBtnHtml : pillsHtml + `<div class="empty-state" style="padding:32px 0;"><span style="color:var(--muted);">Library coming soon.</span></div>`);
+  el.innerHTML = toggleHtml + (_exTabView === 'created' ? searchHtml + pillsHtml + listHtml + addBtnHtml : pillsHtml + buildExerciseLibraryHtml(selected));
   // Cards always start collapsed (minimized view by default)
 }
 
@@ -3242,7 +3266,8 @@ function renderWorkoutsTab() {
 
   const createNewBtn = !showingHidden ? `<button onclick="startNewWorkout(true);" style="width:100%;margin-top:4px;background:transparent;border:1px dashed var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Create New Workout</button>` : '';
   if (_wTabView === 'library') {
-    el.innerHTML = _wToggleHtml + `<div class="empty-state" style="padding:32px 0;"><span style="color:var(--muted);">Library coming soon.</span></div>`;
+    el.innerHTML = _wToggleHtml + buildWorkoutLibraryHtml();
+    loadWorkoutLibrary();
     return;
   }
   el.innerHTML = html + createNewBtn + toggleHiddenBtn;
@@ -10519,6 +10544,42 @@ if ("serviceWorker" in navigator) {
 }
 </script>
 
+<!-- CLIENT VIEWER -->
+<div id="clientViewerOverlay" style="display:none;position:fixed;inset:0;z-index:9100;background:#0a0a0a;overflow-y:auto;">
+  <div style="max-width:430px;margin:0 auto;padding:16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 0 12px;">
+      <div>
+        <button onclick="document.getElementById('clientViewerOverlay').style.display='none'" style="background:transparent;border:none;color:#555;font-size:13px;cursor:pointer;padding:0;display:flex;align-items:center;gap:4px;margin-bottom:6px;">‹ Back to clients</button>
+        <div id="clientViewerName" style="font-family:'Bebas Neue';font-size:28px;color:#34d399;letter-spacing:1px;"></div>
+        <div style="font-size:11px;color:#555;letter-spacing:2px;">WORKOUT HISTORY</div>
+      </div>
+    </div>
+    <div id="clientViewerStats" style="display:flex;gap:8px;margin-bottom:16px;"></div>
+    <div id="clientViewerHistory"></div>
+  </div>
+</div>
+
+<!-- COACH PANEL -->
+<div id="coachPanelOverlay" style="display:none;position:fixed;inset:0;z-index:9000;background:#0a0a0a;overflow-y:auto;">
+  <div style="max-width:430px;margin:0 auto;padding:16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 0 20px;">
+      <div>
+        <div style="font-family:'Bebas Neue';font-size:28px;color:#34d399;letter-spacing:1px;">MY CLIENTS</div>
+        <div style="font-size:11px;color:#555;letter-spacing:2px;">COACH DASHBOARD</div>
+      </div>
+      <button onclick="closeCoachPanel()" style="background:transparent;border:1px solid #2a2a2a;border-radius:8px;color:#888;font-size:18px;width:36px;height:36px;cursor:pointer;">✕</button>
+    </div>
+    <div id="coachClientsList" style="margin-bottom:20px;"></div>
+    <div style="border-top:1px solid #2a2a2a;padding-top:16px;">
+      <div style="font-family:'Bebas Neue';font-size:14px;letter-spacing:1px;color:#555;margin-bottom:8px;">INVITE CLIENT BY EMAIL</div>
+      <div style="display:flex;gap:8px;">
+        <input id="coachInviteEmail" type="email" placeholder="client@email.com" style="flex:1;background:#141414;border:1px solid #2a2a2a;border-radius:10px;color:#f0f0f0;font-family:'DM Sans';font-size:14px;padding:12px;outline:none;"/>
+        <button onclick="inviteClientByEmail()" style="background:#34d39922;border:1px solid #34d39955;border-radius:10px;color:#34d399;font-family:'DM Sans';font-size:13px;font-weight:700;padding:12px 16px;cursor:pointer;white-space:nowrap;">Assign</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ADMIN PANEL -->
 <div id="adminPanelOverlay" style="display:none;position:fixed;inset:0;z-index:9000;background:#0a0a0a;overflow-y:auto;">
   <div style="max-width:430px;margin:0 auto;padding:16px;">
@@ -10625,21 +10686,59 @@ async function handleForgotPassword() {
 }
 
 // Add sign-out to settings/my data area
+function toggleUserMenu() {
+  const menu = document.getElementById('userMenuDropdown');
+  menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+}
+
+// Close menu when clicking outside
+document.addEventListener('click', e => {
+  if (!e.target.closest('#userIconBtn') && !e.target.closest('#userMenuDropdown')) {
+    const menu = document.getElementById('userMenuDropdown');
+    if (menu) menu.style.display = 'none';
+  }
+});
+
 window._onAuthReady = (user) => {
+  const roleColors = { super_admin: '#ff4747', ops_admin: '#ff8c42', coach: '#7ec8e3', client: '#e8ff47' };
+  const roleLabels = { super_admin: 'Super Admin', ops_admin: 'Ops Admin', coach: 'Coach', client: 'Client' };
+  const role = window._currentUserData?.role || 'client';
+  const color = roleColors[role] || '#888';
+
+  // Show and color user icon
+  const iconBtn = document.getElementById('userIconBtn');
+  const iconSvg = document.getElementById('userIconSvg');
+  if (iconBtn) iconBtn.style.display = 'flex';
+  if (iconSvg) iconSvg.setAttribute('stroke', color);
+
+  // Populate menu
+  const nameEl = document.getElementById('userMenuDisplayName');
+  const emailEl = document.getElementById('userMenuEmail');
+  const roleEl = document.getElementById('userMenuRole');
+  if (nameEl) nameEl.textContent = user.displayName || 'User';
+  if (emailEl) emailEl.textContent = user.email || '';
+  if (roleEl) { roleEl.textContent = roleLabels[role] || role; roleEl.style.color = color; }
+
+  // Show admin button for admins
+  const adminBtn = document.getElementById('userMenuAdminBtn');
+  if (adminBtn && ['super_admin', 'ops_admin'].includes(role)) adminBtn.style.display = 'block';
+  const coachBtn = document.getElementById('userMenuCoachBtn');
+  if (coachBtn && ['super_admin', 'coach'].includes(role)) coachBtn.style.display = 'block';
+  const libBtn = document.getElementById('saveToLibraryBtn');
+  if (libBtn && ['super_admin', 'ops_admin', 'coach'].includes(role)) libBtn.style.display = '';
+
+  // Sign out button in MY DATA (keep for backward compat)
   const signOutBtn = document.getElementById('auth-signout-btn');
-  if (signOutBtn) {
-    signOutBtn.style.display = '';
-    signOutBtn.textContent = `Sign Out (${user.email || user.displayName || 'user'})`;
-  }
-  // Show admin panel button for admins
-  const adminBtn = document.getElementById('admin-panel-btn');
-  if (adminBtn && ['super_admin', 'ops_admin'].includes(window._currentUserData?.role)) {
-    adminBtn.style.display = '';
-  }
+  if (signOutBtn) signOutBtn.textContent = `Sign Out (${user.email || user.displayName || 'user'})`;
+  const oldAdminBtn = document.getElementById('admin-panel-btn');
+  if (oldAdminBtn && ['super_admin', 'ops_admin'].includes(role)) oldAdminBtn.style.display = '';
+
   if (typeof showToast === 'function') showToast('☁ Loading your data...');
   window.loadFromFirestore(user.uid).then(loaded => {
     if (loaded && typeof showToast === 'function') showToast('☁ Data loaded from cloud');
   });
+  // Preload library in background
+  if (typeof loadLibrary === 'function') loadLibrary();
 };
 
 // Firestore sync - exposed as window globals, called from regular scripts
@@ -10781,6 +10880,7 @@ function renderAdminUsers(search = '') {
   const roleLabels = { super_admin: 'Super Admin', ops_admin: 'Ops Admin', coach: 'Coach', client: 'Client' };
   const myRole = window._currentUserData?.role;
   const myUid = window._currentUser?.uid;
+  const coaches = _adminUsers.filter(u => u.role === 'coach');
 
   let users = _adminUsers.filter(u => {
     if (_adminRoleFilter !== 'all' && u.role !== _adminRoleFilter) return false;
@@ -10798,6 +10898,15 @@ function renderAdminUsers(search = '') {
     const canEdit = myRole === 'super_admin' || (myRole === 'ops_admin' && u.role === 'client');
     const color = roleColors[u.role] || '#888';
     const initials = (u.displayName || u.email || '?').slice(0, 2).toUpperCase();
+    const assignedCoach = coaches.find(c => (u.coachId === c.id));
+    const coachSelect = u.role === 'client' && canEdit && coaches.length ? `
+      <div style="margin-top:8px;display:flex;align-items:center;gap:8px;">
+        <span style="font-size:11px;color:#555;font-weight:600;flex-shrink:0;">Coach:</span>
+        <select onchange="assignCoach('${u.id}',this.value)" style="flex:1;background:#1e1e1e;border:1px solid #333;border-radius:7px;color:#f0f0f0;font-family:'DM Sans';font-size:12px;padding:5px 8px;cursor:pointer;">
+          <option value="">— None —</option>
+          ${coaches.map(c => `<option value="${c.id}" ${u.coachId===c.id?'selected':''}>${c.displayName||c.email}</option>`).join('')}
+        </select>
+      </div>` : '';
     return `<div style="background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:14px;margin-bottom:10px;">
       <div style="display:flex;align-items:center;gap:12px;">
         <div style="width:40px;height:40px;border-radius:50%;background:${color}22;border:1px solid ${color}55;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:${color};flex-shrink:0;">${initials}</div>
@@ -10807,6 +10916,7 @@ function renderAdminUsers(search = '') {
         </div>
         <span style="background:${color}22;color:${color};border:1px solid ${color}44;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;flex-shrink:0;">${roleLabels[u.role] || u.role}</span>
       </div>
+      ${coachSelect}
       ${canEdit && !isSelf ? `<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">
         ${['super_admin','ops_admin','coach','client'].filter(r => r !== u.role).map(r =>
           `<button onclick="changeUserRole('${u.id}','${r}')" style="flex:1;min-width:80px;background:transparent;border:1px solid ${roleColors[r]}44;border-radius:7px;color:${roleColors[r]};font-family:'DM Sans';font-size:11px;font-weight:700;padding:6px;cursor:pointer;">→ ${roleLabels[r]}</button>`
@@ -10825,6 +10935,383 @@ function changeUserRole(uid, newRole) {
     renderAdminUsers(document.getElementById('adminSearch')?.value?.toLowerCase() || '');
     renderAdminStats();
     showToast(`Role updated to ${newRole}`);
+  }).catch(e => showToast('Error: ' + e.message));
+}
+
+function assignCoach(clientId, coachId) {
+  if (!window._fbDb) return;
+  const { collection } = window._fbFirestoreExtra || {};
+  const ref = window._fbDoc(window._fbDb, 'users', clientId);
+  window._fbSetDoc(ref, { coachId: coachId || null }, { merge: true }).then(() => {
+    const client = _adminUsers.find(u => u.id === clientId);
+    if (client) client.coachId = coachId || null;
+    showToast(coachId ? 'Coach assigned' : 'Coach removed');
+  }).catch(e => showToast('Error: ' + e.message));
+}
+
+// ══════════════════════════════════════════════════════
+//  COACH PANEL
+// ══════════════════════════════════════════════════════
+function openCoachPanel() {
+  document.getElementById('coachPanelOverlay').style.display = 'block';
+  loadCoachClients();
+}
+
+function closeCoachPanel() {
+  document.getElementById('coachPanelOverlay').style.display = 'none';
+}
+
+function loadCoachClients() {
+  const myUid = window._currentUser?.uid;
+  const list = document.getElementById('coachClientsList');
+  if (!myUid || !window._fbDb) return;
+  const { getDocs, collection, query, where } = window._fbFirestoreExtra || {};
+  if (!getDocs || !collection || !query || !where) {
+    list.innerHTML = '<div style="color:#ff4747;padding:16px;font-size:13px;">Firestore not ready</div>';
+    return;
+  }
+  list.innerHTML = '<div style="text-align:center;padding:40px;color:#555;font-size:13px;">Loading clients...</div>';
+  getDocs(query(collection(window._fbDb, 'users'), where('coachId', '==', myUid))).then(snap => {
+    const clients = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (!clients.length) {
+      list.innerHTML = `<div style="text-align:center;padding:40px;color:#555;font-size:13px;">No clients assigned yet.<br>Ask an admin to assign clients to you,<br>or invite clients by email below.</div>`;
+      return;
+    }
+    list.innerHTML = clients.map(c => `
+      <div style="background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;cursor:pointer;" onclick="viewClientData('${c.id}','${c.displayName||c.email||c.id}')">
+        <div style="width:40px;height:40px;border-radius:50%;background:#e8ff4722;border:1px solid #e8ff4755;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:#e8ff47;flex-shrink:0;">${(c.displayName||c.email||'?').slice(0,2).toUpperCase()}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:700;font-size:14px;color:#f0f0f0;">${c.displayName||'—'}</div>
+          <div style="font-size:12px;color:#666;">${c.email||c.id}</div>
+        </div>
+        <span style="color:#555;font-size:18px;">›</span>
+      </div>`).join('');
+  }).catch(e => {
+    list.innerHTML = `<div style="color:#ff4747;padding:16px;font-size:13px;">Error: ${e.message}</div>`;
+  });
+}
+
+function inviteClientByEmail() {
+  const email = document.getElementById('coachInviteEmail').value.trim();
+  if (!email) return;
+  const myUid = window._currentUser?.uid;
+  const { getDocs, collection, query, where } = window._fbFirestoreExtra || {};
+  if (!getDocs || !query || !collection || !where) return;
+  getDocs(query(collection(window._fbDb, 'users'), where('email', '==', email))).then(snap => {
+    if (snap.empty) { showToast('No user found with that email'); return; }
+    const clientDoc = snap.docs[0];
+    window._fbSetDoc(window._fbDoc(window._fbDb, 'users', clientDoc.id), { coachId: myUid }, { merge: true }).then(() => {
+      showToast('Client assigned to you!');
+      document.getElementById('coachInviteEmail').value = '';
+      loadCoachClients();
+    });
+  }).catch(e => showToast('Error: ' + e.message));
+}
+
+function viewClientData(clientId, clientName) {
+  document.getElementById('clientViewerOverlay').style.display = 'block';
+  document.getElementById('clientViewerName').textContent = clientName;
+  document.getElementById('clientViewerHistory').innerHTML = '<div style="text-align:center;padding:40px;color:#555;font-size:13px;">Loading...</div>';
+  if (!window._fbDb) return;
+  const ref = window._fbDoc(window._fbDb, 'userData', clientId);
+  window._fbGetDoc(ref).then(snap => {
+    if (!snap.exists()) {
+      document.getElementById('clientViewerHistory').innerHTML = '<div style="text-align:center;padding:40px;color:#555;font-size:13px;">No workout data yet.</div>';
+      return;
+    }
+    const data = snap.data();
+    const wkts = (data.workouts || []).filter(w => !w._draft && !w._template).sort((a,b) => b.date - a.date);
+    if (!wkts.length) {
+      document.getElementById('clientViewerHistory').innerHTML = '<div style="text-align:center;padding:40px;color:#555;font-size:13px;">No workouts recorded yet.</div>';
+      return;
+    }
+    // Render workout cards
+    document.getElementById('clientViewerHistory').innerHTML = wkts.map(w => {
+      const date = new Date(w.date).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+      const sets = w.exercises.reduce((a,e) => a + (e.sets||[]).filter(s=>s.done&&!s.ignored).length, 0);
+      const muscles = [...new Set(w.exercises.map(e=>e.muscle).filter(Boolean))];
+      const muscleColors = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171', Compound:'#20d4c8' };
+      return `<div style="background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:14px;margin-bottom:10px;">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;">
+          <div>
+            <div style="font-family:'Bebas Neue';font-size:18px;color:#e8ff47;letter-spacing:.5px;">${w.name||'Unnamed'}</div>
+            <div style="font-size:12px;color:#555;margin-top:1px;">${date}</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;">
+            <div style="font-size:13px;font-weight:700;color:#f0f0f0;">${w.exercises.length} ex · ${sets} sets</div>
+            ${w.durationMins > 0 ? `<div style="font-size:11px;color:#7ec8e3;margin-top:2px;">${w.durationMins}m</div>` : ''}
+          </div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;">
+          ${muscles.map(m => `<span style="background:${(muscleColors[m]||'#888')}22;color:${muscleColors[m]||'#888'};border:1px solid ${(muscleColors[m]||'#888')}44;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;">${m}</span>`).join('')}
+        </div>
+        <div style="margin-top:10px;border-top:1px solid #1e1e1e;padding-top:8px;">
+          ${w.exercises.map(e => {
+            const done = (e.sets||[]).filter(s=>s.done&&!s.ignored);
+            if (!done.length) return '';
+            const best = Math.max(...done.map(s=>s.kg*(1+s.reps/30)));
+            return `<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px;">
+              <span style="color:#aaa;">${e.name}</span>
+              <span style="color:#f0f0f0;font-weight:600;">${done.length} sets · ${best.toFixed(1)}kg 1RM</span>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+    }).join('');
+
+    // Render stats bar
+    const totalW = wkts.length;
+    const totalS = wkts.reduce((a,w) => a + w.exercises.reduce((b,e)=>b+(e.sets||[]).filter(s=>s.done&&!s.ignored).length,0), 0);
+    const lastDate = new Date(wkts[0].date).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    document.getElementById('clientViewerStats').innerHTML = `
+      <div style="flex:1;background:#141414;border:1px solid #2a2a2a;border-radius:10px;padding:10px;text-align:center;">
+        <div style="font-size:20px;font-weight:700;color:#e8ff47;">${totalW}</div>
+        <div style="font-size:10px;color:#555;font-weight:600;">WORKOUTS</div>
+      </div>
+      <div style="flex:1;background:#141414;border:1px solid #2a2a2a;border-radius:10px;padding:10px;text-align:center;">
+        <div style="font-size:20px;font-weight:700;color:#7ec8e3;">${totalS}</div>
+        <div style="font-size:10px;color:#555;font-weight:600;">TOTAL SETS</div>
+      </div>
+      <div style="flex:1;background:#141414;border:1px solid #2a2a2a;border-radius:10px;padding:10px;text-align:center;">
+        <div style="font-size:14px;font-weight:700;color:#34d399;">${lastDate}</div>
+        <div style="font-size:10px;color:#555;font-weight:600;">LAST SESSION</div>
+      </div>`;
+  }).catch(e => {
+    document.getElementById('clientViewerHistory').innerHTML = `<div style="color:#ff4747;padding:16px;font-size:13px;">Error: ${e.message}</div>`;
+  });
+}
+
+// ══════════════════════════════════════════════════════
+//  LIBRARY SYSTEM
+// ══════════════════════════════════════════════════════
+let _libraryExercises = [];
+let _libraryWorkouts = [];
+let _libraryLoaded = false;
+
+function canEditLibrary() {
+  const role = window._currentUserData?.role;
+  return ['super_admin', 'ops_admin', 'coach'].includes(role);
+}
+
+function loadLibrary() {
+  if (!window._fbDb || !window._fbFirestoreExtra) return Promise.resolve();
+  const { getDocs, collection } = window._fbFirestoreExtra;
+  return Promise.all([
+    getDocs(collection(window._fbDb, 'library/exercises/items')).then(snap => {
+      _libraryExercises = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    }),
+    getDocs(collection(window._fbDb, 'library/workouts/items')).then(snap => {
+      _libraryWorkouts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    })
+  ]).then(() => { _libraryLoaded = true; });
+}
+
+function buildExerciseLibraryHtml(selectedMuscle) {
+  const muscleColors = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171', Compound:'#20d4c8' };
+  const filtered = _libraryExercises.filter(e => !selectedMuscle || e.muscle === selectedMuscle);
+  const canEdit = canEditLibrary();
+
+  const addBtn = canEdit ? `<button onclick="openAddLibraryExercise()" style="width:100%;margin-top:8px;background:transparent;border:1px dashed #34d399;border-radius:10px;color:#34d399;font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+    <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    Add to Library
+  </button>` : '';
+
+  if (!_libraryLoaded) {
+    loadLibrary().then(() => renderExercisesTab());
+    return '<div style="text-align:center;padding:40px;color:#555;font-size:13px;">Loading library...</div>';
+  }
+
+  if (!filtered.length) {
+    return `<div class="empty-state"><span style="color:var(--muted);">No exercises in library for this muscle group.</span></div>${addBtn}`;
+  }
+
+  return filtered.map(ex => {
+    const color = muscleColors[ex.muscle] || '#888';
+    return `<div style="background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;">
+      <div style="width:36px;height:36px;border-radius:8px;background:${color}22;border:1px solid ${color}44;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:${color};flex-shrink:0;">${ex.muscle?.slice(0,2)||'EX'}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;font-size:14px;color:#f0f0f0;">${ex.name}</div>
+        ${ex.description ? `<div style="font-size:12px;color:#555;margin-top:2px;">${ex.description}</div>` : ''}
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0;">
+        <button onclick="addLibraryExToSession('${ex.name}','${ex.muscle}')" style="background:#e8ff4722;border:1px solid #e8ff4744;border-radius:7px;color:#e8ff47;font-family:'DM Sans';font-size:11px;font-weight:700;padding:5px 10px;cursor:pointer;">+ Add</button>
+        ${canEdit ? `<button onclick="deleteLibraryExercise('${ex.id}')" style="background:transparent;border:1px solid #333;border-radius:7px;color:#555;font-family:'DM Sans';font-size:11px;font-weight:700;padding:5px 8px;cursor:pointer;">✕</button>` : ''}
+      </div>
+    </div>`;
+  }).join('') + addBtn;
+}
+
+function buildWorkoutLibraryHtml() {
+  const canEdit = canEditLibrary();
+  const addBtn = canEdit ? `<button onclick="openAddLibraryWorkout()" style="width:100%;margin-top:8px;background:transparent;border:1px dashed #34d399;border-radius:10px;color:#34d399;font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+    <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    Add to Library
+  </button>` : '';
+  return `<div id="workoutLibraryList"><div style="text-align:center;padding:40px;color:#555;font-size:13px;">Loading...</div></div>${addBtn}`;
+}
+
+function loadWorkoutLibrary() {
+  if (!_libraryLoaded) {
+    loadLibrary().then(() => {
+      renderWorkoutLibraryList();
+    });
+  } else {
+    renderWorkoutLibraryList();
+  }
+}
+
+function renderWorkoutLibraryList() {
+  const el = document.getElementById('workoutLibraryList');
+  if (!el) return;
+  const canEdit = canEditLibrary();
+  if (!_libraryWorkouts.length) {
+    el.innerHTML = '<div class="empty-state"><span style="color:var(--muted);">No workouts in library yet.</span></div>';
+    return;
+  }
+  el.innerHTML = _libraryWorkouts.map(w => {
+    const muscleColors = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171', Compound:'#20d4c8' };
+    const muscles = [...new Set((w.exercises||[]).map(e=>e.muscle).filter(Boolean))];
+    return `<div style="background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:14px;margin-bottom:10px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;">
+        <div>
+          <div style="font-family:'Bebas Neue';font-size:18px;color:#e8ff47;letter-spacing:.5px;">${w.name}</div>
+          ${w.description ? `<div style="font-size:12px;color:#555;">${w.description}</div>` : ''}
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button onclick="loadLibraryWorkout('${w.id}')" style="background:#e8ff4722;border:1px solid #e8ff4744;border-radius:7px;color:#e8ff47;font-family:'DM Sans';font-size:11px;font-weight:700;padding:5px 10px;cursor:pointer;">Load</button>
+          ${canEdit ? `<button onclick="deleteLibraryWorkout('${w.id}')" style="background:transparent;border:1px solid #333;border-radius:7px;color:#555;font-family:'DM Sans';font-size:11px;padding:5px 8px;cursor:pointer;">✕</button>` : ''}
+        </div>
+      </div>
+      <div style="font-size:12px;color:#888;margin-bottom:6px;">${(w.exercises||[]).length} exercises</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;">
+        ${muscles.map(m=>`<span style="background:${(muscleColors[m]||'#888')}22;color:${muscleColors[m]||'#888'};border:1px solid ${(muscleColors[m]||'#888')}44;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;">${m}</span>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function addLibraryExToSession(name, muscle) {
+  const ex = getAllExercises().find(e=>e.name===name||e.label===name) || {name, label:name, muscle: muscle||'Chest', custom:false};
+  switchTab('log');
+  setTimeout(() => {
+    showTodayWorkoutArea();
+    addExerciseCard(ex);
+    showToast(`"${name}" added to today`);
+  }, 300);
+}
+
+function loadLibraryWorkout(id) {
+  const w = _libraryWorkouts.find(x=>x.id===id);
+  if (!w) return;
+  switchTab('log');
+  setTimeout(() => {
+    resetWorkoutState();
+    showTodayWorkoutArea();
+    document.getElementById('workoutName').value = w.name;
+    (w.exercises||[]).forEach(exData => {
+      const ex = getAllExercises().find(e=>e.label===exData.name||e.name===exData.name) || {name:exData.name,label:exData.name,muscle:exData.muscle||'Chest',custom:false};
+      addExerciseCard(ex);
+    });
+    showToast(`"${w.name}" loaded!`);
+  }, 300);
+}
+
+function openAddLibraryExercise() {
+  const muscle = window._exTabMuscle || 'Chest';
+  const overlay = document.createElement('div');
+  overlay.className = 'delete-confirm-overlay';
+  overlay.innerHTML = `<div class="delete-confirm-sheet">
+    <div class="delete-confirm-title">Add to Exercise Library</div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+      <input id="_libExName" type="text" placeholder="Exercise name" style="background:#1a1a1a;border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans';font-size:15px;padding:12px;outline:none;"/>
+      <input id="_libExDesc" type="text" placeholder="Description (optional)" style="background:#1a1a1a;border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans';font-size:15px;padding:12px;outline:none;"/>
+    </div>
+    <div class="delete-confirm-btns">
+      <button class="btn-del-cancel" onclick="this.closest('.delete-confirm-overlay').remove()">Cancel</button>
+      <button class="btn-del-yes" onclick="saveLibraryExercise('${muscle}',this)">Add</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  setTimeout(() => overlay.querySelector('#_libExName').focus(), 100);
+}
+
+function saveLibraryExercise(muscle, btn) {
+  const name = document.getElementById('_libExName').value.trim();
+  const desc = document.getElementById('_libExDesc').value.trim();
+  if (!name) { showToast('Enter a name'); return; }
+  if (!window._fbDb || !window._fbFirestoreExtra) return;
+  const { collection } = window._fbFirestoreExtra;
+  const ref = window._fbDoc(window._fbDb, 'library/exercises/items', Date.now().toString());
+  window._fbSetDoc(ref, { name, muscle, description: desc, createdBy: window._currentUser?.uid, createdAt: new Date().toISOString() })
+    .then(() => {
+      _libraryExercises.push({ id: ref.id, name, muscle, description: desc });
+      btn.closest('.delete-confirm-overlay').remove();
+      renderExercisesTab();
+      showToast('Added to library!');
+    }).catch(e => showToast('Error: ' + e.message));
+}
+
+function deleteLibraryExercise(id) {
+  if (!window._fbDb) return;
+  const { collection } = window._fbFirestoreExtra || {};
+  const ref = window._fbDoc(window._fbDb, 'library/exercises/items', id);
+  // Use deleteDoc
+  if (window._fbDeleteDoc) {
+    window._fbDeleteDoc(ref).then(() => {
+      _libraryExercises = _libraryExercises.filter(e=>e.id!==id);
+      renderExercisesTab();
+      showToast('Removed from library');
+    }).catch(e => showToast('Error: ' + e.message));
+  }
+}
+
+function openAddLibraryWorkout() {
+  const overlay = document.createElement('div');
+  overlay.className = 'delete-confirm-overlay';
+  overlay.innerHTML = `<div class="delete-confirm-sheet">
+    <div class="delete-confirm-title">Save Workout to Library</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Save your current workout as a library template others can load.</div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+      <input id="_libWName" type="text" placeholder="Workout name" style="background:#1a1a1a;border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans';font-size:15px;padding:12px;outline:none;"/>
+      <input id="_libWDesc" type="text" placeholder="Description (optional)" style="background:#1a1a1a;border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans';font-size:15px;padding:12px;outline:none;"/>
+    </div>
+    <div class="delete-confirm-btns">
+      <button class="btn-del-cancel" onclick="this.closest('.delete-confirm-overlay').remove()">Cancel</button>
+      <button class="btn-del-yes" onclick="saveLibraryWorkout(this)">Save</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  // Pre-fill with current workout name
+  const curName = document.getElementById('workoutName')?.value?.trim();
+  if (curName) document.getElementById('_libWName').value = curName;
+  setTimeout(() => overlay.querySelector('#_libWName').focus(), 100);
+}
+
+function saveLibraryWorkout(btn) {
+  const name = document.getElementById('_libWName').value.trim();
+  const desc = document.getElementById('_libWDesc').value.trim();
+  if (!name) { showToast('Enter a name'); return; }
+  // Collect current exercises from today
+  const cards = document.querySelectorAll('#exerciseList .exercise-card');
+  const exercises = [...cards].map(card => ({ name: card.dataset.exname||'Exercise', muscle: card.dataset.exmuscle||'Chest' }));
+  if (!exercises.length) { showToast('Add exercises first'); return; }
+  if (!window._fbDb) return;
+  const ref = window._fbDoc(window._fbDb, 'library/workouts/items', Date.now().toString());
+  window._fbSetDoc(ref, { name, description: desc, exercises, createdBy: window._currentUser?.uid, createdAt: new Date().toISOString() })
+    .then(() => {
+      _libraryWorkouts.push({ id: ref.id, name, description: desc, exercises });
+      btn.closest('.delete-confirm-overlay').remove();
+      showToast('Saved to library!');
+    }).catch(e => showToast('Error: ' + e.message));
+}
+
+function deleteLibraryWorkout(id) {
+  if (!window._fbDb || !window._fbDeleteDoc) return;
+  const ref = window._fbDoc(window._fbDb, 'library/workouts/items', id);
+  window._fbDeleteDoc(ref).then(() => {
+    _libraryWorkouts = _libraryWorkouts.filter(w=>w.id!==id);
+    renderWorkoutLibraryList();
+    showToast('Removed from library');
   }).catch(e => showToast('Error: ' + e.message));
 }
 
