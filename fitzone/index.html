@@ -269,7 +269,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .hcard-body.collapsed{max-height:0;}
 .hcard-ex-item{padding:10px 16px;border-top:1px solid var(--border);display:flex;align-items:flex-start;gap:10px;}
 .hcard-ex-num{font-family:'DM Sans';font-size:16px;font-weight:700;color:var(--accent);min-width:24px;flex-shrink:0;}
-.hcard-ex-name{font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;letter-spacing:0;-webkit-text-stroke:0.4px currentColor;line-height:1.2;}
+.hcard-ex-name{font-family:'DM Sans';font-size:17px;font-weight:400;letter-spacing:0;line-height:1.2;}
 .hcard-muscle-tag{font-family:'DM Sans';font-size:10px;font-weight:700;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:1px 5px;letter-spacing:.3px;text-transform:uppercase;vertical-align:middle;margin-left:4px;}
 .hcard-muscle-pill{font-family:'DM Sans';font-size:11px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;background:none;border:none;padding:0;display:inline-block;}
 .hcard-ex-sets{display:block;line-height:1.7;}
@@ -1716,8 +1716,7 @@ function updateVolProgressBar(exId) {
   }
 
   if (!anyDefined && prevVol === 0) {
-    bar.style.display = 'none';
-    return;
+    // Still show bar but with zeroes
   }
 
   bar.style.display = 'block';
@@ -1749,7 +1748,7 @@ function updateVolProgressBar(exId) {
 
   if (scoreEl) {
     const pct = prevScore > 0 ? Math.round((curScore - prevScore) / prevScore * 100) : null;
-    scoreEl.innerHTML = `${curScore.toFixed(2)}kg`;
+    scoreEl.innerHTML = `${Math.round(curScore * 10) / 10 || 0}kg`;
     const scorePrevEl = document.getElementById(`vol-score-prev-${exId}`);
     if (scorePrevEl) scorePrevEl.textContent = prevBestSet ? `${prevBestSet.kg}kg×${prevBestSet.reps}` : '';
     const scoreDiffEl = document.getElementById(`vol-score-diff-${exId}`);
@@ -1782,7 +1781,7 @@ function updateVolProgressBar(exId) {
       if (curWorkoutName) { if (!_findVol(curWorkoutName) && !isNewWorkoutName()) _findVol(null); } else _findVol(null);
     }
     const pctV = prevVolKgReps > 0 ? Math.round((curVol - prevVolKgReps) / prevVolKgReps * 100) : null;
-    volLabelEl.innerHTML = `${curVol}kg`;
+    volLabelEl.innerHTML = `${curVol || 0}kg`;
     const volPrevEl = document.getElementById(`vol-volume-prev-${exId}`);
     if (volPrevEl) volPrevEl.textContent = prevVolKgReps > 0 ? `${prevVolKgReps}kg` : '';
     const volDiffEl = document.getElementById(`vol-volume-diff-${exId}`);
@@ -1808,7 +1807,7 @@ function updateVolProgressBar(exId) {
       if (curWorkoutName) { if (!_findMax(curWorkoutName) && !isNewWorkoutName()) _findMax(null); } else _findMax(null);
     }
     const pctM = prevMaxKg2 > 0 ? Math.round((curMaxKg - prevMaxKg2) / prevMaxKg2 * 100) : null;
-    maxWtEl.innerHTML = curMaxKg > 0 ? `${curMaxKg.toFixed(2)}kg` : '';
+    maxWtEl.innerHTML = `${curMaxKg || 0}kg`;
     const maxPrevEl = document.getElementById(`vol-maxwt-prev-${exId}`);
     if (maxPrevEl) maxPrevEl.textContent = prevMaxKg2 > 0 ? `${prevMaxKg2}kg` : '';
     const maxDiffEl = document.getElementById(`vol-maxwt-diff-${exId}`);
@@ -2533,7 +2532,7 @@ function renderExercisesTab() {
       const chevHtml = hasHistory ? `<span id="${safeId}-chev" style="color:var(--muted);font-size:11px;transition:transform .2s;">&#9660;</span>` : '';
       listHtml += `<div data-exname="${ex.name.replace(/"/g,'&quot;')}" style="margin-bottom:8px;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;">
-        <div ${isExpandable || _pickMode ? `onclick="${_pickMode ? `pickExercise('${ex.name.replace(/'/g,"\\'")}')` : `toggleExTabCard('${safeId}')`}"` : ''} style="flex:1;min-width:0;${isExpandable || _pickMode ? 'cursor:pointer;' : ''}">${_pickMode ? `<div style="font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;letter-spacing:0;-webkit-text-stroke:0.4px currentColor;color:var(--text);margin-bottom:2px;">${ex.name}</div>` : `<div style="font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;letter-spacing:0;-webkit-text-stroke:0.4px currentColor;color:var(--text);margin-bottom:2px;">${ex.name}</div><div style="font-size:11px;color:var(--muted);">Last: ${lastFmt}</div>`}
+        <div ${isExpandable || _pickMode ? `onclick="${_pickMode ? `pickExercise('${ex.name.replace(/'/g,"\\'")}')` : `toggleExTabCard('${safeId}')`}"` : ''} style="flex:1;min-width:0;${isExpandable || _pickMode ? 'cursor:pointer;' : ''}">${_pickMode ? `<div style="font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;letter-spacing:0;-webkit-text-stroke:0.4px currentColor;color:var(--text);margin-bottom:2px;">${ex.name}</div>` : `<div style="font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;letter-spacing:0;-webkit-text-stroke:0.4px currentColor;color:var(--text);">${ex.name}</div>`}
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
           ${_pickMode ? '' : statsHtml}
@@ -2541,6 +2540,7 @@ function renderExercisesTab() {
       </div>
       <div id="${safeId}-body" style="display:none;padding:0 12px 12px;">
         <div style="height:1px;background:var(--border);margin-bottom:10px;"></div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Last: ${lastFmt}</div>
         ${singleRecord ? `<div style="font-size:12px;color:var(--muted);padding:4px 0 12px;text-align:center;">${ex.count === 0 ? "No sessions logged yet" : "Log at least 2 sessions to see progress charts"}</div>` : `
         <div style="display:flex;justify-content:flex-start;padding:0 0 8px;">
           <button class="btn-hist has-data" onclick="openExHistoryByName('${ex.name}')">History</button>
@@ -2595,8 +2595,8 @@ function renderExercisesTab() {
 
   const _hasCoach = window._currentUserData?.coachId && window._currentUserData?.coachingExpires && new Date(window._currentUserData.coachingExpires) >= new Date();
   const toggleHtml = `<div style="display:flex;gap:0;margin-bottom:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
-    <button onclick="switchExTabView('created')" id="exTab-seg-created" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_exTabView==='created'?'var(--accent)':'transparent'};color:${_exTabView==='created'?'#000':'var(--muted)'};font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">CREATED</button>
-    <button onclick="switchExTabView('library')" id="exTab-seg-library" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_exTabView==='library'?'var(--accent)':'transparent'};color:${_exTabView==='library'?'#000':'var(--muted)'};font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">LIBRARY</button>
+    <button onclick="switchExTabView('created')" id="exTab-seg-created" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_exTabView==='created'?'var(--accent)':'transparent'};color:${_exTabView==='created'?'#000':'var(--muted)'};font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">MY ZONE</button>
+    <button onclick="switchExTabView('library')" id="exTab-seg-library" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_exTabView==='library'?'var(--accent)':'transparent'};color:${_exTabView==='library'?'#000':'var(--muted)'};font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">EXPLORE</button>
     ${_hasCoach ? `<button onclick="switchExTabView('coach')" id="exTab-seg-coach" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_exTabView==='coach'?'#7ec8e3':'transparent'};color:${_exTabView==='coach'?'#000':'#7ec8e3'};font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">COACH</button>` : ''}
   </div>`;
 
@@ -3282,7 +3282,7 @@ function renderWorkoutsTab() {
 
   const all = workouts.filter(w => !w._draft);
   if (!all.length) {
-    el.innerHTML = `<div style="display:flex;gap:0;margin-bottom:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;"><button onclick="switchWTabView('created')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:var(--accent);color:#000;font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">CREATED</button><button onclick="switchWTabView('library')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:transparent;color:var(--muted);font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">LIBRARY</button></div><div class="empty-state"><span style="color:#fff;">No custom workouts created</span></div><button onclick="startNewWorkout(true);" style="width:100%;margin-top:12px;background:transparent;border:1px dashed var(--accent);border-radius:10px;color:var(--accent);font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Create New Workout</button>`;
+    el.innerHTML = `<div style="display:flex;gap:0;margin-bottom:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;"><button onclick="switchWTabView('created')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:var(--accent);color:#000;font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">MY ZONE</button><button onclick="switchWTabView('library')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:transparent;color:var(--muted);font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">EXPLORE</button></div><div class="empty-state"><span style="color:#fff;">No custom workouts created</span></div><button onclick="startNewWorkout(true);" style="width:100%;margin-top:12px;background:transparent;border:1px dashed var(--accent);border-radius:10px;color:var(--accent);font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Create New Workout</button>`;
     return;
   }
 
@@ -3302,7 +3302,7 @@ function renderWorkoutsTab() {
   const showingHidden = !!window._showHiddenWorkoutsTab;
   let sorted = deduped.filter(w => showingHidden ? _hiddenLoadWorkouts.includes(w.name) : !_hiddenLoadWorkouts.includes(w.name));
   const _wHasCoach = window._currentUserData?.coachId && window._currentUserData?.coachingExpires && new Date(window._currentUserData.coachingExpires) >= new Date();
-  const _wToggleHtml = `<div style="display:flex;gap:0;margin-bottom:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;"><button onclick="switchWTabView('created')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_wTabView==='created'?'var(--accent)':'transparent'};color:${_wTabView==='created'?'#000':'var(--muted)'};font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">CREATED</button><button onclick="switchWTabView('library')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_wTabView==='library'?'var(--accent)':'transparent'};color:${_wTabView==='library'?'#000':'var(--muted)'};font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">LIBRARY</button>${_wHasCoach?`<button onclick="switchWTabView('coach')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_wTabView==='coach'?'#7ec8e3':'transparent'};color:${_wTabView==='coach'?'#000':'#7ec8e3'};font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">COACH</button>`:''}</div>`;
+  const _wToggleHtml = `<div style="display:flex;gap:0;margin-bottom:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;"><button onclick="switchWTabView('created')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_wTabView==='created'?'var(--accent)':'transparent'};color:${_wTabView==='created'?'#000':'var(--muted)'};font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">MY ZONE</button><button onclick="switchWTabView('library')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_wTabView==='library'?'var(--accent)':'transparent'};color:${_wTabView==='library'?'#000':'var(--muted)'};font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">EXPLORE</button>${_wHasCoach?`<button onclick="switchWTabView('coach')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_wTabView==='coach'?'#7ec8e3':'transparent'};color:${_wTabView==='coach'?'#000':'#7ec8e3'};font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">COACH</button>`:''}</div>`;
   const _mainListTitle = _wToggleHtml + (hiddenCount > 0 ? `<div style="display:flex;justify-content:flex-end;margin-bottom:6px;"><button onclick="window._showHiddenWorkoutsTab=true;window._keepWorkoutsTabState=true;renderWorkoutsTab()" style="background:transparent;border:none;color:#fff;font-family:'DM Sans';font-size:11px;font-weight:600;cursor:pointer;padding:0;">Hidden workouts ▶</button></div>` : '');
 
 
@@ -4482,6 +4482,8 @@ function toggleCardCollapse(id) {
     body.style.maxHeight = '4000px'; body.style.opacity = '1'; body.classList.remove('collapsed'); body.classList.add('open');
     card.dataset.open = 'true';
     chevBtn?.classList.add('open');
+    // Ensure session progress bar is updated when card expands
+    setTimeout(() => updateVolProgressBar(id), 50);
     const impSecExp = document.getElementById(`imp-section-${id}`);
     if (impSecExp) impSecExp.style.display = 'flex';
     chevBtn?.classList.remove('timer-active');
@@ -12522,14 +12524,26 @@ function requestCoach(coachUid, coachName) {
 let _libraryExercises = [];
 let _libraryWorkouts = [];
 let _libraryLoaded = false;
+let _defaultExercises = {}; // from exercises.json, keyed by muscle
 
 function canEditLibrary() {
   const role = window._currentUserData?.role;
-  return ['super_admin', 'ops_admin', 'coach'].includes(role);
+  return ['super_admin', 'ops_admin', 'brand_admin', 'site_manager', 'coach'].includes(role);
+}
+
+// Load exercises.json once
+function loadDefaultExercises() {
+  if (Object.keys(_defaultExercises).length) return Promise.resolve();
+  return fetch('exercises.json')
+    .then(r => r.json())
+    .then(data => { _defaultExercises = data; })
+    .catch(() => { _defaultExercises = {}; });
 }
 
 function loadLibrary() {
-  if (!window._fbDb || !window._fbFirestoreExtra) return Promise.resolve();
+  if (!window._fbDb || !window._fbFirestoreExtra) {
+    return loadDefaultExercises().then(() => { _libraryLoaded = true; });
+  }
   const { getDocs, collection } = window._fbFirestoreExtra;
   const brandId = window.BRAND_ID || 'default';
   return Promise.all([
@@ -12538,13 +12552,13 @@ function loadLibrary() {
     }),
     getDocs(collection(window._fbDb, 'library', brandId, 'workouts')).then(snap => {
       _libraryWorkouts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    })
+    }),
+    loadDefaultExercises()
   ]).then(() => { _libraryLoaded = true; });
 }
 
 function buildExerciseLibraryHtml(selectedMuscle) {
   const muscleColors = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171', Compound:'#20d4c8' };
-  const filtered = _libraryExercises.filter(e => !selectedMuscle || e.muscle === selectedMuscle);
   const canEdit = canEditLibrary();
 
   const addBtn = canEdit ? `<button onclick="openAddLibraryExercise()" style="width:100%;margin-top:8px;background:transparent;border:1px dashed #34d399;border-radius:10px;color:#34d399;font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
@@ -12554,27 +12568,67 @@ function buildExerciseLibraryHtml(selectedMuscle) {
 
   if (!_libraryLoaded) {
     loadLibrary().then(() => renderExercisesTab());
-    return '<div style="text-align:center;padding:40px;color:#555;font-size:13px;">Loading library...</div>';
+    return '<div style="text-align:center;padding:40px;color:#555;font-size:13px;">Loading...</div>';
   }
 
-  if (!filtered.length) {
-    return `<div class="empty-state"><span style="color:var(--muted);">No exercises in library for this muscle group.</span></div>${addBtn}`;
+  // Merge Firestore library + exercises.json default exercises
+  const firestoreNames = new Set(_libraryExercises.map(e => e.name));
+  const muscles = selectedMuscle && selectedMuscle !== 'All'
+    ? [selectedMuscle]
+    : ['Chest','Back','Legs','Shoulders','Arms','Core','Compound'];
+
+  // Firestore custom library items
+  const firestoreItems = _libraryExercises
+    .filter(e => !selectedMuscle || e.muscle === selectedMuscle)
+    .map(ex => {
+      const color = muscleColors[ex.muscle] || '#888';
+      return `<div style="background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;">
+        <div style="width:34px;height:34px;border-radius:8px;background:${color}22;border:1px solid ${color}44;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:${color};flex-shrink:0;">${(ex.muscle||'').slice(0,2)}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:700;font-size:14px;color:#f0f0f0;">${ex.name}</div>
+          ${ex.description ? `<div style="font-size:12px;color:#555;margin-top:1px;">${ex.description}</div>` : ''}
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          <button onclick="addLibraryExToSession('${ex.name.replace(/'/g,"\\'")}','${ex.muscle}')" style="background:#e8ff4722;border:1px solid #e8ff4744;border-radius:7px;color:#e8ff47;font-family:'DM Sans';font-size:11px;font-weight:700;padding:5px 10px;cursor:pointer;">+ Add</button>
+          ${canEdit ? `<button onclick="deleteLibraryExercise('${ex.id}')" style="background:transparent;border:1px solid #333;border-radius:7px;color:#555;font-family:'DM Sans';font-size:11px;font-weight:700;padding:5px 8px;cursor:pointer;">✕</button>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+
+  // Default exercises from exercises.json (not already in Firestore library)
+  let defaultHtml = '';
+  muscles.forEach(muscle => {
+    const items = (_defaultExercises[muscle] || []).filter(e => !firestoreNames.has(e.name));
+    if (!items.length) return;
+    const color = muscleColors[muscle] || '#888';
+    if (!selectedMuscle || selectedMuscle === 'All') {
+      defaultHtml += `<div style="font-family:'Bebas Neue';font-size:13px;letter-spacing:1px;color:${color};margin:14px 0 6px;padding-left:2px;">${muscle}</div>`;
+    }
+    defaultHtml += items.map(ex => `
+      <div style="background:#141414;border:1px solid #1e1e1e;border-radius:10px;padding:10px 14px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:14px;color:#f0f0f0;">${ex.name}</div>
+          <div style="font-size:11px;color:#555;margin-top:1px;">${ex.equipment}</div>
+        </div>
+        <button onclick="addLibraryExToSession('${ex.name.replace(/'/g,"\\'")}','${muscle}')" style="background:#e8ff4722;border:1px solid #e8ff4744;border-radius:7px;color:#e8ff47;font-family:'DM Sans';font-size:11px;font-weight:700;padding:5px 10px;cursor:pointer;flex-shrink:0;">+ Add</button>
+      </div>`).join('');
+  });
+
+  const hasContent = firestoreItems || defaultHtml;
+  if (!hasContent) {
+    return `<div class="empty-state"><span style="color:var(--muted);">No exercises found.</span></div>${addBtn}`;
   }
 
-  return filtered.map(ex => {
-    const color = muscleColors[ex.muscle] || '#888';
-    return `<div style="background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;">
-      <div style="width:36px;height:36px;border-radius:8px;background:${color}22;border:1px solid ${color}44;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:${color};flex-shrink:0;">${ex.muscle?.slice(0,2)||'EX'}</div>
-      <div style="flex:1;min-width:0;">
-        <div style="font-weight:700;font-size:14px;color:#f0f0f0;">${ex.name}</div>
-        ${ex.description ? `<div style="font-size:12px;color:#555;margin-top:2px;">${ex.description}</div>` : ''}
-      </div>
-      <div style="display:flex;gap:6px;flex-shrink:0;">
-        <button onclick="addLibraryExToSession('${ex.name}','${ex.muscle}')" style="background:#e8ff4722;border:1px solid #e8ff4744;border-radius:7px;color:#e8ff47;font-family:'DM Sans';font-size:11px;font-weight:700;padding:5px 10px;cursor:pointer;">+ Add</button>
-        ${canEdit ? `<button onclick="deleteLibraryExercise('${ex.id}')" style="background:transparent;border:1px solid #333;border-radius:7px;color:#555;font-family:'DM Sans';font-size:11px;font-weight:700;padding:5px 8px;cursor:pointer;">✕</button>` : ''}
-      </div>
-    </div>`;
-  }).join('') + addBtn;
+  // Section headers only if there's Firestore content
+  const firestoreSection = firestoreItems ? `
+    <div style="font-family:'Bebas Neue';font-size:13px;letter-spacing:1px;color:#555;margin-bottom:8px;">CUSTOM LIBRARY</div>
+    ${firestoreItems}` : '';
+
+  const defaultSection = defaultHtml ? `
+    <div style="font-family:'Bebas Neue';font-size:13px;letter-spacing:1px;color:#555;margin:${firestoreItems ? '16px' : '0'} 0 8px;">EXERCISES</div>
+    ${defaultHtml}` : '';
+
+  return firestoreSection + defaultSection + addBtn;
 }
 
 function buildWorkoutLibraryHtml() {
