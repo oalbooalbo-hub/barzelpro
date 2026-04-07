@@ -3,13 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#0a0a0a">
-  <link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BARZELPRO">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="description" content="Track your workouts, monitor progress, and crush your fitness goals.">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="logo.svg">
+<link rel="icon" type="image/svg+xml" href="logo.svg">
 <title>BARZELPRO</title>
-<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxODAgMTgwIiB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCI+CiAgPHJlY3Qgd2lkdGg9IjE4MCIgaGVpZ2h0PSIxODAiIHJ4PSIzNiIgZmlsbD0iIzBhMGEwYSIvPgogIDx0ZXh0IHg9IjkwIiB5PSIxNDIiIAogICAgZm9udC1mYW1pbHk9IidCZWJhcyBOZXVlJywgJ0FyaWFsIEJsYWNrJywgSW1wYWN0LCBzYW5zLXNlcmlmIiAKICAgIGZvbnQtc2l6ZT0iMTQwIiAKICAgIGZvbnQtd2VpZ2h0PSI5MDAiCiAgICBmaWxsPSIjZThmZjQ3IiAKICAgIHRleHQtYW5jaG9yPSJtaWRkbGUiCiAgICBsZXR0ZXItc3BhY2luZz0iLTIiPkI8L3RleHQ+Cjwvc3ZnPg==">
-<link rel="icon" type="image/png" sizes="32x32" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxODAgMTgwIiB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCI+CiAgPHJlY3Qgd2lkdGg9IjE4MCIgaGVpZ2h0PSIxODAiIHJ4PSIzNiIgZmlsbD0iIzBhMGEwYSIvPgogIDx0ZXh0IHg9IjkwIiB5PSIxNDIiIAogICAgZm9udC1mYW1pbHk9IidCZWJhcyBOZXVlJywgJ0FyaWFsIEJsYWNrJywgSW1wYWN0LCBzYW5zLXNlcmlmIiAKICAgIGZvbnQtc2l6ZT0iMTQwIiAKICAgIGZvbnQtd2VpZ2h0PSI5MDAiCiAgICBmaWxsPSIjZThmZjQ3IiAKICAgIHRleHQtYW5jaG9yPSJtaWRkbGUiCiAgICBsZXR0ZXItc3BhY2luZz0iLTIiPkI8L3RleHQ+Cjwvc3ZnPg==">
+<!-- localForage: IndexedDB-backed offline storage -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0a0a0a;--surface:#141414;--surface2:#1e1e1e;--border:#2a2a2a;--accent:#e8ff47;--accent2:#ff4747;--text:#f0f0f0;--muted:#666;--radius:14px;}
@@ -77,7 +82,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .ex-thumb:hover .ex-thumb-overlay{opacity:1;}
 .ex-thumb-overlay-arrow{color:#fff;font-size:22px;font-weight:700;line-height:1;}
 .ex-name-block{flex:1;min-width:0;}
-.ex-name{font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;letter-spacing:0;-webkit-text-stroke:0.4px currentColor;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ex-name{font-family:'DM Sans';font-size:17px;font-weight:400;letter-spacing:0;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .ex-header-btns{display:flex;gap:4px;flex-shrink:0;align-items:center;}
 /* ── UNIFIED CHEVRON (same everywhere) ─────────── */
 .btn-chevron,.hcard-chevron{background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--muted);width:34px;height:34px;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:all .25s;font-size:15px;line-height:1;}
@@ -702,12 +707,17 @@ onAuthStateChanged(auth, async (user) => {
     window._currentUser = { ...user, role: userData.role };
     window._currentUserData = userData;
 
+    // ── Cache JWT for offline access ──────────────────
+    if (window.BarzelpNet) {
+      window.BarzelpNet.cacheToken(user).catch(() => {});
+    }
+    // ─────────────────────────────────────────────────
+
     // ── ACCOUNT EXPIRY CHECK ──────────────────────────
     if (userData.accountExpires) {
       const expDate = new Date(userData.accountExpires);
       const now = new Date();
       if (expDate < now) {
-        // Account expired — sign out and show blocked screen
         await signOut(auth);
         showExpiredScreen(userData.accountExpires, 'account');
         return;
@@ -718,9 +728,24 @@ onAuthStateChanged(auth, async (user) => {
     hidAuthScreen();
     if (typeof window._onAuthReady === 'function') window._onAuthReady(window._currentUser);
   } else {
+    // ── Offline check — allow entry with cached session ──
+    if (!navigator.onLine && window.BarzelpNet) {
+      const valid = await window.BarzelpNet.hasValidSession();
+      if (valid) {
+        const session = await window.BarzelpNet.getCachedSession();
+        if (session) {
+          console.log('[Auth] Offline — restoring cached session for:', session.email);
+          window._currentUser = { uid: session.uid, email: session.email, displayName: session.displayName || '' };
+          window._currentUserData = session.userData || {};
+          hidAuthScreen();
+          if (typeof window._onAuthReady === 'function') window._onAuthReady(window._currentUser);
+          return;
+        }
+      }
+    }
+    // ────────────────────────────────────────────────────
     window._currentUser = null;
     window._currentUserData = null;
-    // Only show auth if not showing expired screen
     if (!document.getElementById('expiredScreen')?.style.display || document.getElementById('expiredScreen').style.display === 'none') {
       showAuthScreen();
     }
@@ -968,11 +993,12 @@ function hidAuthScreen() {
 
 <!-- EXERCISES -->
 <div class="page" id="page-exercises">
-  <div id="pick-mode-banner" style="display:none;background:rgba(255,140,66,.08);border:none;border-radius:10px;padding:10px 14px;margin-bottom:12px;align-items:center;justify-content:space-between;">
-    <span style="font-family:'DM Sans';font-size:12px;font-weight:600;color:#ff8c42;">Select an exercise</span>
+  <div id="pick-mode-banner" style="display:none;background:rgba(255,140,66,.08);border:none;border-radius:10px;padding:10px 14px;margin-bottom:12px;align-items:center;justify-content:space-between;gap:8px;">
+    <span style="font-family:'DM Sans';font-size:12px;font-weight:600;color:#ff8c42;">Select exercises</span>
     <button onclick="exitPickMode()" style="background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:'DM Sans';font-size:12px;font-weight:700;padding:5px 10px;cursor:pointer;flex-shrink:0;white-space:nowrap;">◀ Back</button>
   </div>
   <div id="exercisesTabContent"></div>
+  <button id="pick-mode-done-btn" onclick="donePickMode()" style="display:none;width:100%;margin-top:10px;background:var(--accent);border:none;border-radius:12px;color:#000;font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;padding:10px 16px;cursor:pointer;">Done</button>
 </div>
 
 <!-- PROGRESS -->
@@ -1036,7 +1062,7 @@ function hidAuthScreen() {
     <div class="prog-acc-header" onclick="toggleProgressCard('acc-best')">
       <span class="chart-title" style="margin-bottom:0;"><span id="bestBodyPartChartTitle">PERSONAL RECORDS</span></span>
       <div style="display:flex;align-items:center;gap:8px;">
-        <span class="prog-acc-info-btn" onclick="event.stopPropagation();toggleProgInfo('bestprog-info','acc-best',this)" style="align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid #555;color:#555;font-family:'DM Sans';font-size:10px;font-weight:700;cursor:pointer;flex-shrink:0;">i</span>
+        <span class="prog-acc-info-btn" onclick="event.stopPropagation();toggleProgInfo('bestprog-info','acc-best',this)" style="align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid #34d399;color:#34d399;font-family:'DM Sans';font-size:10px;font-weight:700;cursor:pointer;flex-shrink:0;">i</span>
         <span class="prog-acc-chev"><svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" width="12" height="12"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
       </div>
     </div>
@@ -1060,7 +1086,7 @@ function hidAuthScreen() {
     <div class="prog-acc-header" onclick="toggleProgressCard('acc-exercise')">
       <span class="chart-title" style="margin-bottom:0;">EXERCISE PROGRESS</span>
       <div style="display:flex;align-items:center;gap:6px;">
-        <span class="prog-acc-info-btn" onclick="event.stopPropagation();toggleProgInfo('exprog-info','acc-exercise',this)" style="align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid #555;color:#555;font-family:'DM Sans';font-size:10px;font-weight:700;cursor:pointer;flex-shrink:0;">i</span>
+        <span class="prog-acc-info-btn" onclick="event.stopPropagation();toggleProgInfo('exprog-info','acc-exercise',this)" style="align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid #34d399;color:#34d399;font-family:'DM Sans';font-size:10px;font-weight:700;cursor:pointer;flex-shrink:0;">i</span>
         <span class="prog-acc-chev"><svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" width="12" height="12"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
       </div>
     </div>
@@ -1098,7 +1124,7 @@ function hidAuthScreen() {
     <div class="prog-acc-header" onclick="toggleProgressCard('acc-volume')">
       <span class="chart-title" style="margin-bottom:0;">TOTAL VOL PROGRESS</span>
       <div style="display:flex;align-items:center;gap:6px;">
-        <span class="prog-acc-info-btn" onclick="event.stopPropagation();toggleProgInfo('volprog-info','acc-volume',this)" style="align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid #555;color:#555;font-family:'DM Sans';font-size:10px;font-weight:700;cursor:pointer;flex-shrink:0;">i</span>
+        <span class="prog-acc-info-btn" onclick="event.stopPropagation();toggleProgInfo('volprog-info','acc-volume',this)" style="align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid #34d399;color:#34d399;font-family:'DM Sans';font-size:10px;font-weight:700;cursor:pointer;flex-shrink:0;">i</span>
         <span class="prog-acc-chev"><svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" width="12" height="12"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
       </div>
     </div>
@@ -1131,7 +1157,7 @@ function hidAuthScreen() {
     <div class="prog-acc-header" onclick="toggleProgressCard('acc-workouts')">
       <span class="chart-title" style="margin-bottom:0;"><span id="bodyPartChartTitle">WORKOUTS/SETS DISTRIBUTION</span> <span id="setsTotal" style="font-family:'DM Sans';font-size:11px;color:var(--muted);font-weight:500;"></span></span>
       <div style="display:flex;align-items:center;gap:8px;">
-        <span class="prog-acc-info-btn" onclick="event.stopPropagation();toggleProgInfo('workouts-info','acc-workouts',this)" style="align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid #555;color:#555;font-family:'DM Sans';font-size:10px;font-weight:700;cursor:pointer;flex-shrink:0;">i</span>
+        <span class="prog-acc-info-btn" onclick="event.stopPropagation();toggleProgInfo('workouts-info','acc-workouts',this)" style="align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid #34d399;color:#34d399;font-family:'DM Sans';font-size:10px;font-weight:700;cursor:pointer;flex-shrink:0;">i</span>
         <span class="prog-acc-chev"><svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" width="12" height="12"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
       </div>
     </div>
@@ -1155,7 +1181,7 @@ function hidAuthScreen() {
     <div class="prog-acc-header" onclick="toggleProgressCard('acc-capacity')">
       <span class="chart-title" style="margin-bottom:0;">WORK CAPACITY</span>
       <div style="display:flex;align-items:center;gap:8px;">
-        <span class="prog-acc-info-btn" onclick="event.stopPropagation();toggleProgInfo('capacity-info','acc-capacity',this)" style="align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid #555;color:#555;font-family:'DM Sans';font-size:10px;font-weight:700;cursor:pointer;flex-shrink:0;">i</span>
+        <span class="prog-acc-info-btn" onclick="event.stopPropagation();toggleProgInfo('capacity-info','acc-capacity',this)" style="align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid #34d399;color:#34d399;font-family:'DM Sans';font-size:10px;font-weight:700;cursor:pointer;flex-shrink:0;">i</span>
         <span class="prog-acc-chev"><svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" width="12" height="12"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
       </div>
     </div>
@@ -1269,14 +1295,34 @@ function hidAuthScreen() {
 </div>
 
 <div class="modal-overlay" id="pickerOverlay" onclick="overlayClick(event)">
-  <div class="modal-sheet">
+  <div class="modal-sheet" style="display:flex;flex-direction:column;">
     <div class="modal-handle"></div>
     <div class="modal-header">
-      <div class="modal-title">CHOOSE EXERCISE</div>
+      <div class="modal-title">ADD EXERCISES</div>
       <button class="modal-close" onclick="closePicker()">✕</button>
     </div>
-    <div class="search-bar"><input class="search-input" id="exSearch" placeholder="🔍  Search exercises..." oninput="filterExercises()"/></div>
-    <div class="exercise-list-scroll" id="exerciseGrid"></div>
+
+    <!-- MY ZONE / EXPLORE toggle -->
+    <div style="display:flex;gap:0;margin:0 16px 0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;flex-shrink:0;">
+      <button onclick="switchPickerTab('myzone')" id="pickerTabMyzone" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:var(--accent);color:#000;font-family:'DM Sans';font-size:14px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">MY ZONE</button>
+      <button onclick="switchPickerTab('explore')" id="pickerTabExplore" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:transparent;color:var(--muted);font-family:'DM Sans';font-size:14px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">EXPLORE</button>
+    </div>
+
+    <!-- Muscle pills -->
+    <div id="pickerMuscles" style="display:flex;gap:0;border-bottom:1px solid var(--border);flex-shrink:0;margin-top:8px;overflow-x:auto;scrollbar-width:none;"></div>
+
+    <!-- Search (MY ZONE only) -->
+    <div id="pickerSearchWrap" style="padding:8px 16px 0;flex-shrink:0;">
+      <input class="search-input" id="exSearch" placeholder="🔍  Search exercises..." oninput="renderPickerList()" style="width:100%;box-sizing:border-box;"/>
+    </div>
+
+    <!-- List -->
+    <div id="exerciseGrid" style="height:276px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 16px 0;flex-shrink:0;"></div>
+
+    <!-- Done button (fixed at bottom) -->
+    <div style="position:absolute;bottom:0;left:0;right:0;padding:12px 16px;background:var(--bg);border-top:1px solid var(--border);">
+      <button id="pickerDoneBtn" onclick="confirmPickerSelection()" style="width:100%;background:var(--accent);border:none;border-radius:12px;color:#000;font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;padding:14px;cursor:pointer;">Done</button>
+    </div>
   </div>
 </div>
 
@@ -1382,7 +1428,28 @@ const BUILTIN_EXERCISES = [];
 
 // Load custom exercises from localStorage
 let customExercises = JSON.parse(_LS.get('ironlog_custom_ex') || '[]');
-function getAllExercises() { return [...customExercises]; }
+
+function getAllExercises() {
+  const all = [...customExercises];
+  const names = new Set(all.map(e => e.name));
+  const hiddenEx = JSON.parse(_LS.get('ironlog_hidden_ex') || '[]');
+  // Add history-derived exercises from workout history (from exercises.json)
+  workouts.filter(w => !w._draft && !w._template).forEach(w => {
+    w.exercises.forEach(e => {
+      if (names.has(e.name) || hiddenEx.includes(e.name)) return;
+      // Find muscle from exercises.json
+      let muscle = e.muscle || 'Chest';
+      if (_defaultExercises) {
+        for (const [m, items] of Object.entries(_defaultExercises)) {
+          if (items.some(i => i.name === e.name)) { muscle = m; break; }
+        }
+      }
+      all.push({ name: e.name, label: e.name, muscle, custom: false, fromHistory: true });
+      names.add(e.name);
+    });
+  });
+  return all;
+}
 
 const MUSCLES = ['All','Chest','Back','Legs','Shoulders','Arms','Core','Compound'];
 
@@ -2452,7 +2519,13 @@ function renderExercisesTab() {
     w.exercises.forEach(e => {
       if (hiddenEx.includes(e.name)) return;
       if (!exMap[e.name]) {
-        const resolvedMuscle = normalizeMuscle(e.muscle || customExercises.find(x=>x.name===e.name||x.label===e.name)?.muscle);
+        let resolvedMuscle = normalizeMuscle(e.muscle || customExercises.find(x=>x.name===e.name||x.label===e.name)?.muscle);
+        // Try to get muscle from exercises.json
+        if (_defaultExercises) {
+          for (const [m, items] of Object.entries(_defaultExercises)) {
+            if (items.some(i => i.name === e.name)) { resolvedMuscle = normalizeMuscle(m); break; }
+          }
+        }
         exMap[e.name] = { muscle: resolvedMuscle, count: 0, lastDate: 0, bestRM: 0, bestVol: 0, bestWt: 0, sessions: [] };
       }
       const done = doneSets(e.sets);
@@ -2530,12 +2603,17 @@ function renderExercisesTab() {
       const wtArrow = ex.prevWt > 0 && ex.lastWt > ex.prevWt ? '<span style="color:#4caf50;font-size:9px;margin-left:3px;">▲</span>' : ex.prevWt > 0 && ex.lastWt < ex.prevWt ? '<span style="color:#ff4444;font-size:9px;margin-left:3px;">▼</span>' : '<span style="font-size:9px;margin-left:3px;visibility:hidden;">▲</span>';
       const statsHtml = hasHistory ? `<div style="font-size:11px;text-align:right;min-width:120px;">${bestWt !== null ? `<div style="color:#e8ff47;font-weight:700;display:flex;justify-content:flex-end;gap:6px;"><span>MAX</span><span style="min-width:72px;text-align:right;">${bestWt}kg${wtArrow}</span></div>` : '<div style="height:18px;"></div>'}${bestRM !== null ? `<div style="color:#ff8c42;font-weight:700;margin-top:2px;display:flex;justify-content:flex-end;gap:6px;"><span>1RM</span><span style="min-width:72px;text-align:right;">${bestRM}kg${rmArrow}</span></div>` : '<div style="height:18px;margin-top:2px;"></div>'}</div>` : '';
       const chevHtml = hasHistory ? `<span id="${safeId}-chev" style="color:var(--muted);font-size:11px;transition:transform .2s;">&#9660;</span>` : '';
-      listHtml += `<div data-exname="${ex.name.replace(/"/g,'&quot;')}" style="margin-bottom:8px;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+      const isPickSelected = _pickMode && _pickModeSelected.some(s => s.name === ex.name);
+      const pickColor = PICKER_COLORS[ex.muscle] || '#888';
+      listHtml += `<div data-exname="${ex.name.replace(/"/g,'&quot;')}" style="margin-bottom:8px;background:var(--surface);border:1px solid ${isPickSelected ? pickColor : 'var(--border)'};border-radius:10px;overflow:hidden;transition:border-color .15s;">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;">
-        <div ${isExpandable || _pickMode ? `onclick="${_pickMode ? `pickExercise('${ex.name.replace(/'/g,"\\'")}')` : `toggleExTabCard('${safeId}')`}"` : ''} style="flex:1;min-width:0;${isExpandable || _pickMode ? 'cursor:pointer;' : ''}">${_pickMode ? `<div style="font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;letter-spacing:0;-webkit-text-stroke:0.4px currentColor;color:var(--text);margin-bottom:2px;">${ex.name}</div>` : `<div style="font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;letter-spacing:0;-webkit-text-stroke:0.4px currentColor;color:var(--text);">${ex.name}</div>`}
+        <div ${isExpandable || _pickMode ? `onclick="${_pickMode ? `pickExercise('${ex.name.replace(/'/g,"\\'")}')` : `toggleExTabCard('${safeId}')`}"` : ''} style="flex:1;min-width:0;${isExpandable || _pickMode ? 'cursor:pointer;' : ''}">
+          <div style="font-family:'DM Sans';font-size:17px;font-weight:400;color:var(--text);">${ex.name}</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
-          ${_pickMode ? '' : statsHtml}
+          ${_pickMode
+            ? `<div style="width:22px;height:22px;border-radius:50%;border:2px solid ${isPickSelected ? pickColor : '#333'};background:${isPickSelected ? pickColor : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;">${isPickSelected ? '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</div>`
+            : statsHtml}
         </div>
       </div>
       <div id="${safeId}-body" style="display:none;padding:0 12px 12px;">
@@ -2545,13 +2623,13 @@ function renderExercisesTab() {
         <div style="display:flex;justify-content:flex-start;padding:0 0 8px;">
           <button class="btn-hist has-data" onclick="openExHistoryByName('${ex.name}')">History</button>
         </div>
-        <div class="ex-mini-chart-title" style="display:flex;align-items:center;justify-content:space-between;">Max Weight Progress<span onclick="var t=document.getElementById('extab-info-max-${safeId}');t.style.display=t.style.display==='block'?'none':'block'" style="display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border-radius:50%;border:1px solid #555;color:#555;font-family:'DM Sans';font-size:9px;font-weight:700;cursor:pointer;margin-left:5px;flex-shrink:0;margin-left:5px;">i</span></div><div id="extab-info-max-${safeId}" style="display:none;font-size:11px;color:#fff;margin-bottom:4px;">Heaviest weight lifted in any completed set</div>
+        <div class="ex-mini-chart-title" style="display:flex;align-items:center;justify-content:space-between;">Max Weight Progress<span onclick="var t=document.getElementById('extab-info-max-${safeId}');t.style.display=t.style.display==='block'?'none':'block'" style="display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border-radius:50%;border:1px solid #34d399;color:#34d399;font-family:'DM Sans';font-size:9px;font-weight:700;cursor:pointer;margin-left:5px;flex-shrink:0;margin-left:5px;">i</span></div><div id="extab-info-max-${safeId}" style="display:none;font-size:11px;color:#fff;margin-bottom:4px;">Heaviest weight lifted in any completed set</div>
         <div id="extab-big-wt-${safeId}" style="font-family:'DM Sans';font-size:12px;font-weight:700;color:#e8ff47;padding:2px 0 4px;display:none;"></div>
         <div class="ex-mini-chart-wrap"><canvas id="extab-canvas-${safeId}"></canvas></div>
-        <div class="ex-mini-chart-title" style="margin-top:10px;display:flex;align-items:center;justify-content:space-between;">1RM Progress<span onclick="var t=document.getElementById('extab-info-rm-${safeId}');t.style.display=t.style.display==='block'?'none':'block'" style="display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border-radius:50%;border:1px solid #555;color:#555;font-family:'DM Sans';font-size:9px;font-weight:700;cursor:pointer;margin-left:5px;flex-shrink:0;margin-left:5px;">i</span></div><div id="extab-info-rm-${safeId}" style="display:none;font-size:11px;color:#fff;margin-bottom:4px;">Estimated 1 Rep Max using Epley formula:<br>kg × (1 + reps/30)</div>
+        <div class="ex-mini-chart-title" style="margin-top:10px;display:flex;align-items:center;justify-content:space-between;">1RM Progress<span onclick="var t=document.getElementById('extab-info-rm-${safeId}');t.style.display=t.style.display==='block'?'none':'block'" style="display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border-radius:50%;border:1px solid #34d399;color:#34d399;font-family:'DM Sans';font-size:9px;font-weight:700;cursor:pointer;margin-left:5px;flex-shrink:0;margin-left:5px;">i</span></div><div id="extab-info-rm-${safeId}" style="display:none;font-size:11px;color:#fff;margin-bottom:4px;">Estimated 1 Rep Max using Epley formula:<br>kg × (1 + reps/30)</div>
         <div id="extab-big-vol-${safeId}" style="font-family:'DM Sans';font-size:12px;font-weight:700;color:#ff8c42;padding:2px 0 4px;display:none;"></div>
         <div class="ex-mini-chart-wrap"><canvas id="extab-vol-canvas-${safeId}"></canvas></div>
-        <div class="ex-mini-chart-title" style="margin-top:10px;display:flex;align-items:center;justify-content:space-between;">Volume Progress<span onclick="var t=document.getElementById('extab-info-vol-${safeId}');t.style.display=t.style.display==='block'?'none':'block'" style="display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border-radius:50%;border:1px solid #555;color:#555;font-family:'DM Sans';font-size:9px;font-weight:700;cursor:pointer;margin-left:5px;flex-shrink:0;margin-left:5px;">i</span></div><div id="extab-info-vol-${safeId}" style="display:none;font-size:11px;color:#fff;margin-bottom:4px;">Total volume: sum of kg × reps across all completed sets</div>
+        <div class="ex-mini-chart-title" style="margin-top:10px;display:flex;align-items:center;justify-content:space-between;">Volume Progress<span onclick="var t=document.getElementById('extab-info-vol-${safeId}');t.style.display=t.style.display==='block'?'none':'block'" style="display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border-radius:50%;border:1px solid #34d399;color:#34d399;font-family:'DM Sans';font-size:9px;font-weight:700;cursor:pointer;margin-left:5px;flex-shrink:0;margin-left:5px;">i</span></div><div id="extab-info-vol-${safeId}" style="display:none;font-size:11px;color:#fff;margin-bottom:4px;">Total volume: sum of kg × reps across all completed sets</div>
         <div id="extab-big-volprog-${safeId}" style="font-family:'DM Sans';font-size:12px;font-weight:700;color:#a78bfa;padding:2px 0 4px;display:none;"></div>
         <div class="ex-mini-chart-wrap"><canvas id="extab-volprog-canvas-${safeId}"></canvas></div>
         <div id="extab-nodata-${safeId}" style="display:none;text-align:center;padding:20px 0 8px;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.5px;">NO DATA FOR THIS PERIOD</div>
@@ -2600,7 +2678,11 @@ function renderExercisesTab() {
     ${_hasCoach ? `<button onclick="switchExTabView('coach')" id="exTab-seg-coach" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_exTabView==='coach'?'#7ec8e3':'transparent'};color:${_exTabView==='coach'?'#000':'#7ec8e3'};font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">COACH</button>` : ''}
   </div>`;
 
-  el.innerHTML = toggleHtml + (_exTabView === 'created' ? searchHtml + pillsHtml + listHtml + addBtnHtml : _exTabView === 'coach' ? buildCoachExercisesHtml() : pillsHtml + buildExerciseLibraryHtml(selected));
+  const listBox = _pickMode
+    ? `<div style="height:276px;overflow-y:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:12px;padding:6px 0;">${listHtml}</div>`
+    : listHtml;
+
+  el.innerHTML = toggleHtml + (_exTabView === 'created' ? searchHtml + pillsHtml + listBox + (_pickMode ? '' : addBtnHtml) : _exTabView === 'coach' ? buildCoachExercisesHtml() : pillsHtml + (_pickMode ? `<div style="height:276px;overflow-y:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:12px;padding:6px 0;">` + buildExerciseLibraryHtml(selected).replace(/<button[^>]*Add to Library[^<]*<\/button>/g,'') + `</div>` : buildExerciseLibraryHtml(selected)));
   // Cards always start collapsed (minimized view by default)
 }
 
@@ -2690,11 +2772,12 @@ function deleteExTabExercise(name) {
 }
 
 let _pickMode = false;
+let _pickModeSelected = []; // accumulated selections
 
 function enterPickMode(muscle) {
   _pickMode = true;
+  _pickModeSelected = [];
   const _prevHighlight = window._activeTabHighlight;
-  // Check if coming from workouts flow — either explicit or page-log shown while workouts highlighted
   const _fromWorkouts = _prevHighlight === 'workouts' || window._isNewWorkoutFlow;
   switchTab('exercises');
   if (_fromWorkouts) window._activeTabHighlight = 'workouts';
@@ -2708,61 +2791,85 @@ function enterPickMode(muscle) {
   }
   if (title) title.style.display = 'none';
   if (muscle) window._exTabMuscle = muscle;
+  _updatePickModeDoneBtn();
   renderExercisesTab();
   updatePickModeTabs();
 }
 
 function exitPickMode() {
   _pickMode = false;
+  _pickModeSelected = [];
   const banner = document.getElementById('pick-mode-banner');
   const title = document.getElementById('exercises-tab-title');
+  const doneBtn = document.getElementById('pick-mode-done-btn');
   if (banner) { banner.style.display = 'none'; banner.style.background = ''; banner.style.borderColor = ''; banner.style.animation = ''; }
   if (title) title.style.display = '';
+  if (doneBtn) doneBtn.style.display = 'none';
   renderExercisesTab();
   if (!window._editHistPickerMode) switchTab('log');
 }
 
-function pickExercise(exName) {
-  const ex = getAllExercises().find(e => e.label === exName || e.name === exName)
-    || { name: exName, label: exName, muscle: 'Chest', custom: true };
+function _updatePickModeDoneBtn() {
+  const btn = document.getElementById('pick-mode-done-btn');
+  if (!btn) return;
+  const n = _pickModeSelected.length;
+  btn.style.display = n > 0 ? '' : 'none';
+  btn.textContent = n > 0 ? `Done (${n})` : 'Done';
+}
+
+function donePickMode() {
+  if (!_pickModeSelected.length) { exitPickMode(); return; }
   if (window._editHistPickerMode) {
     window._editHistPickerMode = false;
     _pickMode = false;
+    _pickModeSelected.forEach(ex => addExerciseToEditModal(ex.name, ex.muscle || 'Chest'));
+    _pickModeSelected = [];
     const banner = document.getElementById('pick-mode-banner');
     const title = document.getElementById('exercises-tab-title');
     if (banner) banner.style.display = 'none';
     if (title) title.style.display = '';
     renderExercisesTab();
     document.getElementById('editHistoryOverlay').classList.add('open');
-    addExerciseToEditModal(ex.name, ex.muscle || 'Chest');
     return;
   }
+  const toAdd = [..._pickModeSelected];
+  // Remove from excluded list if previously deleted
+  const hidden = JSON.parse(_LS.get('ironlog_hidden_ex') || '[]');
+  const newHidden = hidden.filter(n => !toAdd.some(e => e.name === n));
+  if (newHidden.length !== hidden.length) _LS.set('ironlog_hidden_ex', JSON.stringify(newHidden));
   exitPickMode();
-  switchTab('log');
-  // Check if exercise already in workout
-  const alreadyAdded = [...document.querySelectorAll('#exerciseList .exercise-card')]
-    .some(c => c.dataset.exname === ex.name || c.dataset.exname === ex.label);
-  if (alreadyAdded) {
-    const overlay = document.createElement('div');
-    overlay.className = 'delete-confirm-overlay';
-    overlay.innerHTML = `<div class="delete-confirm-sheet">
-      <div class="delete-confirm-title">${ex.name}</div>
-      <div class="delete-confirm-sub">This exercise is already in your workout. Add it again?</div>
-      <div class="delete-confirm-btns">
-        <button class="btn-del-cancel" id="_dupCancel">No</button>
-        <button class="btn-del-yes" id="_dupConfirm">Yes, add again</button>
-      </div></div>`;
-    document.body.appendChild(overlay);
-    overlay.querySelector('#_dupCancel').onclick = () => overlay.remove();
-    overlay.querySelector('#_dupConfirm').onclick = () => {
-      overlay.remove();
-      addExerciseCard(ex);
-      saveSession();
-    };
+  switchTab('log');  toAdd.forEach(ex => {
+    addExerciseCard(ex);
+  });
+  saveSession();
+}
+
+function pickExercise(exName) {
+  const ex = getAllExercises().find(e => e.label === exName || e.name === exName)
+    || { name: exName, label: exName, muscle: window._exTabMuscle || 'Chest', custom: true };
+
+  if (window._editHistPickerMode) {
+    // In edit history mode — accumulate then done
+    const idx = _pickModeSelected.findIndex(e => e.name === ex.name);
+    if (idx >= 0) {
+      _pickModeSelected.splice(idx, 1);
+    } else {
+      _pickModeSelected.push(ex);
+    }
+    _updatePickModeDoneBtn();
+    renderExercisesTab();
     return;
   }
-  addExerciseCard(ex);
-  saveSession();
+
+  // Toggle selection
+  const idx = _pickModeSelected.findIndex(e => e.name === ex.name);
+  if (idx >= 0) {
+    _pickModeSelected.splice(idx, 1);
+  } else {
+    _pickModeSelected.push(ex);
+  }
+  _updatePickModeDoneBtn();
+  renderExercisesTab();
 }
 
 function openNewExModal(muscle) {
@@ -3465,79 +3572,212 @@ function renderWorkoutsTab() {
 }
 
 
+
 // ══════════════════════════════════════════════════════
-//  EXERCISE PICKER
+//  EXERCISE PICKER — MULTI-SELECT
 // ══════════════════════════════════════════════════════
-function buildMuscleFilters() { filterExercises(); }
-function musclePillLabel(m) { return m === "Shoulders" ? "Shldr" : m; }
-function setMuscle(m, btn) { activeMuscle = m; filterExercises(); }
-function filterExercises() {
-  const q = document.getElementById('exSearch').value.toLowerCase();
-  const list = customExercises.filter(e =>
-    !q || e.label.toLowerCase().includes(q) || e.name.toLowerCase().includes(q)
-  );
-  const grid = document.getElementById('exerciseGrid');
-  grid.innerHTML = '';
-  if (!list.length) {
-    grid.innerHTML = '<div style="text-align:center;color:var(--muted);padding:30px;font-size:13px;">No exercises found</div>';
-    return;
-  }
-  list.forEach(ex => grid.appendChild(makeListRow(ex)));
-}
+const PICKER_MUSCLES = ['Chest','Back','Legs','Shoulders','Arms','Core','Compound'];
+const PICKER_LABELS  = { Chest:'Chest', Back:'Back', Legs:'Legs', Shoulders:'Shldr', Arms:'Arms', Core:'Abs', Compound:'Comp' };
+const PICKER_COLORS  = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171', Compound:'#20d4c8' };
+
+let _pickerTab    = 'myzone';   // 'myzone' | 'explore'
+let _pickerMuscle = 'Chest';
+let _pickerSelected = [];       // array of { name, muscle, label }
+let _pickerIsReplace = false;   // true when replacing a single exercise card
+
+function buildMuscleFilters() { renderPickerList(); }
+function musclePillLabel(m) { return PICKER_LABELS[m] || m; }
+function setMuscle(m) { _pickerMuscle = m; renderPickerList(); }
+
 function openPicker(cardId) {
-  pickerTargetId = cardId;
-  activeMuscle = 'All';
+  pickerTargetId    = cardId;
+  _pickerIsReplace  = !!cardId;
+  _pickerSelected   = [];
+  _pickerTab        = 'myzone';
+  _pickerMuscle     = 'Chest';
   document.getElementById('exSearch').value = '';
-  filterExercises();
+  const pills = document.getElementById('pickerMuscles');
+  if (pills) pills.style.display = 'none';
+  renderPickerMuscles();
+  renderPickerList();
+  updatePickerDoneBtn();
   document.getElementById('pickerOverlay').classList.add('open');
   localStorage.setItem('ironlog_modal', 'picker');
 }
-function overlayClick(e) { if (e.target===document.getElementById('pickerOverlay')) closePicker(); }
+
+function overlayClick(e) { if (e.target === document.getElementById('pickerOverlay')) closePicker(); }
+
 function closePicker() {
   document.getElementById('pickerOverlay').classList.remove('open');
   localStorage.removeItem('ironlog_modal');
-  // If we came from edit history modal, restore it
   if (window._editHistPickerMode) {
     window._editHistPickerMode = false;
     document.getElementById('editHistoryOverlay').classList.add('open');
   }
 }
 
-function selectExercise(name) {
-  const ex = getAllExercises().find(e => e.name === name);
-  if (!ex) return;
+function switchPickerTab(tab) {
+  _pickerTab = tab;
+  const mz = document.getElementById('pickerTabMyzone');
+  const ex = document.getElementById('pickerTabExplore');
+  const sw = document.getElementById('pickerSearchWrap');
+  const pills = document.getElementById('pickerMuscles');
+  mz.style.background = tab === 'myzone' ? 'var(--accent)' : 'transparent';
+  mz.style.color = tab === 'myzone' ? '#000' : 'var(--muted)';
+  ex.style.background = tab === 'explore' ? 'var(--accent)' : 'transparent';
+  ex.style.color = tab === 'explore' ? '#000' : 'var(--muted)';
+  sw.style.display = tab === 'myzone' ? '' : 'none';
+  if (pills) pills.style.display = tab === 'explore' ? 'flex' : 'none';
+  renderPickerMuscles();
+  renderPickerList();
+}
+
+function renderPickerMuscles() {
+  const el = document.getElementById('pickerMuscles');
+  if (!el) return;
+  el.innerHTML = PICKER_MUSCLES.map(m => {
+    const isActive = m === _pickerMuscle;
+    const color = PICKER_COLORS[m];
+    return `<div onclick="setMuscle('${m}')" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;font-family:'DM Sans';font-size:13px;font-weight:700;color:${isActive ? color : '#444'};border-bottom:2px solid ${isActive ? color : 'transparent'};transition:all .15s;white-space:nowrap;">${PICKER_LABELS[m]}</div>`;
+  }).join('');
+}
+
+function renderPickerList() {
+  const grid = document.getElementById('exerciseGrid');
+  if (!grid) return;
+
+  if (_pickerTab === 'myzone') {
+    const q = (document.getElementById('exSearch')?.value || '').toLowerCase();
+    const list = customExercises.filter(e =>
+      !q || e.label.toLowerCase().includes(q) || e.name.toLowerCase().includes(q)
+    );
+    if (!list.length) {
+      grid.innerHTML = '<div style="text-align:center;color:var(--muted);padding:30px;font-size:13px;">No exercises found</div>';
+      return;
+    }
+    grid.innerHTML = '';
+    list.forEach(ex => grid.appendChild(makePickerRow(ex.name, ex.label || ex.name, ex.muscle)));
+
+  } else {
+    // EXPLORE — from exercises.json, hide exercises already in MY ZONE
+    if (!_libraryLoaded) {
+      loadLibrary().then(() => renderPickerList());
+      grid.innerHTML = '<div style="text-align:center;color:var(--muted);padding:30px;font-size:13px;">Loading...</div>';
+      return;
+    }
+    const hiddenEx2 = JSON.parse(_LS.get('ironlog_hidden_ex') || '[]');
+    const myZoneNames2 = new Set([
+      ...customExercises.map(e => e.name),
+      ...workouts.filter(w => !w._draft && !w._template)
+        .flatMap(w => w.exercises.map(e => e.name))
+        .filter(name => !hiddenEx2.includes(name))
+    ]);
+    const items = (_defaultExercises[_pickerMuscle] || []).filter(e => !myZoneNames2.has(e.name));
+    if (!items.length) {
+      grid.innerHTML = '<div style="text-align:center;color:var(--muted);padding:30px;font-size:13px;">No exercises for this muscle group.</div>';
+      return;
+    }
+    grid.innerHTML = '';
+    items.forEach(ex => grid.appendChild(makePickerRow(ex.name, ex.name, _pickerMuscle)));
+  }
+}
+
+function makePickerRow(name, label, muscle) {
+  const isSelected = _pickerSelected.some(s => s.name === name);
+  const color = PICKER_COLORS[muscle] || '#888';
+  const div = document.createElement('div');
+  div.dataset.exname = name;
+  div.style.cssText = `margin-bottom:6px;background:var(--surface);border:1px solid ${isSelected ? color : 'var(--border)'};border-radius:10px;overflow:hidden;cursor:pointer;transition:border-color .15s;`;
+  div.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 12px;">
+      <div style="font-family:'DM Sans';font-size:17px;font-weight:400;color:var(--text);">${label}</div>
+      <div class="picker-check" style="width:22px;height:22px;border-radius:50%;border:2px solid ${isSelected ? color : '#333'};background:${isSelected ? color : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;">
+        ${isSelected ? '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}
+      </div>
+    </div>`;
+  div.onclick = () => {
+    const idx = _pickerSelected.findIndex(s => s.name === name);
+    const check = div.querySelector('.picker-check');
+    if (idx >= 0) {
+      _pickerSelected.splice(idx, 1);
+      div.style.borderColor = 'var(--border)';
+      check.style.border = '2px solid #333';
+      check.style.background = 'transparent';
+      check.innerHTML = '';
+    } else {
+      if (_pickerIsReplace) {
+        // deselect previous visually
+        document.querySelectorAll('#exerciseGrid [data-exname]').forEach(el => {
+          const c = el.querySelector('.picker-check');
+          if (c) { c.style.border='2px solid #333'; c.style.background='transparent'; c.innerHTML=''; }
+          el.style.borderColor = 'var(--border)';
+        });
+        _pickerSelected = [];
+      }
+      _pickerSelected.push({ name, label, muscle });
+      div.style.borderColor = color;
+      check.style.border = `2px solid ${color}`;
+      check.style.background = color;
+      check.innerHTML = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    }
+    updatePickerDoneBtn();
+  };
+  return div;
+}
+
+function updatePickerDoneBtn() {
+  const btn = document.getElementById('pickerDoneBtn');
+  if (!btn) return;
+  const n = _pickerSelected.length;
+  btn.textContent = n > 0 ? `Done (${n})` : 'Done';
+  btn.style.opacity = n > 0 ? '1' : '0.4';
+}
+
+function confirmPickerSelection() {
+  if (!_pickerSelected.length) { closePicker(); return; }
+
   if (window._editHistPickerMode) {
-    window._editHistPickerMode = false; // clear BEFORE closePicker so it doesn't re-open modal prematurely
+    window._editHistPickerMode = false;
     document.getElementById('pickerOverlay').classList.remove('open');
     document.getElementById('editHistoryOverlay').classList.add('open');
-    addExerciseToEditModal(ex.name, ex.muscle || 'Chest');
+    _pickerSelected.forEach(ex => addExerciseToEditModal(ex.name, ex.muscle || 'Chest'));
+    _pickerSelected = [];
     return;
   }
+
   if (window._exTabPickerMode) {
     window._exTabPickerMode = false;
-    // Add to custom exercises if not already tracked
-    const muscle = window._exTabPickerMuscle || ex.muscle || 'Chest';
-    const exists = customExercises.some(e => e.name === ex.name);
-    if (!exists) {
-      customExercises.push({ name: ex.name, label: ex.label || ex.name, muscle });
-      localStorage.setItem('ironlog_custom_ex', JSON.stringify(customExercises));
-    }
-    window._exTabMuscle = muscle;
+    _pickerSelected.forEach(ex => {
+      const muscle = ex.muscle || 'Chest';
+      const exists = customExercises.some(e => e.name === ex.name);
+      if (!exists) {
+        customExercises.push({ name: ex.name, label: ex.label || ex.name, muscle });
+      }
+      window._exTabMuscle = muscle;
+    });
+    _LS.set('ironlog_custom_ex', JSON.stringify(customExercises));
     closePicker();
     renderExercisesTab();
+    _pickerSelected = [];
     return;
   }
-  if (pickerTargetId) {
+
+  if (_pickerIsReplace && pickerTargetId) {
+    // Replace single card
+    const ex = _pickerSelected[0];
     const card = document.getElementById(pickerTargetId);
     if (card) {
+      const allEx = getAllExercises();
+      const found = allEx.find(e => e.name === ex.name) || { name: ex.name, label: ex.label, muscle: ex.muscle };
       const oldThumb = card.querySelector('.ex-thumb');
-      oldThumb.replaceWith(makeThumb(ex));
-      card.querySelector('.ex-name').textContent = ex.label;
+      if (oldThumb) oldThumb.replaceWith(makeThumb(found));
+      const nameEl = card.querySelector('.ex-name');
+      if (nameEl) nameEl.textContent = ex.label;
       card.dataset.exname = ex.label;
-      card.dataset.exmuscle = ex.muscle||'Chest';
+      card.dataset.exmuscle = ex.muscle || 'Chest';
     }
   } else {
-    // Collapse all currently open cards before adding new one
+    // Add multiple cards — collapse open cards first
     document.querySelectorAll('#exerciseList .exercise-card[data-open="true"]').forEach(c => {
       const b = document.getElementById(`body-${c.id}`);
       const ch = document.getElementById(`chev-${c.id}`);
@@ -3549,10 +3789,30 @@ function selectExercise(name) {
         if (cb) cb.style.display = 'flex';
       }
     });
-    addExerciseCard(ex);
+    // Remove from excluded list if was previously deleted
+    const hidden = JSON.parse(_LS.get('ironlog_hidden_ex') || '[]');
+    const newHidden = hidden.filter(n => !_pickerSelected.some(s => s.name === n));
+    if (newHidden.length !== hidden.length) _LS.set('ironlog_hidden_ex', JSON.stringify(newHidden));
+
+    _pickerSelected.forEach(ex => {
+      const allEx = getAllExercises();
+      const found = allEx.find(e => e.name === ex.name) || { name: ex.name, label: ex.label || ex.name, muscle: ex.muscle || 'Chest' };
+      addExerciseCard(found);
+    });
   }
+
+  _pickerSelected = [];
   closePicker();
 }
+
+// Legacy compat — keep selectExercise for any remaining callers
+function selectExercise(name) {
+  const ex = getAllExercises().find(e => e.name === name) || { name, label: name, muscle: 'Chest' };
+  togglePickerItem(ex.name, ex.label || ex.name, ex.muscle || 'Chest', document.createElement('div'));
+}
+
+function filterExercises() { renderPickerList(); }
+
 
 // ══════════════════════════════════════════════════════
 //  TODAY — EXERCISE CARDS
@@ -3755,7 +4015,7 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
           <td style="color:var(--muted);font-size:10px;font-weight:700;letter-spacing:.5px;text-align:left;padding-bottom:3px;">PREV</td>
           <td style="color:var(--muted);font-size:10px;font-weight:700;letter-spacing:.5px;text-align:right;padding-bottom:3px;">DIFF</td>
           <td style="color:var(--muted);font-size:10px;font-weight:700;letter-spacing:.5px;text-align:center;padding-bottom:3px;">CHG</td>
-          <td style="padding-bottom:3px;text-align:center;"><span onclick="var t=document.getElementById('sp-info-all-${id}');t.style.display=t.style.display==='table-row'?'none':'table-row'" style="display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border-radius:50%;border:1px solid #555;color:#555;font-family:'DM Sans';font-size:9px;font-weight:700;cursor:pointer;margin-left:5px;">i</span></td>
+          <td style="padding-bottom:3px;text-align:center;"><span onclick="var t=document.getElementById('sp-info-all-${id}');t.style.display=t.style.display==='table-row'?'none':'table-row'" style="display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border-radius:50%;border:1px solid #34d399;color:#34d399;font-family:'DM Sans';font-size:9px;font-weight:700;cursor:pointer;margin-left:5px;">i</span></td>
         </tr>
         <tr id="sp-info-all-${id}" style="display:none;"><td colspan="6" style="font-size:12px;color:var(--text);padding:3px 0 5px 0;line-height:1.8;border-top:1px solid var(--border);"><table style="border-collapse:collapse;"><tr><td style="color:#e8ff47;font-weight:700;padding-right:6px;white-space:nowrap;vertical-align:top;">MAX</td><td style="color:#fff;">— Heaviest weight lifted</td></tr><tr><td style="color:#ff8c42;font-weight:700;padding-right:6px;white-space:nowrap;vertical-align:top;">1RM</td><td style="color:#fff;">— Estimated 1 Rep Max: kg × (1 + reps/30)</td></tr><tr><td style="color:#a78bfa;font-weight:700;padding-right:6px;white-space:nowrap;vertical-align:top;">VOL</td><td style="color:#fff;">— Total volume: sum of kg × reps</td></tr></table></td></tr>
         <tr>
@@ -4432,6 +4692,8 @@ function toggleCardCollapse(id) {
         }, 420);
       }
     });
+    // Re-apply muscle filter so filtered cards stay hidden
+    if (_todayMuscleFilter || _todayHideDone) setTimeout(() => applyTodayFilters(), 430);
     const savedY = parseInt(card.dataset.scrollY || '0');
     body.style.maxHeight = '0'; body.style.opacity = '0'; body.classList.add('collapsed'); body.classList.remove('open');
     card.dataset.open = 'false';
@@ -5613,7 +5875,7 @@ function saveWorkoutToList() {
           ? `document.getElementById('postSaveOptions').remove();document.getElementById('_saveBlackScreen')?.remove();document.querySelectorAll('.tab').forEach(t=>{t.style.opacity='';t.style.pointerEvents=''});const _db=document.getElementById('dateBadge');if(_db){_db.style.opacity='';_db.style.cursor='';}actionsRowRestore();resetWorkoutState();document.getElementById('workoutName').value='';showTodayStartScreen();checkFinishReady();switchTab('workouts');`
           : `document.getElementById('postSaveOptions').remove();document.getElementById('_saveBlackScreen')?.remove();document.querySelectorAll('.tab').forEach(t=>{t.style.opacity='';t.style.pointerEvents=''});const _db=document.getElementById('dateBadge');if(_db){_db.style.opacity='';_db.style.cursor='';}actionsRowRestore();resetWorkoutState();document.getElementById('workoutName').value='';showTodayStartScreen();checkFinishReady();`;
         optDiv.innerHTML = `
-            <button onclick="document.getElementById('postSaveOptions').remove();document.getElementById('_saveBlackScreen')?.remove();document.querySelectorAll('.tab').forEach(t=>{t.style.opacity='';t.style.pointerEvents=''});const _db=document.getElementById('dateBadge');if(_db){_db.style.opacity='';_db.style.cursor='';}actionsRowRestore();loadWorkout(0);switchTab('log');" style="width:100%;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:16px;font-weight:700;padding:16px;cursor:pointer;text-align:center;">Start the workout now</button>
+            <button onclick="document.getElementById('postSaveOptions').remove();document.getElementById('_saveBlackScreen')?.remove();document.querySelectorAll('.tab').forEach(t=>{t.style.opacity='';t.style.pointerEvents=''});const _db=document.getElementById('dateBadge');if(_db){_db.style.opacity='';_db.style.cursor='';}actionsRowRestore();loadWorkout(0);switchTab('log');" style="width:100%;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:20px;font-weight:900;-webkit-text-stroke:0.4px currentColor;padding:16px;cursor:pointer;text-align:center;">Start the workout now</button>
             <button onclick="${exitOnclick}" style="width:100%;background:transparent;border:1px solid var(--border);border-radius:10px;color:#fff;font-family:'DM Sans';font-size:16px;font-weight:700;padding:16px;cursor:pointer;text-align:center;">Exit</button>
           `;
         if (actionsRow.parentNode) actionsRow.parentNode.insertBefore(optDiv, actionsRow);
@@ -10679,10 +10941,35 @@ document.getElementById("installBtn").addEventListener("click", async () => {
 });
 </script>
 
-<!-- Service Worker -->
+<!-- Service Worker Registration -->
 <script>
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js");
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js', { scope: './' })
+      .then(reg => {
+        console.log('[SW] Registered, scope:', reg.scope);
+
+        // Notify user when a new SW version is waiting
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // New version available — show toast
+              if (typeof showToast === 'function') {
+                showToast('App updated — refresh to get the latest version');
+              }
+            }
+          });
+        });
+      })
+      .catch(err => console.warn('[SW] Registration failed:', err));
+
+    // When SW controller changes (after skipWaiting), reload
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!refreshing) { refreshing = true; window.location.reload(); }
+    });
+  });
 }
 </script>
 
@@ -12535,9 +12822,9 @@ function canEditLibrary() {
 function loadDefaultExercises() {
   if (Object.keys(_defaultExercises).length) return Promise.resolve();
   return fetch('exercises.json')
-    .then(r => r.json())
-    .then(data => { _defaultExercises = data; })
-    .catch(() => { _defaultExercises = {}; });
+    .then(r => { if (!r.ok) throw new Error('Not found'); return r.json(); })
+    .then(data => { _defaultExercises = data; console.log('exercises.json loaded:', Object.keys(data)); })
+    .catch(e => { console.warn('exercises.json not loaded:', e.message); _defaultExercises = {}; });
 }
 
 function loadLibrary() {
@@ -12585,7 +12872,7 @@ function buildExerciseLibraryHtml(selectedMuscle) {
       return `<div style="background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;">
         <div style="width:34px;height:34px;border-radius:8px;background:${color}22;border:1px solid ${color}44;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:${color};flex-shrink:0;">${(ex.muscle||'').slice(0,2)}</div>
         <div style="flex:1;min-width:0;">
-          <div style="font-weight:700;font-size:14px;color:#f0f0f0;">${ex.name}</div>
+          <div style="font-weight:700;font-size:17px;color:#f0f0f0;">${ex.name}</div>
           ${ex.description ? `<div style="font-size:12px;color:#555;margin-top:1px;">${ex.description}</div>` : ''}
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0;">
@@ -12595,28 +12882,39 @@ function buildExerciseLibraryHtml(selectedMuscle) {
       </div>`;
     }).join('');
 
-  // Default exercises from exercises.json (not already in Firestore library)
+  // Default exercises from exercises.json (not already in Firestore library, not in MY ZONE)
+  const hiddenEx = JSON.parse(_LS.get('ironlog_hidden_ex') || '[]');
+  const myZoneNames = new Set([
+    ...customExercises.map(e => e.name),
+    ...workouts.filter(w => !w._draft && !w._template)
+      .flatMap(w => w.exercises.map(e => e.name))
+      .filter(name => !hiddenEx.includes(name))
+  ]);
+
   let defaultHtml = '';
   muscles.forEach(muscle => {
-    const items = (_defaultExercises[muscle] || []).filter(e => !firestoreNames.has(e.name));
+    const items = (_defaultExercises[muscle] || []).filter(e =>
+      !firestoreNames.has(e.name) && !myZoneNames.has(e.name)
+    );
     if (!items.length) return;
     const color = muscleColors[muscle] || '#888';
     if (!selectedMuscle || selectedMuscle === 'All') {
       defaultHtml += `<div style="font-family:'Bebas Neue';font-size:13px;letter-spacing:1px;color:${color};margin:14px 0 6px;padding-left:2px;">${muscle}</div>`;
     }
-    defaultHtml += items.map(ex => `
-      <div style="background:#141414;border:1px solid #1e1e1e;border-radius:10px;padding:10px 14px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:14px;color:#f0f0f0;">${ex.name}</div>
-          <div style="font-size:11px;color:#555;margin-top:1px;">${ex.equipment}</div>
-        </div>
-        <button onclick="addLibraryExToSession('${ex.name.replace(/'/g,"\\'")}','${muscle}')" style="background:#e8ff4722;border:1px solid #e8ff4744;border-radius:7px;color:#e8ff47;font-family:'DM Sans';font-size:11px;font-weight:700;padding:5px 10px;cursor:pointer;flex-shrink:0;">+ Add</button>
-      </div>`).join('');
+    defaultHtml += items.map(ex => {
+      const isPickSelected = _pickMode && _pickModeSelected.some(s => s.name === ex.name);
+      const pColor = PICKER_COLORS[muscle] || '#888';
+      return `<div onclick="${_pickMode ? `pickExercise('${ex.name.replace(/'/g,"\\'")}')` : ''}" style="background:#141414;border:1px solid ${isPickSelected ? pColor : '#1e1e1e'};border-radius:10px;padding:10px 14px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;${_pickMode ? 'cursor:pointer;' : ''}transition:border-color .15s;">
+        <div style="font-size:17px;color:#f0f0f0;">${ex.name}</div>
+        ${_pickMode ? `<div style="width:22px;height:22px;border-radius:50%;border:2px solid ${isPickSelected ? pColor : '#333'};background:${isPickSelected ? pColor : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;">${isPickSelected ? '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</div>` : ''}
+      </div>`;
+    }).join('');
   });
 
   const hasContent = firestoreItems || defaultHtml;
   if (!hasContent) {
-    return `<div class="empty-state"><span style="color:var(--muted);">No exercises found.</span></div>${addBtn}`;
+    const fileLoaded = Object.keys(_defaultExercises).length > 0;
+    return `<div class="empty-state"><span style="color:var(--muted);">${fileLoaded ? 'No exercises found for this muscle group.' : 'exercises.json not found — place it in the same folder as index.html.'}</span></div>${addBtn}`;
   }
 
   // Section headers only if there's Firestore content
@@ -12624,9 +12922,7 @@ function buildExerciseLibraryHtml(selectedMuscle) {
     <div style="font-family:'Bebas Neue';font-size:13px;letter-spacing:1px;color:#555;margin-bottom:8px;">CUSTOM LIBRARY</div>
     ${firestoreItems}` : '';
 
-  const defaultSection = defaultHtml ? `
-    <div style="font-family:'Bebas Neue';font-size:13px;letter-spacing:1px;color:#555;margin:${firestoreItems ? '16px' : '0'} 0 8px;">EXERCISES</div>
-    ${defaultHtml}` : '';
+  const defaultSection = defaultHtml ? `${defaultHtml}` : '';
 
   return firestoreSection + defaultSection + addBtn;
 }
@@ -13238,6 +13534,40 @@ function addCoachExToSession(name) {
 document.getElementById('auth-password')?.addEventListener('keydown', e => {
   if (e.key === 'Enter') handleAuthSubmit();
 });
+</script>
+
+<!-- Load database + network modules -->
+<script type="module">
+  import DB  from './database.js';
+  import Net from './network.js';
+
+  window.BarzelpoDB  = DB;
+  window.BarzelpNet  = Net;
+
+  // Configure localForage
+  localforage.config({
+    name:        'BarzelpoDB',
+    storeName:   'barzelproStore',
+    description: 'BARZELPRO offline workout data'
+  });
+
+  // One-time migration from localStorage → IndexedDB
+  DB.migrateFromLocalStorage().then(migrated => {
+    if (migrated) console.log('[DB] Migrated localStorage → IndexedDB');
+  });
+
+  // Patch syncToFirestore to be offline-aware
+  // Wait briefly for the main script to define it first
+  setTimeout(() => Net.installOfflineGuard(), 500);
+
+  // Flush any queued offline writes when back online
+  window.addEventListener('online', () => Net.flushQueue());
+
+  // Debug helpers
+  window._dbSummary  = () => DB.getStorageSummary().then(s => { console.table(s); return s; });
+  window._netQueue   = () => Net.getPendingCount().then(n => { console.log('[Net] Pending:', n); return n; });
+  window._netFlush   = () => Net.flushQueue().then(r => { console.log('[Net] Flush result:', r); return r; });
+  window._netSession = () => Net.hasValidSession().then(v => { console.log('[Net] Valid session:', v); return v; });
 </script>
 
 </body>
