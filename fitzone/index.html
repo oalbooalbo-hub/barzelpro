@@ -729,18 +729,27 @@ onAuthStateChanged(auth, async (user) => {
     if (typeof window._onAuthReady === 'function') window._onAuthReady(window._currentUser);
   } else {
     // ── Offline check — allow entry with cached session ──
-    if (!navigator.onLine && window.BarzelpNet) {
-      const valid = await window.BarzelpNet.hasValidSession();
-      if (valid) {
-        const session = await window.BarzelpNet.getCachedSession();
-        if (session) {
+    // Do NOT depend on BarzelpNet here (ES module loads async).
+    // Read directly from localforage which is loaded synchronously via CDN.
+    if (!navigator.onLine && window.localforage) {
+      try {
+        const cached = await window.localforage.getItem('barzelpro_jwt_cache');
+        const session = await window.localforage.getItem('barzelpro_session_meta');
+        const isValid = cached && cached.expiresAt > Date.now() + (2 * 60 * 1000);
+        if (isValid && session) {
           console.log('[Auth] Offline — restoring cached session for:', session.email);
-          window._currentUser = { uid: session.uid, email: session.email, displayName: session.displayName || '' };
+          window._currentUser = {
+            uid: session.uid,
+            email: session.email,
+            displayName: session.userData?.displayName || ''
+          };
           window._currentUserData = session.userData || {};
           hidAuthScreen();
           if (typeof window._onAuthReady === 'function') window._onAuthReady(window._currentUser);
           return;
         }
+      } catch (e) {
+        console.warn('[Auth] Offline session restore failed:', e.message);
       }
     }
     // ────────────────────────────────────────────────────
@@ -10799,6 +10808,19 @@ window.addEventListener('load', function() {
       setTimeout(() => splash.remove(), 400);
     }
   }, 800);
+
+  // Safety net — if after 4s neither app-root nor auth-screen is visible,
+  // something went wrong (e.g. Firebase auth hung offline). Show auth screen.
+  setTimeout(function() {
+    const appRoot  = document.getElementById('app-root');
+    const authScr  = document.getElementById('auth-screen');
+    const appVisible  = appRoot  && appRoot.style.display  !== 'none' && appRoot.style.display !== '';
+    const authVisible = authScr  && authScr.style.display  !== 'none';
+    if (!appVisible && !authVisible) {
+      console.warn('[Auth] Timeout — forcing auth screen');
+      if (typeof showAuthScreen === 'function') showAuthScreen();
+    }
+  }, 4000);
 });
 </script>
 <!-- WORKOUT NAME EDIT MODAL -->
