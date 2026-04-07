@@ -1,3 +1,4 @@
+<!-- BARZELPRO index.html | Version: v2.2 | Build: 2026-04-07 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -23,7 +24,28 @@ button{cursor:pointer;touch-action:manipulation;-webkit-appearance:none;}
 input[type="text"],input[type="number"],textarea{font-size:16px;-webkit-appearance:none;}
 input[type="date"]{color-scheme:dark;}
 select{font-size:16px;}
+
+/* ── DESKTOP LAYOUT — centered mobile view ─────────── */
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:430px;margin:0 auto;padding-bottom:calc(90px + env(safe-area-inset-bottom));padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);-webkit-text-size-adjust:100%;}
+
+body.desktop-mode {
+  background:#111;
+  max-width:100%;
+  display:flex;
+  justify-content:center;
+  padding-bottom:0;
+}
+body.desktop-mode #app-root {
+  width:430px;
+  max-width:430px;
+  background:var(--bg);
+  min-height:100vh;
+  position:relative;
+  box-shadow:0 0 60px rgba(0,0,0,.6);
+}
+body.desktop-mode .pages-wrap {
+  /* no change needed */
+}
 
 /* ── APP SHELL ─────────────────────────────────── */
 .header{padding:18px 20px 0;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:30;background:var(--bg);}
@@ -611,7 +633,7 @@ window._fbFirestoreExtra = { getDocs, collection, query, where };
 
 // Load brand config from Firestore and apply to UI
 async function loadBrandConfig() {
-  if (BRAND_ID === 'super') return; // super admin uses defaults
+  if (BRAND_ID === 'super') return;
   try {
     const snap = await getDoc(doc(db, 'brands', BRAND_ID));
     if (snap.exists()) {
@@ -619,25 +641,14 @@ async function loadBrandConfig() {
       window._brandConfig = cfg;
       applyBrandConfig(cfg);
     } else {
-      // Brand doc doesn't exist yet — create it with defaults
-      await setDoc(doc(db, 'brands', BRAND_ID), {
-        name: BRAND_DEFAULTS.name,
-        subtitle: BRAND_DEFAULTS.subtitle,
-        tagline: BRAND_DEFAULTS.tagline,
-        accentColor: BRAND_DEFAULTS.accentColor,
-        logoText: BRAND_DEFAULTS.logoText,
-        createdAt: serverTimestamp(),
-        licenses: {
-          site_manager: { limit: 10, used: 0, locked: false },
-          coach: { limit: 20, used: 0, locked: false },
-          client: { limit: 100, used: 0, locked: false }
-        }
-      });
+      // Brand doc doesn't exist yet — use defaults, only super_admin can create brands
       window._brandConfig = BRAND_DEFAULTS;
+      applyBrandConfig(BRAND_DEFAULTS);
     }
   } catch(e) {
     console.warn('Brand config load failed:', e.message);
     window._brandConfig = BRAND_DEFAULTS;
+    applyBrandConfig(BRAND_DEFAULTS);
   }
 }
 
@@ -702,28 +713,35 @@ async function createUserDoc(user) {
 
 onAuthStateChanged(auth, async (user) => {
   if (user) {
-    await loadBrandConfig();
-    const userData = await createUserDoc(user);
-    window._currentUser = { ...user, role: userData.role };
-    window._currentUserData = userData;
+    try {
+      await loadBrandConfig();
+      const userData = await createUserDoc(user);
+      window._currentUser = { ...user, role: userData.role };
+      window._currentUserData = userData;
 
-    // ── Cache JWT for offline access ──────────────────
-    if (window.BarzelpNet) {
-      window.BarzelpNet.cacheToken(user).catch(() => {});
-    }
-    // ─────────────────────────────────────────────────
-
-    // ── ACCOUNT EXPIRY CHECK ──────────────────────────
-    if (userData.accountExpires) {
-      const expDate = new Date(userData.accountExpires);
-      const now = new Date();
-      if (expDate < now) {
-        await signOut(auth);
-        showExpiredScreen(userData.accountExpires, 'account');
-        return;
+      // ── Cache JWT for offline access ──────────────────
+      if (window.BarzelpNet) {
+        window.BarzelpNet.cacheToken(user).catch(() => {});
       }
+      // ─────────────────────────────────────────────────
+
+      // ── ACCOUNT EXPIRY CHECK ──────────────────────────
+      if (userData.accountExpires) {
+        const expDate = new Date(userData.accountExpires);
+        const now = new Date();
+        if (expDate < now) {
+          await signOut(auth);
+          showExpiredScreen(userData.accountExpires, 'account');
+          return;
+        }
+      }
+      // ─────────────────────────────────────────────────
+    } catch(e) {
+      console.warn('[Auth] Firestore error — continuing with basic auth:', e.message);
+      // Fall back to basic user object so app still loads
+      window._currentUser = { ...user, role: 'client' };
+      window._currentUserData = { uid: user.uid, email: user.email, displayName: user.displayName || '', role: 'client', brands: [BRAND_ID], roles: { [BRAND_ID]: 'client' } };
     }
-    // ─────────────────────────────────────────────────
 
     hidAuthScreen();
     if (typeof window._onAuthReady === 'function') window._onAuthReady(window._currentUser);
@@ -853,7 +871,9 @@ function hidAuthScreen() {
   <div class="logo" onclick="openAboutModal()" style="cursor:pointer;">
     <img id="brand-logo-img" src="logo.svg" alt="Brand Logo" style="height:36px;width:auto;display:block;" onerror="this.style.display='none'"/>
   </div>
-  <div style="display:flex;align-items:center;gap:10px;">
+  <div style="display:flex;align-items:center;gap:8px;">
+    <!-- Debug role badge — visible only when super_admin is viewing as another role -->
+    <div id="debugRoleBadge" onclick="exitDebugRole()" style="display:none;cursor:pointer;padding:4px 10px;border-radius:20px;font-family:'DM Sans';font-size:11px;font-weight:700;letter-spacing:.5px;border:1px solid currentColor;transition:opacity .2s;" title="Tap to exit view mode"></div>
     <div id="userIconBtn" onclick="toggleUserMenu()" style="display:none;cursor:pointer;position:relative;">
       <svg id="userIconSvg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="8" r="4"/>
@@ -865,7 +885,7 @@ function hidAuthScreen() {
 </div>
 
 <!-- User menu dropdown -->
-<div id="userMenuDropdown" style="display:none;position:fixed;top:56px;right:12px;z-index:8000;background:#141414;border:1px solid #2a2a2a;border-radius:14px;padding:8px;min-width:200px;box-shadow:0 8px 32px rgba(0,0,0,.6);">
+<div id="userMenuDropdown" style="display:none;position:fixed;top:56px;right:12px;z-index:8000;background:#141414;border:1px solid #2a2a2a;border-radius:14px;padding:8px;min-width:200px;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.6);">
   <div id="userMenuName" style="padding:8px 12px 12px;border-bottom:1px solid #2a2a2a;margin-bottom:6px;">
     <div id="userMenuDisplayName" style="font-weight:700;font-size:14px;color:#f0f0f0;"></div>
     <div id="userMenuEmail" style="font-size:11px;color:#555;margin-top:2px;"></div>
@@ -873,14 +893,18 @@ function hidAuthScreen() {
   </div>
   <button id="userMenuAdminBtn" onclick="toggleUserMenu();openAdminPanel()" style="display:none;width:100%;background:transparent;border:none;border-radius:8px;color:#a78bfa;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;text-align:left;transition:background .15s;" onmouseover="this.style.background='#1e1e1e'" onmouseout="this.style.background='transparent'">⚙️ Admin Panel</button>
   <button id="userMenuSuperBtn" onclick="toggleUserMenu();openSuperDashboard()" style="display:none;width:100%;background:transparent;border:none;border-radius:8px;color:#ff4747;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;text-align:left;transition:background .15s;" onmouseover="this.style.background='#1e1e1e'" onmouseout="this.style.background='transparent'">🌐 Super Dashboard</button>
+  <button id="userMenuViewAsBtn" onclick="toggleUserMenu();openViewAsRolePicker()" style="display:none;width:100%;background:transparent;border:none;border-radius:8px;color:#f59e0b;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;text-align:left;transition:background .15s;" onmouseover="this.style.background='#1e1e1e'" onmouseout="this.style.background='transparent'">👁️ View As Role</button>
+  <button id="userMenuExitViewBtn" onclick="toggleUserMenu();exitDebugRole()" style="display:none;width:100%;background:#f59e0b22;border:1px solid #f59e0b55;border-radius:8px;color:#f59e0b;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;text-align:left;" >✕ Exit View Mode</button>
   <button id="userMenuSiteManagerBtn" onclick="toggleUserMenu();openSiteManagerPanel()" style="display:none;width:100%;background:transparent;border:none;border-radius:8px;color:#a78bfa;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;text-align:left;transition:background .15s;" onmouseover="this.style.background='#1e1e1e'" onmouseout="this.style.background='transparent'">🏢 Site Manager <span id="siteManagerBadge" style="display:none;background:#ff4747;color:#fff;border-radius:10px;font-size:10px;padding:2px 6px;margin-left:4px;">0</span></button>
   <button id="userMenuCoachBtn" onclick="toggleUserMenu();openCoachPanel()" style="display:none;width:100%;background:transparent;border:none;border-radius:8px;color:#34d399;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;text-align:left;transition:background .15s;" onmouseover="this.style.background='#1e1e1e'" onmouseout="this.style.background='transparent'">👥 My Clients</button>
   <button id="userMenuFindCoachBtn" onclick="toggleUserMenu();openFindCoach()" style="display:none;width:100%;background:transparent;border:none;border-radius:8px;color:#7ec8e3;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;text-align:left;transition:background .15s;" onmouseover="this.style.background='#1e1e1e'" onmouseout="this.style.background='transparent'">🔍 Find a Coach</button>
+  <div style="height:1px;background:#2a2a2a;margin:6px 0;"></div>
+  <button id="userMenuDeviceBtn" onclick="toggleUserMenu();toggleDesktopOverride()" style="display:block;width:100%;background:transparent;border:none;border-radius:8px;color:#7ec8e3;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;text-align:left;transition:background .15s;" onmouseover="this.style.background='#1e1e1e'" onmouseout="this.style.background='transparent'">🖥️ <span id="deviceOverrideLabel">Switch to Desktop View</span></button>
+  <button onclick="toggleUserMenu();closeDataModal();openDataModal()" style="width:100%;background:transparent;border:none;border-radius:8px;color:#f0f0f0;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;text-align:left;transition:background .15s;" onmouseover="this.style.background='#1e1e1e'" onmouseout="this.style.background='transparent'">📦 My Data</button>
   <div id="userMenuNotifications" style="display:none;border-top:1px solid #2a2a2a;margin:6px 0;padding-top:6px;">
     <div style="font-size:10px;color:#555;font-weight:600;letter-spacing:1px;padding:4px 12px 6px;">NOTIFICATIONS</div>
     <div id="userMenuNotifList"></div>
   </div>
-  <button onclick="toggleUserMenu();closeDataModal();openDataModal()" style="width:100%;background:transparent;border:none;border-radius:8px;color:#f0f0f0;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;text-align:left;transition:background .15s;" onmouseover="this.style.background='#1e1e1e'" onmouseout="this.style.background='transparent'">📦 My Data</button>
   <div style="height:1px;background:#2a2a2a;margin:6px 0;"></div>
   <button onclick="toggleUserMenu();window._fbSignOut&&window._fbSignOut()" style="width:100%;background:transparent;border:none;border-radius:8px;color:#ff4747;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;text-align:left;transition:background .15s;" onmouseover="this.style.background='#1e1e1e'" onmouseout="this.style.background='transparent'">Sign Out</button>
 </div>
@@ -1410,25 +1434,182 @@ function hidAuthScreen() {
 
 <script>
 // ══════════════════════════════════════════════════════
-//  BRAND-AWARE LOCALSTORAGE HELPER
+//  INDEXEDDB + OFFLINE STORAGE LAYER
 // ══════════════════════════════════════════════════════
-// Keys that are brand-scoped (workout data, per-brand settings)
+
+// ── IndexedDB via localForage (CDN loaded) ────────────
+const _IDB = {
+  ready: false,
+  init() {
+    if (!window.localforage) return;
+    localforage.config({ name: 'BarzelpoDB', storeName: 'barzelproStore' });
+    this.ready = true;
+  },
+  async get(k) {
+    if (!this.ready) return null;
+    try { return await localforage.getItem(k); } catch { return null; }
+  },
+  async set(k, v) {
+    if (!this.ready) return;
+    try { await localforage.setItem(k, v); } catch(e) { console.warn('[IDB] set failed:', e.message); }
+  },
+  async remove(k) {
+    if (!this.ready) return;
+    try { await localforage.removeItem(k); } catch {}
+  }
+};
+_IDB.init();
+
+// ── Offline request queue ─────────────────────────────
+const _OfflineQueue = {
+  QUEUE_KEY: 'barzelpro_offline_queue',
+  _flushing: false,
+
+  async enqueue(operation, payload) {
+    if (!_IDB.ready) return;
+    const queue = (await _IDB.get(this.QUEUE_KEY)) || [];
+    queue.push({ id: `${Date.now()}_${Math.random().toString(36).slice(2,6)}`, operation, payload, queuedAt: new Date().toISOString(), attempts: 0 });
+    await _IDB.set(this.QUEUE_KEY, queue);
+    console.log(`[Queue] Enqueued: ${operation} (total: ${queue.length})`);
+  },
+
+  async flush() {
+    if (this._flushing || !navigator.onLine || !window._fbDb) return;
+    const queue = (await _IDB.get(this.QUEUE_KEY)) || [];
+    if (!queue.length) return;
+    this._flushing = true;
+    console.log(`[Queue] Flushing ${queue.length} items`);
+    let success = 0;
+    const remaining = [];
+    for (const item of queue) {
+      try {
+        if (item.operation === 'syncToFirestore' && window.syncToFirestore) {
+          window._syncToFirestoreOriginal ? window._syncToFirestoreOriginal() : window.syncToFirestore();
+          success++;
+        }
+      } catch(e) {
+        item.attempts++;
+        if (item.attempts < 5) remaining.push(item);
+      }
+    }
+    await _IDB.set(this.QUEUE_KEY, remaining);
+    this._flushing = false;
+    if (success > 0 && typeof showToast === 'function') showToast(`☁ Synced ${success} offline change${success>1?'s':''}`);
+  },
+
+  async count() {
+    const q = (await _IDB.get(this.QUEUE_KEY)) || [];
+    return q.length;
+  }
+};
+
+// Flush queue when back online
+window.addEventListener('online', () => {
+  _showOfflineBanner(false);
+  _OfflineQueue.flush();
+  if (window.syncToFirestore) window.syncToFirestore();
+});
+window.addEventListener('offline', () => _showOfflineBanner(true));
+
+function _showOfflineBanner(show) {
+  let b = document.getElementById('_offlineBanner');
+  if (show && !b) {
+    b = document.createElement('div');
+    b.id = '_offlineBanner';
+    b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99998;background:#ff8c42;color:#000;font-family:"DM Sans",sans-serif;font-size:12px;font-weight:700;text-align:center;padding:7px 16px;letter-spacing:.5px;';
+    b.textContent = '⚠️ Offline — changes will sync when you reconnect';
+    document.body.prepend(b);
+  } else if (!show && b) { b.remove(); }
+}
+
+// ── Dual-write localStorage + IndexedDB ───────────────
 const _BRAND_SCOPED_KEYS = new Set([
   'ironlog_workouts','ironlog_deleted_workouts','ironlog_cardio',
   'ironlog_custom_ex','ironlog_planned','ironlog_cardio_custom',
   'ironlog_session','ironlog_session_start','ironlog_draft_id',
   'ironlog_deleted_tab_names','ironlog_hidden_ex','ironlog_hidden_load'
 ]);
-// Keys that are global (UI state, preferences)
-// ironlog_active_tab, ironlog_timer_secs, ironlog_workout_target, etc. stay unprefixed
 
 const _LS = {
   _pfx() { return window.BRAND_ID ? `ironlog_${window.BRAND_ID}_` : 'ironlog_'; },
   key(k) { return _BRAND_SCOPED_KEYS.has(k) ? k.replace('ironlog_', this._pfx()) : k; },
-  get(k) { return localStorage.getItem(this.key(k)); },
-  set(k, v) { return localStorage.setItem(this.key(k), v); },
-  remove(k) { return localStorage.removeItem(this.key(k)); }
+  get(k) {
+    // Try localStorage first (sync), IndexedDB is async so we can't block here
+    return localStorage.getItem(this.key(k));
+  },
+  set(k, v) {
+    const key = this.key(k);
+    localStorage.setItem(key, v);
+    // Also write to IndexedDB asynchronously
+    _IDB.set(key, v);
+  },
+  remove(k) {
+    const key = this.key(k);
+    localStorage.removeItem(key);
+    _IDB.remove(key);
+  }
 };
+
+// ── JWT / Session cache ────────────────────────────────
+window.BarzelpNet = {
+  cacheToken: async (user) => {
+    if (!_IDB.ready) return;
+    try {
+      const token = await user.getIdToken(false);
+      const result = await user.getIdTokenResult(false);
+      await _IDB.set('barzelpro_jwt_cache', {
+        token, uid: user.uid, email: user.email,
+        expiresAt: new Date(result.expirationTime).getTime(),
+        cachedAt: Date.now()
+      });
+      await _IDB.set('barzelpro_session_meta', {
+        uid: user.uid, email: user.email,
+        userData: window._currentUserData || {},
+        savedAt: Date.now()
+      });
+      console.log('[Net] Token cached');
+    } catch(e) { console.warn('[Net] cacheToken failed:', e.message); }
+  },
+  hasValidSession: async () => {
+    try {
+      const c = await _IDB.get('barzelpro_jwt_cache');
+      return !!(c && c.expiresAt > Date.now() + 120000);
+    } catch { return false; }
+  },
+  getCachedSession: async () => {
+    try { return await _IDB.get('barzelpro_session_meta'); } catch { return null; }
+  },
+  clearSession: async () => {
+    await _IDB.remove('barzelpro_jwt_cache');
+    await _IDB.remove('barzelpro_session_meta');
+  },
+  isOnline: () => navigator.onLine
+};
+
+// ── Migration: copy localStorage → IndexedDB once ─────
+async function _migrateToIDB() {
+  if (!_IDB.ready) return;
+  const done = await _IDB.get('_migrated_v1');
+  if (done) return;
+  const brand = window.BRAND_ID || 'barzelpro';
+  const keys = [..._BRAND_SCOPED_KEYS];
+  for (const k of keys) {
+    const brandKey = k.replace('ironlog_', `ironlog_${brand}_`);
+    const val = localStorage.getItem(brandKey) || localStorage.getItem(k);
+    if (val) { try { await _IDB.set(brandKey, val); } catch {} }
+  }
+  await _IDB.set('_migrated_v1', true);
+  console.log('[IDB] Migration complete');
+}
+// Run migration after a short delay (BRAND_ID needs to be set first)
+setTimeout(_migrateToIDB, 2000);
+
+// ── Debug helpers ──────────────────────────────────────
+window._idbGet    = (k) => _IDB.get(k).then(v => { console.log(k, v); return v; });
+window._netQueue  = () => _OfflineQueue.count().then(n => { console.log('[Queue] Pending:', n); return n; });
+window._netFlush  = () => _OfflineQueue.flush();
+window._netSession= () => window.BarzelpNet.hasValidSession().then(v => { console.log('[Net] Valid session:', v); return v; });
+
 
 // ══════════════════════════════════════════════════════
 //  DATA
@@ -10809,7 +10990,7 @@ window.addEventListener('load', function() {
     }
   }, 800);
 
-  // Safety net — if after 4s neither app-root nor auth-screen is visible,
+  // Safety net — if after 8s neither app-root nor auth-screen is visible,
   // something went wrong (e.g. Firebase auth hung offline). Show auth screen.
   setTimeout(function() {
     const appRoot  = document.getElementById('app-root');
@@ -10820,7 +11001,7 @@ window.addEventListener('load', function() {
       console.warn('[Auth] Timeout — forcing auth screen');
       if (typeof showAuthScreen === 'function') showAuthScreen();
     }
-  }, 4000);
+  }, 8000);
 });
 </script>
 <!-- WORKOUT NAME EDIT MODAL -->
@@ -10880,9 +11061,10 @@ window.addEventListener('load', function() {
       <button class="modal-close" onclick="closeAboutModal()">✕</button>
     </div>
     <div class="modal-body" style="text-align:center;padding:24px 20px 32px;">
-      <div style="display:flex;justify-content:center;margin-bottom:28px;">
+      <div style="display:flex;justify-content:center;margin-bottom:12px;">
         <img src="logo.svg" alt="Brand Logo" style="height:44px;width:auto;" onerror="this.style.display='none'"/>
       </div>
+      <div style="font-size:11px;color:#555;font-weight:600;letter-spacing:1.5px;margin-bottom:24px;">VERSION v2.2</div>
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:20px;text-align:left;margin-bottom:16px;">
         <div style="font-family:'DM Sans';font-size:13px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;">FEATURES</div>
         <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;color:var(--text);font-weight:500;line-height:1.5;">
@@ -10911,7 +11093,6 @@ Install App
 
 <!-- DB -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="db.js"></script>
 
 <!-- Chart Manager -->
 <script>
@@ -10963,9 +11144,9 @@ document.getElementById("installBtn").addEventListener("click", async () => {
 });
 </script>
 
-<!-- Service Worker Registration -->
+<!-- Service Worker Registration (disabled on localhost for dev) -->
 <script>
-if ('serviceWorker' in navigator) {
+if ('serviceWorker' in navigator && location.hostname !== '127.0.0.1' && location.hostname !== 'localhost') {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./service-worker.js', { scope: './' })
       .then(reg => {
@@ -11040,21 +11221,56 @@ if ('serviceWorker' in navigator) {
     <!-- PROFILE TAB -->
     <div id="coachTabContentProfile" style="display:none;">
       <div style="display:flex;flex-direction:column;gap:12px;">
+
         <!-- Photo -->
-        <div style="display:flex;align-items:center;gap:14px;background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:14px;">
-          <div id="coachProfilePhotoPreview" style="width:64px;height:64px;border-radius:50%;background:#1e1e1e;border:2px solid #34d399;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:24px;color:#34d399;">👤</div>
-          <div style="flex:1;">
-            <div style="font-size:13px;font-weight:700;color:#f0f0f0;margin-bottom:4px;">Profile Photo</div>
-            <input type="url" id="coachPhotoUrl" placeholder="Photo URL (e.g. imgur link)" style="width:100%;background:#1e1e1e;border:1px solid #333;border-radius:8px;color:#f0f0f0;font-family:'DM Sans';font-size:12px;padding:8px;outline:none;box-sizing:border-box;" oninput="previewCoachPhoto(this.value)"/>
+        <div style="background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:14px;">
+          <div style="font-size:10px;font-weight:700;color:#555;letter-spacing:1px;margin-bottom:10px;">PROFILE PHOTO</div>
+          <div style="display:flex;align-items:center;gap:14px;">
+            <div id="coachProfilePhotoPreview" style="width:64px;height:64px;border-radius:50%;background:#1e1e1e;border:2px solid #34d399;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:24px;color:#34d399;">👤</div>
+            <input type="url" id="coachPhotoUrl" oninput="markCoachProfileDirty();previewCoachPhoto(this.value)" placeholder="Photo URL (e.g. imgur link)" style="flex:1;background:#1e1e1e;border:1px solid #333;border-radius:8px;color:#f0f0f0;font-family:'DM Sans';font-size:12px;padding:8px;outline:none;box-sizing:border-box;"/>
           </div>
         </div>
-        <input id="coachProfileName" type="text" placeholder="Full name" style="width:100%;background:#141414;border:1px solid #2a2a2a;border-radius:10px;color:#f0f0f0;font-family:'DM Sans';font-size:14px;padding:12px;outline:none;box-sizing:border-box;"/>
-        <input id="coachProfilePhone" type="tel" placeholder="Phone number" style="width:100%;background:#141414;border:1px solid #2a2a2a;border-radius:10px;color:#f0f0f0;font-family:'DM Sans';font-size:14px;padding:12px;outline:none;box-sizing:border-box;"/>
-        <textarea id="coachProfileBio" placeholder="Bio / Resume" rows="3" style="width:100%;background:#141414;border:1px solid #2a2a2a;border-radius:10px;color:#f0f0f0;font-family:'DM Sans';font-size:14px;padding:12px;outline:none;resize:none;box-sizing:border-box;"></textarea>
-        <input id="coachProfileSpecialties" type="text" placeholder="Specialties (e.g. Strength, HIIT, Yoga)" style="width:100%;background:#141414;border:1px solid #2a2a2a;border-radius:10px;color:#f0f0f0;font-family:'DM Sans';font-size:14px;padding:12px;outline:none;box-sizing:border-box;"/>
-        <input id="coachProfileCerts" type="text" placeholder="Certifications (e.g. NASM, ACE)" style="width:100%;background:#141414;border:1px solid #2a2a2a;border-radius:10px;color:#f0f0f0;font-family:'DM Sans';font-size:14px;padding:12px;outline:none;box-sizing:border-box;"/>
-        <input id="coachProfileAvailability" type="text" placeholder="Availability (e.g. Mon-Fri 7am-8pm)" style="width:100%;background:#141414;border:1px solid #2a2a2a;border-radius:10px;color:#f0f0f0;font-family:'DM Sans';font-size:14px;padding:12px;outline:none;box-sizing:border-box;"/>
-        <button onclick="saveCoachProfile()" style="width:100%;background:#34d39922;border:1px solid #34d39966;border-radius:10px;color:#34d399;font-family:'DM Sans';font-size:14px;font-weight:700;padding:13px;cursor:pointer;">Save Profile</button>
+
+        <!-- Full Name -->
+        <div style="background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:14px;">
+          <div style="font-size:10px;font-weight:700;color:#555;letter-spacing:1px;margin-bottom:8px;">FULL NAME</div>
+          <input id="coachProfileName" type="text" oninput="markCoachProfileDirty()" placeholder="e.g. John Smith" style="width:100%;background:#1e1e1e;border:1px solid #333;border-radius:8px;color:#f0f0f0;font-family:'DM Sans';font-size:14px;padding:10px;outline:none;box-sizing:border-box;"/>
+        </div>
+
+        <!-- Phone -->
+        <div style="background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:14px;">
+          <div style="font-size:10px;font-weight:700;color:#555;letter-spacing:1px;margin-bottom:8px;">PHONE</div>
+          <input id="coachProfilePhone" type="tel" oninput="markCoachProfileDirty()" placeholder="e.g. +972 50 000 0000" style="width:100%;background:#1e1e1e;border:1px solid #333;border-radius:8px;color:#f0f0f0;font-family:'DM Sans';font-size:14px;padding:10px;outline:none;box-sizing:border-box;"/>
+        </div>
+
+        <!-- Bio -->
+        <div style="background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:14px;">
+          <div style="font-size:10px;font-weight:700;color:#555;letter-spacing:1px;margin-bottom:8px;">BIO / RESUME</div>
+          <textarea id="coachProfileBio" oninput="markCoachProfileDirty()" placeholder="Tell clients about yourself..." rows="3" style="width:100%;background:#1e1e1e;border:1px solid #333;border-radius:8px;color:#f0f0f0;font-family:'DM Sans';font-size:14px;padding:10px;outline:none;resize:none;box-sizing:border-box;"></textarea>
+        </div>
+
+        <!-- Specialties -->
+        <div style="background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:14px;">
+          <div style="font-size:10px;font-weight:700;color:#555;letter-spacing:1px;margin-bottom:8px;">SPECIALTIES</div>
+          <input id="coachProfileSpecialties" type="text" oninput="markCoachProfileDirty()" placeholder="e.g. Strength, HIIT, Yoga" style="width:100%;background:#1e1e1e;border:1px solid #333;border-radius:8px;color:#f0f0f0;font-family:'DM Sans';font-size:14px;padding:10px;outline:none;box-sizing:border-box;"/>
+        </div>
+
+        <!-- Certifications -->
+        <div style="background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:14px;">
+          <div style="font-size:10px;font-weight:700;color:#555;letter-spacing:1px;margin-bottom:8px;">CERTIFICATIONS</div>
+          <input id="coachProfileCerts" type="text" oninput="markCoachProfileDirty()" placeholder="e.g. NASM, ACE, ACSM" style="width:100%;background:#1e1e1e;border:1px solid #333;border-radius:8px;color:#f0f0f0;font-family:'DM Sans';font-size:14px;padding:10px;outline:none;box-sizing:border-box;"/>
+        </div>
+
+        <!-- Availability -->
+        <div style="background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:14px;">
+          <div style="font-size:10px;font-weight:700;color:#555;letter-spacing:1px;margin-bottom:8px;">AVAILABILITY</div>
+          <input id="coachProfileAvailability" type="text" oninput="markCoachProfileDirty()" placeholder="e.g. Mon–Fri 07:00–20:00" style="width:100%;background:#1e1e1e;border:1px solid #333;border-radius:8px;color:#f0f0f0;font-family:'DM Sans';font-size:14px;padding:10px;outline:none;box-sizing:border-box;"/>
+        </div>
+
+        <!-- Save status — always visible -->
+        <div id="coachProfileLastSaved" style="font-size:11px;color:#555;text-align:center;min-height:16px;">Not saved yet</div>
+
+        <button id="coachProfileSaveBtn" onclick="saveCoachProfile()" style="width:100%;background:#34d39922;border:1px solid #34d39966;border-radius:10px;color:#34d399;font-family:'DM Sans';font-size:14px;font-weight:700;padding:13px;cursor:pointer;transition:all .2s;">Save Profile</button>
       </div>
     </div>
 
@@ -11412,6 +11628,9 @@ window._onAuthReady = (user) => {
   if (adminBtn && ['super_admin', 'ops_admin', 'brand_admin'].includes(role)) adminBtn.style.display = 'block';
   const superBtn = document.getElementById('userMenuSuperBtn');
   if (superBtn && role === 'super_admin') superBtn.style.display = 'block';
+  // View As Role — super_admin only
+  const viewAsBtn = document.getElementById('userMenuViewAsBtn');
+  if (viewAsBtn && role === 'super_admin') viewAsBtn.style.display = 'block';
   const smBtn = document.getElementById('userMenuSiteManagerBtn');
   if (smBtn && ['super_admin','brand_admin','site_manager'].includes(role)) {
     smBtn.style.display = 'block';
@@ -11468,11 +11687,20 @@ window._onAuthReady = (user) => {
     if (loaded && typeof showToast === 'function') showToast('☁ Data loaded from cloud');
   });
   if (typeof loadLibrary === 'function') loadLibrary();
+
+  // Restore debug role if super_admin had one saved
+  setTimeout(_restoreDebugRoleIfAny, 300);
 };
 
 // Firestore sync - exposed as window globals, called from regular scripts
 window.syncToFirestore = function() {
   if (!window._currentUser || !window._fbDb) return;
+  // If offline — queue for later
+  if (!navigator.onLine) {
+    _OfflineQueue.enqueue('syncToFirestore', {});
+    console.log('[Sync] Offline — queued');
+    return;
+  }
   const uid = window._currentUser.uid;
   const brandId = window.BRAND_ID || 'default';
   const ref = window._fbDoc(window._fbDb, 'userData', brandId, 'users', uid);
@@ -12451,6 +12679,14 @@ function loadCoachProfileData() {
       document.getElementById('coachPhotoUrl').value = _coachProfile.photoUrl;
       previewCoachPhoto(_coachProfile.photoUrl);
     }
+    // Show last saved date
+    if (_coachProfile.updatedAt) {
+      const statusEl = document.getElementById('coachProfileLastSaved');
+      if (statusEl) {
+        const d = new Date(_coachProfile.updatedAt);
+        statusEl.textContent = `Last saved: ${d.toLocaleDateString('en-US',{month:'short',day:'numeric'})} at ${d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false})}`;
+      }
+    }
   });
 }
 
@@ -12464,10 +12700,73 @@ function previewCoachPhoto(url) {
   }
 }
 
+let _coachProfileDirty = false;
+
+function markCoachProfileDirty() {
+  if (_coachProfileDirty) return;
+  _coachProfileDirty = true;
+  const btn = document.getElementById('coachProfileSaveBtn');
+  if (btn) {
+    btn.textContent = 'Save Profile •';
+    btn.style.borderColor = '#f59e0b88';
+    btn.style.color = '#f59e0b';
+    btn.style.background = '#f59e0b18';
+  }
+}
+
+function _setCoachSaveBtnState(state, lastSavedAt) {
+  const btn = document.getElementById('coachProfileSaveBtn');
+  const statusEl = document.getElementById('coachProfileLastSaved');
+  if (!btn) return;
+
+  if (state === 'saving') {
+    btn.disabled = true;
+    btn.textContent = 'Saving changes in server. Wait ...';
+    btn.style.background = '#55555522';
+    btn.style.borderColor = '#555';
+    btn.style.color = '#888';
+    btn.style.cursor = 'not-allowed';
+
+  } else if (state === 'saved') {
+    _coachProfileDirty = false;
+    btn.disabled = false;
+    btn.textContent = '✓ Saved';
+    btn.style.background = '#34d39922';
+    btn.style.borderColor = '#34d39966';
+    btn.style.color = '#34d399';
+    btn.style.cursor = 'pointer';
+    if (statusEl && lastSavedAt) {
+      const d = new Date(lastSavedAt);
+      statusEl.textContent = `Last saved: ${d.toLocaleDateString('en-US',{month:'short',day:'numeric'})} at ${d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false})}`;
+      statusEl.style.color = '#34d399';
+    }
+    setTimeout(() => {
+      if (!_coachProfileDirty) {
+        btn.textContent = 'Save Profile';
+        btn.style.background = '#34d39922';
+        btn.style.borderColor = '#34d39966';
+        btn.style.color = '#34d399';
+        if (statusEl) statusEl.style.color = '#555'; // keep text, just dim it
+      }
+    }, 3000);
+
+  } else if (state === 'error') {
+    btn.disabled = false;
+    btn.textContent = '✗ Failed — Tap to Retry';
+    btn.style.background = '#ff474722';
+    btn.style.borderColor = '#ff474766';
+    btn.style.color = '#ff4747';
+    btn.style.cursor = 'pointer';
+    if (statusEl) { statusEl.textContent = 'Changes not saved — check your connection'; statusEl.style.color = '#ff4747'; }
+  }
+}
+
 function saveCoachProfile() {
   const myUid = window._currentUser?.uid;
   const brandId = window.BRAND_ID;
   if (!myUid || !window._fbDb) return;
+
+  const savedAt = new Date().toISOString();
   const profile = {
     uid: myUid,
     brandId,
@@ -12478,11 +12777,20 @@ function saveCoachProfile() {
     certifications: document.getElementById('coachProfileCerts').value.split(',').map(s=>s.trim()).filter(Boolean),
     availability: document.getElementById('coachProfileAvailability').value.trim(),
     photoUrl: document.getElementById('coachPhotoUrl').value.trim(),
-    updatedAt: new Date().toISOString()
+    updatedAt: savedAt
   };
+
+  _setCoachSaveBtnState('saving');
+
   window._fbSetDoc(window._fbDoc(window._fbDb,'coachProfiles',myUid), profile, { merge: true })
-    .then(() => { _coachProfile = profile; showToast('Profile saved!'); })
-    .catch(e => showToast('Error: ' + e.message));
+    .then(() => {
+      _coachProfile = profile;
+      _setCoachSaveBtnState('saved', savedAt);
+    })
+    .catch(e => {
+      console.warn('saveCoachProfile error:', e.message);
+      _setCoachSaveBtnState('error');
+    });
 }
 
 // ── COACH LIBRARY ────────────────────────────────────
@@ -13552,45 +13860,198 @@ function addCoachExToSession(name) {
   }, 300);
 }
 
+// ══════════════════════════════════════════════════════
+//  DEVICE DETECTION & DESKTOP LAYOUT
+// ══════════════════════════════════════════════════════
+const DEVICE_OVERRIDE_KEY = 'ironlog_device_override';
+
+function _detectIsDesktop() {
+  const noTouch  = navigator.maxTouchPoints === 0 || !('ontouchstart' in window);
+  const wideScreen = window.innerWidth >= 1024;
+  const desktopUA = !/android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent);
+  return noTouch && wideScreen && desktopUA;
+}
+
+function _getDeviceMode() {
+  const override = localStorage.getItem(DEVICE_OVERRIDE_KEY);
+  if (override === 'desktop') return 'desktop';
+  if (override === 'mobile')  return 'mobile';
+  return _detectIsDesktop() ? 'desktop' : 'mobile';
+}
+
+function applyDeviceLayout() {
+  const mode = _getDeviceMode();
+  const isDesktop = mode === 'desktop';
+  document.body.classList.toggle('desktop-mode', isDesktop);
+  _updateDeviceOverrideLabel();
+}
+
+function _updateDeviceOverrideLabel() {
+  const label = document.getElementById('deviceOverrideLabel');
+  if (!label) return;
+  const mode = _getDeviceMode();
+  const auto = _detectIsDesktop() ? 'desktop' : 'mobile';
+  const override = localStorage.getItem(DEVICE_OVERRIDE_KEY);
+  if (override) {
+    label.textContent = mode === 'desktop'
+      ? 'Switch to Mobile View'
+      : 'Switch to Desktop View';
+  } else {
+    label.textContent = auto === 'desktop'
+      ? 'Switch to Mobile View'
+      : 'Switch to Desktop View';
+  }
+}
+
+function toggleDesktopOverride() {
+  const current = _getDeviceMode();
+  const auto = _detectIsDesktop() ? 'desktop' : 'mobile';
+  const override = localStorage.getItem(DEVICE_OVERRIDE_KEY);
+  if (override) {
+    // Clear override — go back to auto-detected
+    localStorage.removeItem(DEVICE_OVERRIDE_KEY);
+  } else {
+    // Set override to opposite of current
+    localStorage.setItem(DEVICE_OVERRIDE_KEY, current === 'desktop' ? 'mobile' : 'desktop');
+  }
+  applyDeviceLayout();
+  showToast((_getDeviceMode() === 'desktop' ? '🖥️ Desktop' : '📱 Mobile') + ' layout applied');
+}
+
+// Apply on load and on resize
+document.addEventListener('DOMContentLoaded', () => {
+  applyDeviceLayout();
+  // Update label text after DOM is ready
+  setTimeout(_updateDeviceOverrideLabel, 100);
+});
+window.addEventListener('resize', () => applyDeviceLayout());
+
+// ══════════════════════════════════════════════════════
+//  DEBUG ROLE VIEWER (super_admin only)
+// ══════════════════════════════════════════════════════
+const DEBUG_ROLE_KEY = 'ironlog_debug_role';
+// Uses ROLE_COLORS and ROLE_LABELS defined above
+
+function _isRealSuperAdmin() {
+  return window._currentUser?.uid === 'YoTIuT3nFoRpVMTupQpS9szjJ3O2' ||
+    window._currentUserData?.roles?.[window.BRAND_ID] === 'super_admin' ||
+    window._currentUserData?.role === 'super_admin';
+}
+
+function _getDebugRole() {
+  return localStorage.getItem(DEBUG_ROLE_KEY);
+}
+
+function openViewAsRolePicker() {
+  if (!_isRealSuperAdmin()) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'delete-confirm-overlay';
+  const roles = ['brand_admin', 'site_manager', 'coach', 'client'];
+  overlay.innerHTML = `<div class="delete-confirm-sheet">
+    <div class="delete-confirm-title" style="color:#f59e0b;">👁️ View As Role</div>
+    <div style="font-size:12px;color:#555;margin-bottom:16px;">Switch your UI view to see the app as another role. You remain super_admin in Firestore.</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+      ${roles.map(r => `
+        <button onclick="applyDebugRole('${r}');this.closest('.delete-confirm-overlay').remove()" 
+          style="width:100%;background:${ROLE_COLORS[r]}18;border:1px solid ${ROLE_COLORS[r]}55;border-radius:10px;color:${ROLE_COLORS[r]};font-family:'DM Sans';font-size:14px;font-weight:700;padding:12px;cursor:pointer;text-align:left;">
+          ${ROLE_LABELS[r]}
+        </button>`).join('')}
+    </div>
+    <button class="btn-del-cancel" onclick="this.closest('.delete-confirm-overlay').remove()">Cancel</button>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
+function applyDebugRole(role) {
+  if (!_isRealSuperAdmin()) return;
+  localStorage.setItem(DEBUG_ROLE_KEY, role);
+  _activateDebugRole(role);
+  showToast(`👁️ Viewing as ${ROLE_LABELS[role]}`);
+}
+
+function _activateDebugRole(role) {
+  // Override role in memory
+  if (window._currentUserData) window._currentUserData.role = role;
+  if (window._currentUser) window._currentUser.role = role;
+  // Update UI
+  _updateDebugBadge(role);
+  _refreshUserMenuForRole(role);
+}
+
+function exitDebugRole() {
+  localStorage.removeItem(DEBUG_ROLE_KEY);
+  // Restore real role
+  const realRole = 'super_admin';
+  if (window._currentUserData) window._currentUserData.role = realRole;
+  if (window._currentUser) window._currentUser.role = realRole;
+  _updateDebugBadge(null);
+  _refreshUserMenuForRole(realRole);
+  showToast('✓ Returned to Super Admin view');
+}
+
+function _updateDebugBadge(role) {
+  const badge = document.getElementById('debugRoleBadge');
+  const viewAsBtn = document.getElementById('userMenuViewAsBtn');
+  const exitBtn = document.getElementById('userMenuExitViewBtn');
+  if (!badge) return;
+  if (role) {
+    const color = ROLE_COLORS[role] || '#888';
+    badge.style.display = 'block';
+    badge.style.color = color;
+    badge.style.borderColor = color;
+    badge.style.background = color + '18';
+    badge.textContent = `👁️ ${ROLE_LABELS[role].toUpperCase()}`;
+    if (viewAsBtn) viewAsBtn.style.display = 'none';
+    if (exitBtn) exitBtn.style.display = 'block';
+  } else {
+    badge.style.display = 'none';
+    if (viewAsBtn && _isRealSuperAdmin()) viewAsBtn.style.display = 'block';
+    if (exitBtn) exitBtn.style.display = 'none';
+  }
+}
+
+function _refreshUserMenuForRole(role) {
+  const roleColors = { super_admin:'#ff4747', ops_admin:'#ff8c42', brand_admin:'#f472b6', site_manager:'#a78bfa', coach:'#7ec8e3', client:'#e8ff47' };
+  const color = roleColors[role] || '#888';
+  // Update role label in menu
+  const roleEl = document.getElementById('userMenuRole');
+  if (roleEl) { roleEl.textContent = ROLE_LABELS[role] || role; roleEl.style.color = color; }
+  // Update icon color
+  const iconSvg = document.getElementById('userIconSvg');
+  if (iconSvg) iconSvg.setAttribute('stroke', color);
+  // Show/hide role-gated buttons
+  const adminBtn = document.getElementById('userMenuAdminBtn');
+  const superBtn = document.getElementById('userMenuSuperBtn');
+  const smBtn = document.getElementById('userMenuSiteManagerBtn');
+  const coachBtn = document.getElementById('userMenuCoachBtn');
+  const findCoachBtn = document.getElementById('userMenuFindCoachBtn');
+  const libBtn = document.getElementById('saveToLibraryBtn');
+  if (adminBtn) adminBtn.style.display = ['super_admin','ops_admin','brand_admin'].includes(role) ? 'block' : 'none';
+  if (superBtn) superBtn.style.display = role === 'super_admin' ? 'block' : 'none';
+  if (smBtn) smBtn.style.display = ['super_admin','brand_admin','site_manager'].includes(role) ? 'block' : 'none';
+  if (coachBtn) coachBtn.style.display = ['super_admin','coach','site_manager'].includes(role) ? 'block' : 'none';
+  if (findCoachBtn) findCoachBtn.style.display = role === 'client' ? 'block' : 'none';
+  if (libBtn) libBtn.style.display = ['super_admin','ops_admin','brand_admin','site_manager','coach'].includes(role) ? '' : 'none';
+  // Re-render tabs that depend on role
+  if (typeof renderExercisesTab === 'function') renderExercisesTab();
+  if (typeof renderWorkoutsTab === 'function') { window._keepWorkoutsTabState = true; renderWorkoutsTab(); }
+}
+
+// Restore debug role on page load if persisted
+function _restoreDebugRoleIfAny() {
+  const saved = _getDebugRole();
+  if (!saved) return;
+  if (!_isRealSuperAdmin()) { localStorage.removeItem(DEBUG_ROLE_KEY); return; }
+  console.log('[Debug] Restoring view-as role:', saved);
+  _activateDebugRole(saved);
+}
+
 // Enter key on password field
 document.getElementById('auth-password')?.addEventListener('keydown', e => {
   if (e.key === 'Enter') handleAuthSubmit();
 });
 </script>
 
-<!-- Load database + network modules -->
-<script type="module">
-  import DB  from './database.js';
-  import Net from './network.js';
-
-  window.BarzelpoDB  = DB;
-  window.BarzelpNet  = Net;
-
-  // Configure localForage
-  localforage.config({
-    name:        'BarzelpoDB',
-    storeName:   'barzelproStore',
-    description: 'BARZELPRO offline workout data'
-  });
-
-  // One-time migration from localStorage → IndexedDB
-  DB.migrateFromLocalStorage().then(migrated => {
-    if (migrated) console.log('[DB] Migrated localStorage → IndexedDB');
-  });
-
-  // Patch syncToFirestore to be offline-aware
-  // Wait briefly for the main script to define it first
-  setTimeout(() => Net.installOfflineGuard(), 500);
-
-  // Flush any queued offline writes when back online
-  window.addEventListener('online', () => Net.flushQueue());
-
-  // Debug helpers
-  window._dbSummary  = () => DB.getStorageSummary().then(s => { console.table(s); return s; });
-  window._netQueue   = () => Net.getPendingCount().then(n => { console.log('[Net] Pending:', n); return n; });
-  window._netFlush   = () => Net.flushQueue().then(r => { console.log('[Net] Flush result:', r); return r; });
-  window._netSession = () => Net.hasValidSession().then(v => { console.log('[Net] Valid session:', v); return v; });
-</script>
 
 </body>
 </html>
