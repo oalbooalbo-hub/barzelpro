@@ -1,4 +1,4 @@
-<!-- BARZELPRO index.html | Version: v2.3 | Build: 2026-04-07 -->
+<!-- BARZELPRO index.html | Version: v3.0 | Build: 2026-04-07 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1434,6 +1434,11 @@ function hidAuthScreen() {
 
 <script>
 // ══════════════════════════════════════════════════════
+//  GLOBAL DECLARATIONS (must be before all functions)
+// ══════════════════════════════════════════════════════
+let _defaultExercises = {}; // populated from exercises.json
+
+// ══════════════════════════════════════════════════════
 //  INDEXEDDB + OFFLINE STORAGE LAYER
 // ══════════════════════════════════════════════════════
 
@@ -2795,14 +2800,14 @@ function renderExercisesTab() {
       const chevHtml = hasHistory ? `<span id="${safeId}-chev" style="color:var(--muted);font-size:11px;transition:transform .2s;">&#9660;</span>` : '';
       const isPickSelected = _pickMode && _pickModeSelected.some(s => s.name === ex.name);
       const pickColor = PICKER_COLORS[ex.muscle] || '#888';
-      listHtml += `<div data-exname="${ex.name.replace(/"/g,'&quot;')}" style="margin-bottom:8px;background:var(--surface);border:1px solid ${isPickSelected ? pickColor : 'var(--border)'};border-radius:10px;overflow:hidden;transition:border-color .15s;">
+      listHtml += `<div data-exname="${ex.name.replace(/"/g,'&quot;')}" data-muscle="${ex.muscle||'Chest'}" style="margin-bottom:8px;background:var(--surface);border:1px solid ${isPickSelected ? pickColor : 'var(--border)'};border-radius:10px;overflow:hidden;transition:border-color .15s;">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;">
         <div ${isExpandable || _pickMode ? `onclick="${_pickMode ? `pickExercise('${ex.name.replace(/'/g,"\\'")}')` : `toggleExTabCard('${safeId}')`}"` : ''} style="flex:1;min-width:0;${isExpandable || _pickMode ? 'cursor:pointer;' : ''}">
           <div style="font-family:'DM Sans';font-size:17px;font-weight:400;color:var(--text);">${ex.name}</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
           ${_pickMode
-            ? `<div style="width:22px;height:22px;border-radius:50%;border:2px solid ${isPickSelected ? pickColor : '#333'};background:${isPickSelected ? pickColor : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;">${isPickSelected ? '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</div>`
+            ? `<div class="picker-check" style="width:22px;height:22px;border-radius:50%;border:2px solid ${isPickSelected ? pickColor : '#333'};background:${isPickSelected ? pickColor : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;">${isPickSelected ? '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</div>`
             : statsHtml}
         </div>
       </div>
@@ -2869,10 +2874,10 @@ function renderExercisesTab() {
   </div>`;
 
   const listBox = _pickMode
-    ? `<div style="height:276px;overflow-y:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:12px;padding:6px 0;">${listHtml}</div>`
+    ? `<div id="pickModeListBox" style="height:276px;overflow-y:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:12px;padding:6px 0;">${listHtml}</div>`
     : listHtml;
 
-  el.innerHTML = toggleHtml + (_exTabView === 'created' ? searchHtml + pillsHtml + listBox + (_pickMode ? '' : addBtnHtml) : _exTabView === 'coach' ? buildCoachExercisesHtml() : pillsHtml + (_pickMode ? `<div style="height:276px;overflow-y:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:12px;padding:6px 0;">` + buildExerciseLibraryHtml(selected).replace(/<button[^>]*Add to Library[^<]*<\/button>/g,'') + `</div>` : buildExerciseLibraryHtml(selected)));
+  el.innerHTML = toggleHtml + (_exTabView === 'created' ? searchHtml + pillsHtml + listBox + (_pickMode ? '' : addBtnHtml) : _exTabView === 'coach' ? buildCoachExercisesHtml() : pillsHtml + (_pickMode ? `<div id="pickModeListBox" style="height:276px;overflow-y:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:12px;padding:6px 0;">` + buildExerciseLibraryHtml(selected).replace(/<button[^>]*Add to Library[^<]*<\/button>/g,'') + `</div>` : buildExerciseLibraryHtml(selected)));
   // Cards always start collapsed (minimized view by default)
 }
 
@@ -3039,27 +3044,53 @@ function pickExercise(exName) {
     || { name: exName, label: exName, muscle: window._exTabMuscle || 'Chest', custom: true };
 
   if (window._editHistPickerMode) {
-    // In edit history mode — accumulate then done
     const idx = _pickModeSelected.findIndex(e => e.name === ex.name);
-    if (idx >= 0) {
-      _pickModeSelected.splice(idx, 1);
-    } else {
-      _pickModeSelected.push(ex);
-    }
+    if (idx >= 0) { _pickModeSelected.splice(idx, 1); } else { _pickModeSelected.push(ex); }
     _updatePickModeDoneBtn();
-    renderExercisesTab();
+    _renderExercisesTabKeepScroll();
     return;
   }
 
   // Toggle selection
   const idx = _pickModeSelected.findIndex(e => e.name === ex.name);
-  if (idx >= 0) {
-    _pickModeSelected.splice(idx, 1);
-  } else {
-    _pickModeSelected.push(ex);
-  }
+  if (idx >= 0) { _pickModeSelected.splice(idx, 1); } else { _pickModeSelected.push(ex); }
   _updatePickModeDoneBtn();
-  renderExercisesTab();
+  _renderExercisesTabKeepScroll();
+}
+
+// Re-render exercises tab without losing scroll position
+function _renderExercisesTabKeepScroll() {
+  const box = document.getElementById('pickModeListBox');
+  if (!box || !_pickMode) {
+    const savedY = window.scrollY;
+    renderExercisesTab();
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      window.scrollTo({ top: savedY, behavior: 'instant' });
+    }));
+    return;
+  }
+
+  const selected = new Set(_pickModeSelected.map(e => e.name));
+  const colors = {Chest:'#e8ff47',Back:'#7ec8e3',Legs:'#ff8c42',Shoulders:'#a78bfa',Arms:'#34d399',Core:'#f87171',Compound:'#20d4c8'};
+
+  const rows = box.querySelectorAll('[data-exname]');
+  rows.forEach(row => {
+    const name = row.dataset.exname;
+    const muscle = row.dataset.muscle || 'Chest';
+    const color = colors[muscle] || '#888';
+    const isSelected = selected.has(name);
+    row.style.borderColor = isSelected ? color : 'var(--border)';
+    const check = row.querySelector('.picker-check');
+    if (check) {
+      check.style.border = `2px solid ${isSelected ? color : '#333'}`;
+      check.style.background = isSelected ? color : 'transparent';
+      check.innerHTML = isSelected
+        ? `<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+        : '';
+    }
+  });
+
+  _updatePickModeDoneBtn();
 }
 
 function openNewExModal(muscle) {
@@ -10990,18 +11021,17 @@ window.addEventListener('load', function() {
     }
   }, 800);
 
-  // Safety net — if after 8s neither app-root nor auth-screen is visible,
-  // something went wrong (e.g. Firebase auth hung offline). Show auth screen.
+  // Safety net — if after 12s neither app-root nor auth-screen is visible
   setTimeout(function() {
-    const appRoot  = document.getElementById('app-root');
-    const authScr  = document.getElementById('auth-screen');
-    const appVisible  = appRoot  && appRoot.style.display  !== 'none' && appRoot.style.display !== '';
-    const authVisible = authScr  && authScr.style.display  !== 'none';
+    const appRoot = document.getElementById('app-root');
+    const authScr = document.getElementById('auth-screen');
+    const appVisible  = appRoot && appRoot.style.display !== 'none' && appRoot.style.display !== '';
+    const authVisible = authScr && authScr.style.display !== 'none' && authScr.style.display !== '';
     if (!appVisible && !authVisible) {
       console.warn('[Auth] Timeout — forcing auth screen');
       if (typeof showAuthScreen === 'function') showAuthScreen();
     }
-  }, 8000);
+  }, 12000);
 });
 </script>
 <!-- WORKOUT NAME EDIT MODAL -->
@@ -11064,7 +11094,7 @@ window.addEventListener('load', function() {
       <div style="display:flex;justify-content:center;margin-bottom:12px;">
         <img src="logo.svg" alt="Brand Logo" style="height:44px;width:auto;" onerror="this.style.display='none'"/>
       </div>
-      <div style="font-size:11px;color:#555;font-weight:600;letter-spacing:1.5px;margin-bottom:24px;">VERSION v2.3</div>
+      <div style="font-size:11px;color:#555;font-weight:600;letter-spacing:1.5px;margin-bottom:24px;">VERSION v3.0</div>
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:20px;text-align:left;margin-bottom:16px;">
         <div style="font-family:'DM Sans';font-size:13px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;">FEATURES</div>
         <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;color:var(--text);font-weight:500;line-height:1.5;">
@@ -13138,7 +13168,7 @@ function requestCoach(coachUid, coachName) {
 let _libraryExercises = [];
 let _libraryWorkouts = [];
 let _libraryLoaded = false;
-let _defaultExercises = {}; // from exercises.json, keyed by muscle
+let _defaultExercises = _defaultExercises || {}; // declared at top of script
 
 function canEditLibrary() {
   const role = window._currentUserData?.role;
