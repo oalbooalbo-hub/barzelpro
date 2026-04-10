@@ -1,37 +1,27 @@
 /**
- * service-worker.js — BARZELPRO PWA Service Worker
+ * service-worker.js — BARZELPRO PWA Service Worker v2.2
  *
- * Strategies:
- *   • Cache First       — static assets (HTML, JS, CSS, fonts, images, JSON)
- *   • Stale-While-Revalidate — API/CDN routes (Firebase, Google Fonts, etc.)
- *   • Network Only      — Firestore writes (never cache mutations)
+ * Key behavior:
+ *   • index.html — Network First (always try to get latest, fall back to cache)
+ *   • Static assets (JS, JSON, SVG) — Cache First
+ *   • CDN/Fonts — Stale-While-Revalidate
+ *   • Firestore/Firebase Auth — Network Only (never cache)
+ *   • Auto-reload clients when a new SW version activates
  */
 
-// ── Cache config ──────────────────────────────────────────────────────────────
-const CACHE_VERSION = 'v1';
-const STATIC_CACHE  = `barzelpro-static-${CACHE_VERSION}`;
-const RUNTIME_CACHE = `barzelpro-runtime-${CACHE_VERSION}`;
+const APP_VERSION   = 'v2.2';
+const STATIC_CACHE  = `barzelpro-static-${APP_VERSION}`;
+const RUNTIME_CACHE = `barzelpro-runtime-${APP_VERSION}`;
 
-// Critical assets to pre-cache on install (Cache First)
 const STATIC_ASSETS = [
   './',
   './index.html',
   './config.js',
-  './database.js',
   './exercises.json',
   './manifest.json',
   './logo.svg',
 ];
 
-// URL patterns that should use Stale-While-Revalidate
-const SWR_PATTERNS = [
-  /fonts\.googleapis\.com/,
-  /fonts\.gstatic\.com/,
-  /cdnjs\.cloudflare\.com/,
-  /firebasestorage\.googleapis\.com/,
-];
-
-// URL patterns that should NEVER be cached (Firestore reads/writes, Auth)
 const NETWORK_ONLY_PATTERNS = [
   /firestore\.googleapis\.com/,
   /identitytoolkit\.googleapis\.com/,
@@ -39,170 +29,90 @@ const NETWORK_ONLY_PATTERNS = [
   /firebase\.googleapis\.com/,
 ];
 
-// ── INSTALL — pre-cache static assets ────────────────────────────────────────
-self.addEventListener('install', event => {
-  console.log('[SW] Installing version:', CACHE_VERSION);
+const SWR_PATTERNS = [
+  /fonts\.googleapis\.com/,
+  /fonts\.gstatic\.com/,
+  /cdnjs\.cloudflare\.com/,
+];
 
+// ── INSTALL ───────────────────────────────────────────────────────────────────
+self.addEventListener('install', event => {
+  console.log('[SW] Installing', APP_VERSION);
   event.waitUntil(
     caches.open(STATIC_CACHE)
-      .then(cache => {
-        console.log('[SW] Pre-caching critical assets');
-        // addAll is atomic — if one fails, none are cached
-        // Use individual adds so a missing logo.svg doesn't break install
-        return Promise.allSettled(
-          STATIC_ASSETS.map(asset =>
-            cache.add(asset).catch(e =>
-              console.warn('[SW] Failed to cache asset:', asset, e.message)
-            )
-          )
-        );
-      })
-      .then(() => {
-        console.log('[SW] Install complete — skipping waiting');
-        return self.skipWaiting(); // activate immediately
-      })
+      .then(cache => Promise.allSettled(
+        STATIC_ASSETS.map(asset => cache.add(asset).catch(e => console.warn('[SW] Pre-cache failed:', asset)))
+      ))
+      .then(() => self.skipWaiting())
   );
 });
 
-// ── ACTIVATE — clean up old caches ───────────────────────────────────────────
+// ── ACTIVATE ─────────────────────────────────────────────────────────────────
 self.addEventListener('activate', event => {
-  console.log('[SW] Activating version:', CACHE_VERSION);
-
-  const validCaches = new Set([STATIC_CACHE, RUNTIME_CACHE]);
-
+  console.log('[SW] Activating', APP_VERSION);
   event.waitUntil(
     caches.keys()
       .then(keys => Promise.all(
-        keys
-          .filter(key => !validCaches.has(key))
-          .map(key => {
-            console.log('[SW] Deleting old cache:', key);
-            return caches.delete(key);
-          })
+        keys.filter(key => key !== STATIC_CACHE && key !== RUNTIME_CACHE)
+            .map(key => caches.delete(key))
       ))
-      .then(() => self.clients.claim()) // take control of all open tabs
+      .then(() => self.clients.claim())
+      .then(() => self.clients.matchAll({ type: 'window' }).then(clients => {
+        clients.forEach(client => client.postMessage({ type: 'SW_UPDATED', version: APP_VERSION }));
+      }))
   );
 });
 
-// ── FETCH — route requests to the right strategy ─────────────────────────────
+// ── FETCH ─────────────────────────────────────────────────────────────────────
 self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
-
-  // Skip non-GET requests entirely (POST/PUT/DELETE go to network)
   if (request.method !== 'GET') return;
-
-  // Skip chrome-extension, data: and other non-http requests
   if (!url.protocol.startsWith('http')) return;
-
-  // Network Only — Firestore, Firebase Auth
-  if (NETWORK_ONLY_PATTERNS.some(p => p.test(request.url))) {
-    event.respondWith(fetch(request));
-    return;
+  if (NETWORK_ONLY_PATTERNS.some(p => p.test(request.url))) { event.respondWith(fetch(request)); return; }
+  if (SWR_PATTERNS.some(p => p.test(request.url))) { event.respondWith(staleWhileRevalidate(request)); return; }
+  if (request.headers.get('accept')?.includes('text/html') || url.pathname.endsWith('.html') || url.pathname.endsWith('/')) {
+    event.respondWith(networkFirst(request)); return;
   }
-
-  // Stale-While-Revalidate — CDN, fonts
-  if (SWR_PATTERNS.some(p => p.test(request.url))) {
-    event.respondWith(staleWhileRevalidate(request, RUNTIME_CACHE));
-    return;
-  }
-
-  // Cache First — all static assets (HTML, JS, JSON, SVG, fonts loaded locally)
-  event.respondWith(cacheFirst(request, STATIC_CACHE));
+  event.respondWith(cacheFirst(request));
 });
 
-// ── STRATEGIES ────────────────────────────────────────────────────────────────
-
-/**
- * Cache First — serve from cache, fall back to network and update cache.
- * Best for: HTML, JS, CSS, JSON, images that don't change often.
- */
-async function cacheFirst(request, cacheName) {
-  const cache = await caches.open(cacheName);
-  const cached = await cache.match(request);
-
-  if (cached) {
-    return cached;
-  }
-
-  // Not in cache — fetch from network and store for next time
+async function networkFirst(request) {
+  const cache = await caches.open(STATIC_CACHE);
   try {
-    const networkResponse = await fetch(request);
-    if (networkResponse.ok) {
-      cache.put(request, networkResponse.clone());
-    }
-    return networkResponse;
-  } catch (e) {
-    // Offline and not cached — return a fallback for HTML requests
-    if (request.headers.get('accept')?.includes('text/html')) {
-      const fallback = await cache.match('./index.html');
-      if (fallback) return fallback;
-    }
-    throw e;
-  }
+    const res = await fetch(request);
+    if (res.ok) cache.put(request, res.clone());
+    return res;
+  } catch { return (await cache.match(request)) || Response.error(); }
 }
 
-/**
- * Stale-While-Revalidate — serve from cache immediately, update in background.
- * Best for: CDN fonts, external scripts where freshness matters but latency doesn't.
- */
-async function staleWhileRevalidate(request, cacheName) {
-  const cache = await caches.open(cacheName);
+async function cacheFirst(request) {
+  const cache = await caches.open(STATIC_CACHE);
   const cached = await cache.match(request);
-
-  // Kick off a background fetch regardless
-  const networkFetch = fetch(request)
-    .then(response => {
-      if (response.ok) {
-        cache.put(request, response.clone());
-      }
-      return response;
-    })
-    .catch(() => null);
-
-  // Return cached immediately if available, otherwise wait for network
-  return cached || networkFetch;
+  if (cached) return cached;
+  const res = await fetch(request);
+  if (res.ok) cache.put(request, res.clone());
+  return res;
 }
 
-// ── MESSAGE HANDLER — receive commands from the app ───────────────────────────
+async function staleWhileRevalidate(request) {
+  const cache = await caches.open(RUNTIME_CACHE);
+  const cached = await cache.match(request);
+  const fresh = fetch(request).then(r => { if (r.ok) cache.put(request, r.clone()); return r; }).catch(() => null);
+  return cached || fresh;
+}
+
+// ── MESSAGES ──────────────────────────────────────────────────────────────────
 self.addEventListener('message', event => {
-  if (!event.data) return;
-
-  switch (event.data.type) {
-
-    // App requests SW to activate immediately (e.g. user clicked "refresh")
-    case 'SKIP_WAITING':
-      self.skipWaiting();
-      break;
-
-    // App requests cache to be cleared (e.g. after logout)
-    case 'CLEAR_CACHE':
-      caches.keys().then(keys =>
-        Promise.all(keys.map(k => caches.delete(k)))
-      ).then(() => {
-        event.ports[0]?.postMessage({ success: true });
-        console.log('[SW] All caches cleared on request');
-      });
-      break;
-
-    // App requests list of cached URLs (for debug)
-    case 'GET_CACHE_CONTENTS':
-      caches.open(STATIC_CACHE).then(cache => cache.keys()).then(keys => {
-        event.ports[0]?.postMessage({ urls: keys.map(r => r.url) });
-      });
-      break;
-  }
+  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 // ── BACKGROUND SYNC ───────────────────────────────────────────────────────────
 self.addEventListener('sync', event => {
   if (event.tag === 'barzelpro-sync') {
-    console.log('[SW] Background sync triggered');
     event.waitUntil(
-      // Notify all open clients to flush their queue
-      self.clients.matchAll({ type: 'window' }).then(clients => {
-        clients.forEach(client => client.postMessage({ type: 'BACKGROUND_SYNC' }));
-      })
+      self.clients.matchAll({ type: 'window' })
+        .then(clients => clients.forEach(c => c.postMessage({ type: 'BACKGROUND_SYNC' })))
     );
   }
 });

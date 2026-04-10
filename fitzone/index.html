@@ -1,4 +1,4 @@
-<!-- BARZELPRO index.html | Version: v2.2 | Build: 2026-04-07 -->
+<!-- BARZELPRO index.html | Version: v2.3 | Build: 2026-04-07 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -11064,7 +11064,7 @@ window.addEventListener('load', function() {
       <div style="display:flex;justify-content:center;margin-bottom:12px;">
         <img src="logo.svg" alt="Brand Logo" style="height:44px;width:auto;" onerror="this.style.display='none'"/>
       </div>
-      <div style="font-size:11px;color:#555;font-weight:600;letter-spacing:1.5px;margin-bottom:24px;">VERSION v2.2</div>
+      <div style="font-size:11px;color:#555;font-weight:600;letter-spacing:1.5px;margin-bottom:24px;">VERSION v2.3</div>
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:20px;text-align:left;margin-bottom:16px;">
         <div style="font-family:'DM Sans';font-size:13px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;">FEATURES</div>
         <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;color:var(--text);font-weight:500;line-height:1.5;">
@@ -11151,26 +11151,23 @@ if ('serviceWorker' in navigator && location.hostname !== '127.0.0.1' && locatio
     navigator.serviceWorker.register('./service-worker.js', { scope: './' })
       .then(reg => {
         console.log('[SW] Registered, scope:', reg.scope);
-
-        // Notify user when a new SW version is waiting
         reg.addEventListener('updatefound', () => {
           const newWorker = reg.installing;
           newWorker.addEventListener('statechange', () => {
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              // New version available — show toast
-              if (typeof showToast === 'function') {
-                showToast('App updated — refresh to get the latest version');
-              }
+              if (typeof showToast === 'function') showToast('App updated — reloading...');
             }
           });
         });
       })
       .catch(err => console.warn('[SW] Registration failed:', err));
 
-    // When SW controller changes (after skipWaiting), reload
-    let refreshing = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (!refreshing) { refreshing = true; window.location.reload(); }
+    // Auto-reload when SW sends SW_UPDATED message
+    navigator.serviceWorker.addEventListener('message', event => {
+      if (event.data?.type === 'SW_UPDATED') {
+        console.log('[SW] New version activated:', event.data.version, '— reloading');
+        window.location.reload();
+      }
     });
   });
 }
