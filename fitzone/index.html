@@ -2871,10 +2871,10 @@ function renderExercisesTab() {
   const _exEmpty = !exes.length;
   const _btnColor = _exEmpty ? 'var(--accent)' : 'var(--muted)';
   const _btnBorder = _exEmpty ? 'var(--accent)' : 'var(--border)';
-  const addBtnHtml = `<button onclick="openNewExModal('${selected}')" style="width:100%;margin-top:4px;background:transparent;border:1px dashed ${_btnBorder};border-radius:10px;color:${_btnColor};font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='${_btnBorder}';this.style.color='${_btnColor}'">
+  const addBtnHtml = `<div id="extab-add-btn"><button onclick="openNewExModal('${selected}')" style="width:100%;margin-top:4px;background:transparent;border:1px dashed ${_btnBorder};border-radius:10px;color:${_btnColor};font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='${_btnBorder}';this.style.color='${_btnColor}'">
     <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
     Create New Exercise
-  </button>`;
+  </button></div>`;
 
   const _hasCoach = window._currentUserData?.coachId && window._currentUserData?.coachingExpires && new Date(window._currentUserData.coachingExpires) >= new Date();
   const toggleHtml = `<div style="display:flex;gap:0;margin-bottom:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
@@ -3286,6 +3286,8 @@ function toggleExTabCard(safeId) {
       card.dataset.extabBoxIndex = Array.from(listBox.children).indexOf(card);
       slot.appendChild(card);
       listBox.style.display = 'none';
+      const addBtn = document.getElementById('extab-add-btn');
+      if (addBtn) addBtn.style.display = 'none';
     }
     const actualName = card ? card.dataset.exname : '';
     setTimeout(() => renderExTabMiniChart(safeId, actualName), 50);
@@ -3307,6 +3309,8 @@ function toggleExTabCard(safeId) {
           listBox.appendChild(card);
         }
         listBox.style.display = '';
+        const addBtn = document.getElementById('extab-add-btn');
+        if (addBtn) addBtn.style.display = '';
       }
       slot.remove();
     }
@@ -10760,8 +10764,24 @@ function _wtabAnimateBottomBtns(selIdx) {
 function _wtabCancelSelection() {
   window._wtabSelectedIdx = null;
   const box = document.getElementById('wtab-bottom-btns');
+  // If a card is in the expanded slot, restore it to the list box
+  const slot = document.getElementById('wtab-expanded-slot');
+  const listBox = document.getElementById('wtab-list-box');
+  if (slot && listBox) {
+    const expandedCard = slot.querySelector('.load-hist-item');
+    if (expandedCard && expandedCard.dataset.wtabWasInBox) {
+      const savedIdx = parseInt(expandedCard.dataset.wtabBoxIndex ?? '-1');
+      delete expandedCard.dataset.wtabWasInBox;
+      delete expandedCard.dataset.wtabBoxIndex;
+      const children = Array.from(listBox.children);
+      if (savedIdx >= 0 && savedIdx < children.length) listBox.insertBefore(expandedCard, children[savedIdx]);
+      else listBox.appendChild(expandedCard);
+      listBox.style.display = '';
+      slot.remove();
+    }
+  }
   // Restore card opacity — search both box and expanded slot
-  document.querySelectorAll('#wtab-list-box .load-hist-item, #wtab-expanded-slot .load-hist-item').forEach(card => {
+  document.querySelectorAll('#wtab-list-box .load-hist-item').forEach(card => {
     card.style.opacity = '1';
     card.style.pointerEvents = '';
     const selBtn = card.querySelector('button[onclick*="_wtabSelectedIdx"]') || card.querySelector('button[onclick*="wtabAnimateBottomBtns"]');
