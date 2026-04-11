@@ -1,4 +1,4 @@
-<!-- BARZELPRO index.html | Version: v3.0 | Build: 2026-04-07 -->
+<!-- BARZELPRO index.html | Version: v3.6 | Build: 2026-04-07 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -352,6 +352,11 @@ body.desktop-mode .pages-wrap {
 #acc-active-slot .prog-accordion{animation:accSlideDown .28s cubic-bezier(.4,0,.2,1) both;}
 .prog-acc-body-inner{animation:accBodyOpen .25s cubic-bezier(.4,0,.2,1) both;}
 @keyframes accBodyOpen{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+/* ── INFO PANEL SLIDE-DOWN ANIMATION ─────────────── */
+@keyframes infoSlideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes infoSlideUp{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-8px)}}
+.prog-info-panel{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;font-family:'DM Sans';font-size:12px;color:var(--muted);line-height:1.8;font-weight:500;margin-bottom:8px;animation:infoSlideDown .28s cubic-bezier(.4,0,.2,1) both;}
+.prog-info-panel.closing{animation:infoSlideUp .22s cubic-bezier(.4,0,.2,1) both;pointer-events:none;}
 .chart-subtitle{font-size:11px;color:var(--muted);margin-bottom:10px;}
 .chart-wrap{position:relative;height:170px;}
 .exercise-select{background:var(--surface2);border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:'DM Sans';font-size:13px;padding:8px 11px;outline:none;margin-bottom:10px;width:100%;}
@@ -959,7 +964,7 @@ function hidAuthScreen() {
 </div>
 
 <!-- HISTORY -->
-<div class="page" id="page-workouts">
+<div class="page" id="page-workouts" style="padding:14px 16px;">
   <div id="workoutsTabContent"></div>
 </div>
 
@@ -1026,12 +1031,11 @@ function hidAuthScreen() {
 
 <!-- EXERCISES -->
 <div class="page" id="page-exercises">
-  <div id="pick-mode-banner" style="display:none;background:rgba(255,140,66,.08);border:none;border-radius:10px;padding:10px 14px;margin-bottom:12px;align-items:center;justify-content:space-between;gap:8px;">
-    <span style="font-family:'DM Sans';font-size:12px;font-weight:600;color:#ff8c42;">Select exercises</span>
-    <button onclick="exitPickMode()" style="background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:'DM Sans';font-size:12px;font-weight:700;padding:5px 10px;cursor:pointer;flex-shrink:0;white-space:nowrap;">◀ Back</button>
-  </div>
   <div id="exercisesTabContent"></div>
-  <button id="pick-mode-done-btn" onclick="donePickMode()" style="display:none;width:100%;margin-top:10px;background:var(--accent);border:none;border-radius:12px;color:#000;font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;padding:10px 16px;cursor:pointer;">Done</button>
+  <div id="pick-mode-btns" style="display:none;flex-direction:row;gap:10px;margin-top:10px;">
+    <button onclick="exitPickMode()" style="flex:0 0 auto;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--muted);font-family:'DM Sans';font-size:15px;font-weight:700;padding:10px 20px;cursor:pointer;">Cancel</button>
+    <button id="pick-mode-done-btn" onclick="donePickMode()" style="flex:1;background:var(--accent);border:none;border-radius:12px;color:#000;font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;padding:10px 16px;cursor:pointer;">Done</button>
+  </div>
 </div>
 
 <!-- PROGRESS -->
@@ -1350,11 +1354,12 @@ function hidAuthScreen() {
     </div>
 
     <!-- List -->
-    <div id="exerciseGrid" style="height:276px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 16px 0;flex-shrink:0;"></div>
+    <div id="exerciseGrid" style="height:279px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 16px 0;flex-shrink:0;"></div>
 
     <!-- Done button (fixed at bottom) -->
-    <div style="position:absolute;bottom:0;left:0;right:0;padding:12px 16px;background:var(--bg);border-top:1px solid var(--border);">
-      <button id="pickerDoneBtn" onclick="confirmPickerSelection()" style="width:100%;background:var(--accent);border:none;border-radius:12px;color:#000;font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;padding:14px;cursor:pointer;">Done</button>
+    <div style="position:absolute;bottom:0;left:0;right:0;padding:12px 16px;background:var(--bg);border-top:1px solid var(--border);display:flex;gap:10px;">
+      <button onclick="closePicker()" style="flex:0 0 auto;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--muted);font-family:'DM Sans';font-size:15px;font-weight:700;padding:14px 20px;cursor:pointer;">Cancel</button>
+      <button id="pickerDoneBtn" onclick="confirmPickerSelection()" style="flex:1;background:var(--accent);border:none;border-radius:12px;color:#000;font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;padding:14px;cursor:pointer;">Done</button>
     </div>
   </div>
 </div>
@@ -1437,6 +1442,9 @@ function hidAuthScreen() {
 //  GLOBAL DECLARATIONS (must be before all functions)
 // ══════════════════════════════════════════════════════
 let _defaultExercises = {}; // populated from exercises.json
+
+// Muscle colors used throughout — declared here to avoid ReferenceError
+const PICKER_COLORS = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171', Compound:'#20d4c8' };
 
 // ══════════════════════════════════════════════════════
 //  INDEXEDDB + OFFLINE STORAGE LAYER
@@ -1532,7 +1540,7 @@ const _BRAND_SCOPED_KEYS = new Set([
   'ironlog_workouts','ironlog_deleted_workouts','ironlog_cardio',
   'ironlog_custom_ex','ironlog_planned','ironlog_cardio_custom',
   'ironlog_session','ironlog_session_start','ironlog_draft_id',
-  'ironlog_deleted_tab_names','ironlog_hidden_ex','ironlog_hidden_load'
+  'ironlog_deleted_tab_names','ironlog_hidden_ex'
 ]);
 
 const _LS = {
@@ -1781,7 +1789,6 @@ function checkFinishReady() {
   if (_inStartScreen) {
     const _hasWk = (() => {
     const _dn = JSON.parse(_LS.get('ironlog_deleted_tab_names')||'[]');
-    const _hw = JSON.parse(_LS.get('ironlog_hidden_load')||'[]');
     const _seen = new Set();
     return (workouts||[]).filter(w => {
       if (w._draft) return false;
@@ -1789,7 +1796,7 @@ function checkFinishReady() {
       const k = (w.name?.trim().toLowerCase())||'';
       if (_seen.has(k)) return false;
       _seen.add(k);
-      return !_hw.includes(w.name);
+      return true;
     }).length > 0;
   })();
     // Check if there's a planned strength workout for today
@@ -2134,7 +2141,6 @@ function showTodayStartScreen() {
   // Hide PICK if no saved workouts exist
   const hasWorkouts = (() => {
     const _dn = JSON.parse(_LS.get('ironlog_deleted_tab_names')||'[]');
-    const _hw = JSON.parse(_LS.get('ironlog_hidden_load')||'[]');
     const _seen = new Set();
     return (workouts||[]).filter(w => {
       if (w._draft) return false;
@@ -2142,7 +2148,7 @@ function showTodayStartScreen() {
       const k = (w.name?.trim().toLowerCase())||'';
       if (_seen.has(k)) return false;
       _seen.add(k);
-      return !_hw.includes(w.name);
+      return true;
     }).length > 0;
   })();
   const loadWrap = document.getElementById('today-load-btn-wrap');
@@ -2241,7 +2247,6 @@ function renderTodayPlanCard() {
     cardEl.style.display = 'none';
     const hasWorkouts = (() => {
     const _dn = JSON.parse(_LS.get('ironlog_deleted_tab_names')||'[]');
-    const _hw = JSON.parse(_LS.get('ironlog_hidden_load')||'[]');
     const _seen = new Set();
     return (workouts||[]).filter(w => {
       if (w._draft) return false;
@@ -2249,7 +2254,7 @@ function renderTodayPlanCard() {
       const k = (w.name?.trim().toLowerCase())||'';
       if (_seen.has(k)) return false;
       _seen.add(k);
-      return !_hw.includes(w.name);
+      return true;
     }).length > 0;
   })();
     if (loadWrap) loadWrap.style.display = hasWorkouts ? '' : 'none';
@@ -2800,7 +2805,7 @@ function renderExercisesTab() {
       const chevHtml = hasHistory ? `<span id="${safeId}-chev" style="color:var(--muted);font-size:11px;transition:transform .2s;">&#9660;</span>` : '';
       const isPickSelected = _pickMode && _pickModeSelected.some(s => s.name === ex.name);
       const pickColor = PICKER_COLORS[ex.muscle] || '#888';
-      listHtml += `<div data-exname="${ex.name.replace(/"/g,'&quot;')}" data-muscle="${ex.muscle||'Chest'}" style="margin-bottom:8px;background:var(--surface);border:1px solid ${isPickSelected ? pickColor : 'var(--border)'};border-radius:10px;overflow:hidden;transition:border-color .15s;">
+      listHtml += `<div data-exname="${ex.name.replace(/"/g,'&quot;')}" data-muscle="${ex.muscle||'Chest'}" style="margin-bottom:6px;background:var(--surface);border:1px solid ${isPickSelected ? pickColor : 'var(--border)'};border-radius:10px;overflow:hidden;transition:border-color .15s;">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;">
         <div ${isExpandable || _pickMode ? `onclick="${_pickMode ? `pickExercise('${ex.name.replace(/'/g,"\\'")}')` : `toggleExTabCard('${safeId}')`}"` : ''} style="flex:1;min-width:0;${isExpandable || _pickMode ? 'cursor:pointer;' : ''}">
           <div style="font-family:'DM Sans';font-size:17px;font-weight:400;color:var(--text);">${ex.name}</div>
@@ -2874,10 +2879,10 @@ function renderExercisesTab() {
   </div>`;
 
   const listBox = _pickMode
-    ? `<div id="pickModeListBox" style="height:276px;overflow-y:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:12px;padding:6px 0;">${listHtml}</div>`
-    : listHtml;
+    ? `<div id="pickModeListBox" style="height:279px;overflow-y:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:12px;padding:6px 0;">${listHtml}</div>`
+    : `<div style="height:279px;overflow-y:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:12px;padding:6px 0;">${listHtml}</div>`;
 
-  el.innerHTML = toggleHtml + (_exTabView === 'created' ? searchHtml + pillsHtml + listBox + (_pickMode ? '' : addBtnHtml) : _exTabView === 'coach' ? buildCoachExercisesHtml() : pillsHtml + (_pickMode ? `<div id="pickModeListBox" style="height:276px;overflow-y:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:12px;padding:6px 0;">` + buildExerciseLibraryHtml(selected).replace(/<button[^>]*Add to Library[^<]*<\/button>/g,'') + `</div>` : buildExerciseLibraryHtml(selected)));
+  el.innerHTML = toggleHtml + (_exTabView === 'created' ? searchHtml + pillsHtml + listBox + (_pickMode ? '' : addBtnHtml) : _exTabView === 'coach' ? buildCoachExercisesHtml() : pillsHtml + (_pickMode ? `<div id="pickModeListBox" style="height:279px;overflow-y:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:12px;padding:6px 0;">` + buildExerciseLibraryHtml(selected).replace(/<button[^>]*Add to Library[^<]*<\/button>/g,'') + `</div>` : `<div style="height:279px;overflow-y:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:12px;padding:6px 0;">` + buildExerciseLibraryHtml(selected) + `</div>`));
   // Cards always start collapsed (minimized view by default)
 }
 
@@ -2976,16 +2981,11 @@ function enterPickMode(muscle) {
   const _fromWorkouts = _prevHighlight === 'workouts' || window._isNewWorkoutFlow;
   switchTab('exercises');
   if (_fromWorkouts) window._activeTabHighlight = 'workouts';
-  const banner = document.getElementById('pick-mode-banner');
   const title = document.getElementById('exercises-tab-title');
-  if (banner) {
-    banner.style.display = 'flex';
-    banner.style.animation = 'none';
-    banner.style.background = 'transparent';
-    banner.style.borderColor = 'transparent';
-  }
   if (title) title.style.display = 'none';
   if (muscle) window._exTabMuscle = muscle;
+  const btnsWrap = document.getElementById('pick-mode-btns');
+  if (btnsWrap) btnsWrap.style.display = 'flex';
   _updatePickModeDoneBtn();
   renderExercisesTab();
   updatePickModeTabs();
@@ -2994,22 +2994,23 @@ function enterPickMode(muscle) {
 function exitPickMode() {
   _pickMode = false;
   _pickModeSelected = [];
-  const banner = document.getElementById('pick-mode-banner');
   const title = document.getElementById('exercises-tab-title');
-  const doneBtn = document.getElementById('pick-mode-done-btn');
-  if (banner) { banner.style.display = 'none'; banner.style.background = ''; banner.style.borderColor = ''; banner.style.animation = ''; }
+  const btnsWrap = document.getElementById('pick-mode-btns');
   if (title) title.style.display = '';
-  if (doneBtn) doneBtn.style.display = 'none';
+  if (btnsWrap) btnsWrap.style.display = 'none';
   renderExercisesTab();
   if (!window._editHistPickerMode) switchTab('log');
 }
 
 function _updatePickModeDoneBtn() {
   const btn = document.getElementById('pick-mode-done-btn');
-  if (!btn) return;
+  const btnsWrap = document.getElementById('pick-mode-btns');
+  if (!btn || !btnsWrap) return;
   const n = _pickModeSelected.length;
-  btn.style.display = n > 0 ? '' : 'none';
+  // Always show the buttons wrap when in pick mode
+  btnsWrap.style.display = _pickMode ? 'flex' : 'none';
   btn.textContent = n > 0 ? `Done (${n})` : 'Done';
+  btn.style.opacity = n > 0 ? '1' : '0.4';
 }
 
 function donePickMode() {
@@ -3019,9 +3020,7 @@ function donePickMode() {
     _pickMode = false;
     _pickModeSelected.forEach(ex => addExerciseToEditModal(ex.name, ex.muscle || 'Chest'));
     _pickModeSelected = [];
-    const banner = document.getElementById('pick-mode-banner');
     const title = document.getElementById('exercises-tab-title');
-    if (banner) banner.style.display = 'none';
     if (title) title.style.display = '';
     renderExercisesTab();
     document.getElementById('editHistoryOverlay').classList.add('open');
@@ -3058,39 +3057,19 @@ function pickExercise(exName) {
   _renderExercisesTabKeepScroll();
 }
 
-// Re-render exercises tab without losing scroll position
+// Re-render exercises tab preserving scroll position of the list box
 function _renderExercisesTabKeepScroll() {
   const box = document.getElementById('pickModeListBox');
-  if (!box || !_pickMode) {
-    const savedY = window.scrollY;
-    renderExercisesTab();
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      window.scrollTo({ top: savedY, behavior: 'instant' });
-    }));
-    return;
-  }
+  const savedBoxScroll = box ? box.scrollTop : 0;
+  const savedWindowScroll = window.scrollY;
 
-  const selected = new Set(_pickModeSelected.map(e => e.name));
-  const colors = {Chest:'#e8ff47',Back:'#7ec8e3',Legs:'#ff8c42',Shoulders:'#a78bfa',Arms:'#34d399',Core:'#f87171',Compound:'#20d4c8'};
+  renderExercisesTab();
 
-  const rows = box.querySelectorAll('[data-exname]');
-  rows.forEach(row => {
-    const name = row.dataset.exname;
-    const muscle = row.dataset.muscle || 'Chest';
-    const color = colors[muscle] || '#888';
-    const isSelected = selected.has(name);
-    row.style.borderColor = isSelected ? color : 'var(--border)';
-    const check = row.querySelector('.picker-check');
-    if (check) {
-      check.style.border = `2px solid ${isSelected ? color : '#333'}`;
-      check.style.background = isSelected ? color : 'transparent';
-      check.innerHTML = isSelected
-        ? `<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
-        : '';
-    }
+  requestAnimationFrame(() => {
+    const newBox = document.getElementById('pickModeListBox');
+    if (newBox && savedBoxScroll > 0) newBox.scrollTop = savedBoxScroll;
+    if (savedWindowScroll > 0) window.scrollTo({ top: savedWindowScroll, behavior: 'instant' });
   });
-
-  _updatePickModeDoneBtn();
 }
 
 function openNewExModal(muscle) {
@@ -3153,6 +3132,10 @@ function confirmNewEx() {
       window._exTabMuscle = muscle;
       renderExercisesTab();
       showToast(`"${name}" added!`);
+      setTimeout(() => {
+        const box = document.querySelector('#exercisesTabContent div[style*="overflow-y:auto"]');
+        if (box) box.scrollTop = box.scrollHeight;
+      }, 50);
     }
     if (addBtn) { addBtn.disabled = false; addBtn.textContent = 'Add'; addBtn.style.opacity = ''; }
   }, 300);
@@ -3172,6 +3155,10 @@ function confirmNewEx() {
       window._exTabMuscle = muscle;
       renderExercisesTab();
       showToast(`"${name}" added!`);
+      setTimeout(() => {
+        const box = document.querySelector('#exercisesTabContent div[style*="overflow-y:auto"]');
+        if (box) box.scrollTop = box.scrollHeight;
+      }, 50);
     }
   }, 300);
 }
@@ -3512,9 +3499,7 @@ function switchProgressView(view) {
 function switchTab(tab) {
   if (_pickMode && tab !== 'exercises') {
     _pickMode = false;
-    const banner = document.getElementById('pick-mode-banner');
     const title = document.getElementById('exercises-tab-title');
-    if (banner) banner.style.display = 'none';
     if (title) title.style.display = '';
     if (window._editHistPickerMode) {
       window._editHistPickerMode = false;
@@ -3533,12 +3518,14 @@ function switchTab(tab) {
     switchProgressView('history');
   }
   if (tab !== 'workouts') {
-    window._showHiddenWorkoutsTab = false;
     window._keepWorkoutsTabState = false;
   }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-'+tab).classList.add('active');
-  if (tab==='workouts') { _initWTabView(); renderWorkoutsTab(); }
+  if (tab==='workouts') {
+    _initWTabView();
+    renderWorkoutsTab();
+  }
   if (tab==='exercises') {
     _exTabView = 'created';
     if (!customExercises.length) _exTabView = 'library';
@@ -3597,7 +3584,6 @@ function updatePickModeTabs() {
 function renderWorkoutsTab() {
   clearTimeout(window._hiddenEmptyTimer);
   // Always reset to main list when tab is freshly opened
-  if (!window._keepWorkoutsTabState) { window._showHiddenWorkoutsTab = false; }
   // Clear replace mode unless we just came from replacePlannedWorkout or keeping state
   if (!window._inReplaceMode && !window._keepWorkoutsTabState) window._replacePlanId = null;
   // Clear plan strength mode unless we just came from planStrengthFromCal or keeping state
@@ -3610,7 +3596,7 @@ function renderWorkoutsTab() {
 
   const all = workouts.filter(w => !w._draft);
   if (!all.length) {
-    el.innerHTML = `<div style="display:flex;gap:0;margin-bottom:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;"><button onclick="switchWTabView('created')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:var(--accent);color:#000;font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">MY ZONE</button><button onclick="switchWTabView('library')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:transparent;color:var(--muted);font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">EXPLORE</button></div><div class="empty-state"><span style="color:#fff;">No custom workouts created</span></div><button onclick="startNewWorkout(true);" style="width:100%;margin-top:12px;background:transparent;border:1px dashed var(--accent);border-radius:10px;color:var(--accent);font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Create New Workout</button>`;
+    el.innerHTML = `<div class="empty-state"><span style="color:#fff;">No custom workouts created</span></div><button onclick="startNewWorkout(true);" style="width:100%;margin-top:12px;background:transparent;border:1px dashed var(--accent);border-radius:10px;color:var(--accent);font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Create New Workout</button>`;
     return;
   }
 
@@ -3626,36 +3612,26 @@ function renderWorkoutsTab() {
     _seen.add(key);
     return true;
   });
-  const hiddenCount = deduped.filter(w => _hiddenLoadWorkouts.includes(w.name)).length;
-  const showingHidden = !!window._showHiddenWorkoutsTab;
-  let sorted = deduped.filter(w => showingHidden ? _hiddenLoadWorkouts.includes(w.name) : !_hiddenLoadWorkouts.includes(w.name));
+  const hiddenCount = 0;
+  const showingHidden = false;
+  let sorted = deduped;
   const _wHasCoach = window._currentUserData?.coachId && window._currentUserData?.coachingExpires && new Date(window._currentUserData.coachingExpires) >= new Date();
   const _wToggleHtml = `<div style="display:flex;gap:0;margin-bottom:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;"><button onclick="switchWTabView('created')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_wTabView==='created'?'var(--accent)':'transparent'};color:${_wTabView==='created'?'#000':'var(--muted)'};font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">MY ZONE</button><button onclick="switchWTabView('library')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_wTabView==='library'?'var(--accent)':'transparent'};color:${_wTabView==='library'?'#000':'var(--muted)'};font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">EXPLORE</button>${_wHasCoach?`<button onclick="switchWTabView('coach')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_wTabView==='coach'?'#7ec8e3':'transparent'};color:${_wTabView==='coach'?'#000':'#7ec8e3'};font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">COACH</button>`:''}</div>`;
-  const _mainListTitle = _wToggleHtml + (hiddenCount > 0 ? `<div style="display:flex;justify-content:flex-end;margin-bottom:6px;"><button onclick="window._showHiddenWorkoutsTab=true;window._keepWorkoutsTabState=true;renderWorkoutsTab()" style="background:transparent;border:none;color:#fff;font-family:'DM Sans';font-size:11px;font-weight:600;cursor:pointer;padding:0;">Hidden workouts ▶</button></div>` : '');
+  const _mainListTitle = _wToggleHtml;
 
 
   const toggleHiddenBtn = '';
 
   if (!sorted.length) {
-    const _emptyCreateBtn = !showingHidden ? `<button onclick="startNewWorkout(true);" style="width:100%;margin-top:12px;background:transparent;border:1px dashed var(--accent);border-radius:10px;color:var(--accent);font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Create New Workout</button>` : '';
-    el.innerHTML = _mainListTitle + `<div class="empty-state"><span style="color:#fff;">${showingHidden ? 'No hidden workouts.' : 'No workouts yet.'}</span></div>` + _emptyCreateBtn + toggleHiddenBtn;
-    if (showingHidden) {
-      clearTimeout(window._hiddenEmptyTimer);
-      window._hiddenEmptyTimer = setTimeout(() => {
-        window._showHiddenWorkoutsTab = false;
-        window._keepWorkoutsTabState = true;
-        renderWorkoutsTab();
-      }, 2000);
-    }
+    const _emptyCreateBtn = `<button onclick="startNewWorkout(true);" style="width:100%;margin-top:12px;background:transparent;border:1px dashed var(--accent);border-radius:10px;color:var(--accent);font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Create New Workout</button>`;
+    el.innerHTML = _mainListTitle + `<div class="empty-state"><span style="color:#fff;">No workouts yet.</span></div>` + _emptyCreateBtn;
     return;
   }
 
   let html = _replaceNotice||'';
-  if (showingHidden) html += `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding:10px 0 6px;"><span style="font-family:'DM Sans';font-size:20px;font-weight:700;letter-spacing:0;color:var(--text);">HIDDEN <span style="color:var(--muted);">WORKOUTS</span></span><button onclick="window._showHiddenWorkoutsTab=false;window._keepWorkoutsTabState=true;renderWorkoutsTab()" style="background:transparent;border:none;color:#fff;font-family:'DM Sans';font-size:11px;font-weight:600;cursor:pointer;padding:0;">◀ Main List</button></div>`;
-  else html += _mainListTitle;
+  html += _mainListTitle;
   sorted.forEach(w => {
     const i = workouts.indexOf(w);
-    const isHidden = _hiddenLoadWorkouts.includes(w.name);
     const exDetails = w.exercises.map(e => {
       const isHebrew = /[\u0590-\u05FF]/.test(e.name);
       const content = `<span style="flex:1;color:var(--text);font-weight:600;${isHebrew?'text-align:right;direction:rtl;':''}">${e.name}</span><span style="display:inline-flex;align-items:center;gap:0;flex-shrink:0;"><span style="color:var(--muted);font-family:'Bebas Neue';font-size:16px;line-height:1;width:16px;text-align:center;">X</span><span style="color:var(--muted);font-family:'Bebas Neue';font-size:16px;line-height:1;width:20px;text-align:left;">${(e.sets||[]).filter(s=>!s.ignored).length}</span></span>`;
@@ -3725,14 +3701,13 @@ function renderWorkoutsTab() {
         ${exDetails}
         <div style="display:flex;gap:8px;padding:10px 14px 12px;">
           <button onclick="deleteWorkoutFromTab(${i})" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:'DM Sans';font-size:12px;font-weight:700;padding:8px;cursor:pointer;transition:all .2s;">Delete</button>
-          <button onclick="toggleHideWorkoutsTab(this)" data-wname="${w.name.replace(/"/g,'&quot;')}" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:'DM Sans';font-size:12px;font-weight:700;padding:8px;cursor:pointer;transition:all .2s;">${isHidden?'Unhide':'Hide'}</button>
           <button onclick="editWorkoutFromTab(${i})" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:'DM Sans';font-size:12px;font-weight:700;padding:8px;cursor:pointer;transition:all .2s;">Edit</button>
         </div>
       </div>
     </div>`;
   });
 
-  const createNewBtn = !showingHidden ? `<button onclick="startNewWorkout(true);" style="width:100%;margin-top:4px;background:transparent;border:1px dashed var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Create New Workout</button>` : '';
+  const createNewBtn = `<button onclick="startNewWorkout(true);" style="width:100%;margin-top:4px;background:transparent;border:1px dashed var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Create New Workout</button>`;
   if (_wTabView === 'library') {
     el.innerHTML = _wToggleHtml + buildWorkoutLibraryHtml();
     loadWorkoutLibrary();
@@ -3799,7 +3774,7 @@ function renderWorkoutsTab() {
 // ══════════════════════════════════════════════════════
 const PICKER_MUSCLES = ['Chest','Back','Legs','Shoulders','Arms','Core','Compound'];
 const PICKER_LABELS  = { Chest:'Chest', Back:'Back', Legs:'Legs', Shoulders:'Shldr', Arms:'Arms', Core:'Abs', Compound:'Comp' };
-const PICKER_COLORS  = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171', Compound:'#20d4c8' };
+// PICKER_COLORS declared at top of script
 
 let _pickerTab    = 'myzone';   // 'myzone' | 'explore'
 let _pickerMuscle = 'Chest';
@@ -3814,11 +3789,36 @@ function openPicker(cardId) {
   pickerTargetId    = cardId;
   _pickerIsReplace  = !!cardId;
   _pickerSelected   = [];
-  _pickerTab        = 'myzone';
-  _pickerMuscle     = 'Chest';
   document.getElementById('exSearch').value = '';
-  const pills = document.getElementById('pickerMuscles');
-  if (pills) pills.style.display = 'none';
+
+  // Find first muscle that has data in MY ZONE
+  const myZoneMuscles = new Set(customExercises.map(e => e.muscle));
+  const firstMuscleWithData = PICKER_MUSCLES.find(m => myZoneMuscles.has(m));
+
+  if (firstMuscleWithData) {
+    _pickerTab    = 'myzone';
+    _pickerMuscle = firstMuscleWithData;
+    const pills = document.getElementById('pickerMuscles');
+    if (pills) pills.style.display = 'none';
+    const sw = document.getElementById('pickerSearchWrap');
+    if (sw) sw.style.display = '';
+    const mz = document.getElementById('pickerTabMyzone');
+    const ex = document.getElementById('pickerTabExplore');
+    if (mz) { mz.style.background = 'var(--accent)'; mz.style.color = '#000'; }
+    if (ex) { ex.style.background = 'transparent'; ex.style.color = 'var(--muted)'; }
+  } else {
+    _pickerTab    = 'explore';
+    _pickerMuscle = 'Chest';
+    const pills = document.getElementById('pickerMuscles');
+    if (pills) pills.style.display = 'flex';
+    const sw = document.getElementById('pickerSearchWrap');
+    if (sw) sw.style.display = 'none';
+    const mz = document.getElementById('pickerTabMyzone');
+    const ex = document.getElementById('pickerTabExplore');
+    if (mz) { mz.style.background = 'transparent'; mz.style.color = 'var(--muted)'; }
+    if (ex) { ex.style.background = 'var(--accent)'; ex.style.color = '#000'; }
+  }
+
   renderPickerMuscles();
   renderPickerList();
   updatePickerDoneBtn();
@@ -4057,8 +4057,20 @@ function applyTodayFilters() {
     const muscleOk = !_todayMuscleFilter || m === _todayMuscleFilter;
     const doneOk = !_todayHideDone || !isDone;
     const show = muscleOk && doneOk;
-    card.style.display = show ? '' : 'none';
-    if (show) visibleCount++;
+    if (show) {
+      // Clear any leftover expand-animation styles so card is fully visible
+      card.style.display = '';
+      card.style.height = '';
+      card.style.opacity = '';
+      card.style.overflow = '';
+      card.style.marginBottom = '';
+      card.style.transition = '';
+      delete card.dataset.hiddenByExpand;
+      delete card.dataset.expandedHeight;
+      visibleCount++;
+    } else {
+      card.style.display = 'none';
+    }
   });
 
   // Show/hide empty state message
@@ -4888,9 +4900,18 @@ function toggleCardCollapse(id) {
   const chevBtn = document.getElementById(`chev-${id}`);
   const isOpen = card.dataset.open === 'true';
   if (isOpen) {
-    // Restore all hidden/collapsed cards
+    // Restore all cards hidden by the expand action
     document.querySelectorAll('#exerciseList .exercise-card').forEach(c => {
       if (c.id === id) return;
+      if (!c.dataset.hiddenByExpand) return;
+      delete c.dataset.hiddenByExpand;
+      // Check if this card should be visible per current filters
+      const m = c.dataset.exmuscle || 'Chest';
+      const isDone = c.classList.contains('completed');
+      const muscleOk = !_todayMuscleFilter || m === _todayMuscleFilter;
+      const doneOk = !_todayHideDone || !isDone;
+      if (!muscleOk || !doneOk) return; // keep hidden if filtered out
+      // Restore from display:none (completed cards) or height:0 (others)
       if (c.style.display === 'none') {
         c.style.display = '';
         c.style.opacity = '0';
@@ -4899,9 +4920,11 @@ function toggleCardCollapse(id) {
           c.style.opacity = '1';
           setTimeout(() => { c.style.transition = ''; c.style.opacity = ''; }, 420);
         });
-      } else if (c.style.height === '0px') {
+      } else {
+        const restoreH = c.dataset.expandedHeight || '80px';
+        delete c.dataset.expandedHeight;
         c.style.transition = 'height .4s ease, opacity .4s ease, margin-bottom .4s ease';
-        c.style.height = c.scrollHeight + 'px';
+        c.style.height = restoreH;
         c.style.opacity = '1';
         c.style.marginBottom = '';
         setTimeout(() => {
@@ -4934,14 +4957,15 @@ function toggleCardCollapse(id) {
     const allCards = [...document.querySelectorAll('#exerciseList .exercise-card')];
     allCards.forEach((c) => {
       if (c.id === id) return;
+      c.dataset.hiddenByExpand = '1'; // mark so we can restore
       const isCompleted = c.classList.contains('completed');
       if (isCompleted) {
-        // Just fade, keep height so complete-bar is visible
         c.style.transition = 'opacity .5s ease';
         requestAnimationFrame(() => { c.style.opacity = '0'; });
         setTimeout(() => { c.style.display = 'none'; }, 500);
       } else {
         const currentH = c.offsetHeight;
+        c.dataset.expandedHeight = currentH + 'px'; // store for restore
         c.style.overflow = 'hidden';
         c.style.height = currentH + 'px';
         c.style.transition = 'height .7s cubic-bezier(.4,0,.2,1), opacity .5s ease, margin-bottom .7s cubic-bezier(.4,0,.2,1)';
@@ -5526,9 +5550,6 @@ function adjustReps(btn, delta) {
 function dismissBanner(input) {
   const banner = input.closest('.ex-card-body')?.querySelector('.no-hist-banner');
   if (!banner) return;
-  banner.style.transition='opacity .3s,max-height .3s';
-  banner.style.opacity='0'; banner.style.maxHeight='0';
-  banner.style.overflow='hidden'; banner.style.padding='0'; banner.style.margin='0';
   setTimeout(()=>banner.remove(), 300);
 }
 
@@ -6204,12 +6225,62 @@ function confirmSave() {
   if (hasStars) {
     const starTypes = [{ label: 'MAX', color: '#e8ff47' },{ label: '1RM', color: '#ff8c42' },{ label: 'VOL', color: '#a78bfa' }];
     const starsRow = starTypes.map((t, ti) => { const count = allStars.filter(s => s.label === t.label).length; if (!count) return ''; return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;animation:starPop .8s cubic-bezier(.175,.885,.32,1.275) both;animation-delay:${ti * 0.25}s;"><div style="position:relative;width:72px;height:72px;display:flex;align-items:center;justify-content:center;">${svgStar(t.color, 72)}<span style="position:absolute;font-family:'Bebas Neue';font-size:26px;color:#000;line-height:1;margin-top:5px;">${count}</span></div><span style="font-size:12px;font-weight:700;color:${t.color};letter-spacing:.5px;text-transform:uppercase;">${t.label}</span></div>`; }).join('');
-    cel.innerHTML = `<style>@keyframes celFadeIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}@keyframes starPop{0%{opacity:0;transform:scale(0) rotate(-20deg)}60%{transform:scale(1.2) rotate(5deg)}100%{opacity:1;transform:scale(1) rotate(0deg)}}</style><div style="display:flex;flex-direction:column;align-items:center;padding-top:56px;">${_brandLogoHtml(36)}</div><div style="display:flex;flex-direction:column;align-items:center;gap:24px;"><div style="font-family:'Bebas Neue';font-size:48px;letter-spacing:3px;color:#fff;text-align:center;line-height:1;">GREAT JOB</div><div style="display:flex;gap:32px;justify-content:center;align-items:flex-end;">${starsRow}</div><div style="font-size:16px;color:#7ec8e3;font-weight:600;"><span style="display:inline-flex;align-items:center;gap:6px;vertical-align:middle;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7ec8e3" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="7" x2="12" y2="12"/><line x1="12" y1="12" x2="15" y2="14"/></svg> ${_durStr}</span></div></div><button id="celCloseBtn" style="width:100%;max-width:320px;padding:15px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;cursor:pointer;margin-bottom:40px;">CLOSE</button>`;
+    cel.innerHTML = `<style>@keyframes celFadeIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}@keyframes starPop{0%{opacity:0;transform:scale(0) rotate(-20deg)}60%{transform:scale(1.2) rotate(5deg)}100%{opacity:1;transform:scale(1) rotate(0deg)}}</style><div style="display:flex;flex-direction:column;align-items:center;padding-top:56px;">${_brandLogoHtml(36)}</div><div style="display:flex;flex-direction:column;align-items:center;gap:24px;"><div style="font-family:'Bebas Neue';font-size:48px;letter-spacing:3px;color:#fff;text-align:center;line-height:1;">GREAT JOB</div><div style="display:flex;gap:32px;justify-content:center;align-items:flex-end;">${starsRow}</div><div style="font-size:16px;color:#7ec8e3;font-weight:600;"><span style="display:inline-flex;align-items:center;gap:6px;vertical-align:middle;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7ec8e3" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="7" x2="12" y2="12"/><line x1="12" y1="12" x2="15" y2="14"/></svg> ${_durStr}</span></div></div><div style="display:flex;gap:10px;width:100%;max-width:320px;margin-bottom:40px;"><button id="celCloseBtn" style="flex:1;padding:15px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;cursor:pointer;">CLOSE</button><button id="celDetailsBtn" style="flex:1;padding:15px;background:rgba(232,255,71,.12);border:1px solid rgba(232,255,71,.4);border-radius:12px;color:var(--accent);font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;cursor:pointer;">DETAILS</button></div>`;
   } else {
     cel.innerHTML = `<style>@keyframes celFadeIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}</style><div style="display:flex;flex-direction:column;align-items:center;padding-top:56px;">${_brandLogoHtml(36)}</div><div style="display:flex;flex-direction:column;align-items:center;gap:16px;"><div style="font-family:'Bebas Neue';font-size:64px;letter-spacing:3px;color:#fff;text-align:center;line-height:1;">GOOD JOB</div><div style="font-size:16px;color:#7ec8e3;font-weight:600;"><span style="display:inline-flex;align-items:center;gap:6px;vertical-align:middle;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7ec8e3" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="7" x2="12" y2="12"/><line x1="12" y1="12" x2="15" y2="14"/></svg> ${_durStr}</span></div></div><button id="celCloseBtn" style="width:100%;max-width:320px;padding:15px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;cursor:pointer;margin-bottom:40px;">CLOSE</button>`;
   }
   document.body.appendChild(cel);
   cel.querySelector('#celCloseBtn').addEventListener('click', closeAndSave);
+  const detailsBtn = cel.querySelector('#celDetailsBtn');
+  if (detailsBtn) {
+    detailsBtn.addEventListener('click', () => {
+      const el = document.getElementById('celebrationOverlay');
+      // Fade out the celebration overlay
+      if (el) {
+        el.style.transition = 'opacity .35s ease';
+        el.style.opacity = '0';
+      }
+      // While fading — prepare Progress tab behind the scenes
+      switchTab('progress');
+      switchProgressView('graphs');
+      const dayBtn = document.querySelector('#globalTimePills [data-range="day"]');
+      if (dayBtn) setGlobalRange(dayBtn);
+      // Open Personal Records instantly (no animation) while overlay is still covering
+      const cards = ['acc-best','acc-exercise','acc-volume','acc-workouts','acc-capacity'];
+      const activeSlot = document.getElementById('acc-active-slot');
+      const card = document.getElementById('acc-best');
+      if (card && !card.classList.contains('open')) {
+        const body = card.querySelector('.prog-acc-body');
+        const placeholder = document.createElement('div');
+        placeholder.id = 'acc-best-placeholder';
+        placeholder.className = 'prog-acc-placeholder';
+        card.parentNode.insertBefore(placeholder, card);
+        cards.forEach(c => { if (c !== 'acc-best') { const ce = document.getElementById(c); if (ce) ce.style.display = 'none'; } });
+        if (activeSlot) activeSlot.appendChild(card);
+        card.classList.add('open');
+        card.style.animation = 'none';
+        body.style.display = '';
+        body.style.opacity = '1';
+        body.style.transform = 'none';
+        setTimeout(() => { card.style.animation = ''; }, 0);
+        renderBestBodyPartChart();
+      }
+      // Save in background
+      setTimeout(() => doSaveWorkout(), 50);
+      // After fade out completes, remove overlay and fade in the page
+      setTimeout(() => {
+        if (el) el.remove();
+        // Fade in the progress page
+        const page = document.getElementById('page-progress');
+        if (page) {
+          page.style.opacity = '0';
+          page.style.transition = 'opacity .3s ease';
+          requestAnimationFrame(() => { page.style.opacity = '1'; });
+          setTimeout(() => { page.style.transition = ''; page.style.opacity = ''; }, 350);
+        }
+      }, 350);
+    });
+  }
 }
 function discardWorkout() {
   clearDraft();
@@ -6225,20 +6296,7 @@ function discardWorkout() {
 // ══════════════════════════════════════════════════════
 //  LOAD HISTORY MODAL
 // ══════════════════════════════════════════════════════
-// Hidden workouts in Load modal
-let _hiddenLoadWorkouts = JSON.parse(_LS.get('ironlog_hidden_load') || '[]');
-function saveHiddenLoad() { _LS.set('ironlog_hidden_load', JSON.stringify(_hiddenLoadWorkouts)); }
-function toggleHideLoadWorkout(btn) {
-  const name = btn.dataset.wname;
-  const idx = _hiddenLoadWorkouts.indexOf(name);
-  const wasHidden = idx !== -1;
-  if (wasHidden) _hiddenLoadWorkouts.splice(idx, 1); else _hiddenLoadWorkouts.push(name);
-  saveHiddenLoad();
-  // If we just unhid the last item in hidden view, go back to main list
-  const goBack = wasHidden && _hiddenLoadWorkouts.length === 0;
-  openLoadHistory(goBack ? false : _showHiddenLoad);
-}
-let _showHiddenLoad = false;
+// (hide workout feature removed)
 
 
 function openWorkoutNameModal() {
@@ -6357,9 +6415,7 @@ function closeNewWorkoutAction(proceed) {
   }
 }
 function openLoadHistory(showHidden) {
-  _showHiddenLoad = !!showHidden;
   const body = document.getElementById('loadHistoryBody');
-  // Deduplicate: keep only latest workout per unique name (workouts are newest-first)
   const seen = new Set();
   const unique = workouts.filter(w => {
     const name = w.name?.trim().toLowerCase() || '';
@@ -6367,8 +6423,7 @@ function openLoadHistory(showHidden) {
     seen.add(name);
     return true;
   });
-  const visible = unique.filter(w => _showHiddenLoad ? _hiddenLoadWorkouts.includes(w.name) : !_hiddenLoadWorkouts.includes(w.name));
-  const hiddenCount = unique.filter(w => _hiddenLoadWorkouts.includes(w.name)).length;
+  const visible = unique;
 
   if (!unique.length) {
     body.innerHTML = `<div class="empty-state"><span class="big">0</span><span style="color:#fff;">No saved workouts yet.</span></div>
@@ -6376,13 +6431,10 @@ function openLoadHistory(showHidden) {
         <button onclick="closeLoadHistory();startNewWorkout();" style="width:100%;padding:14px;background:var(--accent);color:#000;border:none;border-radius:12px;font-family:'Bebas Neue';font-size:18px;letter-spacing:1.5px;cursor:pointer;">+ CREATE NEW WORKOUT</button>
       </div>`;
   } else {
-    const toggleBtnLabel = _showHiddenLoad ? '◀ Back' : ('Show ' + hiddenCount + ' hidden workout' + (hiddenCount!==1?'s':'')); const toggleBtn = hiddenCount > 0 ? '<div style="padding:8px 0 4px;"><button onclick="openLoadHistory(' + (_showHiddenLoad ? 'false' : 'true') + ')" style="background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--muted);font-size:11px;font-weight:700;padding:5px 10px;cursor:pointer;width:100%;">' + toggleBtnLabel + '</button></div>' : '';
-    body.innerHTML = toggleBtn + (visible.length ? visible.map((w)=>{
+    body.innerHTML = (visible.length ? visible.map((w)=>{
     const i = workouts.indexOf(w);
-    const isHidden = _hiddenLoadWorkouts.includes(w.name);
     const exDetails = w.exercises.map((e,ei)=>{
       const isHebrew = /[\u0590-\u05FF]/.test(e.name);
-      const nameStyle = isHebrew ? 'direction:rtl;text-align:right;unicode-bidi:embed;' : '';
       const content = `<span style="flex:1;color:var(--text);font-weight:600;${isHebrew?'text-align:right;direction:rtl;':''}">${e.name}</span><span style="display:inline-flex;align-items:center;gap:0;flex-shrink:0;"><span style="color:var(--muted);font-family:'Bebas Neue';font-size:16px;line-height:1;width:16px;text-align:center;">X</span><span style="color:var(--muted);font-family:'Bebas Neue';font-size:16px;line-height:1;width:20px;text-align:left;">${(e.sets||[]).filter(s=>!s.ignored).length}</span></span>`;
       const exMuscle = e.muscle || getAllExercises().find(x=>x.name===e.name||x.label===e.name)?.muscle || '';
       return `<div class="ldet-ex-row" data-muscle="${exMuscle}" style="padding:7px 14px;border-top:1px solid var(--border);font-size:12px;color:var(--text);display:flex;align-items:center;gap:8px;transition:background .2s;">${content}</div>`;
@@ -6397,21 +6449,19 @@ function openLoadHistory(showHidden) {
       <div style="display:flex;align-items:flex-start;gap:6px;padding:12px 10px 12px 12px;">
         <div style="flex:1;min-width:0;">
           <div class="load-hist-name" onclick="document.getElementById('wtab-chev-${i}').click()" style="cursor:pointer;">${w.name}</div>
-
           <div class="hcard-muscles" style="padding:4px 0 0;">${muscleChips}</div>
           <div style="height:60px;margin-top:8px;"><canvas id="load-chart-${i}"></canvas></div>
         </div>
         <div style="display:flex;flex-direction:row;gap:6px;flex-shrink:0;align-items:stretch;">
           <button onclick="toggleLoadDetail('ldet-${i}',this)" style="background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--muted);font-size:16px;width:30px;height:30px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;">▾</button>
-          <button onclick="toggleHideLoadWorkout(this)" data-wname="${w.name.replace(/"/g,'&quot;')}" title="${isHidden?'Unhide':'Hide'}" style="background:transparent;border:1px solid var(--border);border-radius:7px;color:#555;font-size:13px;font-weight:700;width:30px;height:30px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;">${isHidden?'Unhide':'Hide'}</button>
-          ${!isHidden?`<button onclick="loadWorkout(${i})" style="background:rgba(232,255,71,.1);border:1px solid rgba(232,255,71,.35);border-radius:7px;color:var(--accent);font-size:12px;font-weight:700;padding:6px 8px;cursor:pointer;">Load</button>`:''}
+          <button onclick="loadWorkout(${i})" style="background:rgba(232,255,71,.1);border:1px solid rgba(232,255,71,.35);border-radius:7px;color:var(--accent);font-size:12px;font-weight:700;padding:6px 8px;cursor:pointer;">Load</button>
         </div>
       </div>
       <div id="ldet-${i}" style="max-height:0;overflow:hidden;transition:max-height .3s ease;">
         ${exDetails}
       </div>
     </div>`;
-  }).join('') : `<div style="text-align:center;color:var(--muted);padding:24px;font-size:13px;">No ${_showHiddenLoad?'hidden':'visible'} workouts.</div>`);
+  }).join('') : `<div style="text-align:center;color:var(--muted);padding:24px;font-size:13px;">No workouts.</div>`);
   }
   document.getElementById('loadHistoryOverlay').classList.add('open');
   // Render sets-by-body-part mini charts for each load item
@@ -6919,18 +6969,10 @@ function openEditHistory(wi) {
 
 function openEditHistoryExPicker() {
   window._editHistPickerMode = true;
-  // Close edit modal, switch to exercises tab in pick mode
   document.getElementById('editHistoryOverlay').classList.remove('open');
   _pickMode = true;
   switchTab('exercises');
-  const banner = document.getElementById('pick-mode-banner');
   const title = document.getElementById('exercises-tab-title');
-  if (banner) {
-    banner.style.display = 'flex';
-    banner.style.animation = 'none';
-    banner.offsetHeight;
-    banner.style.animation = 'pickNoticeBgFade 2s ease forwards';
-  }
   if (title) title.style.display = 'none';
   renderExercisesTab();
 }
@@ -7139,7 +7181,6 @@ function clearAllHistory() {
       workouts = workouts.filter(w => !w._template);
       deletedWorkouts = [];
       saveDeleted();
-      localStorage.removeItem('ironlog_hidden_load');
       save();
       msgs.push('Workouts list cleared');
     }
@@ -7288,6 +7329,53 @@ function exportDataWithDialog() {
 function exportData(merged = false) {
   // Strip any emoji from exercise names before exporting
   const stripEmoji = str => (str||'').replace(/[\u{1F000}-\u{1FFFF}]|[\u{2600}-\u{27FF}]|[\uD800-\uDBFF][\uDC00-\uDFFF]/gu, '').trim();
+
+  if (!merged) {
+    // "Current data only" — clean snapshot of active app state, no deleted/hidden items
+    const hiddenEx = JSON.parse(_LS.get('ironlog_hidden_ex') || '[]');
+    const deletedTabNames = JSON.parse(_LS.get('ironlog_deleted_tab_names') || '[]');
+    const activeWorkouts = workouts
+      .filter(w => !w._draft && !deletedWorkouts.some(d => d.id === w.id))
+      .map(w => ({
+        ...w,
+        exercises: (w.exercises||[]).map(e => ({ ...e, name: stripEmoji(e.name), label: stripEmoji(e.label||e.name) }))
+      }));
+    const activeCustomEx = customExercises
+      .filter(e => !hiddenEx.includes(e.name))
+      .map(({ emoji, equipment, custom, ...e }) => ({ ...e, name: stripEmoji(e.name), label: stripEmoji(e.label||e.name) }));
+    const data = {
+      version: 2,
+      exportedAt: new Date().toISOString(),
+      workouts: activeWorkouts,
+      deletedWorkouts: [],
+      cardioLog: cardioLog,
+      customExercises: activeCustomEx,
+      plannedWorkouts: (plannedWorkouts||[]).filter(p => !p._deleted),
+      customCardioTypes: customCardioTypes,
+      hiddenExercises: [],
+      settings: {
+        workoutWeekTarget: workoutWeekTarget,
+        cardioWeekTarget: cardioWeekTarget,
+        lastTimerSecs: lastTimerSecs,
+        lastCardioType: localStorage.getItem('ironlog_cardio_type') || '',
+        lastCardioDuration: localStorage.getItem('ironlog_cardio_dur') || '',
+        miniChartRange: miniChartRange,
+      }
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Barzel_Pro_my_data.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('Backup downloaded!');
+    return;
+  }
+
+  // Merged export — include everything
   const cleanWorkouts = workouts.map(w => ({
     ...w,
     exercises: (w.exercises||[]).map(e => ({ ...e, name: stripEmoji(e.name), label: stripEmoji(e.label||e.name) }))
@@ -7316,7 +7404,7 @@ function exportData(merged = false) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = merged ? `Barzel_Pro_merged_backup.json` : `Barzel_Pro_my_data.json`;
+  a.download = `Barzel_Pro_merged_backup.json`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -7810,26 +7898,39 @@ function updateProgressWorkoutCount() {
   el.innerHTML = count > 0 ? `<span style="display:inline-flex;align-items:baseline;gap:10px;"><span style="color:#34d399;font-weight:700;font-size:22px;">${count}</span><span>Workout${count !== 1 ? 's' : ''} ${label}</span></span>` : `<span style="display:inline-flex;align-items:baseline;gap:10px;"><span style="color:#666;font-weight:700;font-size:22px;">0</span><span>Workouts ${label}</span></span>`;
 }
 
+function _animateInfoClose(el, onDone) {
+  el.classList.add('closing');
+  el.addEventListener('animationend', () => { el.remove(); if (onDone) onDone(); }, { once: true });
+}
+
 function toggleProgInfo(infoId, cardId, btn) {
   const card = document.getElementById(cardId);
   const isOpen = card?.classList.contains('open');
   if (isOpen) {
-    // Accordion open — toggle the info panel inside the body
+    // Accordion open — toggle animated info panel inside the body
     const t = document.getElementById(infoId);
-    if (t) t.style.display = t.style.display === 'none' ? 'block' : 'none';
+    if (!t) return;
+    const animPanel = document.getElementById(infoId + '-anim');
+    if (animPanel) { _animateInfoClose(animPanel); return; }
+    const panel = document.createElement('div');
+    panel.id = infoId + '-anim';
+    panel.className = 'prog-info-panel';
+    panel.innerHTML = t.innerHTML;
+    t.parentNode.insertBefore(panel, t);
     return;
   }
   // Accordion closed — show floating info below the header
   const existing = document.getElementById('prog-info-float');
   if (existing && existing.dataset.for === infoId) {
-    existing.remove(); return;
+    _animateInfoClose(existing); return;
   }
-  if (existing) existing.remove();
+  if (existing) _animateInfoClose(existing);
   const src = document.getElementById(infoId);
   if (!src) return;
   const float = document.createElement('div');
   float.id = 'prog-info-float';
   float.dataset.for = infoId;
+  float.className = 'prog-info-panel';
   float.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;font-family:\'DM Sans\';font-size:12px;color:var(--muted);line-height:1.8;font-weight:500;margin-top:6px;';
   float.innerHTML = src.innerHTML;
   const header = card?.querySelector('.prog-acc-header');
@@ -7842,11 +7943,16 @@ function toggleProgressCard(id) {
   const isOpen = document.getElementById(id).classList.contains('open');
   const openId = cards.find(cid => document.getElementById(cid)?.classList.contains('open'));
 
-  function closeCard(cid, onDone) {
+  function closeCard(cid, onDone, preserveInfo) {
     const card = document.getElementById(cid);
     if (!card || !card.classList.contains('open')) { if(onDone) onDone(); return; }
     const body = card.querySelector('.prog-acc-body');
     const placeholder = document.getElementById(cid + '-placeholder');
+    // Only snapshot info panel if closing to make room for another card
+    const openInfoPanel = card.querySelector('.prog-info-panel:not(.closing)');
+    const infoSnapshot = (preserveInfo && openInfoPanel)
+      ? { innerHTML: openInfoPanel.innerHTML, infoId: openInfoPanel.id.replace('-anim','') }
+      : null;
     card.style.animation = 'accSlideUp .22s cubic-bezier(.4,0,.2,1) both';
     setTimeout(() => {
       card.style.animation = '';
@@ -7859,15 +7965,29 @@ function toggleProgressCard(id) {
       if (activeSlot) activeSlot.innerHTML = '';
       // Show all cards again
       cards.forEach(c => { const el = document.getElementById(c); if(el) el.style.display = ''; });
+      // Re-show info as floating panel below the (now collapsed) header
+      if (infoSnapshot) {
+        const float = document.createElement('div');
+        float.id = 'prog-info-float';
+        float.dataset.for = infoSnapshot.infoId;
+        float.className = 'prog-info-panel';
+        float.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;font-family:\'DM Sans\';font-size:12px;color:var(--muted);line-height:1.8;font-weight:500;margin-top:6px;';
+        float.innerHTML = infoSnapshot.innerHTML;
+        const header = card.querySelector('.prog-acc-header');
+        if (header) header.after(float);
+      }
       if (onDone) onDone();
     }, 220);
   }
 
   const doOpen = () => {
-    document.getElementById('prog-info-float')?.remove();
     if (!isOpen) {
       const card = document.getElementById(id);
       const body = card.querySelector('.prog-acc-body');
+      // Check if there was a floating info panel for this card before removing it
+      const existingFloat = document.getElementById('prog-info-float');
+      const restoreInfoId = (existingFloat?.dataset.for) ? existingFloat.dataset.for : null;
+      existingFloat?.remove();
       const placeholder = document.createElement('div');
       placeholder.id = id + '-placeholder';
       placeholder.className = 'prog-acc-placeholder';
@@ -7884,6 +8004,17 @@ function toggleProgressCard(id) {
         body.style.transition = 'opacity .22s ease, transform .22s ease';
         body.style.opacity = '1';
         body.style.transform = 'translateY(0)';
+        // Re-inject info panel inside body if it was open before
+        if (restoreInfoId) {
+          const src = document.getElementById(restoreInfoId);
+          if (src && !document.getElementById(restoreInfoId + '-anim')) {
+            const panel = document.createElement('div');
+            panel.id = restoreInfoId + '-anim';
+            panel.className = 'prog-info-panel';
+            panel.innerHTML = src.innerHTML;
+            src.parentNode.insertBefore(panel, src);
+          }
+        }
         setTimeout(() => { body.style.transition = ''; }, 240);
       }, 80);
       setTimeout(() => { card.style.animation = ''; }, 300);
@@ -7905,9 +8036,10 @@ function toggleProgressCard(id) {
   };
 
   if (openId && openId !== id) {
-    closeCard(openId, doOpen);
+    closeCard(openId, doOpen, true);
   } else if (openId === id) {
-    closeCard(id);
+    document.getElementById('prog-info-float')?.remove();
+    closeCard(id, null, false);
   } else {
     doOpen();
   }
@@ -8287,6 +8419,17 @@ function renderBestBodyPartChart() {
   const allSame = minVal === maxVal && minVal > 0;
 
   if (bestBodyPartChartInst) bestBodyPartChartInst.destroy();
+  if (window._vRafId) cancelAnimationFrame(window._vRafId);
+  // Continuous smooth fade in/out for V chevron (2 sec cycle)
+  let _vOpacity = 1;
+  let _vStart = null;
+  const _vAnimate = (ts) => {
+    if (!_vStart) _vStart = ts;
+    _vOpacity = 0.5 + 0.5 * Math.sin(((ts - _vStart) / 1500) * Math.PI * 2 - Math.PI / 2);
+    bestBodyPartChartInst?.update('none');
+    window._vRafId = requestAnimationFrame(_vAnimate);
+  };
+  window._vRafId = requestAnimationFrame(_vAnimate);
   bestBodyPartChartInst = new Chart(document.getElementById('bestBodyPartChart').getContext('2d'), {
     type: 'bar',
     data: {
@@ -8325,6 +8468,7 @@ function renderBestBodyPartChart() {
       id: 'bestBarLabels',
       afterDraw(chart) {
         const ctx = chart.ctx;
+        const _showV = _vOpacity;
         const selectedIdx = BODY_ORDER.indexOf(bestBodyPartMuscle);
         chart.data.datasets.forEach((dataset, i) => {
           chart.getDatasetMeta(i).data.forEach((bar, idx) => {
@@ -8338,6 +8482,22 @@ function renderBestBodyPartChart() {
               ctx.textBaseline = 'bottom';
               ctx.fillText('—', bar.x, chart.scales.y.bottom - 2);
               ctx.restore();
+              // Still draw V chevron if this empty column is selected
+              if (idx === selectedIdx) {
+                ctx.save();
+                const s = 5;
+                ctx.globalAlpha = _showV;
+                ctx.strokeStyle = accentColor;
+                ctx.lineWidth = 1.5;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.beginPath();
+                ctx.moveTo(bar.x - s, chart.scales.y.bottom - 19);
+                ctx.lineTo(bar.x, chart.scales.y.bottom - 15);
+                ctx.lineTo(bar.x + s, chart.scales.y.bottom - 19);
+                ctx.stroke();
+                ctx.restore();
+              }
               return;
             }
             ctx.save();
@@ -8351,14 +8511,15 @@ function renderBestBodyPartChart() {
             if (idx === selectedIdx) {
               ctx.save();
               const s = 5;
-              ctx.strokeStyle = '#ffffff';
+              ctx.globalAlpha = _showV;
+              ctx.strokeStyle = accentColor;
               ctx.lineWidth = 1.5;
               ctx.lineCap = 'round';
               ctx.lineJoin = 'round';
               ctx.beginPath();
-              ctx.moveTo(bar.x - s, bar.y - 22);
-              ctx.lineTo(bar.x, bar.y - 18);
-              ctx.lineTo(bar.x + s, bar.y - 22);
+              ctx.moveTo(bar.x - s, bar.y - 23);
+              ctx.lineTo(bar.x, bar.y - 19);
+              ctx.lineTo(bar.x + s, bar.y - 23);
               ctx.stroke();
               ctx.restore();
             }
@@ -10430,16 +10591,6 @@ function loadOrSwitchWorkouts() {
   }
 }
 
-function toggleHideWorkoutsTab(btn) {
-  const name = btn.dataset.wname;
-  const idx = _hiddenLoadWorkouts.indexOf(name);
-  if (idx !== -1) _hiddenLoadWorkouts.splice(idx, 1); else _hiddenLoadWorkouts.push(name);
-  saveHiddenLoad();
-  window._keepWorkoutsTabState=true;
-
-  renderWorkoutsTab();
-}
-
 function toggleWtabLoadMenu(idx, btn) {
   // Close all other open menus first
   document.querySelectorAll('[id^="wtab-load-menu-"]').forEach(m => {
@@ -10563,9 +10714,6 @@ function deleteHiddenWorkout(idx) {
   overlay.querySelector('#_dhwCancel').onclick = () => overlay.remove();
   overlay.querySelector('#_dhwConfirm').onclick = () => {
     overlay.remove();
-    // Remove from hidden list
-    const hi = _hiddenLoadWorkouts.indexOf(w.name);
-    if (hi !== -1) { _hiddenLoadWorkouts.splice(hi, 1); saveHiddenLoad(); }
     // Move to deleted
     w._deletedAt = Date.now();
     deletedWorkouts.unshift(w);
@@ -11025,8 +11173,10 @@ window.addEventListener('load', function() {
   setTimeout(function() {
     const appRoot = document.getElementById('app-root');
     const authScr = document.getElementById('auth-screen');
-    const appVisible  = appRoot && appRoot.style.display !== 'none' && appRoot.style.display !== '';
-    const authVisible = authScr && authScr.style.display !== 'none' && authScr.style.display !== '';
+    // app-root is visible when display is '' (hidAuthScreen sets it to '')
+    // auth-screen is visible when display is 'flex' or similar (not 'none')
+    const appVisible  = appRoot && appRoot.style.display !== 'none';
+    const authVisible = authScr && authScr.style.display !== 'none';
     if (!appVisible && !authVisible) {
       console.warn('[Auth] Timeout — forcing auth screen');
       if (typeof showAuthScreen === 'function') showAuthScreen();
@@ -11094,7 +11244,7 @@ window.addEventListener('load', function() {
       <div style="display:flex;justify-content:center;margin-bottom:12px;">
         <img src="logo.svg" alt="Brand Logo" style="height:44px;width:auto;" onerror="this.style.display='none'"/>
       </div>
-      <div style="font-size:11px;color:#555;font-weight:600;letter-spacing:1.5px;margin-bottom:24px;">VERSION v3.0</div>
+      <div style="font-size:11px;color:#555;font-weight:600;letter-spacing:1.5px;margin-bottom:24px;">VERSION v3.6</div>
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:20px;text-align:left;margin-bottom:16px;">
         <div style="font-family:'DM Sans';font-size:13px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;">FEATURES</div>
         <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;color:var(--text);font-weight:500;line-height:1.5;">
@@ -13168,7 +13318,7 @@ function requestCoach(coachUid, coachName) {
 let _libraryExercises = [];
 let _libraryWorkouts = [];
 let _libraryLoaded = false;
-let _defaultExercises = _defaultExercises || {}; // declared at top of script
+// _defaultExercises declared at top of main script
 
 function canEditLibrary() {
   const role = window._currentUserData?.role;
@@ -13311,26 +13461,102 @@ function renderWorkoutLibraryList() {
     el.innerHTML = '<div class="empty-state"><span style="color:var(--muted);">No workouts in library yet.</span></div>';
     return;
   }
-  el.innerHTML = _libraryWorkouts.map(w => {
-    const muscleColors = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171', Compound:'#20d4c8' };
-    const muscles = [...new Set((w.exercises||[]).map(e=>e.muscle).filter(Boolean))];
-    return `<div style="background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:14px;margin-bottom:10px;">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;">
-        <div>
-          <div style="font-family:'Bebas Neue';font-size:18px;color:#e8ff47;letter-spacing:.5px;">${w.name}</div>
-          ${w.description ? `<div style="font-size:12px;color:#555;">${w.description}</div>` : ''}
+  const _mcolors = {Chest:'#e8ff47',Back:'#7ec8e3',Legs:'#ff8c42',Shoulders:'#a78bfa',Arms:'#34d399',Core:'#f87171',Compound:'#20d4c8'};
+  const _BODY_ORDER = ['Chest','Back','Legs','Shoulders','Arms','Core','Compound'];
+  const _colors = _BODY_ORDER.map(m => _mcolors[m]);
+
+  el.innerHTML = _libraryWorkouts.map((w, i) => {
+    const muscleCounts = {};
+    (w.exercises||[]).forEach(e => {
+      const m = e.muscle || 'Other';
+      muscleCounts[m] = (muscleCounts[m]||0) + 1;
+    });
+    const exDetails = (w.exercises||[]).map(e => {
+      const isHebrew = /[\u0590-\u05FF]/.test(e.name);
+      return `<div style="padding:7px 14px;border-top:1px solid var(--border);font-size:12px;color:var(--text);display:flex;align-items:center;gap:8px;">
+        <span style="flex:1;color:var(--text);font-weight:600;${isHebrew?'text-align:right;direction:rtl;':''}">${e.name}</span>
+        <span style="display:inline-flex;align-items:center;gap:0;flex-shrink:0;">
+          <span style="color:var(--muted);font-family:'Bebas Neue';font-size:16px;line-height:1;width:16px;text-align:center;">X</span>
+          <span style="color:var(--muted);font-family:'Bebas Neue';font-size:16px;line-height:1;width:20px;text-align:left;">${(e.sets||[]).length || '—'}</span>
+        </span>
+      </div>`;
+    }).join('');
+
+    return `<div class="load-hist-item">
+      <div style="display:flex;align-items:flex-start;gap:6px;padding:12px 10px 12px 12px;">
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+          <div class="load-hist-name">${w.name}</div>
+          <div style="flex:1;position:relative;">
+            <div style="height:55px;margin-top:8px;"><canvas id="lib-chart-${i}" style="pointer-events:none;"></canvas></div>
+          </div>
+          <div id="lib-xlabels-${i}" style="display:flex;justify-content:space-around;padding:2px 0 0;"></div>
         </div>
-        <div style="display:flex;gap:6px;">
-          <button onclick="loadLibraryWorkout('${w.id}')" style="background:#e8ff4722;border:1px solid #e8ff4744;border-radius:7px;color:#e8ff47;font-family:'DM Sans';font-size:11px;font-weight:700;padding:5px 10px;cursor:pointer;">Load</button>
-          ${canEdit ? `<button onclick="deleteLibraryWorkout('${w.id}')" style="background:transparent;border:1px solid #333;border-radius:7px;color:#555;font-family:'DM Sans';font-size:11px;padding:5px 8px;cursor:pointer;">✕</button>` : ''}
+        <div style="display:flex;flex-direction:row;gap:6px;flex-shrink:0;align-items:stretch;">
+          <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;justify-content:space-between;">
+            <div style="position:relative;display:inline-block;">
+              <button onclick="loadLibraryWorkout('${w.id}')" style="background:transparent;border:none;color:var(--accent);font-size:12px;font-weight:700;font-style:italic;padding:6px 8px;cursor:pointer;width:100%;">Select</button>
+            </div>
+            <div style="height:4px;"></div>
+            <div style="border-top:1px solid rgba(255,255,255,0.2);margin-top:4px;padding-top:4px;">
+              <table style="border-collapse:collapse;width:100%;">
+                <tr>
+                  <td style="font-size:14px;font-family:'Bebas Neue';color:var(--muted);letter-spacing:.5px;padding:1px 4px 1px 0;white-space:nowrap;">EX</td>
+                  <td style="font-family:'Bebas Neue';font-size:14px;color:var(--text);text-align:right;padding:1px 0;">${(w.exercises||[]).length}</td>
+                </tr>
+                <tr>
+                  <td style="font-size:14px;font-family:'Bebas Neue';color:var(--muted);letter-spacing:.5px;padding:1px 4px 1px 0;white-space:nowrap;">SETS</td>
+                  <td style="font-family:'Bebas Neue';font-size:14px;color:var(--text);text-align:right;padding:1px 0;">${(w.exercises||[]).reduce((a,e)=>a+(e.sets||[]).length,0)}</td>
+                </tr>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
-      <div style="font-size:12px;color:#888;margin-bottom:6px;">${(w.exercises||[]).length} exercises</div>
-      <div style="display:flex;flex-wrap:wrap;gap:4px;">
-        ${muscles.map(m=>`<span style="background:${(muscleColors[m]||'#888')}22;color:${muscleColors[m]||'#888'};border:1px solid ${(muscleColors[m]||'#888')}44;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;">${m}</span>`).join('')}
+      <div id="lib-ldet-${i}" style="max-height:0;overflow:hidden;transition:max-height .3s ease;">
+        ${exDetails}
+        ${canEdit ? `<div style="display:flex;gap:8px;padding:10px 14px 12px;"><button onclick="deleteLibraryWorkout('${w.id}')" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:'DM Sans';font-size:12px;font-weight:700;padding:8px;cursor:pointer;transition:all .2s;">Delete</button></div>` : ''}
       </div>
     </div>`;
   }).join('');
+
+  // Draw bar charts
+  setTimeout(() => {
+    _libraryWorkouts.forEach((w, i) => {
+      const canvas = document.getElementById(`lib-chart-${i}`);
+      if (!canvas) return;
+      const muscleExCount = {};
+      (w.exercises||[]).forEach(e => { const m = e.muscle||'Other'; muscleExCount[m]=(muscleExCount[m]||0)+1; });
+      const pcts = _BODY_ORDER.map(m => muscleExCount[m]||0);
+      const existing = Chart.getChart(canvas);
+      if (existing) existing.destroy();
+      new Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: { labels: _BODY_ORDER, datasets: [{ data: pcts, backgroundColor: _colors.map(c=>c+'99'), borderColor: _colors, borderWidth: 1.5, borderRadius: 4 }] },
+        options: { responsive: true, maintainAspectRatio: false, layout: { padding: { top: 14 } },
+          plugins: { legend: { display: false }, tooltip: { enabled: false } },
+          scales: { x: { ticks: { display: false }, grid: { display: false } }, y: { display: false } } },
+        plugins: [{ id: 'libBarLabels', afterDraw(chart) {
+          const ctx = chart.ctx;
+          chart.data.datasets.forEach((ds,di) => {
+            chart.getDatasetMeta(di).data.forEach((bar,idx) => {
+              const val = ds.data[idx]; if (!val) return;
+              ctx.save(); ctx.fillStyle = '#aaa'; ctx.font = 'bold 10px DM Sans,sans-serif';
+              ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+              ctx.fillText(val, bar.x, bar.y - 2); ctx.restore();
+            });
+          });
+        }}]
+      });
+      const labelWrap = document.getElementById(`lib-xlabels-${i}`);
+      if (labelWrap) {
+        labelWrap.innerHTML = _BODY_ORDER.map((m, mi) => {
+          const abbr = {Chest:'CH',Back:'BA',Legs:'LE',Shoulders:'SH',Arms:'AR',Core:'AB',Compound:'CP'}[m]||m.slice(0,2).toUpperCase();
+          const labelColor = pcts[mi] > 0 ? _colors[mi] : '#444';
+          return `<span style="flex:1;text-align:center;font-size:10px;font-weight:700;color:${labelColor};padding:1px 0;letter-spacing:.3px;font-family:'DM Sans',sans-serif;">${abbr}</span>`;
+        }).join('');
+      }
+    });
+  }, 50);
 }
 
 function addLibraryExToSession(name, muscle) {
@@ -13767,8 +13993,6 @@ function showExpiryWarning(message) {
   const text = document.getElementById('expiryWarningText');
   if (!banner || !text) return;
   text.textContent = message;
-  banner.style.display = 'block';
-  banner.style.position = 'relative'; // for close button positioning
 }
 
 function checkPendingRequests() {
