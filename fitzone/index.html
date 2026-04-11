@@ -919,6 +919,14 @@ function hidAuthScreen() {
   <button class="tab" onclick="switchTab('exercises')">Exercises</button>
   <button class="tab" onclick="switchTab('progress')">Progress</button>
 </div>
+<div id="workoutsToggleBar" style="display:none;position:sticky;top:0;z-index:20;background:var(--bg);padding:8px 16px 0;"></div>
+<div id="exercisesToggleBar" style="display:none;position:sticky;top:0;z-index:20;background:var(--bg);padding:8px 16px 0;"></div>
+<div id="progressToggleBar" style="display:none;position:sticky;top:0;z-index:20;background:var(--bg);padding:8px 16px 0;">
+  <div style="display:flex;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+    <button id="progress-seg-graphs" onclick="switchProgressView('graphs')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:var(--accent);color:#000;font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">GRAPHS</button>
+    <button id="progress-seg-history" onclick="switchProgressView('history')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:transparent;color:var(--muted);font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">HISTORY</button>
+  </div>
+</div>
 
 <!-- WORKOUT NAME FIXED BAR (only shown on Today tab when workout is active) -->
 <div class="workout-name-bar" id="workoutNameBar">
@@ -964,7 +972,7 @@ function hidAuthScreen() {
 </div>
 
 <!-- HISTORY -->
-<div class="page" id="page-workouts" style="padding:14px 16px;">
+<div class="page" id="page-workouts" style="padding:8px 16px 14px;">
   <div id="workoutsTabContent"></div>
 </div>
 
@@ -1040,13 +1048,7 @@ function hidAuthScreen() {
 
 <!-- PROGRESS -->
 <div class="page" id="page-progress">
-  <div style="position:sticky;top:0;z-index:25;background:var(--bg);padding-bottom:8px;">
-  <!-- GRAPHS + HISTORY segment toggle -->
-  <div style="display:flex;gap:0;margin-bottom:8px;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
-    <button id="progress-seg-graphs" onclick="switchProgressView('graphs')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:var(--accent);color:#000;font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;letter-spacing:0;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">GRAPHS</button>
-    <button id="progress-seg-history" onclick="switchProgressView('history')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:transparent;color:var(--muted);font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;letter-spacing:0;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">HISTORY</button>
-  </div>
-  </div>
+  <div style="padding-bottom:8px;">
   <!-- HISTORY content (collapsible) -->
   <div id="progress-history-content" style="display:none;margin-bottom:12px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
@@ -2138,6 +2140,7 @@ function showTodayStartScreen() {
   document.getElementById('today-start-screen').style.display = 'flex';
   document.getElementById('today-workout-area').style.display = 'none';
   document.getElementById('workoutNameBar').classList.remove('visible');
+  ['workoutsToggleBar','exercisesToggleBar','progressToggleBar'].forEach(id=>{const b=document.getElementById(id);if(b)b.style.display='none';});
   // Hide PICK if no saved workouts exist
   const hasWorkouts = (() => {
     const _dn = JSON.parse(_LS.get('ironlog_deleted_tab_names')||'[]');
@@ -2392,6 +2395,7 @@ function showTodayWorkoutArea(isNew=false) {
   // Ensure log page is shown with correct tab highlight
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-log').classList.add('active');
+  ['workoutsToggleBar','exercisesToggleBar','progressToggleBar'].forEach(id=>{const b=document.getElementById(id);if(b)b.style.display='none';});
   const _hl = (window._activeTabHighlight && window._activeTabHighlight !== 'log') ? window._activeTabHighlight : 'log';
   document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active',['log','workouts','exercises','progress'][i]===_hl));
   updatePickModeTabs();
@@ -2850,6 +2854,7 @@ function renderExercisesTab() {
         <div style="display:flex;gap:8px;margin-top:12px;">
           <button onclick="deleteExTabExercise(this.closest('[data-exname]').dataset.exname)" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:11px;font-weight:700;padding:7px;cursor:pointer;">Delete</button>
           <button onclick="editExTabName(this.closest('[data-exname]').dataset.exname)" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:11px;font-weight:700;padding:7px;cursor:pointer;">Rename</button>
+          <button onclick="toggleExTabCard('${safeId}')" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:11px;font-weight:700;padding:7px;cursor:pointer;">Close</button>
         </div>
       </div>
     </div>`;
@@ -2872,17 +2877,22 @@ function renderExercisesTab() {
   </button>`;
 
   const _hasCoach = window._currentUserData?.coachId && window._currentUserData?.coachingExpires && new Date(window._currentUserData.coachingExpires) >= new Date();
-  const toggleHtml = `<div style="display:flex;gap:0;margin-bottom:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+  const toggleHtml = `<div style="display:flex;gap:0;margin-bottom:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
     <button onclick="switchExTabView('created')" id="exTab-seg-created" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_exTabView==='created'?'var(--accent)':'transparent'};color:${_exTabView==='created'?'#000':'var(--muted)'};font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">MY ZONE</button>
     <button onclick="switchExTabView('library')" id="exTab-seg-library" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_exTabView==='library'?'var(--accent)':'transparent'};color:${_exTabView==='library'?'#000':'var(--muted)'};font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">EXPLORE</button>
     ${_hasCoach ? `<button onclick="switchExTabView('coach')" id="exTab-seg-coach" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_exTabView==='coach'?'#7ec8e3':'transparent'};color:${_exTabView==='coach'?'#000':'#7ec8e3'};font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">COACH</button>` : ''}
   </div>`;
+  const exToggleBar = document.getElementById('exercisesToggleBar');
+  if (exToggleBar) {
+    exToggleBar.innerHTML = toggleHtml;
+    exToggleBar.style.display = (window._activeTab === 'exercises' && !_pickMode) ? '' : 'none';
+  }
 
   const listBox = _pickMode
     ? `<div id="pickModeListBox" style="height:279px;overflow-y:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:12px;padding:6px 0;">${listHtml}</div>`
     : `<div style="height:279px;overflow-y:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:12px;padding:6px 0;">${listHtml}</div>`;
 
-  el.innerHTML = toggleHtml + (_exTabView === 'created' ? searchHtml + pillsHtml + listBox + (_pickMode ? '' : addBtnHtml) : _exTabView === 'coach' ? buildCoachExercisesHtml() : pillsHtml + (_pickMode ? `<div id="pickModeListBox" style="height:279px;overflow-y:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:12px;padding:6px 0;">` + buildExerciseLibraryHtml(selected).replace(/<button[^>]*Add to Library[^<]*<\/button>/g,'') + `</div>` : `<div style="height:279px;overflow-y:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:12px;padding:6px 0;">` + buildExerciseLibraryHtml(selected) + `</div>`));
+  el.innerHTML = (_exTabView === 'created' ? searchHtml + pillsHtml + listBox + (_pickMode ? '' : addBtnHtml) : _exTabView === 'coach' ? buildCoachExercisesHtml() : pillsHtml + (_pickMode ? `<div id="pickModeListBox" style="height:279px;overflow-y:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:12px;padding:6px 0;">` + buildExerciseLibraryHtml(selected).replace(/<button[^>]*Add to Library[^<]*<\/button>/g,'') + `</div>` : `<div style="height:279px;overflow-y:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:12px;padding:6px 0;">` + buildExerciseLibraryHtml(selected) + `</div>`));
   // Cards always start collapsed (minimized view by default)
 }
 
@@ -2986,6 +2996,9 @@ function enterPickMode(muscle) {
   if (muscle) window._exTabMuscle = muscle;
   const btnsWrap = document.getElementById('pick-mode-btns');
   if (btnsWrap) btnsWrap.style.display = 'flex';
+  // Hide the toggle bar in pick mode — not relevant
+  const _etb = document.getElementById('exercisesToggleBar');
+  if (_etb) _etb.style.display = 'none';
   _updatePickModeDoneBtn();
   renderExercisesTab();
   updatePickModeTabs();
@@ -3258,10 +3271,45 @@ function toggleExTabCard(safeId) {
   body.style.display = isOpen ? 'none' : 'block';
   if (chev) chev.style.transform = isOpen ? '' : 'rotate(180deg)';
   if (!isOpen) {
-    // Get exercise name from the parent card's data-exname attribute
+    // Hide the list box and show only this card
     const card = body.closest('[data-exname]');
+    const listBox = card?.parentElement;
+    if (listBox && card) {
+      let slot = document.getElementById('extab-expanded-slot');
+      if (!slot) {
+        slot = document.createElement('div');
+        slot.id = 'extab-expanded-slot';
+        slot.style.cssText = 'border:1px solid var(--border);border-radius:12px;overflow:hidden;';
+        listBox.after(slot);
+      }
+      card.dataset.extabWasInBox = '1';
+      card.dataset.extabBoxIndex = Array.from(listBox.children).indexOf(card);
+      slot.appendChild(card);
+      listBox.style.display = 'none';
+    }
     const actualName = card ? card.dataset.exname : '';
     setTimeout(() => renderExTabMiniChart(safeId, actualName), 50);
+  } else {
+    // Restore card to list box
+    const card = body.closest('[data-exname]');
+    const slot = document.getElementById('extab-expanded-slot');
+    if (card && card.dataset.extabWasInBox && slot) {
+      const savedIdx = parseInt(card.dataset.extabBoxIndex ?? '-1');
+      delete card.dataset.extabWasInBox;
+      delete card.dataset.extabBoxIndex;
+      // The listBox is the slot's previous sibling (still in DOM, just hidden)
+      const listBox = slot.previousElementSibling;
+      if (listBox) {
+        const children = Array.from(listBox.children);
+        if (savedIdx >= 0 && savedIdx < children.length) {
+          listBox.insertBefore(card, children[savedIdx]);
+        } else {
+          listBox.appendChild(card);
+        }
+        listBox.style.display = '';
+      }
+      slot.remove();
+    }
   }
 }
 
@@ -3497,6 +3545,7 @@ function switchProgressView(view) {
 }
 
 function switchTab(tab) {
+  window._activeTab = tab;
   if (_pickMode && tab !== 'exercises') {
     _pickMode = false;
     const title = document.getElementById('exercises-tab-title');
@@ -3519,22 +3568,34 @@ function switchTab(tab) {
   }
   if (tab !== 'workouts') {
     window._keepWorkoutsTabState = false;
+    window._wtabSelectedIdx = null;
   }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-'+tab).classList.add('active');
+  const _wtoggleBar = document.getElementById('workoutsToggleBar');
+  const _etoggleBar = document.getElementById('exercisesToggleBar');
+  const _ptoggleBar = document.getElementById('progressToggleBar');
+  // Hide all toggle bars first, show only the relevant one
+  [_wtoggleBar, _etoggleBar, _ptoggleBar].forEach(b => { if (b) b.style.display = 'none'; });
+  if (tab === 'workouts' && _wtoggleBar) _wtoggleBar.style.display = '';
+  if (tab === 'exercises' && _etoggleBar) _etoggleBar.style.display = '';
+  if (tab === 'progress' && _ptoggleBar) _ptoggleBar.style.display = '';
   if (tab==='workouts') {
     _initWTabView();
     renderWorkoutsTab();
+
   }
   if (tab==='exercises') {
     _exTabView = 'created';
     if (!customExercises.length) _exTabView = 'library';
     renderExercisesTab();
+
   }
   if (tab==='progress') {
     renderProgress();
     renderHistory();
     switchProgressView('graphs');
+
   }
   // Close any open progress accordion when leaving progress tab
   if (tab !== 'progress') {
@@ -3590,19 +3651,30 @@ function renderWorkoutsTab() {
   if (!window._inPlanStrengthMode && !window._keepWorkoutsTabState) window._planStrengthKey = null;
   window._keepWorkoutsTabState = false;
   updatePickModeTabs();
-  const _replaceNotice = window._replacePlanId ? `<div style="background:rgba(232,255,71,.08);border:1px solid rgba(232,255,71,.2);border-radius:10px;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:10px;"><span style="font-family:'DM Sans';font-size:12px;color:var(--accent);font-weight:600;">Tap Select to replace the planned workout</span><button onclick="const _bk=window._replacePlanKey;window._replacePlanId=null;window._replacePlanKey=null;if(_bk){const [_ry,_rm,_rd]=_bk.split('-').map(Number);calYear=_ry;calMonth=_rm;selectedCalDay=_bk;openCalendar();setTimeout(()=>selectCalDay(_bk),100);}else{switchTab('log');}" style="background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:'DM Sans';font-size:12px;font-weight:700;padding:5px 10px;cursor:pointer;flex-shrink:0;white-space:nowrap;">◀ Back</button></div>` : (window._planStrengthKey ? `<div id="pickWorkoutNotice" style="background:rgba(255,140,66,.08);border:none;border-radius:10px;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:10px;animation:pickNoticeBgFade 2s ease forwards;"><span style="font-family:'DM Sans';font-size:12px;color:#ff8c42;font-weight:600;">Pick a workout by <span style="color:var(--accent);font-style:italic;">Select</span></span><button onclick="const _psk=window._planStrengthKey;window._planStrengthKey=null;if(_psk){const [_sy,_sm,_sd]=_psk.split('-').map(Number);calYear=_sy;calMonth=_sm;selectedCalDay=_psk;openCalendar();setTimeout(()=>selectCalDay(_psk),100);}else{openCalendar();}" style="background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:'DM Sans';font-size:12px;font-weight:700;padding:5px 10px;cursor:pointer;flex-shrink:0;white-space:nowrap;">◀ Back</button></div>` : (window._loadFromToday ? `<div id="pickWorkoutNotice" style="background:rgba(255,140,66,.08);border:none;border-radius:10px;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:10px;animation:pickNoticeBgFade 2s ease forwards;"><span style="font-family:'DM Sans';font-size:12px;color:#ff8c42;font-weight:600;">Pick a workout by <span style="color:var(--accent);font-style:italic;">Select</span></span><button onclick="window._loadFromToday=false;window._activeTabHighlight=null;switchTab('log');" style="background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:'DM Sans';font-size:12px;font-weight:700;padding:5px 10px;cursor:pointer;flex-shrink:0;white-space:nowrap;">◀ Back</button></div>` : ''));
+  const _cancelAction = window._replacePlanId
+    ? `const _bk=window._replacePlanKey;window._replacePlanId=null;window._replacePlanKey=null;if(_bk){const [_ry,_rm,_rd]=_bk.split('-').map(Number);calYear=_ry;calMonth=_rm;selectedCalDay=_bk;openCalendar();setTimeout(()=>selectCalDay(_bk),100);}else{switchTab('log');}`
+    : window._planStrengthKey
+    ? `const _psk=window._planStrengthKey;window._planStrengthKey=null;if(_psk){const [_sy,_sm,_sd]=_psk.split('-').map(Number);calYear=_sy;calMonth=_sm;selectedCalDay=_psk;openCalendar();setTimeout(()=>selectCalDay(_psk),100);}else{openCalendar();}`
+    : window._loadFromToday
+    ? `window._loadFromToday=false;window._activeTabHighlight=null;switchTab('log');`
+    : null;
+  const _replaceNotice = '';
   const el = document.getElementById('workoutsTabContent');
+  const toggleBar = document.getElementById('workoutsToggleBar');
   if (!el) return;
 
   const all = workouts.filter(w => !w._draft);
-  if (!all.length) {
-    el.innerHTML = `<div class="empty-state"><span style="color:#fff;">No custom workouts created</span></div><button onclick="startNewWorkout(true);" style="width:100%;margin-top:12px;background:transparent;border:1px dashed var(--accent);border-radius:10px;color:var(--accent);font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Create New Workout</button>`;
-    return;
+  const _wHasCoach = window._currentUserData?.coachId && window._currentUserData?.coachingExpires && new Date(window._currentUserData.coachingExpires) >= new Date();
+  const _wToggleHtml = `<div style="display:flex;gap:0;margin-bottom:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;"><button onclick="switchWTabView('created')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_wTabView==='created'?'var(--accent)':'transparent'};color:${_wTabView==='created'?'#000':'var(--muted)'};font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">MY ZONE</button><button onclick="switchWTabView('library')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_wTabView==='library'?'var(--accent)':'transparent'};color:${_wTabView==='library'?'#000':'var(--muted)'};font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">EXPLORE</button>${_wHasCoach?`<button onclick="switchWTabView('coach')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_wTabView==='coach'?'#7ec8e3':'transparent'};color:${_wTabView==='coach'?'#000':'#7ec8e3'};font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">COACH</button>`:''}</div>`;
+  if (toggleBar) {
+    const isWorkoutsActive = window._activeTab === 'workouts';
+    toggleBar.innerHTML = _wToggleHtml;
+    toggleBar.style.display = isWorkoutsActive ? '' : 'none';
   }
+  const _mainListTitle = '';
 
   const BODY_ORDER = ['Chest','Back','Legs','Shoulders','Arms','Core','Compound'];
   const colors = ['#e8ff47','#7ec8e3','#ff8c42','#a78bfa','#34d399','#f87171','#20d4c8'];
-  // Deduplicate: keep only latest workout per unique name, exclude deleted tab names
   const _deletedTabNames = JSON.parse(_LS.get('ironlog_deleted_tab_names') || '[]');
   const _seen = new Set();
   const deduped = [...all].sort((a,b) => b.date - a.date).filter(w => {
@@ -3615,9 +3687,6 @@ function renderWorkoutsTab() {
   const hiddenCount = 0;
   const showingHidden = false;
   let sorted = deduped;
-  const _wHasCoach = window._currentUserData?.coachId && window._currentUserData?.coachingExpires && new Date(window._currentUserData.coachingExpires) >= new Date();
-  const _wToggleHtml = `<div style="display:flex;gap:0;margin-bottom:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;"><button onclick="switchWTabView('created')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_wTabView==='created'?'var(--accent)':'transparent'};color:${_wTabView==='created'?'#000':'var(--muted)'};font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">MY ZONE</button><button onclick="switchWTabView('library')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_wTabView==='library'?'var(--accent)':'transparent'};color:${_wTabView==='library'?'#000':'var(--muted)'};font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">EXPLORE</button>${_wHasCoach?`<button onclick="switchWTabView('coach')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_wTabView==='coach'?'#7ec8e3':'transparent'};color:${_wTabView==='coach'?'#000':'#7ec8e3'};font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">COACH</button>`:''}</div>`;
-  const _mainListTitle = _wToggleHtml;
 
 
   const toggleHiddenBtn = '';
@@ -3630,6 +3699,8 @@ function renderWorkoutsTab() {
 
   let html = _replaceNotice||'';
   html += _mainListTitle;
+  const _noSpecialMode = !window._replacePlanId && !window._planStrengthKey && !window._loadFromToday;
+  const _selIdx = window._wtabSelectedIdx;
   sorted.forEach(w => {
     const i = workouts.indexOf(w);
     const exDetails = w.exercises.map(e => {
@@ -3654,7 +3725,9 @@ function renderWorkoutsTab() {
           <button onclick="wtabCycleFilter('wtab-ldet-${i}',1)" style="background:transparent;border:none;color:#fff;font-size:24px;font-weight:400;padding:0 10px;cursor:pointer;flex-shrink:0;display:flex;align-items:flex-end;height:36px;padding-bottom:6px;">›</button>
         </div>`
       : '';
-    html += `<div class="load-hist-item">
+    const _isSelected = window._wtabSelectedIdx === i;
+    const _isDimmed = _selIdx !== null && _selIdx !== undefined && !_isSelected && _noSpecialMode;
+    html += `<div class="load-hist-item" style="transition:opacity .2s;${_isDimmed ? 'opacity:0.25;pointer-events:none;' : ''}">
       <div style="display:flex;align-items:flex-start;gap:6px;padding:12px 10px 12px 12px;">
         <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
           <div class="load-hist-name" onclick="toggleLoadDetail('wtab-ldet-${i}',null)" style="cursor:pointer;">${w.name}</div>
@@ -3673,11 +3746,7 @@ function renderWorkoutsTab() {
               ? `<button onclick="const w=workouts[${i}];if(w){const _psk=window._planStrengthKey;if(!_psk){return;}const [_sy,_sm,_sd]=_psk.split('-').map(Number);plannedWorkouts.push({planId:Date.now().toString(),name:w.name,date:new Date(_sy,_sm,_sd).getTime(),exercises:w.exercises.map(e=>({name:e.name,muscle:e.muscle||'Chest'}))});savePlanned();window._planStrengthKey=null;calYear=_sy;calMonth=_sm;selectedCalDay=_psk;openCalendar();setTimeout(()=>selectCalDay(_psk),100);showToast('Workout planned!');}" style="background:transparent;border:none;color:var(--accent);font-size:12px;font-weight:700;font-style:italic;padding:6px 8px;cursor:pointer;width:100%;">Select</button>`
               : window._loadFromToday
               ? `<button onclick="window._activeTabHighlight=null;window._loadFromToday=false;loadWorkout(${i});switchTab('log');" style="background:transparent;border:none;color:var(--accent);font-size:12px;font-weight:700;font-style:italic;padding:6px 8px;cursor:pointer;width:100%;">Select</button>`
-              : '<button onclick="toggleWtabLoadMenu(' + i + ',this)" style="background:transparent;border:none;color:var(--accent);font-size:12px;font-weight:700;font-style:italic;padding:6px 8px;cursor:pointer;display:flex;align-items:center;justify-content:center;width:100%;">Select</button>'
-            + '<div id="wtab-load-menu-' + i + '" style="display:none;position:absolute;right:0;top:36px;background:var(--surface);border:1px solid var(--border);border-radius:10px;z-index:50;min-width:150px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.5);">'
-            + '<button onclick="window._activeTabHighlight=null;window._loadFromToday=false;loadWorkout(' + i + ');switchTab(\'log\');document.getElementById(\'wtab-load-menu-' + i + '\').style.display=\'none\';document.getElementById(\'wtab-menu-fade\')?.remove();" style="width:100%;padding:11px 14px;background:transparent;border:none;color:var(--text);font-family:\'DM Sans\';font-size:13px;font-weight:600;text-align:left;cursor:pointer;border-bottom:1px solid var(--border);">For Today</button>'
-            + '<button onclick="document.getElementById(\'wtab-load-menu-' + i + '\').style.display=\'none\';document.getElementById(\'wtab-menu-fade\')?.remove();openWtabCalendarPlan(' + i + ');" style="width:100%;padding:11px 14px;background:transparent;border:none;color:var(--text);font-family:\'DM Sans\';font-size:13px;font-weight:600;text-align:left;cursor:pointer;">Use Calendar</button>'
-            + '</div>'
+              : `<button onclick="if(window._wtabSelectedIdx===${i}){_wtabCancelSelection();}else{window._wtabSelectedIdx=${i};_wtabAnimateBottomBtns(${i});}" style="background:transparent;border:none;color:var(--accent);font-size:12px;font-weight:700;font-style:italic;padding:6px 8px;cursor:pointer;display:flex;align-items:center;justify-content:center;width:100%;">${window._wtabSelectedIdx === i ? '✓ Selected' : 'Select'}</button>`
             }
           </div>
             ${(()=>{ const durations=workouts.filter(x=>!x._draft&&!x._template&&x.name===w.name&&x.durationMins>0).slice(0,3).map(x=>x.durationMins); if(!durations.length) return '<div style="height:4px;"></div>'; const avg=durations.reduce((a,b)=>a+b,0)/durations.length; const rounded=Math.ceil(avg/5)*5; return `<div style="display:flex;align-items:center;justify-content:center;gap:3px;padding:4px 0 0;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#7ec8e3" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg><span style="font-size:11px;color:#7ec8e3;font-weight:700;">~${rounded}m</span></div>`; })()}
@@ -3702,22 +3771,31 @@ function renderWorkoutsTab() {
         <div style="display:flex;gap:8px;padding:10px 14px 12px;">
           <button onclick="deleteWorkoutFromTab(${i})" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:'DM Sans';font-size:12px;font-weight:700;padding:8px;cursor:pointer;transition:all .2s;">Delete</button>
           <button onclick="editWorkoutFromTab(${i})" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:'DM Sans';font-size:12px;font-weight:700;padding:8px;cursor:pointer;transition:all .2s;">Edit</button>
+          <button onclick="toggleLoadDetail('wtab-ldet-${i}',null)" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:'DM Sans';font-size:12px;font-weight:700;padding:8px;cursor:pointer;transition:all .2s;">Cancel</button>
         </div>
       </div>
     </div>`;
   });
 
-  const createNewBtn = `<button onclick="startNewWorkout(true);" style="width:100%;margin-top:4px;background:transparent;border:1px dashed var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Create New Workout</button>`;
+  const _selActionBtns = (_noSpecialMode && _selIdx !== undefined && _selIdx !== null && workouts[_selIdx]) ? `
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button onclick="window._wtabSelectedIdx=null;openWtabCalendarPlan(${_selIdx});" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;">Open Calendar</button>
+      <button onclick="window._activeTabHighlight=null;window._loadFromToday=false;window._wtabSelectedIdx=null;loadWorkout(${_selIdx});switchTab('log');" style="flex:1;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:13px;font-weight:700;padding:13px;cursor:pointer;">For Today</button>
+    </div>
+    <button onclick="_wtabCancelSelection();" style="width:100%;margin-top:8px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;">Cancel</button>` : '';
+  const createNewBtn = `<div id="wtab-bottom-btns" style="opacity:1;transition:opacity .25s ease;">${_selActionBtns ? _selActionBtns : `<button onclick="startNewWorkout(true);" style="width:100%;margin-top:8px;background:transparent;border:1px dashed var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Create New Workout</button>`}${_cancelAction ? `<button onclick="${_cancelAction}" style="width:100%;margin-top:8px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;">Cancel</button>` : ''}</div>`;
   if (_wTabView === 'library') {
-    el.innerHTML = _wToggleHtml + buildWorkoutLibraryHtml();
+    el.innerHTML = `<div style="height:325px;overflow-y:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:12px;padding:8px 8px 4px;" id="wtab-list-box">` + buildWorkoutLibraryHtml() + `</div>`;
     loadWorkoutLibrary();
     return;
   }
   if (_wTabView === 'coach') {
-    el.innerHTML = _wToggleHtml + buildCoachWorkoutsHtml();
+    el.innerHTML = `<div style="height:325px;overflow-y:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:12px;padding:8px 8px 4px;">` + buildCoachWorkoutsHtml() + `</div>`;
     return;
   }
-  el.innerHTML = html + createNewBtn + toggleHiddenBtn;
+  // Wrap cards in scrollable box (2.5 cards visible) matching exercises tab style
+  const cardsHtml = html.replace(_mainListTitle, '');
+  el.innerHTML = _mainListTitle + `<div id="wtab-list-box" style="height:325px;overflow-y:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:12px;padding:8px 8px 4px;">${cardsHtml}</div>` + createNewBtn;
 
   // Render mini bar charts
   setTimeout(() => {
@@ -6548,6 +6626,30 @@ function toggleLoadDetail(id, btn) {
   if (isOpen) {
     el.style.maxHeight = '0';
     if (btn) btn.style.transform = '';
+    // If card was moved out of box, move it back and restore box
+    if (id.startsWith('wtab-ldet-')) {
+      const card = el.closest('.load-hist-item');
+      const placeholder = document.getElementById('wtab-expand-placeholder');
+      const slot = document.getElementById('wtab-expanded-slot');
+      const box = document.getElementById('wtab-list-box');
+      if (card && card.dataset.wtabWasInBox) {
+        const savedIdx = parseInt(card.dataset.wtabBoxIndex ?? '-1');
+        delete card.dataset.wtabWasInBox;
+        delete card.dataset.wtabBoxIndex;
+        if (box) {
+          const children = Array.from(box.children);
+          if (savedIdx >= 0 && savedIdx < children.length) {
+            box.insertBefore(card, children[savedIdx]);
+          } else {
+            box.appendChild(card);
+          }
+        }
+        if (slot) slot.remove();
+        if (box) box.style.display = '';
+        const bottomBtns = document.getElementById('wtab-bottom-btns');
+        if (bottomBtns) bottomBtns.style.display = '';
+      }
+    }
     // Reset any chart/exercise highlights when closing
     if (el._wtabChartReset) { el._wtabChartReset(); el._wtabChartReset = null; }
     // Reset muscle filter (workouts tab)
@@ -6586,7 +6688,32 @@ function toggleLoadDetail(id, btn) {
   } else {
     el.style.maxHeight = el.scrollHeight + 500 + 'px';
     if (btn) btn.style.transform = 'rotate(180deg)';
-    // Scroll the parent card header into view after animation
+    // If this is a workouts tab card, hide the box and show only this card below toggle
+    if (id.startsWith('wtab-ldet-')) {
+      const box = document.getElementById('wtab-list-box');
+      const card = el.closest('.load-hist-item');
+      if (box && card) {
+        // Create expanded slot below the box if not already there
+        let slot = document.getElementById('wtab-expanded-slot');
+        if (!slot) {
+          slot = document.createElement('div');
+          slot.id = 'wtab-expanded-slot';
+          slot.style.cssText = 'border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:0;';
+          box.after(slot);
+        }
+        // Move card to slot and hide the box
+        card.dataset.wtabWasInBox = '1';
+        // Save index position in box for restore
+        const siblings = Array.from(box.children);
+        card.dataset.wtabBoxIndex = siblings.indexOf(card);
+        slot.appendChild(card);
+        box.style.display = 'none';
+        // Hide bottom buttons
+        const bottomBtns = document.getElementById('wtab-bottom-btns');
+        if (bottomBtns) bottomBtns.style.display = 'none';
+      }
+    }
+    // Scroll the card into view after animation
     setTimeout(() => {
       const card = el.closest('.load-hist-item');
       if (card) card.scrollIntoView({behavior:'smooth', block:'start'});
@@ -10589,6 +10716,64 @@ function loadOrSwitchWorkouts() {
   } else {
     switchTab('workouts');
   }
+}
+
+function _wtabAnimateBottomBtns(selIdx) {
+  const box = document.getElementById('wtab-bottom-btns');
+  // Collapse any open detail panel for the selected card
+  const detEl = document.getElementById(`wtab-ldet-${selIdx}`);
+  if (detEl && detEl.style.maxHeight !== '0px' && detEl.style.maxHeight !== '') {
+    detEl.style.maxHeight = '0';
+  }
+  // Update Select button labels and card dimming — search both box and expanded slot
+  document.querySelectorAll('#wtab-list-box .load-hist-item, #wtab-expanded-slot .load-hist-item').forEach((card) => {
+    const wi = parseInt(card.querySelector('canvas')?.id?.replace('wtab-chart-','') ?? '-1');
+    const isSelected = wi === selIdx;
+    card.style.transition = 'opacity .2s';
+    card.style.opacity = isSelected ? '1' : '0.25';
+    card.style.pointerEvents = isSelected ? '' : 'none';
+    const selBtn = card.querySelector('button[onclick*="_wtabSelectedIdx"]') || card.querySelector('button[onclick*="wtabAnimateBottomBtns"]');
+    if (selBtn) selBtn.textContent = isSelected ? '✓ Selected' : 'Select';
+  });
+  if (!box) { window._keepWorkoutsTabState = true; renderWorkoutsTab(); return; }
+  // Make sure bottom buttons are visible (may have been hidden when card expanded)
+  box.style.display = '';
+  // Fade out
+  box.style.transition = 'opacity .2s ease';
+  box.style.opacity = '0';
+  setTimeout(() => {
+    // Swap content
+    const w = workouts[selIdx];
+    if (w) {
+      box.innerHTML = `
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button onclick="window._wtabSelectedIdx=null;openWtabCalendarPlan(${selIdx});" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;">Open Calendar</button>
+          <button onclick="window._activeTabHighlight=null;window._loadFromToday=false;window._wtabSelectedIdx=null;loadWorkout(${selIdx});switchTab('log');" style="flex:1;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:13px;font-weight:700;padding:13px;cursor:pointer;">For Today</button>
+        </div>
+        <button onclick="_wtabCancelSelection();" style="width:100%;margin-top:8px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;">Cancel</button>`;
+    }
+    // Fade in
+    box.style.opacity = '1';
+  }, 200);
+}
+
+function _wtabCancelSelection() {
+  window._wtabSelectedIdx = null;
+  const box = document.getElementById('wtab-bottom-btns');
+  // Restore card opacity — search both box and expanded slot
+  document.querySelectorAll('#wtab-list-box .load-hist-item, #wtab-expanded-slot .load-hist-item').forEach(card => {
+    card.style.opacity = '1';
+    card.style.pointerEvents = '';
+    const selBtn = card.querySelector('button[onclick*="_wtabSelectedIdx"]') || card.querySelector('button[onclick*="wtabAnimateBottomBtns"]');
+    if (selBtn) selBtn.textContent = 'Select';
+  });
+  if (!box) { window._keepWorkoutsTabState = true; renderWorkoutsTab(); return; }
+  box.style.transition = 'opacity .2s ease';
+  box.style.opacity = '0';
+  setTimeout(() => {
+    box.innerHTML = `<button onclick="startNewWorkout(true);" style="width:100%;margin-top:8px;background:transparent;border:1px dashed var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Create New Workout</button>`;
+    box.style.opacity = '1';
+  }, 200);
 }
 
 function toggleWtabLoadMenu(idx, btn) {
