@@ -16465,40 +16465,45 @@ switchTab = function(tab) {
 };
 </script>
 
-<div id="update-toast">
-        <span>A new version is available!</span>
-        <button onclick="window.location.reload()">REFRESH</button>
+<div id="update-overlay">
+    <div id="update-modal">
+        <span>A NEW VERSION IS AVAILABLE</span>
+        <p>We've improved BarzelPro. Refresh to get the latest features.</p>
+        <button onclick="window.location.reload()">REFRESH NOW</button>
     </div>
+</div>
 
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./service-worker.js').then(reg => {
-                    
-                    // 1. Check if an update is already waiting from a previous visit
-                    if (reg.waiting) {
-                        showUpdateToast();
-                    }
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./service-worker.js').then(reg => {
+                
+                // Check if an update is waiting
+                if (reg.waiting) {
+                    showUpdateModal();
+                }
 
-                    // 2. Check if a new update is found while the app is open
-                    reg.addEventListener('updatefound', () => {
-                        const newWorker = reg.installing;
-                        newWorker.addEventListener('statechange', () => {
-                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                showUpdateToast();
-                            }
-                        });
+                // Check for updates found during the session
+                reg.addEventListener('updatefound', () => {
+                    const newWorker = reg.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            showUpdateModal();
+                        }
                     });
                 });
             });
-        }
+        });
+    }
 
-        function showUpdateToast() {
-            const toast = document.getElementById('update-toast');
-            if (toast) {
-                toast.classList.add('show');
-            }
+    // 2. Updated function to trigger the OVERLAY
+    function showUpdateModal() {
+        const overlay = document.getElementById('update-overlay');
+        if (overlay) {
+            overlay.classList.add('show');
         }
-    </script>
+    }
+</script>
+
 </body>
 </html>
