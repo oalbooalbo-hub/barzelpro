@@ -17,6 +17,7 @@
 <!-- localForage: IndexedDB-backed offline storage -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="pwa-styles.css">
 <style>
 :root{--bg:#0a0a0a;--surface:#141414;--surface2:#1e1e1e;--border:#2a2a2a;--accent:#e8ff47;--accent2:#ff4747;--text:#f0f0f0;--muted:#666;--radius:14px;}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -16464,6 +16465,40 @@ switchTab = function(tab) {
 };
 </script>
 
+<div id="update-toast">
+        <span>A new version is available!</span>
+        <button onclick="window.location.reload()">REFRESH</button>
+    </div>
 
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js').then(reg => {
+                    
+                    // 1. Check if an update is already waiting from a previous visit
+                    if (reg.waiting) {
+                        showUpdateToast();
+                    }
+
+                    // 2. Check if a new update is found while the app is open
+                    reg.addEventListener('updatefound', () => {
+                        const newWorker = reg.installing;
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                showUpdateToast();
+                            }
+                        });
+                    });
+                });
+            });
+        }
+
+        function showUpdateToast() {
+            const toast = document.getElementById('update-toast');
+            if (toast) {
+                toast.classList.add('show');
+            }
+        }
+    </script>
 </body>
 </html>
