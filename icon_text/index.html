@@ -56,7 +56,7 @@ body.desktop-mode .pages-wrap {
 .tabs{display:flex;gap:6px;padding:14px 20px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:29;background:var(--bg);}
 .tab{flex:1;padding:9px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;outline:none;-webkit-tap-highlight-color:transparent;}
 .tab:focus,.tab:focus-visible{outline:none;border-color:var(--border);}
-.tab.active{background:transparent;color:var(--accent);border-color:var(--border);font-weight:700;}
+.tab.active{background:transparent;color:var(--accent);border-color:var(--border);font-weight:700;}.tab#tab-progress-btn.active,.tab#tab-progress-btn2.active{color:#34d399;border-color:#34d399;}#tab-progress-btn,#tab-progress-btn2{flex:none;padding-left:14px;padding-right:14px;}
 .page{display:none;padding:14px 16px;}
 .page.active{display:block;}
 .section-title{font-family:'DM Sans';font-size:20px;font-weight:700;margin-bottom:14px;color:var(--muted);letter-spacing:0;position:sticky;top:0;z-index:25;background:var(--bg);padding:10px 0 6px;}
@@ -69,11 +69,11 @@ body.desktop-mode .pages-wrap {
 .empty-state .big{font-family:'Bebas Neue';font-size:48px;color:var(--surface2);display:block;}
 
 /* ── TODAY TAB ─────────────────────────────────── */
-.workout-name-bar{position:sticky;top:0;z-index:20;background:var(--bg);padding:8px 16px 6px;border-bottom:1px solid var(--border);display:none;}
+.workout-name-bar{position:sticky;top:0;z-index:20;background:var(--bg);padding:8px 16px 2px;border-bottom:1px solid var(--border);display:none;}
 .workout-name-bar.visible{display:block;}
 .workout-name-bar input{width:100%;background:transparent;border:none;color:#34d399;font-family:'Bebas Neue';font-size:22px;padding:0;letter-spacing:1px;outline:none;text-align:left;direction:ltr;}
 .workout-name-bar input::placeholder{color:var(--muted);}
-.today-actions{display:flex;gap:8px;margin-bottom:6px;}
+.today-actions{display:flex;gap:8px;margin-bottom:0;}
 .btn-load-history{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:12px;font-weight:600;padding:10px 8px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:6px;white-space:normal;text-align:center;}
 .btn-load-history:hover{border-color:var(--accent);color:var(--accent);}
 .btn-clear-workout{background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:12px;font-weight:600;padding:10px 14px;cursor:pointer;transition:all .2s;white-space:normal;text-align:center;}
@@ -94,7 +94,7 @@ body.desktop-mode .pages-wrap {
 .ex-thumb{width:54px;height:54px;border-radius:9px;background:var(--surface2);border:1px solid var(--border);flex-shrink:0;overflow:hidden;position:relative;}
 .ex-thumb .ex-thumb-label{transition:color .25s;color:var(--muted);}
 /* When card is open, order num and thumb label turn accent yellow */
-.exercise-card[data-open="true"] .ex-order-num{color:var(--accent);}
+
 .focus-mode-hidden{opacity:0;pointer-events:none;max-height:0!important;overflow:hidden;margin:0!important;padding:0!important;transition:opacity .2s,max-height .25s;}
 .focus-mode-dimmed{opacity:0.08;pointer-events:none;transition:opacity .2s;}
 .exercise-card[data-open="true"] .ex-thumb .ex-thumb-label{color:var(--accent);}
@@ -111,7 +111,7 @@ body.desktop-mode .pages-wrap {
 /* ── UNIFIED CHEVRON (same everywhere) ─────────── */
 .btn-chevron,.hcard-chevron{background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--muted);width:34px;height:34px;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:all .25s;font-size:15px;line-height:1;}
 .btn-chevron:hover,.hcard-chevron:hover{border-color:var(--accent);color:var(--accent);}
-.btn-chevron{transform:rotate(180deg);}.btn-chevron.open,.hcard-chevron.open{border-color:var(--accent);color:var(--accent);transform:rotate(0deg);}.btn-chevron.timer-active{color:#7ec8e3;border-color:#7ec8e3;animation:chevBlink 1s ease-in-out infinite;}@keyframes chevBlink{0%,100%{opacity:1;color:#7ec8e3;border-color:#7ec8e3;}50%{opacity:.25;color:#7ec8e3;border-color:#7ec8e3;}}
+.btn-chevron{transform:rotate(180deg);}.btn-chevron.open,.hcard-chevron.open{border-color:var(--border);color:var(--muted);transform:rotate(0deg);}.btn-chevron.timer-active{color:#7ec8e3;border-color:#7ec8e3;animation:chevBlink 1s ease-in-out infinite;}@keyframes chevBlink{0%,100%{opacity:1;color:#7ec8e3;border-color:#7ec8e3;}50%{opacity:.25;color:#7ec8e3;border-color:#7ec8e3;}}
 .btn-chevron.timer-done{color:#ff4444;border-color:#ff4444;animation:chevBlinkRed 2s ease-in-out infinite;}@keyframes chevBlinkRed{0%,100%{opacity:1;color:#ff4444;border-color:#ff4444;}50%{opacity:.2;color:#ff4444;border-color:#ff4444;}}
 .btn-chevron .chev{display:none;}/* arrow via transform, no extra span needed */
 .btn-trash{background:transparent;border:none;color:#555;cursor:pointer;padding:5px 5px;border-radius:6px;transition:color .2s;flex-shrink:0;line-height:1;display:flex;align-items:center;justify-content:center;}
@@ -199,10 +199,10 @@ body.desktop-mode .pages-wrap {
 /* Timer panel */
 .timer-panel{max-height:0;overflow:hidden;transition:max-height .3s ease,opacity .25s ease;opacity:0;padding:0 14px;}
 .timer-panel.open{max-height:160px;opacity:1;padding:10px 14px;}
-.timer-display{font-family:'Bebas Neue';font-size:42px;letter-spacing:3px;text-align:center;color:#7ec8e3;line-height:1;margin-bottom:8px;transition:color .3s;}
+.timer-display{font-family:'Bebas Neue';font-size:62px;letter-spacing:4px;text-align:center;color:#7ec8e3;line-height:1;margin-bottom:8px;transition:color .3s;}
 .timer-display.done{color:var(--accent2);}
 .timer-presets{display:flex;gap:5px;justify-content:center;margin-bottom:8px;}
-.timer-preset{background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--muted);font-family:'DM Sans';font-size:11px;font-weight:600;padding:4px 0;cursor:pointer;transition:all .2s;flex:1;text-align:center;white-space:normal;text-align:center;}
+.timer-preset{background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:600;padding:8px 0;cursor:pointer;transition:all .2s;flex:1;text-align:center;white-space:normal;text-align:center;}
 .timer-preset:hover{border-color:#7ec8e3;color:#7ec8e3;}.timer-preset.active{border-color:#7ec8e3;color:#7ec8e3;background:rgba(126,200,227,.12);}
 .timer-controls{display:flex;gap:7px;}
 .timer-ctrl-btn{flex:1;border-radius:8px;border:none;font-family:'DM Sans';font-size:16px;font-weight:700;padding:12px;cursor:pointer;transition:all .2s;background:rgba(126,200,227,.15);color:#7ec8e3;}
@@ -215,7 +215,7 @@ body.desktop-mode .pages-wrap {
 .btn-done.is-done{background:var(--accent);color:#000;border-color:var(--accent);}
 
 /* ── PREV VOL TARGET & LIVE PROGRESS (#1,#2) ───── */
-.vol-target-bar{padding:6px 14px 8px;border-bottom:1px solid var(--border);}
+.vol-target-bar{padding:6px 14px 8px;border-bottom:1px solid var(--border);overflow:hidden;transition:max-height .35s ease,opacity .3s ease,padding .35s ease;max-height:0;opacity:0;padding-top:0;padding-bottom:0;}.vol-target-bar.pro-open{max-height:400px;opacity:1;padding-top:6px;padding-bottom:8px;}
 .vol-target-info{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;font-size:11px;}
 .vol-target-label{color:var(--muted);font-weight:600;}
 .vol-target-values{display:flex;gap:10px;align-items:center;}
@@ -248,7 +248,7 @@ body.desktop-mode .pages-wrap {
 .comment-box::placeholder{color:var(--muted);}
 
 /* ── MINI PROGRESS CHART IN CARD ───────────────── */
-.ex-mini-chart{padding:0 14px 10px;display:none;}
+.ex-mini-chart{padding:0 14px 0;overflow:hidden;max-height:0;opacity:0;transition:max-height .35s ease,opacity .3s ease,padding .35s ease;}
 .mini-scrubber-wrap{padding:8px 14px 10px;background:var(--surface2);border-top:1px solid var(--border);margin-top:8px;display:none;}
 .mini-scrubber-wrap.visible{display:block;}
 .mini-scrubber-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;font-weight:700;}
@@ -260,7 +260,7 @@ body.desktop-mode .pages-wrap {
 .mini-scrubber-pct.down{color:#ff4444;}
 .mini-scrubber-pct.flat{color:var(--muted);}
 
-.ex-mini-chart.visible{display:block;}
+.ex-mini-chart.visible{max-height:600px;opacity:1;padding-bottom:10px;}
 .mini-chart-inner-collapsed{display:none;}
 .ex-mini-chart-wrap{height:90px;position:relative;}
 .ex-mini-chart-title{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;}
@@ -930,7 +930,7 @@ function hidAuthScreen() {
   <button class="tab active" onclick="switchTab('log')">Today</button>
   <button class="tab" onclick="if(!window._createNewMode)switchTab('workouts')">Workouts</button>
   <button class="tab" onclick="switchTab('exercises')">Exercises</button>
-  <button class="tab" onclick="switchTab('progress')">Progress</button>
+  <button class="tab" id="tab-progress-btn" onclick="switchTab('progress')">PRO</button>
 </div>
 <div id="workoutsToggleBar" style="display:none;position:sticky;top:0;z-index:20;background:var(--bg);padding:8px 16px 0;"></div>
 <div id="exercisesToggleBar" style="display:none;position:sticky;top:0;z-index:20;background:var(--bg);padding:8px 16px 0;"></div>
@@ -945,7 +945,25 @@ function hidAuthScreen() {
 <div class="workout-name-bar" id="workoutNameBar">
   <div style="display:flex;align-items:center;gap:8px;">
     <input type="text" id="workoutName" placeholder="WORKOUT NAME" readonly style="flex:1;cursor:default;pointer-events:none;"/>
-    <span id="workoutNameEditBtn" onclick="openWorkoutNameModal()" style="font-family:'DM Sans';font-size:11px;font-weight:600;color:var(--muted);cursor:pointer;letter-spacing:.5px;flex-shrink:0;padding:2px 0;">edit</span>
+    <div style="position:relative;flex-shrink:0;">
+    <button id="workoutNameEditBtn" onclick="toggleWorkoutMenu(event)" style="background:transparent;border:none;color:var(--muted);cursor:pointer;padding:4px 6px;display:flex;align-items:center;justify-content:center;border-radius:6px;transition:color .2s;" aria-label="Workout options">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+    </button>
+    <div id="workoutMenuDropdown" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;z-index:100;min-width:170px;box-shadow:0 8px 24px rgba(0,0,0,.4);">
+      <button onclick="toggleWorkoutMenu();openWorkoutNameModal()" style="width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);font-family:'DM Sans';font-size:14px;font-weight:600;padding:14px 16px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:10px;transition:background .15s;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Rename
+      </button>
+      <button onclick="toggleWorkoutMenu();changeWorkoutFromMenu()" style="width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);font-family:'DM Sans';font-size:14px;font-weight:600;padding:14px 16px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:10px;transition:background .15s;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.49"/></svg>
+        Change Workout
+      </button>
+      <button onclick="toggleWorkoutMenu();clearSession()" style="width:100%;background:transparent;border:none;color:#ff4747;font-family:'DM Sans';font-size:14px;font-weight:600;padding:14px 16px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:10px;transition:background .15s;" onmouseover="this.style.background='rgba(255,71,71,.08)'" onmouseout="this.style.background='transparent'">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        Delete
+      </button>
+    </div>
+  </div>
   </div>
 </div>
 
@@ -967,12 +985,12 @@ function hidAuthScreen() {
 
   <!-- ACTIVE WORKOUT: hidden until user picks an option -->
   <div id="today-workout-area" style="display:none;">
-    <div class="today-actions">
-      <button class="btn-clear-workout" onclick="clearSession()">Delete</button>
-      <button class="btn-load-history" onclick="window._loadFromToday=true;switchTab('workouts')">Load Workout</button>
+    <div class="today-actions" style="margin:0;padding:0;">
+      <button class="btn-clear-workout" onclick="clearSession()" style="display:none;"></button>
+      <button class="btn-load-history" onclick="window._loadFromToday=true;switchTab('workouts')" style="display:none;"></button>
       <button class="btn-finish-workout" id="finishWorkoutBtn" onclick="finishWorkout()">FINISH WORKOUT</button>
     </div>
-    <div id="todayMuscleChipsWrap" style="display:none;align-items:center;gap:0;padding:8px 0 4px;">
+    <div id="todayMuscleChipsWrap" style="display:none;align-items:center;gap:0;padding:2px 0 4px;margin-top:3px;">
       <div id="todayMuscleChipsFixed" style="display:flex;gap:6px;flex-shrink:0;background:var(--bg);z-index:3;padding-right:6px;"></div>
       <div id="todayMuscleChips" style="display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;scrollbar-width:none;flex:1;"></div>
     </div>
@@ -1765,6 +1783,20 @@ function checkFinishReady() {
   const inWorkoutsFlow = window._activeTabHighlight === 'workouts' || window._isNewWorkoutFlow;
   const isCreateNew = window._isNewWorkoutFlow && window._activeTabHighlight === 'workouts';
 
+  // Show/hide cancel button in edit mode
+  const _cancelEditBtn = document.getElementById('cancelEditWorkoutBtn');
+  const _isEditMode = window._isNewWorkoutFlow && window._editingWorkoutIdx !== undefined;
+  if (_isEditMode && !_cancelEditBtn && btn) {
+    const _cb = document.createElement('button');
+    _cb.id = 'cancelEditWorkoutBtn';
+    _cb.textContent = 'Cancel';
+    _cb.style.cssText = "background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:14px;font-weight:600;padding:10px 18px;cursor:pointer;transition:all .2s;flex-shrink:0;white-space:nowrap;";
+    _cb.onclick = () => { window._editingWorkoutIdx = undefined; clearSession(); switchTab('workouts'); };
+    btn.parentNode.insertBefore(_cb, btn);
+  } else if (!_isEditMode && _cancelEditBtn) {
+    _cancelEditBtn.remove();
+  }
+
   if (btn) {
     if (inWorkoutsFlow) {
       // Workouts flow: always show SAVE, enable only when exercises added
@@ -1798,7 +1830,7 @@ function checkFinishReady() {
 
   const clearBtn = document.querySelector('.btn-clear-workout');
   if (clearBtn) {
-    clearBtn.style.display = (inWorkoutsFlow || hasExercises || inWorkoutArea) ? '' : 'none';
+    clearBtn.style.display = 'none'; // menu replaces this button
   }
 
   const loadBtn = document.querySelector('.btn-load-history');
@@ -1808,7 +1840,7 @@ function checkFinishReady() {
       loadBtn.style.display = 'none';
     } else {
       // Today flow: normal load/change — hide if any set has been marked done
-      loadBtn.style.display = (hasExercises && anySetDone) ? 'none' : '';
+      loadBtn.style.display = 'none'; // menu replaces this button
       loadBtn.textContent = hasExercises ? 'Change Workout' : 'Load Workout';
       // White when no exercises (only option alongside Add Exercise)
       loadBtn.style.color = hasExercises ? '' : '#fff';
@@ -1879,34 +1911,42 @@ function selectMiniGraph(cardId, which) {
   if (c?._chartInst) c._chartInst.resize();
 }
 function toggleMiniChart(cardId) {
-  const inner = document.getElementById(`mini-chart-inner-${cardId}`);
+  const chartDiv = document.getElementById(`mini-chart-${cardId}`);
   const btn = document.getElementById(`mini-chart-toggle-${cardId}`);
-  if (!inner || !btn) return;
-  const isOpen = inner.style.display !== 'none';
+  if (!chartDiv || !btn) return;
+  const isOpen = chartDiv.classList.contains('visible');
   const nowOpen = !isOpen;
-  inner.style.display = nowOpen ? '' : 'none';
-  btn.textContent = nowOpen ? '▲ Hide' : '▼ Graph';
-  // Bump parent body maxHeight and remove overflow:hidden to prevent clipping
   const body = document.getElementById(`body-${cardId}`);
-  if (body) {
-    if (nowOpen) { body.style.maxHeight = '4000px'; body.classList.add('open'); }
-    else { body.classList.remove('open'); }
+  if (nowOpen) {
+    chartDiv.style.display = '';
+    requestAnimationFrame(() => chartDiv.classList.add('visible'));
+    if (body) { body.style.maxHeight = '4000px'; body.classList.add('open'); }
+    const inner = document.getElementById(`mini-chart-inner-${cardId}`);
+    if (inner) inner.style.display = '';
+    setTimeout(() => { renderMiniChart(cardId, document.getElementById(cardId)?.dataset?.exname); }, 50);
+  } else {
+    chartDiv.classList.remove('visible');
+    setTimeout(() => { if (!chartDiv.classList.contains('visible')) chartDiv.style.display = ''; }, 350);
   }
-  // Save as default for new cards
+  btn.style.borderColor = nowOpen ? '#34d399' : 'transparent';
+  btn.style.color = nowOpen ? '#34d399' : 'var(--muted)';
   miniChartDefaultOpen = nowOpen;
   localStorage.setItem('ironlog_minichart_open', JSON.stringify(nowOpen));
-  // Apply to all other cards too (sync state)
   document.querySelectorAll('#exerciseList .exercise-card').forEach(card => {
     if (card.id === cardId) return;
-    const otherInner = document.getElementById(`mini-chart-inner-${card.id}`);
+    const otherChart = document.getElementById(`mini-chart-${card.id}`);
     const otherBtn = document.getElementById(`mini-chart-toggle-${card.id}`);
     const otherBody = document.getElementById(`body-${card.id}`);
-    if (otherInner) otherInner.style.display = nowOpen ? '' : 'none';
-    if (otherBtn) otherBtn.textContent = nowOpen ? '▲ Hide' : '▼ Graph';
-    if (otherBody) {
-      if (nowOpen) { otherBody.style.maxHeight = '4000px'; otherBody.classList.add('open'); }
-      else { otherBody.classList.remove('open'); }
+    if (!otherChart) return;
+    if (nowOpen) {
+      otherChart.style.display = '';
+      requestAnimationFrame(() => otherChart.classList.add('visible'));
+      if (otherBody) { otherBody.style.maxHeight = '4000px'; otherBody.classList.add('open'); }
+    } else {
+      otherChart.classList.remove('visible');
+      setTimeout(() => { if (!otherChart.classList.contains('visible')) otherChart.style.display = ''; }, 350);
     }
+    if (otherBtn) { otherBtn.style.borderColor = nowOpen ? '#34d399' : 'transparent'; otherBtn.style.color = nowOpen ? '#34d399' : 'var(--muted)'; }
   });
 }
 
@@ -2027,7 +2067,14 @@ function updateVolProgressBar(exId) {
     // Still show bar but with zeroes
   }
 
-  bar.style.display = 'block';
+  // On first call, inherit global proBar preference; then respect proOpen state
+  if (bar.dataset.proOpen === undefined || bar.dataset.proOpen === '') {
+    bar.dataset.proOpen = window._proBarOpen ? 'true' : 'false';
+  }
+  if (bar.dataset.proOpen === 'true') {
+    bar.style.display = '';
+    requestAnimationFrame(() => bar.classList.add('pro-open'));
+  }
 
   const scoreEl = document.getElementById(`vol-score-${exId}`);
   const segWrap = document.getElementById(`vol-seg-${exId}`);
@@ -2177,6 +2224,9 @@ function showTodayStartScreen() {
   document.getElementById('today-start-screen').style.display = 'flex';
   document.getElementById('today-workout-area').style.display = 'none';
   document.getElementById('workoutNameBar').classList.remove('visible');
+  // Restore tab bar
+  const _tabsEl2 = document.querySelector('.tabs');
+  if (_tabsEl2) _tabsEl2.style.display = '';
   ['workoutsToggleBar','exercisesToggleBar','progressToggleBar'].forEach(id=>{const b=document.getElementById(id);if(b)b.style.display='none';});
   // Hide PICK if no saved workouts exist
   const hasWorkouts = (() => {
@@ -2424,9 +2474,12 @@ function showTodayWorkoutArea(isNew=false) {
   document.getElementById('today-start-screen').style.display = 'none';
   document.getElementById('today-workout-area').style.display = 'block';
   document.getElementById('workoutNameBar').classList.toggle('visible', !(window._createNewMode && window._newFromWorkouts));
+  // Hide tab bar when workout is active
+  const _tabsEl = document.querySelector('.tabs');
+  if (_tabsEl) _tabsEl.style.display = 'none';
   const loadBtn = document.querySelector('.btn-load-history');
   if (loadBtn) {
-    loadBtn.style.display = window._isNewWorkoutFlow ? 'none' : '';
+    loadBtn.style.display = 'none'; // menu replaces this button
     loadBtn.textContent = 'Load Workout';
   }
   // Ensure log page is shown with correct tab highlight
@@ -2853,17 +2906,17 @@ function renderExercisesTab() {
     const lastFmt = ex.lastDate ? fmtShort(ex.lastDate) : '—';
     const hasHistory = ex.bestRM > 0 || ex.bestWt > 0;
     const singleRecord = ex.count <= 1;
-    const isExpandable = true; // always allow expand for delete/rename/history access
+    const isExpandable = !!window._exTabProMode; // only expandable when PRO mode is on
       const bestRM = ex.bestRM > 0 ? parseFloat(ex.bestRM.toFixed(2)) : null;
       const bestWt = ex.bestWt > 0 ? parseFloat(ex.bestWt.toFixed(2)) : null;
       const rmArrow = ex.prevRM > 0 && ex.lastRM > ex.prevRM ? '<span style="color:#4caf50;font-size:9px;margin-left:3px;">▲</span>' : ex.prevRM > 0 && ex.lastRM < ex.prevRM ? '<span style="color:#ff4444;font-size:9px;margin-left:3px;">▼</span>' : '<span style="font-size:9px;margin-left:3px;visibility:hidden;">▲</span>';
       const wtArrow = ex.prevWt > 0 && ex.lastWt > ex.prevWt ? '<span style="color:#4caf50;font-size:9px;margin-left:3px;">▲</span>' : ex.prevWt > 0 && ex.lastWt < ex.prevWt ? '<span style="color:#ff4444;font-size:9px;margin-left:3px;">▼</span>' : '<span style="font-size:9px;margin-left:3px;visibility:hidden;">▲</span>';
-      const statsHtml = hasHistory ? `<div style="font-size:11px;text-align:right;min-width:120px;">${bestWt !== null ? `<div style="color:#e8ff47;font-weight:700;display:flex;justify-content:flex-end;gap:6px;"><span>MAX</span><span style="min-width:72px;text-align:right;">${bestWt}kg${wtArrow}</span></div>` : '<div style="height:18px;"></div>'}${bestRM !== null ? `<div style="color:#ff8c42;font-weight:700;margin-top:2px;display:flex;justify-content:flex-end;gap:6px;"><span>1RM</span><span style="min-width:72px;text-align:right;">${bestRM}kg${rmArrow}</span></div>` : '<div style="height:18px;margin-top:2px;"></div>'}</div>` : '';
+      const statsHtml = (hasHistory && window._exTabProMode) ? `<div style="font-size:11px;text-align:right;min-width:120px;">${bestWt !== null ? `<div style="color:#e8ff47;font-weight:700;display:flex;justify-content:flex-end;gap:6px;"><span>MAX</span><span style="min-width:72px;text-align:right;">${bestWt}kg${wtArrow}</span></div>` : '<div style="height:18px;"></div>'}${bestRM !== null ? `<div style="color:#ff8c42;font-weight:700;margin-top:2px;display:flex;justify-content:flex-end;gap:6px;"><span>1RM</span><span style="min-width:72px;text-align:right;">${bestRM}kg${rmArrow}</span></div>` : '<div style="height:18px;margin-top:2px;"></div>'}</div>` : '';
       const chevHtml = hasHistory ? `<span id="${safeId}-chev" style="color:var(--muted);font-size:11px;transition:transform .2s;">&#9660;</span>` : '';
       const isPickSelected = _pickMode && _pickModeSelected.some(s => s.name === ex.name);
       const pickColor = PICKER_COLORS[ex.muscle] || '#888';
-      listHtml += `<div data-exname="${ex.name.replace(/"/g,'&quot;')}" data-muscle="${ex.muscle||'Chest'}" style="margin-bottom:6px;background:var(--surface);border:1px solid ${isPickSelected ? pickColor : 'var(--border)'};border-radius:10px;overflow:hidden;transition:border-color .15s;">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;">
+      listHtml += `<div data-exname="${ex.name.replace(/"/g,'&quot;')}" data-muscle="${ex.muscle||'Chest'}" style="margin-bottom:6px;background:var(--surface);border:1px solid ${isPickSelected ? pickColor : 'var(--border)'};border-radius:10px;overflow:visible;transition:border-color .15s;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;min-height:58px;border-radius:10px;">
         <div ${isExpandable || _pickMode ? `onclick="${_pickMode ? `pickExercise('${ex.name.replace(/'/g,"\\'")}')` : `toggleExTabCard('${safeId}')`}"` : ''} style="flex:1;min-width:0;${isExpandable || _pickMode ? 'cursor:pointer;' : ''}">
           <div style="font-family:'DM Sans';font-size:17px;font-weight:400;color:var(--text);">${ex.name}</div>
         </div>
@@ -2871,6 +2924,21 @@ function renderExercisesTab() {
           ${_pickMode
             ? `<div class="picker-check" style="width:22px;height:22px;border-radius:50%;border:2px solid ${isPickSelected ? pickColor : '#333'};background:${isPickSelected ? pickColor : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;">${isPickSelected ? '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</div>`
             : statsHtml}
+          ${_pickMode ? '' : `<div style="position:relative;">
+            <button onclick="event.stopPropagation();toggleExTabCardMenu('${safeId}')" style="background:transparent;border:none;color:var(--muted);cursor:pointer;padding:4px 2px;display:flex;align-items:center;justify-content:center;border-radius:6px;transition:color .2s;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+            </button>
+            <div id="extab-card-menu-${safeId}" style="display:none;position:absolute;top:calc(100% + 4px);right:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;z-index:999;min-width:130px;box-shadow:0 8px 24px rgba(0,0,0,.4);">
+              <button onclick="event.stopPropagation();document.getElementById('extab-card-menu-${safeId}').style.display='none';editExTabName(this.closest('[data-exname]').dataset.exname)" style="width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);font-family:'DM Sans';font-size:14px;font-weight:600;padding:14px 16px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:10px;transition:background .15s;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                Rename
+              </button>
+              <button onclick="event.stopPropagation();document.getElementById('extab-card-menu-${safeId}').style.display='none';deleteExTabExercise(this.closest('[data-exname]').dataset.exname)" style="width:100%;background:transparent;border:none;color:#ff4747;font-family:'DM Sans';font-size:14px;font-weight:600;padding:14px 16px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:10px;transition:background .15s;" onmouseover="this.style.background='rgba(255,71,71,.08)'" onmouseout="this.style.background='transparent'">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                Delete
+              </button>
+            </div>
+          </div>`}
         </div>
       </div>
       <div id="${safeId}-body" style="display:none;padding:0 12px 12px;">
@@ -2929,10 +2997,18 @@ function renderExercisesTab() {
       + '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>'
       + ' Upload to cloud</button>'
     : '';
-  const addBtnHtml = `<div id="extab-add-btn"><button onclick="openNewExModal('${selected}')" style="width:100%;margin-top:4px;background:transparent;border:1px dashed ${_btnBorder};border-radius:10px;color:${_btnColor};font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='${_btnBorder}';this.style.color='${_btnColor}'">
-    <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-    Create New Exercise
-  </button>${_uploadBtn}</div>`;
+  if (window._exTabProMode === undefined) window._exTabProMode = localStorage.getItem('extab_pro_mode') === '1';
+  const _proActive = !!window._exTabProMode;
+  const addBtnHtml = `<div id="extab-add-btn" style="margin-top:4px;">
+    <div style="display:flex;gap:8px;align-items:stretch;">
+      <button onclick="openNewExModal('${selected}')" style="flex:1;background:transparent;border:1px dashed ${_btnBorder};border-radius:10px;color:${_btnColor};font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='${_btnBorder}';this.style.color='${_btnColor}'">
+        <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Create New Exercise
+      </button>
+      <button id="extab-pro-toggle" onclick="toggleExTabPro()" style="background:transparent;border:1px solid ${_proActive ? '#34d399' : 'var(--border)'};border-radius:10px;color:${_proActive ? '#34d399' : 'var(--muted)'};font-family:'DM Sans';font-size:12px;font-weight:700;padding:0 14px;cursor:pointer;transition:all .2s;white-space:nowrap;letter-spacing:.5px;">PRO</button>
+    </div>
+    ${_uploadBtn}
+  </div>`;
 
   const _hasCoach = window._currentUserData?.coachId && window._currentUserData?.coachingExpires && new Date(window._currentUserData.coachingExpires) >= new Date();
   const _exSubtitle = () => {
@@ -3618,17 +3694,22 @@ function renderExTabMiniChart(safeId, exName) {
   if(c1&&volPts.length){
     const _v1Min=Math.min(...volPts.map(p=>p.val)),_v1Max=Math.max(...volPts.map(p=>p.val)),_v1Pad=(_v1Max-_v1Min)*0.1||1;
     const mopts1=Object.assign({},mopts('#ff8c42'),{scales:Object.assign({},mopts('#ff8c42').scales,{y:Object.assign({},mopts('#ff8c42').scales.y,{min:_v1Min-_v1Pad})})});
-    c1._chartInst=new Chart(c1.getContext('2d'),{type:'line',data:{labels:volPts.map(p=>p.date),datasets:[{data:volPts.map(p=>p.val),borderColor:'#ff8c42',backgroundColor:'rgba(255,140,66,.08)',pointBackgroundColor:'#ff8c42',pointRadius:2,tension:0,fill:true,borderWidth:1.5}]},options:mopts1,plugins:chevPlugin('#ff8c42','extabVolChev'+safeId)});
+    const _v1MaxVal=Math.max(...volPts.map(p=>p.val));const _v1MaxIdx=volPts.map(p=>p.val).lastIndexOf(_v1MaxVal);
+    c1._chartInst=new Chart(c1.getContext('2d'),{type:'line',data:{labels:volPts.map(p=>p.date),datasets:[{data:volPts.map(p=>p.val),borderColor:'#ff8c42',backgroundColor:'rgba(255,140,66,.08)',pointBackgroundColor:volPts.map((_,i)=>i===_v1MaxIdx?'#ff4444':i===volPts.length-1?'#fff':'#ff8c42'),pointRadius:volPts.map((_,i)=>i===_v1MaxIdx||i===volPts.length-1?4:2),tension:0,fill:true,borderWidth:1.5}]},options:mopts1,plugins:chevPlugin('#ff8c42','extabVolChev'+safeId)});
   }
 
   const c3=document.getElementById('extab-volprog-canvas-'+safeId);
   if(c3&&volumePts.length){
-    c3._chartInst=new Chart(c3.getContext('2d'),{type:'bar',data:{labels:volumePts.map(p=>p.date),datasets:[{data:volumePts.map(p=>p.val),backgroundColor:'rgba(167,139,250,.5)',borderColor:'#a78bfa',borderWidth:1.5,borderRadius:4}]},options:mopts('#a78bfa'),plugins:barChevPlugin('#a78bfa','extabVolProgChev'+safeId)});
+    const _v3Min=Math.min(...volumePts.map(p=>p.val)),_v3Max=Math.max(...volumePts.map(p=>p.val)),_v3Pad=(_v3Max-_v3Min)*0.1||1;
+    const mopts3=Object.assign({},mopts('#a78bfa'),{scales:Object.assign({},mopts('#a78bfa').scales,{y:Object.assign({},mopts('#a78bfa').scales.y,{min:_v3Min-_v3Pad})})});
+    const _v3MaxVal=Math.max(...volumePts.map(p=>p.val));const _v3MaxIdx=volumePts.map(p=>p.val).lastIndexOf(_v3MaxVal);
+    c3._chartInst=new Chart(c3.getContext('2d'),{type:'line',data:{labels:volumePts.map(p=>p.date),datasets:[{data:volumePts.map(p=>p.val),borderColor:'#a78bfa',backgroundColor:'rgba(167,139,250,.08)',pointBackgroundColor:volumePts.map((_,i)=>i===_v3MaxIdx?'#ff4444':i===volumePts.length-1?'#fff':'#a78bfa'),pointRadius:volumePts.map((_,i)=>i===_v3MaxIdx||i===volumePts.length-1?4:2),tension:0,fill:true,borderWidth:1.5}]},options:mopts3,plugins:chevPlugin('#a78bfa','extabVolProgChev'+safeId)});
   }
 
   const c2=document.getElementById('extab-canvas-'+safeId);
   if(c2&&weightPts.length){
-    c2._chartInst=new Chart(c2.getContext('2d'),{type:'line',data:{labels:weightPts.map(p=>p.date),datasets:[{data:weightPts.map(p=>p.val),borderColor:'#e8ff47',backgroundColor:'rgba(232,255,71,.08)',pointBackgroundColor:weightPts.map((_,i)=>i===weightPts.length-1?'#fff':'#e8ff47'),pointRadius:weightPts.map((_,i)=>i===weightPts.length-1?3:2),tension:0,fill:true,borderWidth:1.5}]},options:mopts('#e8ff47'),plugins:chevPlugin('#e8ff47','extabWtChev'+safeId)});
+    const _v2MaxVal=Math.max(...weightPts.map(p=>p.val));const _v2MaxIdx=weightPts.map(p=>p.val).lastIndexOf(_v2MaxVal);
+    c2._chartInst=new Chart(c2.getContext('2d'),{type:'line',data:{labels:weightPts.map(p=>p.date),datasets:[{data:weightPts.map(p=>p.val),borderColor:'#e8ff47',backgroundColor:'rgba(232,255,71,.08)',pointBackgroundColor:weightPts.map((_,i)=>i===_v2MaxIdx?'#ff4444':i===weightPts.length-1?'#fff':'#e8ff47'),pointRadius:weightPts.map((_,i)=>i===_v2MaxIdx||i===weightPts.length-1?4:2),tension:0,fill:true,borderWidth:1.5}]},options:mopts('#e8ff47'),plugins:chevPlugin('#e8ff47','extabWtChev'+safeId)});
   }
 
   const allPts=volPts.length>=weightPts.length?volPts:weightPts;
@@ -3826,7 +3907,7 @@ function switchTab(tab) {
     document.getElementById('prog-info-float')?.remove();
   }
   if (tab==='log') checkFinishReady();
-  if (tab !== 'log' && tab !== 'exercises') { if (!window._createNewMode) window._activeTabHighlight = null; if (tab !== 'workouts') window._loadFromToday = false; }
+  if (tab !== 'log' && tab !== 'exercises') { if (!window._createNewMode) window._activeTabHighlight = null; if (tab !== 'workouts') { window._loadFromToday = false; window._isChangingWorkout = false; } }
   localStorage.setItem('ironlog_active_tab', tab);
   updatePickModeTabs();
 }
@@ -3965,9 +4046,9 @@ function renderWorkoutsTab() {
     html += `<div class="load-hist-item" style="transition:opacity .2s;${_isDimmed ? 'opacity:0.25;pointer-events:none;' : ''}">
       <div style="display:flex;align-items:flex-start;gap:6px;padding:12px 10px 12px 12px;">
         <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
-          <div class="load-hist-name" onclick="toggleLoadDetail('wtab-ldet-${i}',null)" style="cursor:pointer;">${w.name}</div>
+          <div class="load-hist-name" onclick="if(window._wtabProMode)toggleLoadDetail('wtab-ldet-${i}',null)" style="${window._wtabProMode?'cursor:pointer;':'cursor:default;'}">${w.name}</div>
           <div style="flex:1;position:relative;">
-            <div onclick="toggleLoadDetail('wtab-ldet-${i}',null)" style="height:55px;margin-top:8px;cursor:pointer;" title="Toggle details"><canvas id="wtab-chart-${i}" style="pointer-events:none;"></canvas></div>
+            ${window._wtabProMode ? `<div onclick="toggleLoadDetail('wtab-ldet-${i}',null)" style="height:55px;margin-top:8px;cursor:pointer;" title="Toggle details"><canvas id="wtab-chart-${i}" style="pointer-events:none;"></canvas></div>` : `<div style="height:4px;"></div><canvas id="wtab-chart-${i}" style="display:none;"></canvas>`}
           </div>
           <div id="wtab-xlabels-${i}" style="display:flex;justify-content:space-around;padding:2px 0 0;"></div>
         </div>
@@ -3981,22 +4062,28 @@ function renderWorkoutsTab() {
               ? `<button onclick="const w=workouts[${i}];if(w){const _psk=window._planStrengthKey;if(!_psk){return;}const [_sy,_sm,_sd]=_psk.split('-').map(Number);plannedWorkouts.push({planId:Date.now().toString(),name:w.name,date:new Date(_sy,_sm,_sd).getTime(),exercises:w.exercises.map(e=>({name:e.name,muscle:e.muscle||'Chest'}))});savePlanned();window._planStrengthKey=null;calYear=_sy;calMonth=_sm;selectedCalDay=_psk;openCalendar();setTimeout(()=>selectCalDay(_psk),100);showToast('Workout planned!');}" style="background:transparent;border:none;color:var(--accent);font-size:12px;font-weight:700;font-style:italic;padding:6px 8px;cursor:pointer;width:100%;">Select</button>`
               : window._loadFromToday
               ? `<button onclick="window._activeTabHighlight=null;window._loadFromToday=false;loadWorkout(${i});switchTab('log');" style="background:transparent;border:none;color:var(--accent);font-size:12px;font-weight:700;font-style:italic;padding:6px 8px;cursor:pointer;width:100%;">Select</button>`
-              : `<button onclick="if(window._wtabSelectedIdx===${i}){_wtabCancelSelection();}else{window._wtabSelectedIdx=${i};_wtabAnimateBottomBtns(${i});}" style="background:transparent;border:none;color:var(--accent);font-size:12px;font-weight:700;font-style:italic;padding:6px 8px;cursor:pointer;display:flex;align-items:center;justify-content:center;width:100%;">${window._wtabSelectedIdx === i ? '✓ Selected' : 'Select'}</button>`
+              : `<div style="display:flex;flex-direction:row;align-items:center;gap:2px;">
+                <button onclick="if(window._wtabSelectedIdx===${i}){_wtabCancelSelection();}else{window._wtabSelectedIdx=${i};_wtabAnimateBottomBtns(${i});}" style="background:transparent;border:none;color:${window._wtabSelectedIdx === i ? 'var(--accent)' : '#888'};font-size:12px;font-weight:700;font-style:italic;padding:6px 4px;cursor:pointer;display:flex;align-items:center;justify-content:center;">${window._wtabSelectedIdx === i ? '✓ Selected' : 'Select'}</button>
+                <div style="position:relative;display:flex;">
+                  <button onclick="event.stopPropagation();toggleWtabCardMenu(${i})" style="background:transparent;border:none;color:var(--muted);cursor:pointer;padding:4px 2px;display:flex;align-items:center;justify-content:center;border-radius:6px;transition:color .2s;" aria-label="Workout options">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+                  </button>
+                  <div id="wtab-card-menu-${i}" style="display:none;position:absolute;top:calc(100% + 4px);right:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;z-index:100;min-width:130px;box-shadow:0 8px 24px rgba(0,0,0,.4);">
+                    <button onclick="event.stopPropagation();document.getElementById('wtab-card-menu-${i}').style.display='none';editWorkoutFromTab(${i})" style="width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);font-family:'DM Sans';font-size:14px;font-weight:600;padding:14px 16px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:10px;transition:background .15s;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                      Edit
+                    </button>
+                    <button onclick="event.stopPropagation();document.getElementById('wtab-card-menu-${i}').style.display='none';deleteWorkoutFromTab(${i})" style="width:100%;background:transparent;border:none;color:#ff4747;font-family:'DM Sans';font-size:14px;font-weight:600;padding:14px 16px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:10px;transition:background .15s;" onmouseover="this.style.background='rgba(255,71,71,.08)'" onmouseout="this.style.background='transparent'">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>`
             }
           </div>
-            ${(()=>{ const durations=workouts.filter(x=>!x._draft&&!x._template&&x.name===w.name&&x.durationMins>0).slice(0,3).map(x=>x.durationMins); if(!durations.length) return '<div style="height:4px;"></div>'; const avg=durations.reduce((a,b)=>a+b,0)/durations.length; const rounded=Math.ceil(avg/5)*5; return `<div style="display:flex;align-items:center;justify-content:center;gap:3px;padding:4px 0 0;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#7ec8e3" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg><span style="font-size:11px;color:#7ec8e3;font-weight:700;">~${rounded}m</span></div>`; })()}
-            <div style="border-top:1px solid rgba(255,255,255,0.2);margin-top:4px;padding-top:4px;">
-            <table style="border-collapse:collapse;width:100%;">
-              <tr>
-                <td style="font-size:14px;font-family:'Bebas Neue';color:var(--muted);letter-spacing:.5px;padding:1px 4px 1px 0;white-space:nowrap;">EX</td>
-                <td style="font-family:'Bebas Neue';font-size:14px;color:var(--text);text-align:right;padding:1px 0;">${w.exercises.length}</td>
-              </tr>
-              <tr>
-                <td style="font-size:14px;font-family:'Bebas Neue';color:var(--muted);letter-spacing:.5px;padding:1px 4px 1px 0;white-space:nowrap;">SETS</td>
-                <td style="font-family:'Bebas Neue';font-size:14px;color:var(--text);text-align:right;padding:1px 0;">${w.exercises.reduce((a,e)=>a+(e.sets||[]).filter(s=>!s.ignored).length,0)}</td>
-              </tr>
-            </table>
-            </div>
+            ${window._wtabProMode ? (()=>{ const durations=workouts.filter(x=>!x._draft&&!x._template&&x.name===w.name&&x.durationMins>0).slice(0,3).map(x=>x.durationMins); if(!durations.length) return '<div style="height:4px;"></div>'; const avg=durations.reduce((a,b)=>a+b,0)/durations.length; const rounded=Math.ceil(avg/5)*5; return `<div style="display:flex;align-items:center;justify-content:center;gap:3px;padding:4px 0 0;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#7ec8e3" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg><span style="font-size:11px;color:#7ec8e3;font-weight:700;">~${rounded}m</span></div>`; })() : ''}
+            ${window._wtabProMode ? `<div style="border-top:1px solid rgba(255,255,255,0.2);margin-top:4px;padding-top:4px;"><table style="border-collapse:collapse;width:100%;"><tr><td style="font-size:14px;font-family:'Bebas Neue';color:var(--muted);letter-spacing:.5px;padding:1px 4px 1px 0;white-space:nowrap;">EX</td><td style="font-family:'Bebas Neue';font-size:14px;color:var(--text);text-align:right;padding:1px 0;">${w.exercises.length}</td></tr><tr><td style="font-size:14px;font-family:'Bebas Neue';color:var(--muted);letter-spacing:.5px;padding:1px 4px 1px 0;white-space:nowrap;">SETS</td><td style="font-family:'Bebas Neue';font-size:14px;color:var(--text);text-align:right;padding:1px 0;">${w.exercises.reduce((a,e)=>a+(e.sets||[]).filter(s=>!s.ignored).length,0)}</td></tr></table></div>` : ''}
           </div>
         </div>
       </div>
@@ -4018,7 +4105,13 @@ function renderWorkoutsTab() {
       <button onclick="window._activeTabHighlight=null;window._loadFromToday=false;window._wtabSelectedIdx=null;loadWorkout(${_selIdx});switchTab('log');" style="flex:1;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:13px;font-weight:700;padding:13px;cursor:pointer;">For Today</button>
     </div>
     <button onclick="_wtabCancelSelection();" style="width:100%;margin-top:8px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;">Cancel</button>` : '';
-  const createNewBtn = `<div id="wtab-bottom-btns" style="opacity:1;transition:opacity .25s ease;">${_selActionBtns ? _selActionBtns : `<button onclick="startNewWorkout(true);" style="width:100%;margin-top:8px;background:transparent;border:1px dashed var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Create New Workout</button>`}${_cancelAction ? `<button onclick="${_cancelAction}" style="width:100%;margin-top:8px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;">Cancel</button>` : ''}</div>`;
+  if (window._wtabProMode === undefined) window._wtabProMode = localStorage.getItem('wtab_pro_mode') === '1';
+  const _wtabProActive = !!window._wtabProMode;
+  const _proRowHtml = !_selActionBtns && _wTabView === 'created' ? `<div style="display:flex;gap:8px;margin-top:8px;align-items:stretch;">
+    <button onclick="startNewWorkout(true);" style="flex:1;background:transparent;border:1px dashed var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Create New Workout</button>
+    <button onclick="toggleWtabPro()" style="background:transparent;border:1px solid ${_wtabProActive ? '#34d399' : 'var(--border)'};border-radius:10px;color:${_wtabProActive ? '#34d399' : 'var(--muted)'};font-family:'DM Sans';font-size:12px;font-weight:700;padding:0 14px;cursor:pointer;transition:all .2s;white-space:nowrap;letter-spacing:.5px;">PRO</button>
+  </div>` : `<button onclick="startNewWorkout(true);" style="width:100%;margin-top:8px;background:transparent;border:1px dashed var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Create New Workout</button>`;
+  const createNewBtn = `<div id="wtab-bottom-btns" style="opacity:1;transition:opacity .25s ease;">${_selActionBtns ? _selActionBtns : _proRowHtml}${_cancelAction ? `<button onclick="${_cancelAction}" style="width:100%;margin-top:8px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;">Cancel</button>` : ''}</div>`;
   if (_wTabView === 'library') {
     const _addLibBtn = canEditLibrary() ? `<div style="display:flex;gap:8px;margin-top:8px;">
       ${window._currentUserData?.role === 'super_admin' ? `<button onclick="exportLibToFile()" style="background:transparent;border:1px solid rgba(167,139,250,.5);border-radius:10px;color:#a78bfa;font-family:'DM Sans';font-size:13px;font-weight:700;padding:10px 12px;cursor:pointer;flex-shrink:0;white-space:nowrap;">⬇ Export</button>` : ''}
@@ -4445,14 +4538,14 @@ function updateTodayMuscleChips() {
   if (!entries.length) { wrap.style.display = 'none'; fixedEl.innerHTML = ''; scrollEl.innerHTML = ''; _todayMuscleFilter = null; _todayHideDone = false; return; }
   if (_todayMuscleFilter && !counts[_todayMuscleFilter]) _todayMuscleFilter = null;
   wrap.style.display = 'flex';
-  const MUSCLE_ABBR = { Chest:'CH', Back:'BA', Legs:'LE', Shoulders:'SH', Arms:'AR', Core:'AB', Compound:'CP' };
+  const MUSCLE_ABBR = { Chest:'Chest', Back:'Back', Legs:'Legs', Shoulders:'Shldr', Arms:'Arms', Core:'Abs', Compound:'Comp' };
   const allActive = !_todayMuscleFilter;
   const anyDone = true;
 
   // Fixed chips — Hide ✓ only shown when not in new workout creation flow
   const showHideChip = !window._isNewWorkoutFlow;
-  const hideDoneHtml = showHideChip ? `<button onclick="toggleTodayHideDone()" ${!anyDone ? 'disabled' : ''} style="display:inline-flex;align-items:center;gap:5px;background:${_todayHideDone ? 'rgba(251,191,36,.2)' : 'var(--surface2)'};border:1px solid ${_todayHideDone ? '#fbbf24' : 'var(--border)'};border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;color:${_todayHideDone ? '#fbbf24' : anyDone ? '#fff' : '#555'};letter-spacing:.3px;cursor:${anyDone ? 'pointer' : 'default'};transition:all .15s;flex-shrink:0;">Hide ✓</button>` : '';
-  const allChipHtml = entries.length > 1 ? `<button onclick="filterTodayByMuscle(null)" style="display:inline-flex;align-items:center;gap:5px;background:${allActive ? 'rgba(255,255,255,.15)' : 'var(--surface2)'};border:1px solid ${allActive ? '#fff' : 'var(--border)'};border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;color:#fff;letter-spacing:.3px;cursor:pointer;transition:all .15s;flex-shrink:0;">All</button>` : '';
+  const hideDoneHtml = showHideChip ? `<button onclick="toggleTodayHideDone()" ${!anyDone ? 'disabled' : ''} style="display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:${_todayHideDone ? 'rgba(251,191,36,.2)' : 'var(--surface2)'};border:1px solid ${_todayHideDone ? '#fbbf24' : 'var(--border)'};border-radius:8px;padding:7px 4px;width:54px;flex-shrink:0;font-family:'DM Sans';cursor:${anyDone ? 'pointer' : 'default'};transition:all .15s;"><span style="font-size:16px;font-weight:700;color:${_todayHideDone ? '#fbbf24' : anyDone ? '#fff' : '#555'};line-height:1;"> </span><span style="font-size:11px;font-weight:600;color:${_todayHideDone ? '#fbbf24' : anyDone ? '#fff' : '#555'};letter-spacing:.2px;line-height:1;">Hide ✓</span></button>` : '';
+  const allChipHtml = entries.length > 1 ? `<button onclick="filterTodayByMuscle(null)" style="display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:${allActive ? 'rgba(255,255,255,.15)' : 'var(--surface2)'};border:1px solid ${allActive ? '#fff' : 'var(--border)'};border-radius:8px;padding:7px 4px;width:54px;flex-shrink:0;font-family:'DM Sans';cursor:pointer;transition:all .15s;"><span style="font-size:16px;font-weight:700;color:#fff;line-height:1;"> </span><span style="font-size:11px;font-weight:600;color:#fff;letter-spacing:.2px;line-height:1;">All</span></button>` : '';
   fixedEl.innerHTML = hideDoneHtml + allChipHtml;
 
   // Scrollable muscle chips
@@ -4460,7 +4553,7 @@ function updateTodayMuscleChips() {
     const color = muscleColors[m] || '#888';
     const label = MUSCLE_ABBR[m] || m.slice(0,2).toUpperCase();
     const active = _todayMuscleFilter === m;
-    return `<button onclick="filterTodayByMuscle('${m}')" style="display:inline-flex;align-items:center;gap:5px;background:${active ? color+'33' : color+'18'};border:1px solid ${active ? color : color+'55'};border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;color:${color};letter-spacing:.3px;cursor:pointer;transition:all .15s;">${label}<span style="background:${color}33;border-radius:4px;padding:0 5px;font-size:10px;">${c}</span></button>`;
+    return `<button onclick="filterTodayByMuscle('${m}')" style="display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:${active ? color+'33' : color+'18'};border:1px solid ${active ? color : color+'55'};border-radius:8px;padding:7px 4px;width:54px;flex-shrink:0;font-family:'DM Sans';cursor:pointer;transition:all .15s;"><span style="font-size:16px;font-weight:700;color:${color};line-height:1;">${c}</span><span style="font-size:11px;font-weight:600;color:${active ? color : color+'cc'};letter-spacing:.2px;line-height:1;white-space:nowrap;">${label}</span></button>`;
   }).join('');
 }
 
@@ -4517,7 +4610,7 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
   const muscleColors = { Chest: '#e8ff47', Back: '#7ec8e3', Legs: '#ff8c42', Shoulders: '#a78bfa', Arms: '#34d399', Core: '#f87171', Compound: '#20d4c8' };
   const muscleLabel = ex.muscle === 'Shoulders' ? 'Shldr' : ex.muscle || '';
   const muscleColor = muscleColors[ex.muscle] || 'var(--muted)';
-  nameBlock.innerHTML = `<div style="font-family:'DM Sans';font-size:11px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:${muscleColor};margin-bottom:1px;">${muscleLabel}</div><div class="ex-name">${ex.label}</div>`;
+  nameBlock.innerHTML = `<div style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:${muscleColor};flex-shrink:0;display:inline-block;"></span><div class="ex-name" style="flex:1;min-width:0;">${ex.label}</div></div>`;
 
   const delBtn = document.createElement('button');
   delBtn.className = 'btn-trash';
@@ -4550,7 +4643,7 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
 
   body.innerHTML = `
     <div id="vol-target-bar-${id}" class="vol-target-bar" style="display:none;">
-      <div class="vol-target-label" style="margin-bottom:6px;color:#34d399;">Session Progress</div>
+      <div class="vol-target-label" style="margin-bottom:6px;color:#34d399;display:flex;align-items:center;gap:6px;">Analyze Session<span onclick="var t=document.getElementById('sp-info-all-${id}');t.style.display=t.style.display==='table-row'?'none':'table-row'" style="display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border-radius:50%;border:1px solid #34d399;color:#34d399;font-family:'DM Sans';font-size:9px;font-weight:700;cursor:pointer;flex-shrink:0;">i</span></div>
       <table style="width:100%;border-collapse:collapse;font-size:12px;font-weight:700;margin-bottom:5px;table-layout:fixed;">
         <colgroup>
           <col style="width:36px;">
@@ -4566,7 +4659,7 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
           <td style="color:var(--muted);font-size:10px;font-weight:700;letter-spacing:.5px;text-align:left;padding-bottom:3px;">PREV</td>
           <td style="color:var(--muted);font-size:10px;font-weight:700;letter-spacing:.5px;text-align:right;padding-bottom:3px;">DIFF</td>
           <td style="color:var(--muted);font-size:10px;font-weight:700;letter-spacing:.5px;text-align:center;padding-bottom:3px;">CHG</td>
-          <td style="padding-bottom:3px;text-align:center;"><span onclick="var t=document.getElementById('sp-info-all-${id}');t.style.display=t.style.display==='table-row'?'none':'table-row'" style="display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border-radius:50%;border:1px solid #34d399;color:#34d399;font-family:'DM Sans';font-size:9px;font-weight:700;cursor:pointer;margin-left:5px;">i</span></td>
+          <td style="padding-bottom:3px;"></td>
         </tr>
         <tr id="sp-info-all-${id}" style="display:none;"><td colspan="6" style="font-size:12px;color:var(--text);padding:3px 0 5px 0;line-height:1.8;border-top:1px solid var(--border);"><table style="border-collapse:collapse;"><tr><td style="color:#e8ff47;font-weight:700;padding-right:6px;white-space:nowrap;vertical-align:top;">MAX</td><td style="color:#fff;">— Heaviest weight lifted</td></tr><tr><td style="color:#ff8c42;font-weight:700;padding-right:6px;white-space:nowrap;vertical-align:top;">1RM</td><td style="color:#fff;">— Estimated 1 Rep Max: kg × (1 + reps/30)</td></tr><tr><td style="color:#a78bfa;font-weight:700;padding-right:6px;white-space:nowrap;vertical-align:top;">VOL</td><td style="color:#fff;">— Total volume: sum of kg × reps</td></tr></table></td></tr>
         <tr>
@@ -4597,7 +4690,7 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
       <div class="vol-seg-blocks" id="vol-seg-${id}"></div>
     </div>
     <table class="sets-table">
-      <thead><tr><th>SET</th><th style="width:28px;"></th><th>KG</th><th>REPS</th><th data-col="stat">STAT</th><th></th></tr></thead>
+      <thead><tr><th>SET</th><th style="width:28px;"></th><th>KG</th><th>REPS</th><th data-col="stat" colspan="2" style="text-align:right;padding-right:8px;"><span style="display:inline-flex;align-items:center;justify-content:space-between;width:100%;"><span>STAT</span><button id="pro-btn-${id}" onclick="toggleSessionProgress('${id}')" style="background:transparent;border:1px solid #34d399;border-radius:5px;color:#34d399;font-family:'DM Sans';font-size:10px;font-weight:700;padding:2px 10px;cursor:pointer;letter-spacing:.5px;transition:all .2s;white-space:nowrap;">PRO</button></span></th></tr></thead>
       <tbody class="set-body" id="set-body-${id}"></tbody>
     </table>
     <div class="comment-area" id="comment-area-${id}">
@@ -4611,13 +4704,16 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
         <button class="btn-reset-sets" id="reset-btn-${id}" onclick="resetCardSets('${id}')" style="display:none;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:'DM Sans';font-size:12px;font-weight:600;padding:6px 12px;cursor:pointer;transition:all .2s;">Reset</button>
         <div style="flex:1;"></div>
         <button class="workouts-flow-only" id="wflow-close-btn-${id}" onclick="toggleCardCollapse('${id}')" style="background:transparent;border:1px solid rgba(232,255,71,.4);border-radius:8px;color:var(--accent);font-family:'DM Sans';font-size:12px;font-weight:700;padding:6px 12px;cursor:pointer;display:none;">Close</button>
-        <span id="timer-close-label-${id}" onclick="toggleTimer('${id}')" style="display:none;font-size:12px;font-weight:600;color:#7ec8e3;cursor:pointer;padding:6px 4px;">close</span>
+        <button onclick="toggleMiniChart('${id}')" id="mini-chart-toggle-${id}" style="background:transparent;border:1px solid transparent;border-radius:8px;color:var(--muted);padding:0;width:36px;height:34px;cursor:pointer;transition:color .2s,border-color .2s;display:flex;align-items:center;justify-content:center;flex-shrink:0;" title="Toggle graph"><svg width="16" height="16" viewBox="0 0 140 100" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="14" y1="2" x2="14" y2="90" stroke="currentColor" stroke-width="8" stroke-linecap="round"/><line x1="14" y1="90" x2="138" y2="90" stroke="currentColor" stroke-width="8" stroke-linecap="round"/><polyline points="14,85 34,55 54,70 80,30 104,48 130,10" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="14" cy="85" r="8" fill="currentColor"/><circle cx="34" cy="55" r="8" fill="currentColor"/><circle cx="54" cy="70" r="8" fill="currentColor"/><circle cx="80" cy="30" r="8" fill="currentColor"/><circle cx="104" cy="48" r="8" fill="currentColor"/><circle cx="130" cy="10" r="8" fill="currentColor"/></svg></button>
         <button class="btn-timer" id="timer-btn-${id}" onclick="toggleTimer('${id}')" title="Rest timer" style="font-size:16px;line-height:1;width:36px;height:34px;padding:0;display:flex;align-items:center;justify-content:center;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg></button>
       </div>
       <div class="timer-panel" id="timer-panel-${id}">
-        <div class="timer-display" id="timer-display-${id}">00:00</div>
+        <div style="display:flex;align-items:center;position:relative;">
+          <div class="timer-display" id="timer-display-${id}" style="margin-bottom:0;flex:1;text-align:center;">00:00</div>
+          <button id="timer-toggle-btn-${id}" onclick="toggleTimerEnabled('${id}')" style="background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:'DM Sans';font-size:11px;font-weight:700;padding:5px 12px;cursor:pointer;transition:all .2s;letter-spacing:.3px;position:absolute;right:0;">Disable</button>
+        </div>
         <div class="timer-presets">
-          ${(()=>{const opts=[0,30,60,90,120,180];const closest=opts.reduce((a,b)=>Math.abs(b-lastTimerSecs)<Math.abs(a-lastTimerSecs)?b:a);return opts.map((s,i)=>`<button class="timer-preset ${s===closest?'active':''}" onclick="setTimerPreset('${id}',${s})">${['0m','0.5m','1m','1.5m','2m','3m'][i]}</button>`).join('');})()}
+          ${(()=>{const opts=[30,60,90,120,180];const closest=opts.reduce((a,b)=>Math.abs(b-lastTimerSecs)<Math.abs(a-lastTimerSecs)?b:a);return opts.map((s,i)=>`<button class="timer-preset ${s===closest?'active':''}" onclick="setTimerPreset('${id}',${s})">${['0.5m','1m','1.5m','2m','3m'][i]}</button>`).join('');})()}
         </div>
         <div class="timer-controls">
           <button class="timer-ctrl-btn" id="timer-start-${id}" onclick="timerStartStop('${id}')">Start</button>
@@ -4629,14 +4725,12 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
       </div>
     </div>
     <div id="mini-chart-${id}" class="ex-mini-chart">
-      <div style="display:flex;justify-content:flex-end;padding:0 0 4px;">
-        <button onclick="toggleMiniChart('${id}')" style="background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:10px;font-weight:700;padding:2px 7px;cursor:pointer;letter-spacing:.5px;line-height:1.4;" id="mini-chart-toggle-${id}">▼ Graph</button>
-      </div>
+
       <div id="mini-chart-inner-${id}" style="display:none;">
         <div id="mini-graph-pills-${id}" style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:8px;">
-          <div onclick="selectMiniGraph('${id}','wt')" id="mini-gpill-wt-${id}" style="flex:1;text-align:center;padding:6px 4px;cursor:pointer;font-family:'DM Sans';font-size:11px;font-weight:700;color:#e8ff47;border-bottom:2px solid #e8ff47;transition:all .15s;">Max Wt</div>
+          <div onclick="selectMiniGraph('${id}','wt')" id="mini-gpill-wt-${id}" style="flex:1;text-align:center;padding:6px 4px;cursor:pointer;font-family:'DM Sans';font-size:11px;font-weight:700;color:#e8ff47;border-bottom:2px solid #e8ff47;transition:all .15s;">MAX</div>
           <div onclick="selectMiniGraph('${id}','rm')" id="mini-gpill-rm-${id}" style="flex:1;text-align:center;padding:6px 4px;cursor:pointer;font-family:'DM Sans';font-size:11px;font-weight:700;color:#444;border-bottom:2px solid transparent;transition:all .15s;">1RM</div>
-          <div onclick="selectMiniGraph('${id}','vol')" id="mini-gpill-vol-${id}" style="flex:1;text-align:center;padding:6px 4px;cursor:pointer;font-family:'DM Sans';font-size:11px;font-weight:700;color:#444;border-bottom:2px solid transparent;transition:all .15s;">Volume</div>
+          <div onclick="selectMiniGraph('${id}','vol')" id="mini-gpill-vol-${id}" style="flex:1;text-align:center;padding:6px 4px;cursor:pointer;font-family:'DM Sans';font-size:11px;font-weight:700;color:#444;border-bottom:2px solid transparent;transition:all .15s;">VOL</div>
         </div>
         <!-- Max Weight chart -->
         <div id="mini-graph-wt-${id}" style="position:relative;">
@@ -4748,7 +4842,7 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
       // Always collapse timer for completed exercises
       const timerPanel = document.getElementById(`timer-panel-${id}`);
       const timerBtn = document.getElementById(`timer-btn-${id}`);
-      if (timerPanel) { timerPanel.classList.remove('open'); const _tcl=document.getElementById('timer-close-label-'+id); if(_tcl)_tcl.style.display='none'; }
+      if (timerPanel) { timerPanel.classList.remove('open'); }
       if (timerBtn) timerBtn.classList.remove('active', 'running');
     setFocusMode(null);
     }
@@ -4818,9 +4912,11 @@ function onMiniScrub(cardId, idx) {
   if (d.weightC?._chartInst) {
     const wInst = d.weightC._chartInst;
     wInst._selectedIdx = i;
-    wInst.data.datasets[0].pointRadius = d.weightPts.map((_,j) => j===i ? 4 : 2);
-    wInst.data.datasets[0].pointBackgroundColor = d.weightPts.map((_,j) => j===i ? '#fff' : '#e8ff47');
-    wInst.data.datasets[0].pointBorderColor = d.weightPts.map((_,j) => j===i ? '#e8ff47' : '#e8ff47');
+    const wMax = Math.max(...d.weightPts.map(p=>p.val));
+    const wMaxIdx = d.weightPts.map(p=>p.val).lastIndexOf(wMax);
+    wInst.data.datasets[0].pointRadius = d.weightPts.map((_,j) => j===i||j===wMaxIdx ? 4 : 2);
+    wInst.data.datasets[0].pointBackgroundColor = d.weightPts.map((_,j) => j===i ? '#fff' : j===wMaxIdx ? '#ff4444' : '#e8ff47');
+    wInst.data.datasets[0].pointBorderColor = d.weightPts.map((_,j) => '#e8ff47');
     wInst.update('none');
   }
 
@@ -4828,17 +4924,24 @@ function onMiniScrub(cardId, idx) {
   if (d.volC?._chartInst) {
     const vInst = d.volC._chartInst;
     vInst._selectedIdx = i;
-    vInst.data.datasets[0].pointRadius = d.volPts.map((_,j) => j===i ? 4 : 2);
-    vInst.data.datasets[0].pointBackgroundColor = d.volPts.map((_,j) => j===i ? '#fff' : '#ff8c42');
-    vInst.data.datasets[0].pointBorderColor = d.volPts.map((_,j) => j===i ? '#ff8c42' : '#ff8c42');
+    const vMax = Math.max(...d.volPts.map(p=>p.val));
+    const vMaxIdx = d.volPts.map(p=>p.val).lastIndexOf(vMax);
+    vInst.data.datasets[0].pointRadius = d.volPts.map((_,j) => j===i||j===vMaxIdx ? 4 : 2);
+    vInst.data.datasets[0].pointBackgroundColor = d.volPts.map((_,j) => j===i ? '#fff' : j===vMaxIdx ? '#ff4444' : '#ff8c42');
+    vInst.data.datasets[0].pointBorderColor = d.volPts.map((_,j) => '#ff8c42');
     vInst.update('none');
   }
 
-  // Highlight selected bar on VOLUME PROGRESS chart
+  // Highlight selected point on VOLUME PROGRESS chart (line chart)
   if (d.volProgC?._chartInst) {
-    d.volProgC._chartInst._selectedIdx = i;
-    d.volProgC._chartInst.data.datasets[0].backgroundColor = (d.volumePts||[]).map((_,j) => j===i ? '#a78bfa' : 'rgba(167,139,250,.3)');
-    d.volProgC._chartInst.update('none');
+    const vpInst = d.volProgC._chartInst;
+    vpInst._selectedIdx = i;
+    const vpMax = Math.max(...(d.volumePts||[]).map(p=>p.val));
+    const vpMaxIdx = (d.volumePts||[]).map(p=>p.val).lastIndexOf(vpMax);
+    vpInst.data.datasets[0].pointRadius = (d.volumePts||[]).map((_,j) => j===i||j===vpMaxIdx ? 4 : 2);
+    vpInst.data.datasets[0].pointBackgroundColor = (d.volumePts||[]).map((_,j) => j===i ? '#fff' : j===vpMaxIdx ? '#ff4444' : '#a78bfa');
+    vpInst.data.datasets[0].pointBorderColor = (d.volumePts||[]).map((_,j) => '#a78bfa');
+    vpInst.update('none');
   }
 
   // Use allPts to get date for selected index
@@ -5335,7 +5438,7 @@ function toggleCardCollapse(id) {
     if (card.classList.contains('completed')) {
       const timerPanel = document.getElementById(`timer-panel-${id}`);
       const timerBtn = document.getElementById(`timer-btn-${id}`);
-      if (timerPanel) { timerPanel.classList.remove('open'); const _tcl=document.getElementById('timer-close-label-'+id); if(_tcl)_tcl.style.display='none'; }
+      if (timerPanel) { timerPanel.classList.remove('open'); }
       if (timerBtn) timerBtn.classList.remove('active', 'running');
       stopTimer(id);
       resetTimer(id);
@@ -5344,7 +5447,7 @@ function toggleCardCollapse(id) {
     const miniInner5 = document.getElementById(`mini-chart-inner-${id}`);
     const miniBtn5 = document.getElementById(`mini-chart-toggle-${id}`);
     if (miniInner5) miniInner5.style.display = 'none';
-    if (miniBtn5) miniBtn5.textContent = '▼ Graph';
+    if (miniBtn5) miniBtn5.innerHTML = '<svg width="22" height="22" viewBox="0 0 140 100" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="14" y1="2" x2="14" y2="90" stroke="currentColor" stroke-width="8" stroke-linecap="round"/><line x1="14" y1="90" x2="138" y2="90" stroke="currentColor" stroke-width="8" stroke-linecap="round"/><polyline points="14,85 34,55 54,70 80,30 104,48 130,10" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="14" cy="85" r="8" fill="currentColor"/><circle cx="34" cy="55" r="8" fill="currentColor"/><circle cx="54" cy="70" r="8" fill="currentColor"/><circle cx="80" cy="30" r="8" fill="currentColor"/><circle cx="104" cy="48" r="8" fill="currentColor"/><circle cx="130" cy="10" r="8" fill="currentColor"/></svg>';
     setTimeout(() => refreshCardMiniCharts(id), 80);
     // Scroll card to sit right below the pills — wait for collapse animation
     setTimeout(() => {
@@ -5467,7 +5570,7 @@ function toggleDone(id) {
     updateTimerChevronDot(id, false);
     const timerPanel = document.getElementById(`timer-panel-${id}`);
     const timerBtn = document.getElementById(`timer-btn-${id}`);
-    if (timerPanel) { timerPanel.classList.remove('open'); const _tcl=document.getElementById('timer-close-label-'+id); if(_tcl)_tcl.style.display='none'; }
+    if (timerPanel) { timerPanel.classList.remove('open'); }
     if (timerBtn) timerBtn.classList.remove('active', 'running');
     // Build summary from checked sets only
     const sets = card.querySelectorAll('.set-row');
@@ -5892,15 +5995,11 @@ function toggleTimer(id) {
     updateTimerChevronDot(id, false);
     panel.classList.remove('open');
     btn.classList.remove('active', 'running');
-    const _cl = document.getElementById(`timer-close-label-${id}`);
-    if (_cl) _cl.style.display = 'none';
     return;
   }
   const isOpen = panel.classList.toggle('open');
   btn.classList.toggle('active', isOpen);
   // Show/hide "Close" label to the left of timer button
-  const closeLabel = document.getElementById(`timer-close-label-${id}`);
-  if (closeLabel) closeLabel.style.display = isOpen ? '' : 'none';
   // If opening and timer is done (at zero), reset it
   if (isOpen && _timers[id] && _timers[id].remaining <= 0 && !_timers[id].running) {
     const t = _timers[id];
@@ -6036,6 +6135,9 @@ function startTimer(id) {
 function autoStartTimer(exId, clickedBtn) {
   // Only trigger if the set was just marked done (not unmarked)
   if (!clickedBtn.classList.contains('done')) return;
+  // Skip if timer is disabled for this card
+  const toggleBtn = document.getElementById(`timer-toggle-btn-${exId}`);
+  if (toggleBtn && toggleBtn.textContent === 'Enable') return;
   const card = document.getElementById(exId);
   if (!card) return;
   // Check if there's at least one undone set after this one
@@ -6055,8 +6157,6 @@ function autoStartTimer(exId, clickedBtn) {
     panel.classList.add('open');
     btn?.classList.add('active');
     updateTimerDisplay(exId);
-    const _cl = document.getElementById(`timer-close-label-${exId}`);
-    if (_cl) _cl.style.display = '';
   }
   // Reset and start (only if timer is not set to 0)
   const t = _timers[exId];
@@ -6563,6 +6663,8 @@ function saveWorkoutToList() {
   }
 }
 function actionsRowRestore() {
+  const _tabsEl3 = document.querySelector('.tabs');
+  if (_tabsEl3) _tabsEl3.style.display = '';
   const actionsRow = document.querySelector('.today-actions');
   if (actionsRow) { actionsRow.style.display = ''; actionsRow.style.opacity = ''; actionsRow.style.transition = ''; }
   const clearBtn = document.querySelector('.btn-clear-workout');
@@ -7107,7 +7209,12 @@ function loadWorkout(idx) {
     closeLoadHistory();
     showToast(`"${w.name}" loaded!`);
   };
-  if (!anySetDone) { doLoad(); return; }
+  // If user already confirmed via Change Workout menu, skip second popup
+  if (!anySetDone || window._isChangingWorkout) {
+    window._isChangingWorkout = false;
+    doLoad();
+    return;
+  }
   const overlay = document.createElement('div');
   overlay.className = 'delete-confirm-overlay';
   overlay.innerHTML = `
@@ -9306,7 +9413,10 @@ function onVolProgressScrub(idx) {
     volProgressChartInst._selectedIdx = i;
     const _vpc = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171', Compound:'#20d4c8' };
     const _c = _vpc[volProgressMuscle] || '#a78bfa';
-    volProgressChartInst.data.datasets[0].backgroundColor = pts.map((_,j) => j===i ? _c : _c + '80');
+    const _vpMx = Math.max(...pts.map(p=>p.val));
+    const _vpMxIdx = pts.map(p=>p.val).lastIndexOf(_vpMx);
+    volProgressChartInst.data.datasets[0].pointRadius = pts.map((_,j) => j===i||j===_vpMxIdx ? 4 : 2);
+    volProgressChartInst.data.datasets[0].pointBackgroundColor = pts.map((_,j) => j===i ? '#fff' : j===_vpMxIdx ? '#ff4444' : _c);
     volProgressChartInst.update('none');
   }
   const dateEl = document.getElementById('volProgress-scrub-date');
@@ -9513,6 +9623,8 @@ function renderExProgressChart() {
   if (exProgressChartInst) { exProgressChartInst.destroy(); exProgressChartInst = null; }
 
   const lastIdx = pts.length - 1;
+  const maxVal = Math.max(...pts.map(p=>p.val));
+  const maxIdx = pts.map(p=>p.val).lastIndexOf(maxVal);
   const mopts = {
     responsive:true, maintainAspectRatio:false,
     layout:{ padding:{top:10} },
@@ -9525,8 +9637,8 @@ function renderExProgressChart() {
       if (!els.length) return;
       const i = els[0].index;
       exProgressChartInst._selectedIdx = i;
-      exProgressChartInst.data.datasets[0].pointRadius = pts.map((_,j) => j===i ? 6 : 2);
-      exProgressChartInst.data.datasets[0].pointBackgroundColor = pts.map((_,j) => j===i ? '#fff' : color);
+      exProgressChartInst.data.datasets[0].pointRadius = pts.map((_,j) => j===i||j===maxIdx ? 6 : 2);
+      exProgressChartInst.data.datasets[0].pointBackgroundColor = pts.map((_,j) => j===i ? '#fff' : j===maxIdx ? '#ff4444' : color);
       exProgressChartInst.update('none');
       if (bigVal) bigVal.innerHTML = pts[i].val + `<span style="font-size:11px;font-weight:500;letter-spacing:.5px;"> ${unit}</span>`;
       const _bsp = document.getElementById('exProgress-big-setparam');
@@ -9550,8 +9662,8 @@ function renderExProgressChart() {
         data: pts.map(p => p.val),
         borderColor: color,
         backgroundColor: color + '14',
-        pointBackgroundColor: pts.map((_,i) => i===lastIdx ? '#fff' : color),
-        pointRadius: pts.map((_,i) => i===lastIdx ? 6 : 2),
+        pointBackgroundColor: pts.map((_,i) => i===maxIdx ? '#ff4444' : i===lastIdx ? '#fff' : color),
+        pointRadius: pts.map((_,i) => i===maxIdx||i===lastIdx ? 6 : 2),
         tension:0,
         fill: true,
         borderWidth: 1.5
@@ -9589,8 +9701,10 @@ function onExProgressScrub(idx) {
   // Update chart highlight
   if (exProgressChartInst) {
     exProgressChartInst._selectedIdx = i;
-    exProgressChartInst.data.datasets[0].pointRadius = pts.map((_,j) => j===i ? 6 : 2);
-    exProgressChartInst.data.datasets[0].pointBackgroundColor = pts.map((_,j) => j===i ? '#fff' : color);
+    const _epMaxVal = Math.max(...pts.map(p=>p.val));
+    const _epMaxIdx = pts.map(p=>p.val).lastIndexOf(_epMaxVal);
+    exProgressChartInst.data.datasets[0].pointRadius = pts.map((_,j) => j===i||j===_epMaxIdx ? 6 : 2);
+    exProgressChartInst.data.datasets[0].pointBackgroundColor = pts.map((_,j) => j===i ? '#fff' : j===_epMaxIdx ? '#ff4444' : color);
     exProgressChartInst.update('none');
   }
 
@@ -9722,15 +9836,21 @@ function renderVolumeProgressChart() {
   const _vpColors = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171',Compound:'#20d4c8' };
   const _vpColor = _vpColors[volProgressMuscle] || '#a78bfa';
   const _vpColorFade = _vpColor + '80';
+  const _vpMaxVal = rawPts.length ? Math.max(...rawPts.map(p=>p.val)) : 0;
+  const _vpMaxIdx = rawPts.map(p=>p.val).lastIndexOf(_vpMaxVal);
+  const _vpMin = rawPts.length ? Math.min(...rawPts.map(p=>p.val)) : 0;
+  const _vpPad = (_vpMaxVal - _vpMin) * 0.1 || 1;
   volProgressChartInst = new Chart(document.getElementById('volProgressChart').getContext('2d'), {
-    type: 'bar',
+    type: 'line',
     data: {
       labels: rawPts.map(p => p.date),
       datasets: [{
         data: rawPts.map(p => p.val),
-        backgroundColor: rawPts.map(() => _vpColorFade),
         borderColor: _vpColor,
-        borderWidth: 1.5, borderRadius: 3
+        backgroundColor: _vpColor + '14',
+        pointBackgroundColor: rawPts.map((_,i) => i===_vpMaxIdx ? '#ff4444' : i===rawPts.length-1 ? '#fff' : _vpColor),
+        pointRadius: rawPts.map((_,i) => i===_vpMaxIdx||i===rawPts.length-1 ? 4 : 2),
+        tension: 0, fill: true, borderWidth: 1.5
       }]
     },
     options: {
@@ -9738,37 +9858,13 @@ function renderVolumeProgressChart() {
       layout: { padding: { top: 8 } },
       plugins: { legend: { display: false }, tooltip: { enabled: false } },
       scales: {
-        x: { ticks: { color: '#666', font: { size: 9 }, maxTicksLimit: globalRange === 'week' ? 7 : 6, autoSkip: globalRange !== 'week', maxRotation: 0 }, grid: { color: '#1a1a1a' } },
-        y: {
-          display: false,
-          ticks: { color: _vpColor, font: { size: 9 } },
-          grid: { display: false },
-          title: { display: false }
-        }
+        x: { ticks: { color: '#666', font: { size: 9 }, maxTicksLimit: globalRange === 'week' ? 7 : 6, autoSkip: globalRange !== 'week', maxRotation: 0 }, grid: { display: false } },
+        y: { ticks: { color: _vpColor+'99', font: { size: 9 } }, grid: { color: '#1e1e1e' }, min: _vpMin - _vpPad }
       }
     },
     plugins: [{
       id: 'volProgressPointLabel',
-      afterDraw(chart) {
-        const ctx = chart.ctx;
-        const sel = chart._selectedIdx;
-        const meta = chart.getDatasetMeta(0);
-        meta.data.forEach((bar, idx) => {
-          if (idx !== sel) return;
-          const val = chart.data.datasets[0].data[idx];
-          const yPos = val ? bar.y - 8 : chart.scales.y.getPixelForValue(0) - 8;
-          const yTip = val ? bar.y - 4 : chart.scales.y.getPixelForValue(0) - 4;
-          ctx.save();
-          const chevSize = 7;
-          ctx.strokeStyle = _vpColor;
-          ctx.lineWidth = 1.5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-          ctx.beginPath();
-          ctx.moveTo(bar.x - chevSize/2, yPos);
-          ctx.lineTo(bar.x, yTip);
-          ctx.lineTo(bar.x + chevSize/2, yPos);
-          ctx.stroke(); ctx.restore();
-        });
-      }
+      afterDraw(chart) {}
     }]
   });
   _volProgressPts = rawPts;
@@ -11090,7 +11186,7 @@ function _wtabAnimateBottomBtns(selIdx) {
     card.style.opacity = isSelected ? '1' : '0.25';
     card.style.pointerEvents = isSelected ? '' : 'none';
     const selBtn = card.querySelector('button[onclick*="_wtabSelectedIdx"]') || card.querySelector('button[onclick*="wtabAnimateBottomBtns"]');
-    if (selBtn) selBtn.textContent = isSelected ? '✓ Selected' : 'Select';
+    if (selBtn) { selBtn.textContent = isSelected ? '✓ Selected' : 'Select'; selBtn.style.color = isSelected ? 'var(--accent)' : '#888'; }
   });
   if (!box) { window._keepWorkoutsTabState = true; renderWorkoutsTab(); return; }
   // Make sure bottom buttons are visible (may have been hidden when card expanded)
@@ -11138,13 +11234,17 @@ function _wtabCancelSelection() {
     card.style.opacity = '1';
     card.style.pointerEvents = '';
     const selBtn = card.querySelector('button[onclick*="_wtabSelectedIdx"]') || card.querySelector('button[onclick*="wtabAnimateBottomBtns"]');
-    if (selBtn) selBtn.textContent = 'Select';
+    if (selBtn) { selBtn.textContent = 'Select'; selBtn.style.color = '#888'; }
   });
   if (!box) { window._keepWorkoutsTabState = true; renderWorkoutsTab(); return; }
   box.style.transition = 'opacity .2s ease';
   box.style.opacity = '0';
   setTimeout(() => {
-    box.innerHTML = `<button onclick="startNewWorkout(true);" style="width:100%;margin-top:8px;background:transparent;border:1px dashed var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Create New Workout</button>`;
+    const _proA = !!window._wtabProMode;
+    box.innerHTML = `<div style="display:flex;gap:8px;align-items:stretch;margin-top:8px;">
+      <button onclick="startNewWorkout(true);" style="flex:1;background:transparent;border:1px dashed var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Create New Workout</button>
+      <button onclick="toggleWtabPro()" style="background:transparent;border:1px solid ${_proA ? '#34d399' : 'var(--border)'};border-radius:10px;color:${_proA ? '#34d399' : 'var(--muted)'};font-family:'DM Sans';font-size:12px;font-weight:700;padding:0 14px;cursor:pointer;transition:all .2s;white-space:nowrap;letter-spacing:.5px;">PRO</button>
+    </div>`;
     box.style.opacity = '1';
   }, 200);
 }
@@ -15642,7 +15742,7 @@ function exitCoachMode() {
     <button class="tab active" onclick="switchTab('log')">Today</button>
     <button class="tab" onclick="if(!window._createNewMode)switchTab('workouts')">Workouts</button>
     <button class="tab" onclick="switchTab('exercises')">Exercises</button>
-    <button class="tab" onclick="switchTab('progress')">Progress</button>
+    <button class="tab" id="tab-progress-btn" onclick="switchTab('progress')">PRO</button>
   `;
   document.getElementById('userMenuCoachModeBtn').style.display = 'block';
   document.getElementById('userMenuExitCoachModeBtn').style.display = 'none';
@@ -16503,6 +16603,178 @@ switchTab = function(tab) {
             overlay.classList.add('show');
         }
     }
+
+// ── WORKOUT NAME BAR MENU ─────────────────────────────────────────────────
+function toggleWorkoutMenu(e) {
+  if (e) e.stopPropagation();
+  const dd = document.getElementById('workoutMenuDropdown');
+  if (!dd) return;
+  const isOpen = dd.style.display !== 'none';
+  dd.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) {
+    const isEditMode = window._isNewWorkoutFlow && window._editingWorkoutIdx !== undefined;
+    dd.querySelectorAll('button').forEach(btn => {
+      const text = btn.textContent.trim();
+      if (text === 'Change Workout' || text === 'Delete') {
+        btn.style.display = isEditMode ? 'none' : '';
+      }
+    });
+    setTimeout(() => {
+      document.addEventListener('click', function _close() {
+        dd.style.display = 'none';
+        document.removeEventListener('click', _close);
+      });
+    }, 0);
+  }
+}
+// ─────────────────────────────────────────────────────────────────────────
+
+// ── SESSION PROGRESS TOGGLE ───────────────────────────────────────────────
+function toggleSessionProgress(cardId) {
+  const bar = document.getElementById(`vol-target-bar-${cardId}`);
+  if (!bar) return;
+  const isVisible = bar.dataset.proOpen === 'true';
+  const newState = !isVisible;
+  window._proBarOpen = newState;
+  document.querySelectorAll('#exerciseList .exercise-card').forEach(card => {
+    const b = document.getElementById(`vol-target-bar-${card.id}`);
+    if (!b) return;
+    b.dataset.proOpen = newState ? 'true' : 'false';
+    if (newState) {
+      b.style.display = '';
+      requestAnimationFrame(() => b.classList.add('pro-open'));
+    } else {
+      b.classList.remove('pro-open');
+      setTimeout(() => { if (b.dataset.proOpen === 'false') b.style.display = 'none'; }, 350);
+    }
+  });
+}
+// ─────────────────────────────────────────────────────────────────────────
+
+// ── TIMER ENABLE/DISABLE ──────────────────────────────────────────────────
+function toggleTimerEnabled(cardId) {
+  const btn = document.getElementById(`timer-toggle-btn-${cardId}`);
+  const timerBtn = document.getElementById(`timer-btn-${cardId}`);
+  const panel = document.getElementById(`timer-panel-${cardId}`);
+  if (!btn) return;
+  const isEnabled = btn.textContent === 'Disable';
+  btn.textContent = isEnabled ? 'Enable' : 'Disable';
+  btn.style.color = isEnabled ? '#ff4747' : 'var(--muted)';
+  btn.style.borderColor = isEnabled ? '#ff4747' : 'var(--border)';
+  // If disabling while timer is running — stop and reset to preset value
+  if (isEnabled) {
+    stopTimer(cardId);
+    const t = _timers[cardId];
+    if (t) {
+      t.remaining = t.target;
+      updateTimerDisplay(cardId);
+      const disp = document.getElementById(`timer-display-${cardId}`);
+      if (disp) disp.classList.remove('done');
+    }
+    if (panel) panel.classList.remove('open');
+    if (timerBtn) { timerBtn.classList.remove('active','running'); }
+  }
+  // Dim the timer icon button
+  if (timerBtn) {
+    timerBtn.style.opacity = isEnabled ? '0.5' : '';
+    timerBtn.style.pointerEvents = '';
+  }
+  // Shade the panel content (presets + start button) but keep panel open
+  if (panel) {
+    const presets = panel.querySelector('.timer-presets');
+    const controls = panel.querySelector('.timer-controls');
+    const display = panel.querySelector('.timer-display');
+    [presets, controls].forEach(el => {
+      if (!el) return;
+      el.style.opacity = isEnabled ? '0.25' : '';
+      el.style.pointerEvents = isEnabled ? 'none' : '';
+    });
+    if (display) display.style.opacity = isEnabled ? '0.25' : '';
+  }
+}
+// ─────────────────────────────────────────────────────────────────────────
+
+// ── EXERCISES TAB PRO MODE ────────────────────────────────────────────────
+function toggleExTabPro() {
+  window._exTabProMode = !window._exTabProMode;
+  localStorage.setItem('extab_pro_mode', window._exTabProMode ? '1' : '0');
+  renderExercisesTab();
+}
+// ─────────────────────────────────────────────────────────────────────────
+
+// ── WORKOUTS TAB PRO MODE ─────────────────────────────────────────────────
+function toggleWtabPro() {
+  window._wtabProMode = !window._wtabProMode;
+  localStorage.setItem('wtab_pro_mode', window._wtabProMode ? '1' : '0');
+  renderWorkoutsTab();
+}
+// ─────────────────────────────────────────────────────────────────────────
+
+// ── WORKOUTS TAB CARD MENU ────────────────────────────────────────────────
+function toggleWtabCardMenu(idx) {
+  const menu = document.getElementById(`wtab-card-menu-${idx}`);
+  if (!menu) return;
+  const isOpen = menu.style.display !== 'none';
+  // Close all other open menus first
+  document.querySelectorAll('[id^="wtab-card-menu-"]').forEach(m => m.style.display = 'none');
+  if (!isOpen) {
+    menu.style.display = 'block';
+    setTimeout(() => {
+      document.addEventListener('click', function _close() {
+        menu.style.display = 'none';
+        document.removeEventListener('click', _close);
+      });
+    }, 0);
+  }
+}
+// ─────────────────────────────────────────────────────────────────────────
+
+// ── CHANGE WORKOUT FROM MENU ──────────────────────────────────────────────
+function changeWorkoutFromMenu() {
+  const anySetDone = !!document.querySelector('#exerciseList .set-done-btn.done') ||
+                     !!document.querySelector('#exerciseList .exercise-card.completed');
+  const doSwitch = () => {
+    setTimeout(() => {
+      window._isChangingWorkout = true; // flag to skip second popup in loadWorkout
+      window._loadFromToday = true;
+      switchTab('workouts');
+    }, 50);
+  };
+  if (!anySetDone) { doSwitch(); return; }
+  const overlay = document.createElement('div');
+  overlay.className = 'delete-confirm-overlay';
+  overlay.innerHTML = `
+    <div class="delete-confirm-sheet">
+      <div class="delete-confirm-title">Change Workout?</div>
+      <div class="delete-confirm-sub">Your current workout progress will be lost.</div>
+      <div class="delete-confirm-btns">
+        <button class="btn-del-cancel" id="_cwCancel">Cancel</button>
+        <button class="btn-del-yes" id="_cwConfirm">Change</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#_cwCancel').onclick = () => overlay.remove();
+  overlay.querySelector('#_cwConfirm').onclick = () => { overlay.remove(); doSwitch(); };
+}
+// ─────────────────────────────────────────────────────────────────────────
+
+// ── EXERCISES TAB CARD MENU ───────────────────────────────────────────────
+function toggleExTabCardMenu(safeId) {
+  const menu = document.getElementById(`extab-card-menu-${safeId}`);
+  if (!menu) return;
+  const isOpen = menu.style.display !== 'none';
+  document.querySelectorAll('[id^="extab-card-menu-"]').forEach(m => m.style.display = 'none');
+  if (!isOpen) {
+    menu.style.display = 'block';
+    setTimeout(() => {
+      document.addEventListener('click', function _close() {
+        menu.style.display = 'none';
+        document.removeEventListener('click', _close);
+      });
+    }, 0);
+  }
+}
+// ─────────────────────────────────────────────────────────────────────────
 </script>
 
 </body>
