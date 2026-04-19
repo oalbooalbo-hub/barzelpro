@@ -1718,15 +1718,18 @@ const BUILTIN_EXERCISES = [];
 // Load custom exercises from localStorage
 let customExercises = JSON.parse(_LS.get('ironlog_custom_ex') || '[]');
 
+let _getAllExercisesCache = null;
+let _getAllExercisesCacheKey = '';
+function _invalidateExCache() { _getAllExercisesCache = null; }
 function getAllExercises() {
+  const cacheKey = customExercises.length + '|' + workouts.length;
+  if (_getAllExercisesCache && _getAllExercisesCacheKey === cacheKey) return _getAllExercisesCache;
   const all = [...customExercises];
   const names = new Set(all.map(e => e.name));
   const hiddenEx = JSON.parse(_LS.get('ironlog_hidden_ex') || '[]');
-  // Add history-derived exercises from workout history (from brand_library.json)
   workouts.filter(w => !w._draft && !w._template).forEach(w => {
     w.exercises.forEach(e => {
       if (names.has(e.name) || hiddenEx.includes(e.name)) return;
-      // Find muscle from brand_library.json
       let muscle = e.muscle || 'Chest';
       if (_defaultExercises) {
         for (const [m, items] of Object.entries(_defaultExercises)) {
@@ -1737,6 +1740,8 @@ function getAllExercises() {
       names.add(e.name);
     });
   });
+  _getAllExercisesCache = all;
+  _getAllExercisesCacheKey = cacheKey;
   return all;
 }
 
@@ -1803,7 +1808,15 @@ function clearDraft() {
   }
 }
 
+let _checkFinishReadyTimer = null;
 function checkFinishReady() {
+  if (_checkFinishReadyTimer) return;
+  _checkFinishReadyTimer = setTimeout(() => {
+    _checkFinishReadyTimer = null;
+    _checkFinishReadyImpl();
+  }, 80);
+}
+function _checkFinishReadyImpl() {
   const anyDone = document.querySelector('#exerciseList .exercise-card.completed') !== null;
   const anySetDone = !!document.querySelector('#exerciseList .set-done-btn.done');
   const hasExercises = document.querySelector('#exerciseList .exercise-card') !== null;
@@ -2769,7 +2782,7 @@ function clearSession() {
   };
 }
 
-function save() { _LS.set('ironlog_workouts', JSON.stringify(workouts)); }
+function save() { _LS.set('ironlog_workouts', JSON.stringify(workouts)); _invalidateExCache(); }
 function saveDeleted() { _LS.set('ironlog_deleted_workouts', JSON.stringify(deletedWorkouts)); }
 function saveCustom() { _LS.set('ironlog_custom_ex', JSON.stringify(customExercises)); if(window._currentUser) if(window.syncToFirestore) window.syncToFirestore(); }
 function showToast(msg, opts) {
@@ -17092,6 +17105,50 @@ function renderProgHistory() {
     </div>`;
   }).join('');
 }
+// ─────────────────────────────────────────────────────────────────────────
+
+
+// ── PERFORMANCE OPTIMIZATIONS ─────────────────────────────────────────────
+// requestIdleCallback polyfill for Safari
+window.requestIdleCallback = window.requestIdleCallback || function(cb) {
+  return setTimeout(() => cb({ didTimeout: false, timeRemaining: () => 50 }), 1);
+};
+window.cancelIdleCallback = window.cancelIdleCallback || clearTimeout;
+
+// Throttle function for high-frequency events
+function _throttle(fn, ms) {
+  let last = 0;
+  return function(...args) {
+    const now = Date.now();
+    if (now - last >= ms) { last = now; fn.apply(this, args); }
+  };
+}
+
+// Lazy image/chart observer — only render charts when visible
+const _chartObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const canvas = entry.target;
+      const cardId = canvas.dataset.lazyCard;
+      const exName = canvas.dataset.lazyEx;
+      if (cardId && exName && !canvas._chartInst) {
+        requestIdleCallback(() => renderMiniChart(cardId, exName));
+        _chartObserver.unobserve(canvas);
+      }
+    }
+  });
+}, { threshold: 0.1 });
+// ─────────────────────────────────────────────────────────────────────────
+// ── RENDER DEBOUNCING ─────────────────────────────────────────────────────
+function _debounce(fn, delay) {
+  let t;
+  return function(...args) {
+    clearTimeout(t);
+    t = setTimeout(() => fn.apply(this, args), delay);
+  };
+}
+const _debouncedRenderHistory = _debounce(() => { if (window._activeTab === 'history') renderHistory(); }, 150);
+const _debouncedRenderProgress = _debounce(() => { if (window._activeTab === 'progress') renderProgress(); }, 150);
 // ─────────────────────────────────────────────────────────────────────────
 </script>
 
