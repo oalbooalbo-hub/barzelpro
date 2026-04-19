@@ -114,6 +114,11 @@ body.desktop-mode .pages-wrap {
 .btn-chevron{transform:rotate(180deg);}.btn-chevron.open,.hcard-chevron.open{border-color:var(--border);color:var(--muted);transform:rotate(0deg);}.btn-chevron.timer-active{color:#7ec8e3;border-color:#7ec8e3;animation:chevBlink 1s ease-in-out infinite;}@keyframes chevBlink{0%,100%{opacity:1;color:#7ec8e3;border-color:#7ec8e3;}50%{opacity:.25;color:#7ec8e3;border-color:#7ec8e3;}}
 .btn-chevron.timer-done{color:#ff4444;border-color:#ff4444;animation:chevBlinkRed 2s ease-in-out infinite;}@keyframes chevBlinkRed{0%,100%{opacity:1;color:#ff4444;border-color:#ff4444;}50%{opacity:.2;color:#ff4444;border-color:#ff4444;}}
 .btn-chevron .chev{display:none;}/* arrow via transform, no extra span needed */
+#ex-float-bar{position:fixed;bottom:calc(90px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:calc(min(430px,100%) - 32px);background:var(--surface);border:1px solid var(--border);border-radius:16px;display:none;gap:0;z-index:50;box-shadow:0 8px 32px rgba(0,0,0,.5);overflow:hidden;}
+#ex-float-bar button{flex:1;background:transparent;border:none;border-right:1px solid var(--border);color:var(--muted);padding:14px 0;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;transition:color .2s,background .15s;font-family:'DM Sans';font-size:10px;font-weight:700;letter-spacing:.3px;}
+#ex-float-bar button:last-child{border-right:none;}
+#ex-float-bar button:hover,#ex-float-bar button.active{color:var(--accent);}
+#ex-float-bar button.green{color:#34d399;}
 .btn-trash{background:transparent;border:none;color:#555;cursor:pointer;padding:5px 5px;border-radius:6px;transition:color .2s;flex-shrink:0;line-height:1;display:flex;align-items:center;justify-content:center;}
 .hcard-pr-chip{transition:background .15s,box-shadow .15s;}
 .hcard-pr-chip:hover{background:rgba(255,255,255,.08);}
@@ -343,6 +348,10 @@ body.desktop-mode .pages-wrap {
 .chart-title{font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;margin-bottom:3px;}
 .prog-acc-header{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;position:relative;}
 .prog-acc-chev{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border:1px solid var(--border);border-radius:7px;color:var(--muted);font-size:15px;flex-shrink:0;transition:transform .25s,border-color .25s,color .25s;}
+.wtab-pro-content{overflow:hidden;transition:max-height .35s cubic-bezier(.4,0,.2,1),opacity .3s ease;max-height:0;opacity:0;}
+.extab-pro-stat{overflow:hidden;transition:max-width .35s cubic-bezier(.4,0,.2,1),opacity .3s ease;max-width:0;opacity:0;white-space:nowrap;}
+.extab-pro-stat.visible{max-width:200px;opacity:1;}
+.wtab-pro-content.visible{max-height:200px;opacity:1;}
 .prog-accordion.open .prog-acc-chev{transform:rotate(180deg);border-color:var(--accent);color:var(--accent);}
 .prog-acc-body{padding-top:10px;}
 .prog-acc-close{display:none;}
@@ -936,7 +945,7 @@ function hidAuthScreen() {
 <div id="exercisesToggleBar" style="display:none;position:sticky;top:0;z-index:20;background:var(--bg);padding:8px 16px 0;"></div>
 <div id="progressToggleBar" style="display:none;position:sticky;top:0;z-index:20;background:var(--bg);padding:8px 16px 0;">
   <div style="display:flex;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
-    <button id="progress-seg-graphs" onclick="switchProgressView('graphs')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:var(--accent);color:#000;font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">GRAPHS</button>
+    <button id="progress-seg-graphs" onclick="switchProgressView('graphs')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:var(--accent);color:#000;font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">MY PROGRESS</button>
     <button id="progress-seg-history" onclick="switchProgressView('history')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:transparent;color:var(--muted);font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">HISTORY</button>
   </div>
 </div>
@@ -1305,6 +1314,26 @@ function hidAuthScreen() {
         <input type="range" id="capScrubber" min="0" value="0" step="1" style="width:100%;accent-color:#555;cursor:pointer;height:3px;" oninput="onCapScrub(this.value)">
       </div>
     </div>
+  </div>
+  <div class="chart-card prog-accordion" id="acc-history">
+    <div class="prog-acc-header" onclick="toggleProgressCard('acc-history')">
+      <span class="chart-title" style="margin-bottom:0;">HISTORY</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="prog-acc-info-btn" onclick="event.stopPropagation();toggleProgInfo('history-info','acc-history',this)" style="align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid #34d399;color:#34d399;font-family:'DM Sans';font-size:10px;font-weight:700;cursor:pointer;flex-shrink:0;">i</span>
+        <span class="prog-acc-chev"><svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" width="12" height="12"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      </div>
+    </div>
+    <div class="prog-acc-body" style="display:none;">
+      <div id="history-info" style="display:none;margin-bottom:8px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;font-family:'DM Sans';font-size:12px;color:var(--muted);line-height:1.8;font-weight:500;">
+        <div style="color:var(--text);font-size:12px;margin-bottom:4px;">Workout history filtered by selected muscle group and time range.</div>
+        <div style="display:flex;gap:8px;align-items:baseline;"><span style="color:#e8ff47;font-weight:700;width:64px;flex-shrink:0;">DATE</span><span style="color:#555;">—</span><span style="color:#aaa;">When the workout was performed</span></div>
+        <div style="display:flex;gap:8px;align-items:baseline;"><span style="color:#7ec8e3;font-weight:700;width:64px;flex-shrink:0;">SETS</span><span style="color:#555;">—</span><span style="color:#aaa;">Number of completed sets</span></div>
+        <div style="display:flex;gap:8px;align-items:baseline;"><span style="color:#a78bfa;font-weight:700;width:64px;flex-shrink:0;">VOL</span><span style="color:#555;">—</span><span style="color:#aaa;">Total volume: sum of kg × reps</span></div>
+      </div>
+      <div id="prog-history-list" style="display:flex;flex-direction:column;gap:6px;padding:4px 0 8px;"></div>
+      <div id="prog-history-empty" style="display:none;text-align:center;padding:20px 0;font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.5px;">NO DATA FOR THIS PERIOD</div>
+    </div>
+  </div>
   </div><!-- /progress-graphs-content -->
 </div>
 <!-- NEW EXERCISE MODAL -->
@@ -1923,7 +1952,7 @@ function toggleMiniChart(cardId) {
     if (body) { body.style.maxHeight = '4000px'; body.classList.add('open'); }
     const inner = document.getElementById(`mini-chart-inner-${cardId}`);
     if (inner) inner.style.display = '';
-    setTimeout(() => { renderMiniChart(cardId, document.getElementById(cardId)?.dataset?.exname); }, 50);
+    setTimeout(() => { renderMiniChart(cardId, document.getElementById(cardId)?.dataset?.exname); }, 100);
   } else {
     chartDiv.classList.remove('visible');
     setTimeout(() => { if (!chartDiv.classList.contains('visible')) chartDiv.style.display = ''; }, 350);
@@ -1940,8 +1969,11 @@ function toggleMiniChart(cardId) {
     if (!otherChart) return;
     if (nowOpen) {
       otherChart.style.display = '';
+      const otherInner = document.getElementById(`mini-chart-inner-${card.id}`);
+      if (otherInner) otherInner.style.display = '';
       requestAnimationFrame(() => otherChart.classList.add('visible'));
       if (otherBody) { otherBody.style.maxHeight = '4000px'; otherBody.classList.add('open'); }
+      setTimeout(() => { renderMiniChart(card.id, document.getElementById(card.id)?.dataset?.exname); }, 100);
     } else {
       otherChart.classList.remove('visible');
       setTimeout(() => { if (!otherChart.classList.contains('visible')) otherChart.style.display = ''; }, 350);
@@ -2048,7 +2080,9 @@ function updateVolProgressBar(exId) {
     if (lbl) lbl.innerHTML = '';
     if (rm >= bestRM) { bestRM = rm; bestRow = row; }
   });
-  if (bestRow) {
+  // Only show 1RM label and orange highlight when PRO (Analyze Session) is open
+  const _proOpen = document.getElementById(`vol-target-bar-${exId}`)?.dataset?.proOpen === 'true';
+  if (bestRow && _proOpen) {
     const existing = bestRow.querySelector('.rm-highlight');
     if (existing) existing.remove();
     const _isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -2061,6 +2095,10 @@ function updateVolProgressBar(exId) {
     }
     const lbl = bestRow.querySelector('.set-rm-label');
     if (lbl) lbl.innerHTML = '<span style="font-size:10px;font-weight:700;color:#ff8c42;letter-spacing:.5px;">1RM</span>';
+  } else if (!_proOpen) {
+    // Clear any existing highlight and label
+    card.querySelectorAll('.rm-highlight').forEach(el => el.remove());
+    card.querySelectorAll('.set-rm-label').forEach(el => el.innerHTML = '');
   }
 
   if (!anyDefined && prevVol === 0) {
@@ -2911,7 +2949,7 @@ function renderExercisesTab() {
       const bestWt = ex.bestWt > 0 ? parseFloat(ex.bestWt.toFixed(2)) : null;
       const rmArrow = ex.prevRM > 0 && ex.lastRM > ex.prevRM ? '<span style="color:#4caf50;font-size:9px;margin-left:3px;">▲</span>' : ex.prevRM > 0 && ex.lastRM < ex.prevRM ? '<span style="color:#ff4444;font-size:9px;margin-left:3px;">▼</span>' : '<span style="font-size:9px;margin-left:3px;visibility:hidden;">▲</span>';
       const wtArrow = ex.prevWt > 0 && ex.lastWt > ex.prevWt ? '<span style="color:#4caf50;font-size:9px;margin-left:3px;">▲</span>' : ex.prevWt > 0 && ex.lastWt < ex.prevWt ? '<span style="color:#ff4444;font-size:9px;margin-left:3px;">▼</span>' : '<span style="font-size:9px;margin-left:3px;visibility:hidden;">▲</span>';
-      const statsHtml = (hasHistory && window._exTabProMode) ? `<div style="font-size:11px;text-align:right;min-width:120px;">${bestWt !== null ? `<div style="color:#e8ff47;font-weight:700;display:flex;justify-content:flex-end;gap:6px;"><span>MAX</span><span style="min-width:72px;text-align:right;">${bestWt}kg${wtArrow}</span></div>` : '<div style="height:18px;"></div>'}${bestRM !== null ? `<div style="color:#ff8c42;font-weight:700;margin-top:2px;display:flex;justify-content:flex-end;gap:6px;"><span>1RM</span><span style="min-width:72px;text-align:right;">${bestRM}kg${rmArrow}</span></div>` : '<div style="height:18px;margin-top:2px;"></div>'}</div>` : '';
+      const statsHtml = hasHistory ? `<div class="extab-pro-stat ${window._exTabProMode ? 'visible' : ''}" style="font-size:11px;text-align:right;min-width:${window._exTabProMode ? '120px' : '0'};">${bestWt !== null ? `<div style="color:#e8ff47;font-weight:700;display:flex;justify-content:flex-end;gap:6px;"><span>MAX</span><span style="min-width:72px;text-align:right;">${bestWt}kg${wtArrow}</span></div>` : '<div style="height:18px;"></div>'}${bestRM !== null ? `<div style="color:#ff8c42;font-weight:700;margin-top:2px;display:flex;justify-content:flex-end;gap:6px;"><span>1RM</span><span style="min-width:72px;text-align:right;">${bestRM}kg${rmArrow}</span></div>` : '<div style="height:18px;margin-top:2px;"></div>'}</div>` : '';
       const chevHtml = hasHistory ? `<span id="${safeId}-chev" style="color:var(--muted);font-size:11px;transition:transform .2s;">&#9660;</span>` : '';
       const isPickSelected = _pickMode && _pickModeSelected.some(s => s.name === ex.name);
       const pickColor = PICKER_COLORS[ex.muscle] || '#888';
@@ -3845,6 +3883,8 @@ function switchProgressView(view) {
 function switchTab(tab) {
   window._activeTab = tab;
   document.activeElement?.blur();
+  // Hide floating bar when switching away from Today
+  if (tab !== 'log') { const _fb = document.getElementById('ex-float-bar'); if (_fb) _fb.style.display = 'none'; _exFloatCardId = null; }
   // Clean up any stuck overlays and expanded slots
   document.getElementById('wtab-menu-fade')?.remove();
   document.getElementById('extab-expanded-slot')?.remove();
@@ -4048,9 +4088,11 @@ function renderWorkoutsTab() {
         <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
           <div class="load-hist-name" onclick="if(window._wtabProMode)toggleLoadDetail('wtab-ldet-${i}',null)" style="${window._wtabProMode?'cursor:pointer;':'cursor:default;'}">${w.name}</div>
           <div style="flex:1;position:relative;">
-            ${window._wtabProMode ? `<div onclick="toggleLoadDetail('wtab-ldet-${i}',null)" style="height:55px;margin-top:8px;cursor:pointer;" title="Toggle details"><canvas id="wtab-chart-${i}" style="pointer-events:none;"></canvas></div>` : `<div style="height:4px;"></div><canvas id="wtab-chart-${i}" style="display:none;"></canvas>`}
+            <div class="wtab-pro-content ${window._wtabProMode ? 'visible' : ''}" style="max-height:${window._wtabProMode ? '200px' : '0'};opacity:${window._wtabProMode ? '1' : '0'};">
+              <div onclick="if(window._wtabProMode)toggleLoadDetail('wtab-ldet-${i}',null)" style="height:55px;margin-top:8px;cursor:pointer;" title="Toggle details"><canvas id="wtab-chart-${i}" style="pointer-events:none;"></canvas></div>
+            </div>
+            <div id="wtab-xlabels-${i}" style="display:flex;justify-content:space-around;padding:2px 0 0;"></div>
           </div>
-          <div id="wtab-xlabels-${i}" style="display:flex;justify-content:space-around;padding:2px 0 0;"></div>
         </div>
         <div style="display:flex;flex-direction:row;gap:6px;flex-shrink:0;align-items:stretch;">
           
@@ -4082,8 +4124,10 @@ function renderWorkoutsTab() {
               </div>`
             }
           </div>
-            ${window._wtabProMode ? (()=>{ const durations=workouts.filter(x=>!x._draft&&!x._template&&x.name===w.name&&x.durationMins>0).slice(0,3).map(x=>x.durationMins); if(!durations.length) return '<div style="height:4px;"></div>'; const avg=durations.reduce((a,b)=>a+b,0)/durations.length; const rounded=Math.ceil(avg/5)*5; return `<div style="display:flex;align-items:center;justify-content:center;gap:3px;padding:4px 0 0;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#7ec8e3" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg><span style="font-size:11px;color:#7ec8e3;font-weight:700;">~${rounded}m</span></div>`; })() : ''}
-            ${window._wtabProMode ? `<div style="border-top:1px solid rgba(255,255,255,0.2);margin-top:4px;padding-top:4px;"><table style="border-collapse:collapse;width:100%;"><tr><td style="font-size:14px;font-family:'Bebas Neue';color:var(--muted);letter-spacing:.5px;padding:1px 4px 1px 0;white-space:nowrap;">EX</td><td style="font-family:'Bebas Neue';font-size:14px;color:var(--text);text-align:right;padding:1px 0;">${w.exercises.length}</td></tr><tr><td style="font-size:14px;font-family:'Bebas Neue';color:var(--muted);letter-spacing:.5px;padding:1px 4px 1px 0;white-space:nowrap;">SETS</td><td style="font-family:'Bebas Neue';font-size:14px;color:var(--text);text-align:right;padding:1px 0;">${w.exercises.reduce((a,e)=>a+(e.sets||[]).filter(s=>!s.ignored).length,0)}</td></tr></table></div>` : ''}
+            <div class="wtab-pro-content ${window._wtabProMode ? 'visible' : ''}">
+              ${(()=>{ const durations=workouts.filter(x=>!x._draft&&!x._template&&x.name===w.name&&x.durationMins>0).slice(0,3).map(x=>x.durationMins); if(!durations.length) return ''; const avg=durations.reduce((a,b)=>a+b,0)/durations.length; const rounded=Math.ceil(avg/5)*5; return `<div style="display:flex;align-items:center;justify-content:center;gap:3px;padding:4px 0 0;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#7ec8e3" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg><span style="font-size:11px;color:#7ec8e3;font-weight:700;">~${rounded}m</span></div>`; })()}
+              <div style="border-top:1px solid rgba(255,255,255,0.2);margin-top:4px;padding-top:4px;"><table style="border-collapse:collapse;width:100%;"><tr><td style="font-size:14px;font-family:'Bebas Neue';color:var(--muted);letter-spacing:.5px;padding:1px 4px 1px 0;white-space:nowrap;">EX</td><td style="font-family:'Bebas Neue';font-size:14px;color:var(--text);text-align:right;padding:1px 0;">${w.exercises.length}</td></tr><tr><td style="font-size:14px;font-family:'Bebas Neue';color:var(--muted);letter-spacing:.5px;padding:1px 4px 1px 0;white-space:nowrap;">SETS</td><td style="font-family:'Bebas Neue';font-size:14px;color:var(--text);text-align:right;padding:1px 0;">${w.exercises.reduce((a,e)=>a+(e.sets||[]).filter(s=>!s.ignored).length,0)}</td></tr></table></div>
+            </div>
           </div>
         </div>
       </div>
@@ -4109,7 +4153,7 @@ function renderWorkoutsTab() {
   const _wtabProActive = !!window._wtabProMode;
   const _proRowHtml = !_selActionBtns && _wTabView === 'created' ? `<div style="display:flex;gap:8px;margin-top:8px;align-items:stretch;">
     <button onclick="startNewWorkout(true);" style="flex:1;background:transparent;border:1px dashed var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Create New Workout</button>
-    <button onclick="toggleWtabPro()" style="background:transparent;border:1px solid ${_wtabProActive ? '#34d399' : 'var(--border)'};border-radius:10px;color:${_wtabProActive ? '#34d399' : 'var(--muted)'};font-family:'DM Sans';font-size:12px;font-weight:700;padding:0 14px;cursor:pointer;transition:all .2s;white-space:nowrap;letter-spacing:.5px;">PRO</button>
+    <button onclick="toggleWtabPro()" style="background:transparent;border:1px solid ${_wtabProActive ? '#34d399' : 'var(--border)'};border-radius:10px;color:${_wtabProActive ? '#34d399' : 'var(--muted)'};font-family:'DM Sans';font-size:12px;font-weight:700;padding:0 14px;min-height:50px;cursor:pointer;transition:all .2s;white-space:nowrap;letter-spacing:.5px;">PRO</button>
   </div>` : `<button onclick="startNewWorkout(true);" style="width:100%;margin-top:8px;background:transparent;border:1px dashed var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Create New Workout</button>`;
   const createNewBtn = `<div id="wtab-bottom-btns" style="opacity:1;transition:opacity .25s ease;">${_selActionBtns ? _selActionBtns : _proRowHtml}${_cancelAction ? `<button onclick="${_cancelAction}" style="width:100%;margin-top:8px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;">Cancel</button>` : ''}</div>`;
   if (_wTabView === 'library') {
@@ -4118,7 +4162,12 @@ function renderWorkoutsTab() {
       <button id="wtab-library-sync-btn" onclick="syncExploreToFirestore()" style="background:transparent;border:1px solid #34d39966;border-radius:10px;color:#34d399;font-family:'DM Sans';font-size:13px;font-weight:700;padding:10px 14px;cursor:${window._exploreLocalPending?'pointer':'not-allowed'};flex-shrink:0;transition:all .2s;opacity:${window._exploreLocalPending?'1':'0.4'};pointer-events:${window._exploreLocalPending?'auto':'none'};"><svg width="16" height="16" viewBox="0 0 38 36" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 22 Q4 14 12 14 Q13 8 20 8 Q28 8 28 16 Q34 16 34 22 Q34 28 28 28 L8 28 Q4 28 4 22Z"/></svg> Library</button>
       <button onclick="openAddExploreWorkout()" style="flex:1;background:transparent;border:1px dashed #34d399;border-radius:10px;color:#34d399;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;">+ Add to Explore</button>
     </div>` : '';
-    el.innerHTML = `<div style="height:325px;overflow-y:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:12px;padding:8px 8px 4px;" id="wtab-list-box">` + buildWorkoutLibraryHtml() + `</div>` + _addLibBtn;
+    const _wtabProActive2 = !!window._wtabProMode;
+    const _proRowExplore = `<div style="display:flex;gap:8px;align-items:stretch;margin-top:8px;">
+      <div style="flex:1;border:1px dashed transparent;border-radius:10px;padding:13px;min-height:50px;"></div>
+      <button onclick="toggleWtabPro()" style="background:transparent;border:1px solid ${_wtabProActive2 ? '#34d399' : 'var(--border)'};border-radius:10px;color:${_wtabProActive2 ? '#34d399' : 'var(--muted)'};font-family:'DM Sans';font-size:12px;font-weight:700;padding:0 14px;min-height:50px;cursor:pointer;transition:all .2s;white-space:nowrap;letter-spacing:.5px;">PRO</button>
+    </div>`;
+    el.innerHTML = `<div style="height:325px;overflow-y:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:12px;padding:8px 8px 4px;" id="wtab-list-box">` + buildWorkoutLibraryHtml() + `</div>` + _addLibBtn + _proRowExplore;
     loadWorkoutLibrary();
     return;
   }
@@ -4690,7 +4739,7 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
       <div class="vol-seg-blocks" id="vol-seg-${id}"></div>
     </div>
     <table class="sets-table">
-      <thead><tr><th>SET</th><th style="width:28px;"></th><th>KG</th><th>REPS</th><th data-col="stat" colspan="2" style="text-align:right;padding-right:8px;"><span style="display:inline-flex;align-items:center;justify-content:space-between;width:100%;"><span>STAT</span><button id="pro-btn-${id}" onclick="toggleSessionProgress('${id}')" style="background:transparent;border:1px solid #34d399;border-radius:5px;color:#34d399;font-family:'DM Sans';font-size:10px;font-weight:700;padding:2px 10px;cursor:pointer;letter-spacing:.5px;transition:all .2s;white-space:nowrap;">PRO</button></span></th></tr></thead>
+      <thead><tr><th>SET</th><th style="width:28px;"></th><th>KG</th><th>REPS</th><th data-col="stat">STAT</th><th></th></tr></thead>
       <tbody class="set-body" id="set-body-${id}"></tbody>
     </table>
     <div class="comment-area" id="comment-area-${id}">
@@ -5001,8 +5050,14 @@ function renderMiniChart(cardId, exName) {
   let filteredWorkouts = curWorkoutName
     ? workouts.filter(w => !w._draft && !w._template && (w.name||'').trim() === curWorkoutName)
     : [];
-  if (filteredWorkouts.length === 0 && !_rmc_isNew)
-    filteredWorkouts = workouts.filter(w => !w._draft && !w._template);
+  // Fall back to all workouts if same-name sessions have insufficient data
+  if (!_rmc_isNew) {
+    const _hasSufficientData = filteredWorkouts.some(w =>
+      w.exercises.filter(e => e.name === exName).some(e => doneSets(e.sets).length > 0)
+    );
+    if (filteredWorkouts.length === 0 || !_hasSufficientData)
+      filteredWorkouts = workouts.filter(w => !w._draft && !w._template);
+  }
   filteredWorkouts.forEach(w => {
     w.exercises.filter(e => e.name===exName).forEach(e => {
       const done = doneSets(e.sets);
@@ -5363,6 +5418,7 @@ function toggleCardCollapse(id) {
     body.style.maxHeight = '0'; body.style.opacity = '0'; body.classList.add('collapsed'); body.classList.remove('open');
     card.dataset.open = 'false';
     chevBtn?.classList.remove('open');
+    hideExFloatBar();
     const impSec = document.getElementById(`imp-section-${id}`);
     if (impSec) impSec.style.display = 'none';
     if (_timers[id]?.running) chevBtn?.classList.add('timer-active');
@@ -5412,6 +5468,22 @@ function toggleCardCollapse(id) {
     chevBtn?.classList.add('open');
     // Ensure session progress bar is updated when card expands
     setTimeout(() => updateVolProgressBar(id), 50);
+    // Reset chart div state based on whether graph was previously open
+    const _chartDivReset = document.getElementById(`mini-chart-${id}`);
+    if (_chartDivReset) {
+      if (miniChartDefaultOpen) {
+        _chartDivReset.style.display = '';
+        _chartDivReset.classList.add('visible');
+        const _innerReset = document.getElementById(`mini-chart-inner-${id}`);
+        if (_innerReset) _innerReset.style.display = '';
+        setTimeout(() => renderMiniChart(id, card.dataset.exname), 150);
+      } else {
+        _chartDivReset.classList.remove('visible');
+        _chartDivReset.style.display = '';
+      }
+    }
+    // Show floating action bar
+    setTimeout(() => showExFloatBar(id), 300);
     const impSecExp = document.getElementById(`imp-section-${id}`);
     if (impSecExp) impSecExp.style.display = 'flex';
     chevBtn?.classList.remove('timer-active');
@@ -6773,7 +6845,7 @@ function confirmSave() {
       const dayBtn = document.querySelector('#globalTimePills [data-range="day"]');
       if (dayBtn) setGlobalRange(dayBtn);
       // Open Personal Records instantly (no animation) while overlay is still covering
-      const cards = ['acc-best','acc-exercise','acc-volume','acc-workouts','acc-capacity'];
+      const cards = ['acc-best','acc-exercise','acc-volume','acc-workouts','acc-capacity','acc-history'];
       const activeSlot = document.getElementById('acc-active-slot');
       const card = document.getElementById('acc-best');
       if (card && !card.classList.contains('open')) {
@@ -7299,11 +7371,11 @@ function renderHistory() {
       const exHistId = `exhist-${wi}-${ei}`;
       return `<div class="hcard-ex-item" data-prs="${prFlags}" onclick="toggleHcardExHistory('${exHistId}', '${e.name.replace(/'/g,"\\'")}')" style="cursor:pointer;">`+`
         <div style="flex:1;">
-          <div style="margin-bottom:1px;display:flex;align-items:center;gap:6px;">
-            ${muscle ? `<span class="hcard-muscle-pill" style="color:${getMuscleColor(muscle)};">${displayMuscle(muscle)}</span>` : ''}
-            ${noDone ? `<span style="font-size:9px;font-weight:700;color:#ff4444;border:1px solid #ff444466;border-radius:4px;padding:1px 5px;letter-spacing:.4px;">NOT COMPLETED</span>` : ''}
+          ${noDone ? `<div style="margin-bottom:1px;"><span style="font-size:9px;font-weight:700;color:#ff4444;border:1px solid #ff444466;border-radius:4px;padding:1px 5px;letter-spacing:.4px;">NOT COMPLETED</span></div>` : ''}
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:1px;">
+            ${muscle ? `<span style="width:8px;height:8px;border-radius:50%;background:${getMuscleColor(muscle)};display:inline-block;flex-shrink:0;"></span>` : ''}
+            <div class="hcard-ex-name">${e.name}</div>
           </div>
-          <div class="hcard-ex-name">${e.name}</div>
           <div class="hcard-ex-sets">${chips}</div>
           ${statsLine}
           ${e.comment?`<div class="hcard-note">${e.comment}</div>`:''}
@@ -8529,7 +8601,7 @@ function toggleProgInfo(infoId, cardId, btn) {
 }
 
 function toggleProgressCard(id) {
-  const cards = ['acc-best','acc-exercise','acc-volume','acc-workouts','acc-capacity'];
+  const cards = ['acc-best','acc-exercise','acc-volume','acc-workouts','acc-capacity','acc-history'];
   const activeSlot = document.getElementById('acc-active-slot');
   const isOpen = document.getElementById(id).classList.contains('open');
   const openId = cards.find(cid => document.getElementById(cid)?.classList.contains('open'));
@@ -8613,6 +8685,7 @@ function toggleProgressCard(id) {
       if (id === 'acc-best') setTimeout(renderBestBodyPartChart, 50);
       if (id === 'acc-volume') setTimeout(renderVolumeProgressChart, 50);
       if (id === 'acc-capacity') setTimeout(initCapacityCard, 50);
+      if (id === 'acc-history') setTimeout(renderProgHistory, 50);
       if (id === 'acc-exercise') setTimeout(() => {
         if (!exProgressExercise) {
           const exList = _getExercisesForMuscle(exProgressMuscle);
@@ -8638,13 +8711,14 @@ function toggleProgressCard(id) {
 
 function renderProgress() {
   updateProgressWorkoutCount();
-  const cards = ['acc-best','acc-exercise','acc-volume','acc-workouts','acc-capacity'];
+  const cards = ['acc-best','acc-exercise','acc-volume','acc-workouts','acc-capacity','acc-history'];
   const openId = cards.find(id => document.getElementById(id)?.classList.contains('open'));
   if (openId === 'acc-workouts') renderVolumeChart();
   if (openId === 'acc-best') renderBestBodyPartChart();
   if (openId === 'acc-volume') renderVolumeProgressChart();
   if (openId === 'acc-exercise') renderExProgressChart();
   if (openId === 'acc-capacity') { renderCapacityWorkoutList(); renderCapacityChart(); }
+  if (openId === 'acc-history') renderProgHistory();
   setTimeout(syncProgressChartDates, 50);
 }
 
@@ -10726,11 +10800,11 @@ function renderCalDayWorkouts(ws) {
       const exHistId = `exhist-cal-${wi}-${ei}`;
       return `<div class="hcard-ex-item" data-prs="${prFlags}" onclick="toggleHcardExHistory('${exHistId}', '${e.name.replace(/'/g,"\\'")}')" style="cursor:pointer;">
         <div style="flex:1;">
-          <div style="margin-bottom:1px;display:flex;align-items:center;gap:6px;">
-            ${muscle ? `<span class="hcard-muscle-pill" style="color:${getMuscleColor(muscle)};">${displayMuscle(muscle)}</span>` : ''}
-            ${noDone ? `<span style="font-size:9px;font-weight:700;color:#ff4444;border:1px solid #ff444466;border-radius:4px;padding:1px 5px;letter-spacing:.4px;">NOT COMPLETED</span>` : ''}
+          ${noDone ? `<div style="margin-bottom:1px;"><span style="font-size:9px;font-weight:700;color:#ff4444;border:1px solid #ff444466;border-radius:4px;padding:1px 5px;letter-spacing:.4px;">NOT COMPLETED</span></div>` : ''}
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:1px;">
+            ${muscle ? `<span style="width:8px;height:8px;border-radius:50%;background:${getMuscleColor(muscle)};display:inline-block;flex-shrink:0;"></span>` : ''}
+            <div class="hcard-ex-name">${e.name}</div>
           </div>
-          <div class="hcard-ex-name">${e.name}</div>
           <div class="hcard-ex-sets">${chips}</div>
           ${statsLine}
           ${e.comment?`<div class="hcard-note">${e.comment}</div>`:''}
@@ -11243,7 +11317,7 @@ function _wtabCancelSelection() {
     const _proA = !!window._wtabProMode;
     box.innerHTML = `<div style="display:flex;gap:8px;align-items:stretch;margin-top:8px;">
       <button onclick="startNewWorkout(true);" style="flex:1;background:transparent;border:1px dashed var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Create New Workout</button>
-      <button onclick="toggleWtabPro()" style="background:transparent;border:1px solid ${_proA ? '#34d399' : 'var(--border)'};border-radius:10px;color:${_proA ? '#34d399' : 'var(--muted)'};font-family:'DM Sans';font-size:12px;font-weight:700;padding:0 14px;cursor:pointer;transition:all .2s;white-space:nowrap;letter-spacing:.5px;">PRO</button>
+      <button onclick="toggleWtabPro()" style="background:transparent;border:1px solid ${_proA ? '#34d399' : 'var(--border)'};border-radius:10px;color:${_proA ? '#34d399' : 'var(--muted)'};font-family:'DM Sans';font-size:12px;font-weight:700;padding:0 14px;min-height:50px;cursor:pointer;transition:all .2s;white-space:nowrap;letter-spacing:.5px;">PRO</button>
     </div>`;
     box.style.opacity = '1';
   }, 200);
@@ -14515,26 +14589,19 @@ function renderWorkoutLibraryList() {
     return `<div class="load-hist-item">
       <div style="display:flex;align-items:flex-start;gap:6px;padding:12px 10px 12px 12px;">
         <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
-          <div class="load-hist-name" onclick="toggleLoadDetail('lib-ldet-${i}',null)" style="cursor:pointer;display:flex;align-items:center;">${w.name}${localBadge}</div>
+          <div class="load-hist-name" onclick="${window._wtabProMode ? `toggleLoadDetail('lib-ldet-${i}',null)` : ''}" style="${window._wtabProMode ? 'cursor:pointer;' : 'cursor:default;'}display:flex;align-items:center;">${w.name}${localBadge}</div>
           <div style="flex:1;position:relative;">
-            <div onclick="toggleLoadDetail('lib-ldet-${i}',null)" style="height:55px;margin-top:8px;cursor:pointer;"><canvas id="lib-chart-${i}" style="pointer-events:none;"></canvas></div>
+            <div class="wtab-pro-content ${window._wtabProMode ? 'visible' : ''}" style="max-height:${window._wtabProMode ? '200px' : '0'};opacity:${window._wtabProMode ? '1' : '0'};">
+              <div onclick="if(window._wtabProMode)toggleLoadDetail('lib-ldet-${i}',null)" style="height:55px;margin-top:8px;cursor:pointer;"><canvas id="lib-chart-${i}" style="pointer-events:none;"></canvas></div>
+            </div>
           </div>
           <div id="lib-xlabels-${i}" style="display:flex;justify-content:space-around;padding:2px 0 0;"></div>
         </div>
         <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;justify-content:space-between;">
           <button onclick="loadLibraryWorkout('${w.id}')" style="background:transparent;border:none;color:var(--accent);font-size:12px;font-weight:700;font-style:italic;padding:6px 8px;cursor:pointer;width:100%;">Select</button>
           <div style="height:4px;"></div>
-          <div style="border-top:1px solid rgba(255,255,255,0.2);margin-top:4px;padding-top:4px;">
-            <table style="border-collapse:collapse;width:100%;">
-              <tr>
-                <td style="font-size:14px;font-family:'Bebas Neue';color:var(--muted);letter-spacing:.5px;padding:1px 4px 1px 0;white-space:nowrap;">EX</td>
-                <td style="font-family:'Bebas Neue';font-size:14px;color:var(--text);text-align:right;padding:1px 0;">${(w.exercises||[]).length}</td>
-              </tr>
-              <tr>
-                <td style="font-size:14px;font-family:'Bebas Neue';color:var(--muted);letter-spacing:.5px;padding:1px 4px 1px 0;white-space:nowrap;">SETS</td>
-                <td style="font-family:'Bebas Neue';font-size:14px;color:var(--text);text-align:right;padding:1px 0;">${(w.exercises||[]).reduce((a,e)=>a+(e.sets||[]).length,0)}</td>
-              </tr>
-            </table>
+          <div class="wtab-pro-content ${window._wtabProMode ? 'visible' : ''}" style="max-height:${window._wtabProMode ? '200px' : '0'};opacity:${window._wtabProMode ? '1' : '0'};">
+            <div style="border-top:1px solid rgba(255,255,255,0.2);margin-top:4px;padding-top:4px;"><table style="border-collapse:collapse;width:100%;"><tr><td style="font-size:14px;font-family:'Bebas Neue';color:var(--muted);letter-spacing:.5px;padding:1px 4px 1px 0;white-space:nowrap;">EX</td><td style="font-family:'Bebas Neue';font-size:14px;color:var(--text);text-align:right;padding:1px 0;">${(w.exercises||[]).length}</td></tr><tr><td style="font-size:14px;font-family:'Bebas Neue';color:var(--muted);letter-spacing:.5px;padding:1px 4px 1px 0;white-space:nowrap;">SETS</td><td style="font-family:'Bebas Neue';font-size:14px;color:var(--text);text-align:right;padding:1px 0;">${(w.exercises||[]).reduce((a,e)=>a+(e.sets||[]).length,0)}</td></tr></table></div>
           </div>
         </div>
       </div>
@@ -16647,7 +16714,11 @@ function toggleSessionProgress(cardId) {
       b.classList.remove('pro-open');
       setTimeout(() => { if (b.dataset.proOpen === 'false') b.style.display = 'none'; }, 350);
     }
+    // Refresh 1RM highlight and label
+    setTimeout(() => updateVolProgressBar(card.id), 50);
   });
+  // Update floating bar PRO button state
+  setTimeout(() => _updateExFloatBar(_exFloatCardId), 100);
 }
 // ─────────────────────────────────────────────────────────────────────────
 
@@ -16698,7 +16769,26 @@ function toggleTimerEnabled(cardId) {
 function toggleExTabPro() {
   window._exTabProMode = !window._exTabProMode;
   localStorage.setItem('extab_pro_mode', window._exTabProMode ? '1' : '0');
-  renderExercisesTab();
+  const on = window._exTabProMode;
+  // Animate stats in/out without full re-render
+  document.querySelectorAll('.extab-pro-stat').forEach(el => {
+    if (on) {
+      el.style.maxWidth = '200px';
+      el.style.opacity = '1';
+      el.style.minWidth = '120px';
+      el.classList.add('visible');
+    } else {
+      el.style.maxWidth = '0';
+      el.style.opacity = '0';
+      el.style.minWidth = '0';
+      el.classList.remove('visible');
+    }
+  });
+  // Update PRO button color
+  const btn = document.getElementById('extab-pro-toggle');
+  if (btn) { btn.style.borderColor = on ? '#34d399' : 'var(--border)'; btn.style.color = on ? '#34d399' : 'var(--muted)'; }
+  // Update expandability — re-render needed for cursor/onclick changes
+  setTimeout(() => renderExercisesTab(), 350);
 }
 // ─────────────────────────────────────────────────────────────────────────
 
@@ -16706,7 +16796,31 @@ function toggleExTabPro() {
 function toggleWtabPro() {
   window._wtabProMode = !window._wtabProMode;
   localStorage.setItem('wtab_pro_mode', window._wtabProMode ? '1' : '0');
-  renderWorkoutsTab();
+  const on = window._wtabProMode;
+  // Animate PRO content divs in/out without full re-render
+  document.querySelectorAll('.wtab-pro-content').forEach(el => {
+    if (on) {
+      el.style.maxHeight = '200px';
+      el.style.opacity = '1';
+      el.classList.add('visible');
+    } else {
+      el.style.maxHeight = '0';
+      el.style.opacity = '0';
+      el.classList.remove('visible');
+    }
+  });
+  // Update all PRO button colors
+  document.querySelectorAll('[onclick*="toggleWtabPro"]').forEach(btn => {
+    btn.style.borderColor = on ? '#34d399' : 'var(--border)';
+    btn.style.color = on ? '#34d399' : 'var(--muted)';
+  });
+  // Also update cursor on workout names
+  document.querySelectorAll('.load-hist-name').forEach(el => {
+    el.style.cursor = on ? 'pointer' : 'default';
+  });
+  if (window._wTabView === 'library') {
+    renderWorkoutLibraryList();
+  }
 }
 // ─────────────────────────────────────────────────────────────────────────
 
@@ -16775,7 +16889,229 @@ function toggleExTabCardMenu(safeId) {
   }
 }
 // ─────────────────────────────────────────────────────────────────────────
+
+// ── EXERCISE FLOATING BAR ─────────────────────────────────────────────────
+let _exFloatCardId = null;
+
+function showExFloatBar(cardId) {
+  _exFloatCardId = cardId;
+  const bar = document.getElementById('ex-float-bar');
+  if (!bar) return;
+  // Only show on Today tab with active workout
+  const onToday = document.getElementById('page-log')?.classList.contains('active');
+  const workoutActive = document.getElementById('today-workout-area')?.style.display !== 'none';
+  if (!onToday || !workoutActive) return;
+  bar.style.display = 'flex';
+  _updateExFloatBar(cardId);
+}
+
+function hideExFloatBar() {
+  _exFloatCardId = null;
+  const bar = document.getElementById('ex-float-bar');
+  if (bar) bar.style.display = 'none';
+}
+
+function _updateExFloatBar(cardId) {
+  if (!cardId) return;
+  // Note button — highlight if note is open
+  const noteArea = document.getElementById(`comment-area-${cardId}`);
+  const noteBtn = document.getElementById('ex-float-note');
+  if (noteBtn) noteBtn.style.color = noteArea?.classList.contains('open') ? 'var(--accent)' : '';
+
+  // Timer button — highlight if timer is running
+  const timerBtn = document.getElementById(`timer-btn-${cardId}`);
+  const floatTimer = document.getElementById('ex-float-timer');
+  if (floatTimer) floatTimer.style.color = timerBtn?.classList.contains('running') ? '#7ec8e3' : '';
+
+  // Graph button — highlight if graph is open
+  const chartDiv = document.getElementById(`mini-chart-${cardId}`);
+  const floatGraph = document.getElementById('ex-float-graph');
+  if (floatGraph) floatGraph.style.color = chartDiv?.classList.contains('visible') ? '#34d399' : '';
+
+  // PRO button — highlight if pro bar is open
+  const proBar = document.getElementById(`vol-target-bar-${cardId}`);
+  const floatPro = document.getElementById('ex-float-pro');
+  if (floatPro) floatPro.style.color = proBar?.dataset.proOpen === 'true' ? '#34d399' : '';
+}
+
+function exFloatAction(action) {
+  const id = _exFloatCardId;
+  if (!id) return;
+  if (action === 'note') {
+    toggleComment(id);
+  } else if (action === 'timer') {
+    toggleTimer(id);
+  } else if (action === 'graph') {
+    toggleMiniChart(id);
+  } else if (action === 'pro') {
+    toggleSessionProgress(id);
+  }
+  setTimeout(() => _updateExFloatBar(id), 100);
+}
+// ─────────────────────────────────────────────────────────────────────────
+
+// ── PROGRESS HISTORY ──────────────────────────────────────────────────────
+function renderProgHistory() {
+  const listEl = document.getElementById('prog-history-list');
+  const emptyEl = document.getElementById('prog-history-empty');
+  if (!listEl) return;
+
+  const _deletedIds = new Set(deletedWorkouts.map(dw => dw.id));
+  const allW = workouts.filter(w => !w._template && !_deletedIds.has(w.id));
+  // ALL workouts for PR comparison (same as renderHistory)
+  const allHistWorkouts = allW;
+  // Only display workouts within the selected time range
+  const base = filterByRange(allW, globalRange);
+  const histWorkouts = base.sort((a, b) => b.date - a.date);
+
+  if (!histWorkouts.length) {
+    listEl.innerHTML = '';
+    if (emptyEl) emptyEl.style.display = 'block';
+    return;
+  }
+  if (emptyEl) emptyEl.style.display = 'none';
+
+  const svgStar = (color) => `<svg width="13" height="13" viewBox="0 0 24 24" fill="${color}"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>`;
+
+  listEl.innerHTML = histWorkouts.map((w, wi) => {
+    const realWi = workouts.indexOf(w);
+    const tsTotal = w.exercises.reduce((a,e)=>a+e.sets.filter(s=>!s.ignored).length,0);
+    const tsDone = w.exercises.reduce((a,e)=>a+e.sets.filter(s=>s.done&&!s.ignored).length,0);
+    const ts = tsDone < tsTotal ? `${tsDone}/${tsTotal}` : tsTotal;
+    const exDone = w.exercises.filter(e=>e.sets.some(s=>s.done&&!s.ignored)).length;
+    const exTotal = w.exercises.length;
+    const exStat = exDone < exTotal ? `${exDone}/${exTotal}` : exTotal;
+    const bodyPartsCount = new Set(w.exercises.map(e=>e.muscle||'Other').filter(Boolean)).size;
+    let weightPRCount = 0, volPRCount = 0, volumePRCount = 0;
+
+    const exRows = w.exercises.map((e, ei) => {
+      const _eff = (sets) => { const ds=sets.filter(s=>s.done&&!s.ignored); return ds.length ? ds : sets.filter(s=>!s.ignored); };
+      const _eSets = _eff(e.sets);
+      const maxKg = Math.max(0,..._eSets.map(s=>s.kg));
+      const vol = _eSets.reduce((a,s)=>Math.max(a,s.kg*(1+s.reps/30)),0);
+      const rawVol = _eSets.reduce((a,s)=>a+s.kg*s.reps,0);
+      let prevMaxKg=0, prevVol=0, prevRawVol=0;
+      allHistWorkouts.filter(pw=>pw!==w&&pw.date<w.date).forEach(pw=>{
+        pw.exercises.filter(pe=>pe.name===e.name).forEach(pe=>{
+          const pSets=_eff(pe.sets);
+          const mx=Math.max(0,...pSets.map(s=>s.kg));
+          const v=pSets.length?Math.max(...pSets.map(s=>s.kg*(1+s.reps/30))):0;
+          const rv=pSets.reduce((a,s)=>a+s.kg*s.reps,0);
+          if(mx>prevMaxKg) prevMaxKg=mx;
+          if(v>prevVol) prevVol=v;
+          if(rv>prevRawVol) prevRawVol=rv;
+        });
+      });
+      const isFirstTime = prevMaxKg===0 && prevVol===0 && prevRawVol===0;
+      const weightPR = maxKg>0&&!isFirstTime&&maxKg>prevMaxKg;
+      const volPR = vol>0&&!isFirstTime&&vol>prevVol;
+      const volumePR = rawVol>0&&!isFirstTime&&rawVol>prevRawVol;
+      if(weightPR) weightPRCount++;
+      if(volPR) volPRCount++;
+      if(volumePR) volumePRCount++;
+      const muscle = e.muscle || '';
+      const chips = e.sets.filter(s=>!s.ignored).map(s=>`<span class="hcard-set-chip${s.done?' done':''}">${s.kg}×${s.reps}</span>`).join('<span style="color:#333;margin:0 2px;">·</span>');
+      const doneSetsArr = e.sets.filter(s=>s.done&&!s.ignored);
+      const maxKgVal = doneSetsArr.length ? parseFloat(Math.max(0,...doneSetsArr.map(s=>s.kg)).toFixed(2)) : 0;
+      const irmVal = doneSetsArr.length ? parseFloat(Math.max(...doneSetsArr.map(s=>s.kg*(1+s.reps/30))).toFixed(2)) : 0;
+      const bestSet = doneSetsArr.length ? doneSetsArr.reduce((a,s)=>s.kg*(1+s.reps/30)>=a.kg*(1+a.reps/30)?s:a,doneSetsArr[0]) : null;
+      const weightSlot = `<span style="width:16px;display:inline-flex;justify-content:center;">${weightPR?svgStar('#e8ff47'):''}</span>`;
+      const volSlot = `<span style="width:16px;display:inline-flex;justify-content:center;">${volPR?svgStar('#ff8c42'):''}</span>`;
+      const volumeSlot = `<span style="width:16px;display:inline-flex;justify-content:center;">${volumePR?svgStar('#a78bfa'):''}</span>`;
+      const statsLine = doneSetsArr.length ? `<div style="display:flex;flex-direction:column;gap:1px;margin-top:4px;">
+        ${maxKgVal>0?`<div style="display:flex;gap:6px;font-size:11px;font-weight:700;"><span style="color:${weightPR?'#e8ff47':'var(--muted)'};width:28px;">MAX</span><span style="color:#fff;">${maxKgVal}kg</span></div>`:''}
+        ${irmVal>0?`<div style="display:flex;gap:6px;font-size:11px;font-weight:700;"><span style="color:${volPR?'#ff8c42':'var(--muted)'};width:28px;">1RM</span><span style="color:#fff;">${bestSet?(bestSet.kg+'kg×'+bestSet.reps):''}</span></div>`:''}
+      </div>` : '';
+      const noDone2 = doneSetsArr.length === 0;
+      return `<div class="hcard-ex-item">
+        <div style="flex:1;">
+          ${noDone2?`<div style="margin-bottom:1px;"><span style="font-size:9px;font-weight:700;color:#ff4444;border:1px solid #ff444466;border-radius:4px;padding:1px 5px;letter-spacing:.4px;">NOT COMPLETED</span></div>`:''}
+          <div style="display:flex;align-items:center;gap:6px;">
+            ${muscle?`<span style="width:8px;height:8px;border-radius:50%;background:${getMuscleColor(muscle)};display:inline-block;flex-shrink:0;"></span>`:''}
+            <div class="hcard-ex-name">${e.name}</div>
+          </div>
+          <div class="hcard-ex-sets">${chips}</div>
+          ${statsLine}
+        </div>
+        <span style="display:inline-flex;flex-direction:column;align-items:center;gap:4px;">
+          <span style="display:inline-flex;gap:2px;align-items:center;">${weightSlot}${volSlot}${volumeSlot}</span>
+        </span>
+      </div>`;
+    }).join('');
+
+    const prSummary = (weightPRCount>0||volPRCount>0||volumePRCount>0) ? `
+      <div style="display:flex;align-items:center;padding:5px 14px 6px;border-top:1px solid var(--border);gap:0;">
+        <span style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.5px;margin-right:8px;flex-shrink:0;">PROGRESS</span>
+        ${weightPRCount>0?`<span style="display:inline-flex;align-items:center;width:72px;gap:3px;font-size:11px;font-weight:700;border-radius:5px;padding:2px 4px;color:#e8ff47;"><span style="min-width:18px;text-align:right">${weightPRCount}</span>${svgStar('#e8ff47')}<span>MAX</span></span>`:''}
+        ${volPRCount>0?`<span style="display:inline-flex;align-items:center;width:72px;gap:3px;font-size:11px;font-weight:700;border-radius:5px;padding:2px 4px;color:#ff8c42;"><span style="min-width:18px;text-align:right">${volPRCount}</span>${svgStar('#ff8c42')}<span>1RM</span></span>`:''}
+        ${volumePRCount>0?`<span style="display:inline-flex;align-items:center;width:64px;gap:3px;font-size:11px;font-weight:700;border-radius:5px;padding:2px 4px;color:#a78bfa;"><span style="min-width:18px;text-align:right">${volumePRCount}</span>${svgStar('#a78bfa')}<span>VOL</span></span>`:''}
+      </div>` : '';
+
+    const counts = {};
+    w.exercises.forEach(e => { const m=e.muscle||'Other'; counts[m]=(counts[m]||0)+1; });
+    const muscleChips = Object.entries(counts).map(([m,c])=>`<button class="hcard-muscle-chip">${displayMuscle(m)} <strong>${c}</strong></button>`).join('');
+
+    return `<div class="history-card" id="prog-hcard-${wi}">
+      <div class="hcard-header" onclick="toggleHistCard('prog-hbody-${wi}','prog-hchev-${wi}')">
+        <div style="flex:1;">
+          <div class="hcard-name">${w.name}${w._draft?` <span style="font-family:'DM Sans';font-size:11px;font-weight:700;background:rgba(126,200,227,.12);border:1px solid rgba(126,200,227,.4);color:#7ec8e3;border-radius:4px;padding:1px 6px;vertical-align:middle;letter-spacing:.3px;text-transform:uppercase;">DRAFT</span>`:''}</div>
+          <div class="hcard-date">${fmt(w.date)}</div>
+        </div>
+        ${w.durationMins>0?`<div style="display:flex;align-items:center;gap:4px;margin-right:8px;flex-shrink:0;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7ec8e3" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg><span style="font-size:11px;color:#7ec8e3;font-weight:600;">${w.durationMins}m</span></div>`:''}
+        ${w._draft?`<button onclick="event.stopPropagation();deleteWorkout(${realWi});renderProgHistory();" style="background:transparent;border:none;color:#555;cursor:pointer;padding:5px;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:color .2s;flex-shrink:0;" onmouseover="this.style.color='#ff4747'" onmouseout="this.style.color='#555'"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>`:''}
+        <span class="hcard-chevron" id="prog-hchev-${wi}">▾</span>
+      </div>
+      ${prSummary}
+      <div class="hcard-muscles">${muscleChips}</div>
+      <div class="hcard-body collapsed" id="prog-hbody-${wi}" style="max-height:0;">
+        <div class="hcard-stats">
+          <div class="hcard-stat"><div class="hcard-stat-val">${exStat}</div><div class="hcard-stat-label">Exercises</div></div>
+          <div class="hcard-stat"><div class="hcard-stat-val">${ts}</div><div class="hcard-stat-label">Sets</div></div>
+          <div class="hcard-stat"><div class="hcard-stat-val">${bodyPartsCount}</div><div class="hcard-stat-label">Body Parts</div></div>
+          ${w.durationMins>0?`<div class="hcard-stat"><div class="hcard-stat-val">${w.durationMins}m</div><div class="hcard-stat-label">Duration</div></div>`:''}
+        </div>
+        ${(()=>{
+          const MUSCLE_ORDER2 = ['Chest','Back','Legs','Shoulders','Arms','Core','Compound'];
+          const muscleColors2 = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171', Compound:'#20d4c8' };
+          const volByMuscle = {};
+          w.exercises.forEach(e => {
+            const m = e.muscle || 'Other';
+            const v = e.sets.filter(s=>s.done&&!s.ignored).reduce((a,s)=>a+s.kg*s.reps,0);
+            if (v > 0) volByMuscle[m] = (volByMuscle[m]||0) + v;
+          });
+          const entries = MUSCLE_ORDER2.filter(m => volByMuscle[m]).map(m => [m, volByMuscle[m]]).sort((a,b)=>b[1]-a[1]);
+          if (!entries.length) return '';
+          const maxVol = Math.max(...entries.map(([,v])=>v));
+          return `<div style="padding:8px 14px 10px;border-top:1px solid var(--border);">
+            <div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.5px;margin-bottom:7px;">VOLUME BY BODY PART</div>
+            ${entries.map(([m,v])=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;"><span style="font-size:11px;font-weight:700;color:${muscleColors2[m]||'#888'};width:52px;flex-shrink:0;">${displayMuscle(m)}</span><div style="flex:1;height:5px;background:#1e1e1e;border-radius:3px;overflow:hidden;"><div style="height:100%;width:${Math.round(v/maxVol*100)}%;background:${muscleColors2[m]||'#888'};border-radius:3px;"></div></div></div>`).join('')}
+          </div>`;
+        })()}
+        ${exRows}
+      </div>
+    </div>`;
+  }).join('');
+}
+// ─────────────────────────────────────────────────────────────────────────
 </script>
 
+<div id="ex-float-bar" style="display:none;flex-direction:row;">
+  <button id="ex-float-note" onclick="exFloatAction('note')" title="Note">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+    Note
+  </button>
+  <button id="ex-float-timer" onclick="exFloatAction('timer')" title="Timer">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+    Timer
+  </button>
+  <button id="ex-float-graph" onclick="exFloatAction('graph')" title="Graph">
+    <svg width="20" height="20" viewBox="0 0 140 100" fill="none"><line x1="14" y1="2" x2="14" y2="90" stroke="currentColor" stroke-width="8" stroke-linecap="round"/><line x1="14" y1="90" x2="138" y2="90" stroke="currentColor" stroke-width="8" stroke-linecap="round"/><polyline points="14,85 34,55 54,70 80,30 104,48 130,10" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="14" cy="85" r="8" fill="currentColor"/><circle cx="34" cy="55" r="8" fill="currentColor"/><circle cx="54" cy="70" r="8" fill="currentColor"/><circle cx="80" cy="30" r="8" fill="currentColor"/><circle cx="104" cy="48" r="8" fill="currentColor"/><circle cx="130" cy="10" r="8" fill="currentColor"/></svg>
+    Graph
+  </button>
+  <button id="ex-float-pro" onclick="exFloatAction('pro')" title="PRO">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+    PRO
+  </button>
+</div>
 </body>
 </html>
