@@ -174,7 +174,13 @@ body.desktop-mode .pages-wrap {
 .reps-spin-btn{background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:14px;font-weight:700;width:26px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation;transition:all .15s;flex-shrink:0;padding:0;line-height:1;}
 .reps-spin-btn:hover{border-color:var(--accent);color:var(--accent);}
 .reps-spin-btn.reps-active{background:rgba(232,255,71,.15);border-color:var(--accent);color:var(--accent);}
-.reps-spin-val{font-family:'DM Sans';font-size:15px;font-weight:600;min-width:30px;text-align:center;color:var(--text);}
+.reps-spin-val{font-family:'DM Sans';font-size:15px;font-weight:600;min-width:30px;text-align:center;color:var(--text);cursor:pointer;}
+#reps-popup{position:fixed;z-index:9000;background:#1a1a2e;border:1px solid rgba(255,255,255,0.1);border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.7);padding:12px;display:none;flex-direction:column;align-items:center;gap:10px;min-width:140px;}
+#reps-popup.open{display:flex;}
+#reps-popup .reps-pop-val{font-family:'Bebas Neue';font-size:48px;color:var(--text);line-height:1;min-width:80px;text-align:center;}
+#reps-popup .reps-pop-btn{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:12px;color:var(--text);font-size:28px;font-weight:700;width:64px;height:56px;cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation;transition:all .15s;user-select:none;}
+#reps-popup .reps-pop-btn:active{background:rgba(232,255,71,.2);border-color:var(--accent);color:var(--accent);}
+#reps-popup-row{display:flex;gap:12px;align-items:center;}
 .reps-spin-val.prefilled{color:var(--text);}
 .set-input:focus{border-color:var(--accent);}
 .set-input::placeholder{color:var(--muted);font-weight:600;font-size:15px;text-align:center;}
@@ -734,6 +740,7 @@ onAuthStateChanged(auth, async (user) => {
       const userData = await createUserDoc(user);
       window._currentUser = { ...user, role: userData.role };
       window._currentUserData = userData;
+      loadUserBW();
 
       // ── Cache JWT for offline access ──────────────────
       if (window.BarzelpNet) {
@@ -928,6 +935,7 @@ function hidAuthScreen() {
   <div style="height:1px;background:#2a2a2a;margin:6px 0;"></div>
   <button id="userMenuDeviceBtn" onclick="toggleUserMenu();toggleDesktopOverride()" style="display:block;width:100%;background:transparent;border:none;border-radius:8px;color:#7ec8e3;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;text-align:left;transition:background .15s;" onmouseover="this.style.background='#1e1e1e'" onmouseout="this.style.background='transparent'">🖥️ <span id="deviceOverrideLabel">Switch to Desktop View</span></button>
   <button onclick="toggleUserMenu();closeDataModal();openDataModal()" style="width:100%;background:transparent;border:none;border-radius:8px;color:#f0f0f0;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;text-align:left;transition:background .15s;" onmouseover="this.style.background='#1e1e1e'" onmouseout="this.style.background='transparent'">📦 My Data</button>
+  <button onclick="toggleUserMenu();openBWModal()" style="width:100%;background:transparent;border:none;border-radius:8px;color:#34d399;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;text-align:left;transition:background .15s;" onmouseover="this.style.background='#1e1e1e'" onmouseout="this.style.background='transparent'">⚖️ Body Weight <span id="userMenuBWVal" style="color:#aaa;font-size:11px;"></span></button>
   <div id="userMenuNotifications" style="display:none;border-top:1px solid #2a2a2a;margin:6px 0;padding-top:6px;">
     <div style="font-size:10px;color:#555;font-weight:600;letter-spacing:1px;padding:4px 12px 6px;">NOTIFICATIONS</div>
     <div id="userMenuNotifList"></div>
@@ -1352,21 +1360,19 @@ function hidAuthScreen() {
 </div>
 
 <!-- KG EDITOR MODAL -->
-<div class="modal-overlay" id="kgEditorOverlay" style="align-items:flex-end;padding:0;" onclick="if(event.target===this)closeKgEditor()">
-  <div class="modal-sheet" style="padding:20px 20px 36px;border-radius:20px 20px 0 0;border:1px solid var(--border);width:100%;box-sizing:border-box;">
-    <div class="modal-handle"></div>
+<div id="kgEditorOverlay" style="display:none;position:fixed;inset:0;z-index:8000;" onclick="if(event.target===this)closeKgEditor()">
+  <div id="kgEditorSheet" style="position:absolute;padding:20px;border-radius:16px;border:1px solid var(--border);background:var(--surface);box-shadow:0 8px 32px rgba(0,0,0,.7);width:min(340px, calc(100vw - 32px));box-sizing:border-box;left:50%;transform:translateX(-50%);">
     <div style="margin-bottom:6px;text-align:center;">
       <div id="kgEditorLabel" style="font-family:'Bebas Neue';font-size:28px;letter-spacing:1.5px;color:var(--text);"></div>
       <div style="font-size:11px;color:var(--muted);" id="kgEditorPrev"></div>
     </div>
-    <div style="position:relative;display:flex;align-items:flex-end;justify-content:center;margin-bottom:10px;min-height:56px;">
-      <div style="display:flex;align-items:baseline;justify-content:center;gap:6px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+      <button onclick="kgPadBW()" id="kgBWBtn" style="background:transparent;border:1px solid #555;border-radius:8px;color:#aaa;font-family:'DM Sans';font-size:11px;font-weight:700;padding:6px 10px;cursor:pointer;letter-spacing:.3px;transition:all .2s;">BW +</button>
+      <div style="display:flex;align-items:baseline;justify-content:center;gap:6px;flex:1;">
         <span id="kgEditorDisplay" style="font-family:'Bebas Neue';font-size:52px;letter-spacing:2px;color:var(--accent);line-height:1;">—</span>
-        <span style="font-family:'Bebas Neue';font-size:22px;color:var(--muted);">kg</span>
+        <span id="kgEditorUnit" style="font-family:'Bebas Neue';font-size:22px;color:var(--muted);">kg</span>
       </div>
-      <div style="position:absolute;right:0;bottom:4px;width:40px;">
-        <button onclick="kgPadReset()" style="width:100%;background:transparent;border:1px solid #555;border-radius:8px;color:#aaa;font-family:'DM Sans';font-size:11px;font-weight:700;padding:6px 0;cursor:pointer;letter-spacing:.3px;">RST</button>
-      </div>
+      <button onclick="kgPadReset()" style="background:transparent;border:1px solid #555;border-radius:8px;color:#aaa;font-family:'DM Sans';font-size:11px;font-weight:700;padding:6px 10px;cursor:pointer;letter-spacing:.3px;">RST</button>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:10px;">
       <button onclick="kgPadToggleSign()" id="kgSignToggle" style="flex:0 0 auto;width:40px;background:transparent;border:1px solid #333;border-radius:8px;font-family:'DM Sans';font-size:14px;font-weight:700;padding:9px 0;cursor:pointer;text-align:center;"><span style="color:#f87171;">-</span><span style="color:#555;">/</span><span style="color:var(--accent);">+</span></button>
@@ -1391,6 +1397,23 @@ function hidAuthScreen() {
     <div style="display:flex;gap:10px;">
       <button onclick="closeKgEditor()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:700;padding:13px;cursor:pointer;">Cancel</button>
       <button onclick="confirmKgEditor()" style="flex:2;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:20px;font-weight:700;padding:13px;cursor:pointer;">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- BW MODAL -->
+<div class="modal-overlay" id="bwModalOverlay" style="align-items:center;padding:0 16px;" onclick="if(event.target===this)closeBWModal()">
+  <div class="modal-sheet" style="padding:24px 20px 32px;border-radius:20px;border:1px solid var(--border);margin-bottom:20vh;">
+    <div class="modal-handle"></div>
+    <div class="modal-title" style="margin-bottom:6px;">BODY WEIGHT</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:18px;">Used in BW+ exercises. Synced across devices.</div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+      <input id="bwInput" type="number" min="1" max="300" step="0.5" placeholder="e.g. 80" style="flex:1;background:#1a1a1a;border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans';font-size:22px;font-weight:700;padding:12px 14px;box-sizing:border-box;outline:none;text-align:center;" onkeydown="if(event.key==='Enter')confirmBWModal()"/>
+      <span style="font-family:'Bebas Neue';font-size:28px;color:var(--muted);">kg</span>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="closeBWModal()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:700;padding:12px;cursor:pointer;">Cancel</button>
+      <button onclick="confirmBWModal()" style="flex:2;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:16px;font-weight:700;padding:12px;cursor:pointer;">Save</button>
     </div>
   </div>
 </div>
@@ -2523,7 +2546,7 @@ function renderTodayPlanCard() {
 
 function showTodayWorkoutArea(isNew=false) {
   document.getElementById('today-start-screen').style.display = 'none';
-  document.getElementById('today-workout-area').style.display = 'block';
+  document.getElementById('today-workout-area').style.display = '';
   document.getElementById('workoutNameBar').classList.toggle('visible', !(window._createNewMode && window._newFromWorkouts));
   // Hide tab bar when workout is active
   const _tabsEl = document.querySelector('.tabs');
@@ -4524,14 +4547,21 @@ let _todayHideDone = false;
 
 function applyTodayFilters() {
   let visibleCount = 0;
+  // Check if any card is currently expanded — if so, don't restore hidden cards
+  const expandedCard = document.querySelector('#exerciseList .exercise-card[data-open="true"]');
   document.querySelectorAll('#exerciseList .exercise-card').forEach(card => {
     const m = card.dataset.exmuscle || 'Chest';
     const isDone = card.classList.contains('completed');
     const muscleOk = !_todayMuscleFilter || m === _todayMuscleFilter;
     const doneOk = !_todayHideDone || !isDone;
     const show = muscleOk && doneOk;
+    // If a card is expanded, keep other cards hidden by expand hidden
+    if (expandedCard && card !== expandedCard && card.dataset.hiddenByExpand) {
+      if (!show) card.style.display = 'none';
+      // Don't restore hiddenByExpand cards while another card is open
+      return;
+    }
     if (show) {
-      // Clear any leftover expand-animation styles so card is fully visible
       card.style.display = '';
       card.style.height = '';
       card.style.opacity = '';
@@ -5390,43 +5420,52 @@ function toggleCardCollapse(id) {
   const isOpen = card.dataset.open === 'true';
   if (isOpen) {
     // Restore all cards hidden by the expand action
+    const _isMobileRestore = true;
     document.querySelectorAll('#exerciseList .exercise-card').forEach(c => {
       if (c.id === id) return;
       if (!c.dataset.hiddenByExpand) return;
       delete c.dataset.hiddenByExpand;
-      // Check if this card should be visible per current filters
       const m = c.dataset.exmuscle || 'Chest';
       const isDone = c.classList.contains('completed');
       const muscleOk = !_todayMuscleFilter || m === _todayMuscleFilter;
       const doneOk = !_todayHideDone || !isDone;
-      if (!muscleOk || !doneOk) return; // keep hidden if filtered out
-      // Restore from display:none (completed cards) or height:0 (others)
-      if (c.style.display === 'none') {
+      if (!muscleOk || !doneOk) return;
+      if (_isMobileRestore) {
+        // Mobile: instant restore
         c.style.display = '';
-        c.style.opacity = '0';
-        requestAnimationFrame(() => {
-          c.style.transition = 'opacity .4s ease';
-          c.style.opacity = '1';
-          setTimeout(() => { c.style.transition = ''; c.style.opacity = ''; }, 420);
-        });
-      } else {
-        const restoreH = c.dataset.expandedHeight || '80px';
-        delete c.dataset.expandedHeight;
-        c.style.transition = 'height .4s ease, opacity .4s ease, margin-bottom .4s ease';
-        c.style.height = restoreH;
-        c.style.opacity = '1';
+        c.style.height = '';
+        c.style.overflow = '';
+        c.style.opacity = '';
         c.style.marginBottom = '';
-        setTimeout(() => {
-          c.style.transition = '';
-          c.style.height = '';
-          c.style.overflow = '';
-          c.style.opacity = '';
+        c.style.transition = '';
+        delete c.dataset.expandedHeight;
+      } else {
+        if (c.style.display === 'none') {
+          c.style.display = '';
+          c.style.opacity = '0';
+          requestAnimationFrame(() => {
+            c.style.transition = 'opacity .4s ease';
+            c.style.opacity = '1';
+            setTimeout(() => { c.style.transition = ''; c.style.opacity = ''; }, 420);
+          });
+        } else {
+          const restoreH = c.dataset.expandedHeight || '80px';
+          delete c.dataset.expandedHeight;
+          c.style.transition = 'height .4s ease, opacity .4s ease, margin-bottom .4s ease';
+          c.style.height = restoreH;
+          c.style.opacity = '1';
           c.style.marginBottom = '';
-        }, 420);
+          setTimeout(() => {
+            c.style.transition = '';
+            c.style.height = '';
+            c.style.overflow = '';
+            c.style.opacity = '';
+            c.style.marginBottom = '';
+          }, 420);
+        }
       }
     });
-    // Re-apply muscle filter so filtered cards stay hidden
-    if (_todayMuscleFilter || _todayHideDone) setTimeout(() => applyTodayFilters(), 430);
+    if (_todayMuscleFilter || _todayHideDone) setTimeout(() => applyTodayFilters(), _isMobileRestore ? 0 : 430);
     const savedY = parseInt(card.dataset.scrollY || '0');
     body.style.maxHeight = '0'; body.style.opacity = '0'; body.classList.add('collapsed'); body.classList.remove('open');
     card.dataset.open = 'false';
@@ -5438,32 +5477,35 @@ function toggleCardCollapse(id) {
     if (card.classList.contains('completed'))
       document.getElementById(`complete-bar-${id}`).style.display='flex';
     setFocusMode(null);
-    setTimeout(() => { window.scrollTo({ top: savedY, behavior: 'smooth' }); }, 50);
+    if (!_isMobileRestore) setTimeout(() => { window.scrollTo({ top: savedY, behavior: 'smooth' }); }, 50);
   } else {
-    // Save current scroll position before expanding
-    card.dataset.scrollY = window.scrollY;
-    // Collapse ALL other cards (above and below) with animation
-    // Completed cards: just fade (don't height-collapse so complete-bar stays visible)
+    // On mobile skip the collapse-others animation for smoother performance
+    const _isMobile = true;
+    if (!_isMobile) card.dataset.scrollY = window.scrollY;
+    // Collapse ALL other cards — skip animation on mobile
     const allCards = [...document.querySelectorAll('#exerciseList .exercise-card')];
     allCards.forEach((c) => {
       if (c.id === id) return;
-      c.dataset.hiddenByExpand = '1'; // mark so we can restore
+      c.dataset.hiddenByExpand = '1';
       const isCompleted = c.classList.contains('completed');
-      if (isCompleted) {
-        c.style.transition = 'opacity .5s ease';
-        requestAnimationFrame(() => { c.style.opacity = '0'; });
-        setTimeout(() => { c.style.display = 'none'; }, 500);
+      if (_isMobile) {
+        // Mobile: instant hide, no animation
+        if (isCompleted) { c.style.display = 'none'; }
+        else { c.style.height = '0'; c.style.overflow = 'hidden'; c.style.marginBottom = '0'; c.style.opacity = '0'; }
       } else {
-        const currentH = c.offsetHeight;
-        c.dataset.expandedHeight = currentH + 'px'; // store for restore
-        c.style.overflow = 'hidden';
-        c.style.height = currentH + 'px';
-        c.style.transition = 'height .7s cubic-bezier(.4,0,.2,1), opacity .5s ease, margin-bottom .7s cubic-bezier(.4,0,.2,1)';
-        requestAnimationFrame(() => {
-          c.style.height = '0';
-          c.style.marginBottom = '0';
-          c.style.opacity = '0';
-        });
+        // Desktop: full animation
+        if (isCompleted) {
+          c.style.transition = 'opacity .5s ease';
+          requestAnimationFrame(() => { c.style.opacity = '0'; });
+          setTimeout(() => { c.style.display = 'none'; }, 500);
+        } else {
+          const currentH = c.offsetHeight;
+          c.dataset.expandedHeight = currentH + 'px';
+          c.style.overflow = 'hidden';
+          c.style.height = currentH + 'px';
+          c.style.transition = 'height .7s cubic-bezier(.4,0,.2,1), opacity .5s ease, margin-bottom .7s cubic-bezier(.4,0,.2,1)';
+          requestAnimationFrame(() => { c.style.height = '0'; c.style.marginBottom = '0'; c.style.opacity = '0'; });
+        }
       }
       // Collapse body if open
       if (c.dataset.open === 'true') {
@@ -5479,8 +5521,8 @@ function toggleCardCollapse(id) {
     body.style.maxHeight = '4000px'; body.style.opacity = '1'; body.classList.remove('collapsed'); body.classList.add('open');
     card.dataset.open = 'true';
     chevBtn?.classList.add('open');
-    // Ensure session progress bar is updated when card expands
-    setTimeout(() => updateVolProgressBar(id), 50);
+    // Defer heavy work until after expand animation settles
+    setTimeout(() => updateVolProgressBar(id), _isMobile ? 0 : 50);
     // Reset chart div state based on whether graph was previously open
     const _chartDivReset = document.getElementById(`mini-chart-${id}`);
     if (_chartDivReset) {
@@ -5534,20 +5576,7 @@ function toggleCardCollapse(id) {
     if (miniInner5) miniInner5.style.display = 'none';
     if (miniBtn5) miniBtn5.innerHTML = '<svg width="22" height="22" viewBox="0 0 140 100" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="14" y1="2" x2="14" y2="90" stroke="currentColor" stroke-width="8" stroke-linecap="round"/><line x1="14" y1="90" x2="138" y2="90" stroke="currentColor" stroke-width="8" stroke-linecap="round"/><polyline points="14,85 34,55 54,70 80,30 104,48 130,10" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="14" cy="85" r="8" fill="currentColor"/><circle cx="34" cy="55" r="8" fill="currentColor"/><circle cx="54" cy="70" r="8" fill="currentColor"/><circle cx="80" cy="30" r="8" fill="currentColor"/><circle cx="104" cy="48" r="8" fill="currentColor"/><circle cx="130" cy="10" r="8" fill="currentColor"/></svg>';
     setTimeout(() => refreshCardMiniCharts(id), 80);
-    // Scroll card to sit right below the pills — wait for collapse animation
-    setTimeout(() => {
-      const chipsWrap = document.getElementById('todayMuscleChipsWrap');
-      const actionsRow = document.querySelector('.today-actions');
-      let stickyBottom = 0;
-      [actionsRow, chipsWrap].forEach(el => {
-        if (el && getComputedStyle(el).display !== 'none') {
-          stickyBottom = Math.max(stickyBottom, el.getBoundingClientRect().bottom);
-        }
-      });
-      if (!stickyBottom) stickyBottom = 120;
-      const targetScrollY = window.scrollY + card.getBoundingClientRect().top - stickyBottom - 2;
-      window.scrollTo({ top: targetScrollY, behavior: 'smooth' });
-    }, 720);
+    // scroll removed — instant collapse handles positioning
   }
 }
 
@@ -5870,13 +5899,36 @@ function renumberSets(exId) {
 }
 
 function openKgEditor(inputEl, exId) {
+  // Prevent double-open from both onfocus and onclick firing together
+  if (window._kgEditorOpening) return;
+  window._kgEditorOpening = true;
+  setTimeout(() => { window._kgEditorOpening = false; }, 300);
   window._kgEditorInput = inputEl;
   window._kgEditorExId = exId;
   window._kgEditorVal = '';
-  const cur = parseFloat(inputEl.value);
+  // Make input visible again in case it was hidden by BW mode
+  inputEl.style.display = '';
   const display = document.getElementById('kgEditorDisplay');
-  display.textContent = !isNaN(cur) && cur > 0 ? String(cur) : '—';
-  window._kgEditorVal = !isNaN(cur) && cur > 0 ? String(cur) : '';
+  const unit = document.getElementById('kgEditorUnit');
+  // Check if previously set as BW
+  if (inputEl.dataset.bwExtra !== undefined) {
+    _kgBWMode = true;
+    window._kgEditorBWMode = true;
+    const extra = parseFloat(inputEl.dataset.bwExtra) || 0;
+    window._kgEditorVal = extra > 0 ? String(extra) : '';
+    display.textContent = extra > 0 ? `BW+${extra}` : 'BW';
+    if (unit) unit.textContent = '';
+    // Highlight BW button
+    setTimeout(() => {
+      const _bwBtn = document.getElementById('kgBWBtn');
+      if (_bwBtn) { _bwBtn.style.borderColor = '#34d399'; _bwBtn.style.color = '#34d399'; }
+    }, 50);
+  } else {
+    const cur = parseFloat(inputEl.value);
+    display.textContent = !isNaN(cur) && cur > 0 ? String(cur) : '—';
+    window._kgEditorVal = !isNaN(cur) && cur > 0 ? String(cur) : '';
+    if (unit) unit.textContent = 'kg';
+  }
   // Label: exercise name
   const card = document.getElementById(exId);
   const exName = card ? (card.dataset.exname || '') : '';
@@ -5895,6 +5947,14 @@ function openKgEditor(inputEl, exId) {
   }
   document.getElementById('kgEditorPrev').innerHTML = prevKg > 0 ? `<span style="color:#ff8c42;font-weight:700;">prev: ${prevKg}kg</span>` : '';
   window._kgEditorPrevKg = prevKg;
+  // Reset BW mode on every open (will be re-applied below if needed)
+  _kgBWMode = false;
+  window._kgEditorBWMode = false;
+  const _bwBtnReset = document.getElementById('kgBWBtn');
+  const _kgUnitReset = document.getElementById('kgEditorUnit');
+  if (_bwBtnReset) { _bwBtnReset.style.borderColor = '#555'; _bwBtnReset.style.color = '#aaa'; }
+  if (_kgUnitReset) _kgUnitReset.textContent = 'kg';
+  if (_userBW && _bwBtnReset) _bwBtnReset.title = `Your BW: ${_userBW}kg`;
   // Reset sign mode to + on every open
   _kgSignMode = 1;
   const _toggle = document.getElementById('kgSignToggle');
@@ -5906,10 +5966,29 @@ function openKgEditor(inputEl, exId) {
     b.style.color = 'var(--accent)';
     b.style.borderColor = 'rgba(232,255,71,.3)';
   });
-  document.getElementById('kgEditorOverlay').classList.add('open');
+  // Position below the tapped set row
+  const overlay = document.getElementById('kgEditorOverlay');
+  const sheet = document.getElementById('kgEditorSheet');
+  overlay.style.display = 'block';
+  // Get row — use BW label if input is hidden
+  const row = inputEl.closest('tr');
+  const bwLabel = inputEl.parentElement?.querySelector('.bw-display-label');
+  const refEl = (bwLabel && inputEl.style.display === 'none') ? bwLabel : (row || inputEl);
+  sheet.style.visibility = 'hidden';
+  // Use setTimeout to ensure sheet is fully rendered before measuring
+  setTimeout(() => {
+    const rowRect = refEl.getBoundingClientRect();
+    const sheetH = sheet.offsetHeight;
+    let top = rowRect.bottom + 8;
+    const maxTop = window.innerHeight - sheetH - 8;
+    // Clamp: don't go above 16px, don't overflow bottom
+    top = Math.min(top, Math.max(16, maxTop));
+    sheet.style.top = top + 'px';
+    sheet.style.visibility = '';
+  }, 50);
 }
 function closeKgEditor() {
-  document.getElementById('kgEditorOverlay').classList.remove('open');
+  document.getElementById('kgEditorOverlay').style.display = 'none';
   window._kgEditorInput = null;
 }
 let _kgSignMode = 1; // 1 = plus, -1 = minus
@@ -5952,34 +6031,87 @@ function kgPadAdd(amount) {
 }
 function kgPadPress(char) {
   const display = document.getElementById('kgEditorDisplay');
+  const unit = document.getElementById('kgEditorUnit');
   let val = window._kgEditorVal || '';
   if (char === '.' && val.includes('.')) return;
   if (char === '.' && val === '') val = '0';
-  // max 6 chars
   if (val.length >= 6) return;
   val += char;
   window._kgEditorVal = val;
-  display.textContent = val;
+  if (window._kgEditorBWMode) {
+    display.textContent = val > 0 ? `BW+${val}` : 'BW';
+    if (unit) unit.textContent = '';
+  } else {
+    display.textContent = val;
+  }
 }
 function kgPadBack() {
   const display = document.getElementById('kgEditorDisplay');
+  const unit = document.getElementById('kgEditorUnit');
   let val = window._kgEditorVal || '';
   val = val.slice(0, -1);
   window._kgEditorVal = val;
-  display.textContent = val || '—';
+  if (window._kgEditorBWMode) {
+    display.textContent = val ? `BW+${val}` : 'BW';
+    if (unit) unit.textContent = '';
+  } else {
+    display.textContent = val || '—';
+    if (unit) unit.textContent = val ? '' : '';
+  }
 }
 function confirmKgEditor() {
   const input = window._kgEditorInput;
   const exId = window._kgEditorExId;
-  const val = parseFloat(window._kgEditorVal);
-  if (input && !isNaN(val) && val > 0) {
-    input.value = val;
-    input.classList.remove('prefilled');
-    dismissBanner(input);
-    saveSession();
-    updateVolProgressBar(exId);
-    updateIgnoreButtons(exId);
+  if (window._kgEditorBWMode && _userBW) {
+    const extra = parseFloat(window._kgEditorVal) || 0;
+    const displayVal = extra > 0 ? `BW+${extra}` : 'BW';
+    const totalVal = _userBW + extra;
+    if (input) {
+      // Store total for calculations, display as BW+X
+      input.value = totalVal;
+      input.dataset.bwDisplay = displayVal;
+      input.dataset.bwExtra = extra;
+      input.dataset.bwTotal = totalVal;
+      // Show BW label in input visually
+      input.style.color = '#34d399';
+      input.setAttribute('data-display-override', displayVal);
+      // Update displayed text via a sibling span if possible
+      const td = input.parentElement;
+      // Remove any existing BW label
+      td.querySelector('.bw-display-label')?.remove();
+      // Show BW display as a clickable span over the input
+      const bwLabel = document.createElement('div');
+      bwLabel.className = 'bw-display-label';
+      bwLabel.style.cssText = 'font-family:"DM Sans";font-size:13px;font-weight:700;color:#34d399;text-align:center;cursor:pointer;padding:4px 6px;border:1px solid #34d39966;border-radius:8px;background:rgba(52,211,153,.08);';
+      bwLabel.textContent = displayVal;
+      bwLabel.onclick = () => openKgEditor(input, exId);
+      td.appendChild(bwLabel);
+      input.style.display = 'none';
+      input.classList.remove('prefilled');
+      dismissBanner(input);
+      saveSession();
+      updateVolProgressBar(exId);
+      updateIgnoreButtons(exId);
+    }
+  } else {
+    const val = parseFloat(window._kgEditorVal);
+    if (input && !isNaN(val) && val > 0) {
+      input.value = val;
+      input.style.display = '';
+      input.style.color = '';
+      // Remove BW label if switching back
+      input.parentElement.querySelector('.bw-display-label')?.remove();
+      delete input.dataset.bwDisplay;
+      input.classList.remove('prefilled');
+      dismissBanner(input);
+      saveSession();
+      updateVolProgressBar(exId);
+      updateIgnoreButtons(exId);
+    }
   }
+  // Reset BW mode
+  _kgBWMode = false;
+  window._kgEditorBWMode = false;
   closeKgEditor();
 }
 
@@ -6016,9 +6148,7 @@ function addSet(exId, defaultKg=null, defaultReps=null, defaultDone=false) {
     <td><input class="${kgClass}" type="number" placeholder="—" min="0" step="0.5" ${kg} readonly onfocus="this.blur();openKgEditor(this,'${exId}')" onclick="openKgEditor(this,'${exId}')" oninput="this.classList.remove('prefilled');dismissBanner(this);saveSession();updateVolProgressBar(this.closest('.exercise-card')?.id)"/></td>
     <td>
       <div class="reps-spinner">
-        <button class="reps-spin-btn" onclick="adjustReps(this,-1)" type="button">−</button>
-        <span class="${repsValClass}" data-reps="${repsHidden}">${repsDisplay}</span>
-        <button class="reps-spin-btn" onclick="adjustReps(this,1)" type="button">+</button>
+        <span class="${repsValClass}" data-reps="${repsHidden}" onclick="openRepsPopup(this,'${exId}')" style="cursor:pointer;padding:4px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);">${repsDisplay}</span>
       </div>
       <input class="set-input" type="hidden" value="${repsHidden}" data-reps-hidden="1"/>
     </td>
@@ -17150,8 +17280,166 @@ function _debounce(fn, delay) {
 const _debouncedRenderHistory = _debounce(() => { if (window._activeTab === 'history') renderHistory(); }, 150);
 const _debouncedRenderProgress = _debounce(() => { if (window._activeTab === 'progress') renderProgress(); }, 150);
 // ─────────────────────────────────────────────────────────────────────────
+
+// ── REPS POPUP ────────────────────────────────────────────────────────────
+let _repsPopupSpan = null;
+let _repsPopupExId = null;
+
+function openRepsPopup(span, exId) {
+  _repsPopupSpan = span;
+  _repsPopupExId = exId;
+  const popup = document.getElementById('reps-popup');
+  const valEl = document.getElementById('reps-popup-val');
+  if (!popup || !valEl) return;
+  const currentReps = parseInt(span.dataset.reps) || 0;
+  valEl.textContent = currentReps;
+  // Position popup below the set row
+  const row = span.closest('tr');
+  const rect = row ? row.getBoundingClientRect() : span.getBoundingClientRect();
+  const card = span.closest('.exercise-card');
+  const cardRect = card ? card.getBoundingClientRect() : { left: 0, right: window.innerWidth };
+  // Show first to measure height
+  popup.style.visibility = 'hidden';
+  popup.classList.add('open');
+  requestAnimationFrame(() => {
+    const top = rect.bottom + 6;
+    popup.style.left = '50%';
+    popup.style.transform = 'translateX(-50%)';
+    popup.style.top = top + 'px';
+    popup.style.visibility = '';
+  });
+  // Close on outside tap
+  setTimeout(() => {
+    document.addEventListener('click', _closeRepsPopup);
+  }, 0);
+}
+
+function adjustRepsPopup(delta) {
+  const valEl = document.getElementById('reps-popup-val');
+  if (!valEl || !_repsPopupSpan) return;
+  let val = parseInt(valEl.textContent) || 0;
+  val = Math.max(0, val + delta);
+  valEl.textContent = val;
+  // Update the span and hidden input
+  _repsPopupSpan.dataset.reps = val;
+  _repsPopupSpan.textContent = val || '—';
+  _repsPopupSpan.classList.toggle('prefilled', val > 0);
+  const row = _repsPopupSpan.closest('tr');
+  if (row) {
+    const hiddenInput = row.querySelector('input[data-reps-hidden]');
+    if (hiddenInput) hiddenInput.value = val;
+  }
+  saveSession();
+  if (_repsPopupExId) updateVolProgressBar(_repsPopupExId);
+}
+
+function _closeRepsPopup(e) {
+  const popup = document.getElementById('reps-popup');
+  if (popup && !popup.contains(e.target)) {
+    popup.classList.remove('open');
+    document.removeEventListener('click', _closeRepsPopup);
+    _repsPopupSpan = null;
+    _repsPopupExId = null;
+  }
+}
+// ─────────────────────────────────────────────────────────────────────────
+
+// ── BODY WEIGHT FEATURE ───────────────────────────────────────────────────
+let _userBW = null; // cached from Firestore
+let _kgBWMode = false; // is KG editor in BW mode?
+
+async function loadUserBW() {
+  if (!window._currentUserData) return;
+  const bw = window._currentUserData.bodyWeight;
+  if (bw) { _userBW = parseFloat(bw); _updateBWMenuLabel(); }
+}
+
+function _updateBWMenuLabel() {
+  const el = document.getElementById('userMenuBWVal');
+  if (el) el.textContent = _userBW ? `(${_userBW}kg)` : '(not set)';
+}
+
+function openBWModal(prefill) {
+  const overlay = document.getElementById('bwModalOverlay');
+  const input = document.getElementById('bwInput');
+  if (!overlay || !input) return;
+  input.value = prefill !== undefined ? prefill : (_userBW || '');
+  overlay.classList.add('open');
+  setTimeout(() => input.focus(), 200);
+}
+
+function closeBWModal() {
+  document.getElementById('bwModalOverlay')?.classList.remove('open');
+}
+
+async function confirmBWModal() {
+  const input = document.getElementById('bwInput');
+  const val = parseFloat(input?.value);
+  if (!val || val <= 0) { showToast('Please enter a valid weight'); return; }
+  _userBW = val;
+  _updateBWMenuLabel();
+  closeBWModal();
+  // Save to Firestore
+  try {
+    const user = window._fbAuth?.currentUser;
+    if (user) {
+      const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+      const db = window._fbDb;
+      await setDoc(doc(db, 'users', user.uid), { bodyWeight: val }, { merge: true });
+      window._currentUserData = { ...window._currentUserData, bodyWeight: val };
+    }
+  } catch(e) { console.error('BW save error:', e); }
+  showToast(`Body weight saved: ${val}kg`);
+  // If KG editor is open in BW mode, update it
+  if (_kgBWMode) { _applyBWMode(); }
+}
+
+function kgPadBW() {
+  if (!_userBW) {
+    // First time — ask user to set BW
+    openBWModal();
+    return;
+  }
+  _kgBWMode = !_kgBWMode;
+  _applyBWMode();
+}
+
+function _applyBWMode() {
+  const btn = document.getElementById('kgBWBtn');
+  const display = document.getElementById('kgEditorDisplay');
+  const unit = document.getElementById('kgEditorUnit');
+  if (_kgBWMode) {
+    btn.style.borderColor = '#34d399';
+    btn.style.color = '#34d399';
+    // Show BW + current extra kg
+    const extra = parseFloat(window._kgEditorVal) || 0;
+    display.textContent = extra > 0 ? `BW+${extra}` : 'BW';
+    if (unit) unit.textContent = '';
+    // Mark input as BW mode
+    window._kgEditorBWMode = true;
+  } else {
+    btn.style.borderColor = '#555';
+    btn.style.color = '#aaa';
+    const extra = parseFloat(window._kgEditorVal) || 0;
+    display.textContent = extra > 0 ? extra : '—';
+    if (unit) unit.textContent = 'kg';
+    window._kgEditorBWMode = false;
+  }
+}
+
+// Override kgPadPress to handle BW mode
+const _origKgPadPress = window.kgPadPress;
+// Patch confirmKgEditor to handle BW mode
+// ─────────────────────────────────────────────────────────────────────────
 </script>
 
+<div id="reps-popup">
+  <div id="reps-popup-row">
+    <button class="reps-pop-btn" onclick="adjustRepsPopup(-1)">−</button>
+    <div class="reps-pop-val" id="reps-popup-val">0</div>
+    <button class="reps-pop-btn" onclick="adjustRepsPopup(1)">+</button>
+  </div>
+</div>
 <div id="ex-float-bar" style="display:none;flex-direction:row;">
   <button id="ex-float-note" onclick="exFloatAction('note')" title="Note">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
