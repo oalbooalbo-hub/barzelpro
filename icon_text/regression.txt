@@ -1,0 +1,5 @@
+run:
+fetch('regression_tests.html').then(r=>r.text()).then(html=>{const d=document.createElement('div');d.innerHTML=html;document.body.appendChild(d.querySelector('#test-runner-root'));document.body.appendChild(d.querySelector('#test-dom'));const s=d.querySelector('script[data-runner]');const fn=new Function(s.textContent+'window.runAll=runAll;window._suites=_suites;');fn();})
+
+results
+console.log([...document.querySelectorAll('.test')].map(t=>{const badge=t.querySelector('.badge').textContent;const name=t.querySelector('.test-name').childNodes[0].textContent.trim();const err=t.querySelector('.error-detail')?.textContent||'';return `[${badge}] ${name}${err?' → '+err:''}`}).join('\n'))

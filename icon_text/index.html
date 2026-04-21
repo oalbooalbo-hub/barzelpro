@@ -1,8 +1,11 @@
-<!-- BARZELPRO index.html | Version: v3.6 | Build: 2026-04-07 -->
+<!-- BARZELPRO index.html | Version: v3.7 | Build: 2026-04-20 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -11,6 +14,15 @@
 <meta name="theme-color" content="#0a0a0a">
 <meta name="description" content="Track your workouts, monitor progress, and crush your fitness goals.">
 <link rel="manifest" href="manifest.json">
+<script>
+// Force unregister old service worker to prevent stale cache
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    regs.forEach(r => r.unregister());
+  });
+}
+</script>
+
 <link rel="apple-touch-icon" href="logo.svg">
 <link rel="icon" type="image/svg+xml" href="logo.svg">
 <title>BARZELPRO</title>
@@ -49,7 +61,11 @@ body.desktop-mode .pages-wrap {
 }
 
 /* ── APP SHELL ─────────────────────────────────── */
-.header{padding:18px 20px 0;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:30;background:var(--bg);}
+.header{padding:18px 20px 0;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:30;background:var(--bg);transition:max-height .35s cubic-bezier(.4,0,.2,1),opacity .3s,padding .35s;max-height:80px;overflow:hidden;}
+.header.collapsed{max-height:0;opacity:0;padding:0;pointer-events:none;}
+#header-chevron-hint{display:none;position:sticky;top:0;z-index:31;text-align:center;padding:4px 0 2px;cursor:pointer;background:var(--bg);}
+#header-chevron-hint svg{transition:transform .3s;}
+#header-chevron-hint:hover svg{transform:translateY(2px);}
 .logo{font-family:'Bebas Neue';font-size:34px;color:var(--accent);display:flex;flex-direction:column;align-items:flex-start;}
 .logo span{color:var(--muted);font-size:9px;font-family:'DM Sans';display:block;margin-top:-4px;letter-spacing:3px;}
 .date-badge{padding:6px 4px;font-size:12px;color:#fff;font-weight:600;}
@@ -164,7 +180,7 @@ body.desktop-mode .pages-wrap {
 .reps-spinner{display:inline-flex;align-items:center;justify-content:center;gap:2px;}
 .set-row td{padding:6px 4px;text-align:center;border-top:1px solid var(--border);}
 .set-num{font-size:12px;color:var(--muted);font-weight:700;}
-.kg-pad-btn{background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'Bebas Neue';font-size:24px;padding:14px 0;cursor:pointer;transition:background .1s;}
+.kg-pad-btn{background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans';font-size:22px;font-weight:700;padding:14px 0;cursor:pointer;transition:background .1s;}
 .kg-pad-btn:active{background:var(--accent);color:#000;}
 .set-row.ignored .set-num { text-decoration: line-through; }
 .btn-ignore-set { background: transparent; border: 1px solid var(--border); border-radius: 5px; color: var(--muted); font-size: 9px; font-weight: 700; padding: 2px 5px; cursor: pointer; letter-spacing: .4px; white-space: nowrap; transition: all .15s; }
@@ -176,8 +192,13 @@ body.desktop-mode .pages-wrap {
 .reps-spin-btn.reps-active{background:rgba(232,255,71,.15);border-color:var(--accent);color:var(--accent);}
 .reps-spin-val{font-family:'DM Sans';font-size:15px;font-weight:600;min-width:30px;text-align:center;color:var(--text);cursor:pointer;}
 /* Inline KG editor row */
-.kg-inline-editor{max-height:0;overflow:hidden;transition:max-height .3s cubic-bezier(.4,0,.2,1);background:#1a1a2e;border-top:0px solid var(--border);}
-.kg-inline-editor.open{max-height:520px;overflow-y:auto;border-top:1px solid var(--border);}
+.kg-bw-btn-active{border-color:var(--accent) !important;color:var(--accent) !important;}
+#kgBWBtnInline{will-change:color,border-color;-webkit-transform:translateZ(0);transform:translateZ(0);}
+#kgEditorDisplay{will-change:contents;-webkit-transform:translateZ(0);transform:translateZ(0);display:inline-block;}
+.kg-inline-editor{height:0;overflow:visible;transition:height .3s cubic-bezier(.4,0,.2,1);background:#1a1a2e;border-top:0px solid var(--border);}
+.kg-inline-editor .kg-inline-editor-inner{opacity:0;transition:opacity .25s ease;pointer-events:none;}
+.kg-inline-editor.open{height:auto;border-top:1px solid var(--border);}
+.kg-inline-editor.open .kg-inline-editor-inner{opacity:1;pointer-events:auto;overflow-y:auto;max-height:520px;}
 .kg-inline-editor-inner{padding:12px 12px 10px;}
 #reps-popup{position:fixed;z-index:9000;background:#1a1a2e;border:1px solid rgba(255,255,255,0.1);border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.7);padding:12px;display:none;flex-direction:column;align-items:center;gap:10px;min-width:140px;}
 #reps-popup.open{display:flex;}
@@ -200,7 +221,7 @@ body.desktop-mode .pages-wrap {
 .ex-footer-row{display:flex;gap:6px;align-items:center;}
 .btn-small{background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:'DM Sans';font-size:12px;font-weight:600;padding:6px 12px;cursor:pointer;transition:all .2s;white-space:normal;text-align:center;}
 .btn-small:hover{border-color:var(--accent);color:var(--accent);}
-.btn-add-set{background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:20px;font-weight:300;width:34px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;flex-shrink:0;}
+.btn-add-set{background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:24px;font-weight:300;width:48px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;flex-shrink:0;}
 .btn-add-set:hover{border-color:var(--accent);color:var(--accent);}
 .btn-note{background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:'DM Sans';font-size:12px;font-weight:600;padding:6px 12px;cursor:pointer;transition:all .2s;}
 .btn-note:hover,.btn-note.has-note{border-color:var(--accent);color:var(--accent);}
@@ -904,7 +925,7 @@ function hidAuthScreen() {
   <img src="logo.svg" alt="Brand Logo" style="height:64px;width:auto;" onerror="this.style.display='none'"/>
 </div>
 
-<div class="header">
+<div class="header" onclick="if(this.classList.contains('collapsed'))return;collapseHeader()" style="cursor:pointer;position:relative;padding-bottom:6px;" title="Tap to collapse">
   <div class="logo" onclick="openAboutModal()" style="cursor:pointer;">
     <img id="brand-logo-img" src="logo.svg" alt="Brand Logo" style="height:36px;width:auto;display:block;" onerror="this.style.display='none'"/>
   </div>
@@ -919,6 +940,14 @@ function hidAuthScreen() {
     </div>
     <div class="date-badge" id="dateBadge" onclick="if(!window._isNewWorkoutFlow && !window._loadFromToday && !_pickMode)openCalendar()" style="cursor:pointer;user-select:none;"></div>
   </div>
+  <div id="header-collapse-hint" style="display:none;position:absolute;bottom:2px;left:50%;transform:translateX(-50%);line-height:1;">
+    <svg width="20" height="10" viewBox="0 0 20 10" fill="none"><polyline points="3,8 10,2 17,8" stroke="#e8ff47" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.6"/></svg>
+  </div>
+</div>
+<div id="header-chevron-hint" onclick="expandHeader()" title="Show header" ontouchstart="window._hintTouchY=event.touches[0].clientY" ontouchmove="if(event.touches[0].clientY-window._hintTouchY>20)expandHeader()">
+  <svg width="24" height="12" viewBox="0 0 24 12" fill="none">
+    <polyline points="4,2 12,10 20,2" stroke="#e8ff47" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
 </div>
 
 <!-- User menu dropdown -->
@@ -1001,6 +1030,9 @@ function hidAuthScreen() {
     <div style="width:100%;max-width:380px;display:flex;gap:8px;">
       <button onclick="startNewWorkout()" style="flex:1;padding:16px;background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:12px;font-family:'DM Sans';font-size:18px;letter-spacing:0;cursor:pointer;box-sizing:border-box;line-height:1;font-weight:700;">CREATE NEW</button>
       <button id="today-replace-btn" onclick="replaceTodayPlan()" style="display:none;padding:16px 20px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:12px;font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;letter-spacing:0;-webkit-text-stroke:0.4px currentColor;cursor:pointer;box-sizing:border-box;line-height:1;">REPLACE</button>
+    </div>
+    <div id="install-btn-wrap" style="width:100%;max-width:380px;display:none;">
+      <button id="installBtnToday" onclick="document.getElementById('installBtn').click()" style="width:100%;padding:16px;background:rgba(32,212,200,.1);color:#20d4c8;border:1px solid rgba(32,212,200,.4);border-radius:12px;font-family:'DM Sans';font-size:18px;letter-spacing:0;cursor:pointer;box-sizing:border-box;line-height:1;font-weight:700;">INSTALL APP</button>
     </div>
   </div>
 
@@ -1367,22 +1399,22 @@ function hidAuthScreen() {
 <div id="kgEditorOverlay" style="display:none;position:fixed;inset:0;z-index:8000;" onclick="if(event.target===this)closeKgEditor()">
   <div id="kgEditorSheet" style="position:absolute;padding:20px;border-radius:16px;border:1px solid var(--border);background:var(--surface);box-shadow:0 8px 32px rgba(0,0,0,.7);width:min(340px, calc(100vw - 32px));box-sizing:border-box;left:50%;transform:translateX(-50%);">
     <div style="margin-bottom:6px;text-align:center;">
-      <div id="kgEditorLabel" style="font-family:'Bebas Neue';font-size:28px;letter-spacing:1.5px;color:var(--text);"></div>
+      <div id="kgEditorLabel" style="font-family:'DM Sans';font-size:24px;font-weight:700;color:var(--text);"></div>
       <div style="font-size:11px;color:var(--muted);" id="kgEditorPrev"></div>
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-      <button onclick="kgPadBW()" id="kgBWBtn" style="background:transparent;border:1px solid #555;border-radius:8px;color:#aaa;font-family:'DM Sans';font-size:11px;font-weight:700;padding:6px 10px;cursor:pointer;letter-spacing:.3px;transition:all .2s;">BW +</button>
+      <button onclick="kgPadBW()" id="kgBWBtnModal" style="background:transparent;border:1px solid #555;border-radius:8px;color:#aaa;font-family:'DM Sans';font-size:11px;font-weight:700;padding:6px 10px;cursor:pointer;letter-spacing:.3px;transition:all .2s;">BW +</button>
       <div style="display:flex;align-items:baseline;justify-content:center;gap:6px;flex:1;">
-        <span id="kgEditorDisplay" style="font-family:'Bebas Neue';font-size:52px;letter-spacing:2px;color:var(--accent);line-height:1;">—</span>
-        <span id="kgEditorUnit" style="font-family:'Bebas Neue';font-size:22px;color:var(--muted);">kg</span>
+        <span id="kgEditorDisplayModal" style="font-family:'DM Sans';font-size:52px;font-weight:700;color:var(--accent);line-height:1;">—</span>
+        <span id="kgEditorUnitModal" style="font-family:'DM Sans';font-size:16px;font-weight:600;color:var(--muted);">kg</span>
       </div>
       <button onclick="kgPadReset()" style="background:transparent;border:1px solid #555;border-radius:8px;color:#aaa;font-family:'DM Sans';font-size:11px;font-weight:700;padding:6px 10px;cursor:pointer;letter-spacing:.3px;">RST</button>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:10px;">
-      <button onclick="kgPadToggleSign()" id="kgSignToggle" style="flex:0 0 auto;width:40px;background:transparent;border:1px solid #333;border-radius:8px;font-family:'DM Sans';font-size:14px;font-weight:700;padding:9px 0;cursor:pointer;text-align:center;"><span style="color:#f87171;">-</span><span style="color:#555;">/</span><span style="color:var(--accent);">+</span></button>
-      <button onclick="kgPadAdd(1.25)" id="kgAddBtn1" style="flex:1;background:transparent;border:1px solid rgba(232,255,71,.3);border-radius:8px;color:var(--accent);font-family:'DM Sans';font-size:13px;font-weight:700;padding:9px 0;cursor:pointer;">+1.25</button>
-      <button onclick="kgPadAdd(2.5)"  id="kgAddBtn2" style="flex:1;background:transparent;border:1px solid rgba(232,255,71,.3);border-radius:8px;color:var(--accent);font-family:'DM Sans';font-size:13px;font-weight:700;padding:9px 0;cursor:pointer;">+2.5</button>
-      <button onclick="kgPadAdd(5)"    id="kgAddBtn3" style="flex:1;background:transparent;border:1px solid rgba(232,255,71,.3);border-radius:8px;color:var(--accent);font-family:'DM Sans';font-size:13px;font-weight:700;padding:9px 0;cursor:pointer;">+5</button>
+      <button onclick="kgPadToggleSign()" id="kgSignToggleModal" style="flex:0 0 auto;width:40px;background:transparent;border:1px solid #333;border-radius:8px;font-family:'DM Sans';font-size:14px;font-weight:700;padding:9px 0;cursor:pointer;text-align:center;"><span style="color:#f87171;">-</span><span style="color:#555;">/</span><span style="color:var(--accent);">+</span></button>
+      <button onclick="kgPadAdd(1.25)" id="kgAddBtn1Modal" style="flex:1;background:transparent;border:1px solid rgba(232,255,71,.3);border-radius:8px;color:var(--accent);font-family:'DM Sans';font-size:13px;font-weight:700;padding:9px 0;cursor:pointer;">+1.25</button>
+      <button onclick="kgPadAdd(2.5)"  id="kgAddBtn2Modal" style="flex:1;background:transparent;border:1px solid rgba(232,255,71,.3);border-radius:8px;color:var(--accent);font-family:'DM Sans';font-size:13px;font-weight:700;padding:9px 0;cursor:pointer;">+2.5</button>
+      <button onclick="kgPadAdd(5)"    id="kgAddBtn3Modal" style="flex:1;background:transparent;border:1px solid rgba(232,255,71,.3);border-radius:8px;color:var(--accent);font-family:'DM Sans';font-size:13px;font-weight:700;padding:9px 0;cursor:pointer;">+5</button>
     </div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px;">
       <button class="kg-pad-btn" onclick="kgPadPress('1')">1</button>
@@ -2298,6 +2330,8 @@ function updateVolProgressBar(exId) {
 }
 
 function showTodayStartScreen() {
+  _headerWorkoutModeOff();
+  if (window.hideExFloatBar) hideExFloatBar();
   window._isNewWorkoutFlow = false;
   document.getElementById('today-start-screen').style.display = 'flex';
   document.getElementById('today-workout-area').style.display = 'none';
@@ -2548,9 +2582,45 @@ function renderTodayPlanCard() {
 }
 
 
+function collapseHeader() {
+  if (!window._headerCollapseAllowed) return; // only during active workout
+  const header = document.querySelector('.header');
+  const hint = document.getElementById('header-chevron-hint');
+  const collapseHint = document.getElementById('header-collapse-hint');
+  if (!header) return;
+  header.classList.add('collapsed');
+  if (hint) hint.style.display = 'block';
+  if (collapseHint) collapseHint.style.display = 'none';
+}
+function expandHeader() {
+  const header = document.querySelector('.header');
+  const hint = document.getElementById('header-chevron-hint');
+  const collapseHint = document.getElementById('header-collapse-hint');
+  if (!header) return;
+  header.classList.remove('collapsed');
+  // Only show collapse hint if in workout mode
+  if (hint) hint.style.display = 'none';
+  if (collapseHint) collapseHint.style.display = window._headerCollapseAllowed ? 'block' : 'none';
+}
+function _headerWorkoutModeOn() {
+  window._headerCollapseAllowed = true;
+}
+function _headerWorkoutModeOff() {
+  window._headerCollapseAllowed = false;
+  // Force expand and hide hints
+  const header = document.querySelector('.header');
+  const hint = document.getElementById('header-chevron-hint');
+  const collapseHint = document.getElementById('header-collapse-hint');
+  if (header) header.classList.remove('collapsed');
+  if (hint) hint.style.display = 'none';
+  if (collapseHint) collapseHint.style.display = 'none';
+}
 function showTodayWorkoutArea(isNew=false) {
   document.getElementById('today-start-screen').style.display = 'none';
   document.getElementById('today-workout-area').style.display = '';
+  // Enable header collapse (only in workout mode)
+  _headerWorkoutModeOn();
+  setTimeout(collapseHeader, 2000);
   document.getElementById('workoutNameBar').classList.toggle('visible', !(window._createNewMode && window._newFromWorkouts));
   // Hide tab bar when workout is active
   const _tabsEl = document.querySelector('.tabs');
@@ -2812,18 +2882,7 @@ function clearSession() {
 function save() { _LS.set('ironlog_workouts', JSON.stringify(workouts)); _invalidateExCache(); }
 function saveDeleted() { _LS.set('ironlog_deleted_workouts', JSON.stringify(deletedWorkouts)); }
 function saveCustom() { _LS.set('ironlog_custom_ex', JSON.stringify(customExercises)); if(window._currentUser) if(window.syncToFirestore) window.syncToFirestore(); }
-function showToast(msg, opts) {
-  const t = document.getElementById('toast');
-  const duration = opts?.duration ?? 2400;
-  const offsetY = opts?.offsetY ?? 0;
-  t.style.top = (20 + offsetY) + 'px';
-  t.innerHTML = msg; t.classList.add('show');
-  clearTimeout(t._hideTimer);
-  // Scale duration for longer messages (more lines = more reading time)
-  const lines = (msg.match(/·|<br/g) || []).length + 1;
-  const scaledDuration = Math.max(duration, lines * 800);
-  t._hideTimer = setTimeout(() => { t.classList.remove('show'); t.style.top = ''; }, scaledDuration);
-}
+function showToast(msg, opts) { /* toasts disabled */ }
 function fmt(ts) { return new Date(ts).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}); }
 function fmtShort(ts) { return new Date(ts).toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
 document.getElementById('dateBadge').textContent = new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}).toUpperCase();
@@ -3924,7 +3983,12 @@ function switchTab(tab) {
   window._activeTab = tab;
   document.activeElement?.blur();
   // Hide floating bar when switching away from Today
-  if (tab !== 'log') { const _fb = document.getElementById('ex-float-bar'); if (_fb) _fb.style.display = 'none'; _exFloatCardId = null; }
+  if (tab !== 'log') { if (window.hideExFloatBar) hideExFloatBar(); _headerWorkoutModeOff(); }
+  else {
+    // On Today tab, only show float bar if workout area is active AND a card is expanded
+    const _workoutActive = document.getElementById('today-workout-area')?.style.display !== 'none';
+    if (!_workoutActive && window.hideExFloatBar) hideExFloatBar();
+  }
   // Clean up any stuck overlays and expanded slots
   document.getElementById('wtab-menu-fade')?.remove();
   document.getElementById('extab-expanded-slot')?.remove();
@@ -4554,6 +4618,8 @@ function applyTodayFilters() {
   // Check if any card is currently expanded — if so, don't restore hidden cards
   const expandedCard = document.querySelector('#exerciseList .exercise-card[data-open="true"]');
   document.querySelectorAll('#exerciseList .exercise-card').forEach(card => {
+    // Don't touch cards hidden by KG editor focus mode
+    if (card.dataset.kgHide !== undefined) return;
     const m = card.dataset.exmuscle || 'Chest';
     const isDone = card.classList.contains('completed');
     const muscleOk = !_todayMuscleFilter || m === _todayMuscleFilter;
@@ -4795,13 +4861,13 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
     <div class="ex-footer">
       <div class="ex-footer-row">
         <button class="btn-add-set" onclick="addSet('${id}');updateVolProgressBar('${id}')" title="Add set">+</button>
-        <button class="btn-note" id="note-btn-${id}" onclick="toggleComment('${id}')">Note</button>
-        <button class="btn-hist" id="footer-hist-btn-${id}" onclick="openExHistory('${id}')" style="display:none;">History</button>
-        <button class="btn-reset-sets" id="reset-btn-${id}" onclick="resetCardSets('${id}')" style="display:none;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:'DM Sans';font-size:12px;font-weight:600;padding:6px 12px;cursor:pointer;transition:all .2s;">Reset</button>
+        <button class="btn-reset-sets" id="reset-btn-${id}" onclick="resetCardSets('${id}')" style="display:none;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:'DM Sans';font-size:14px;font-weight:600;padding:10px 18px;cursor:pointer;transition:all .2s;">RST</button>
         <div style="flex:1;"></div>
         <button class="workouts-flow-only" id="wflow-close-btn-${id}" onclick="toggleCardCollapse('${id}')" style="background:transparent;border:1px solid rgba(232,255,71,.4);border-radius:8px;color:var(--accent);font-family:'DM Sans';font-size:12px;font-weight:700;padding:6px 12px;cursor:pointer;display:none;">Close</button>
-        <button onclick="toggleMiniChart('${id}')" id="mini-chart-toggle-${id}" style="background:transparent;border:1px solid transparent;border-radius:8px;color:var(--muted);padding:0;width:36px;height:34px;cursor:pointer;transition:color .2s,border-color .2s;display:flex;align-items:center;justify-content:center;flex-shrink:0;" title="Toggle graph"><svg width="16" height="16" viewBox="0 0 140 100" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="14" y1="2" x2="14" y2="90" stroke="currentColor" stroke-width="8" stroke-linecap="round"/><line x1="14" y1="90" x2="138" y2="90" stroke="currentColor" stroke-width="8" stroke-linecap="round"/><polyline points="14,85 34,55 54,70 80,30 104,48 130,10" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="14" cy="85" r="8" fill="currentColor"/><circle cx="34" cy="55" r="8" fill="currentColor"/><circle cx="54" cy="70" r="8" fill="currentColor"/><circle cx="80" cy="30" r="8" fill="currentColor"/><circle cx="104" cy="48" r="8" fill="currentColor"/><circle cx="130" cy="10" r="8" fill="currentColor"/></svg></button>
-        <button class="btn-timer" id="timer-btn-${id}" onclick="toggleTimer('${id}')" title="Rest timer" style="font-size:16px;line-height:1;width:36px;height:34px;padding:0;display:flex;align-items:center;justify-content:center;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg></button>
+        <!-- Note/Timer/Graph moved to floating bar -->
+        <button onclick="toggleMiniChart('${id}')" id="mini-chart-toggle-${id}" style="display:none;"></button>
+        <button class="btn-note" id="note-btn-${id}" onclick="toggleComment('${id}')" style="display:none;"></button>
+        <button class="btn-timer" id="timer-btn-${id}" onclick="toggleTimer('${id}')" style="display:none;"></button>
       </div>
       <div class="timer-panel" id="timer-panel-${id}">
         <div style="display:flex;align-items:center;position:relative;">
@@ -4860,6 +4926,9 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
           <div class="mini-scrubber-info" style="justify-content:flex-start;">
             <span class="mini-scrubber-pct" id="mini-scrub-pct-${id}"></span>
           </div>
+        </div>
+        <div style="padding:8px 0 4px;border-top:1px solid var(--border);margin-top:8px;">
+          <button onclick="openExHistory('${id}')" style="width:100%;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:'DM Sans';font-size:12px;font-weight:600;padding:7px;cursor:pointer;transition:all .2s;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">History</button>
         </div>
       </div>
     </div>`;
@@ -5418,6 +5487,10 @@ function setFocusMode(activeId) {
 }
 
 function toggleCardCollapse(id) {
+  // Restore any completed cards hidden by KG editor focus mode
+  document.querySelectorAll('#exerciseList .exercise-card.completed').forEach(c => {
+    if (c.style.display === 'none' && !c.dataset.kgHide) c.style.display = '';
+  });
   const card = document.getElementById(id);
   const body = document.getElementById(`body-${id}`);
   const chevBtn = document.getElementById(`chev-${id}`);
@@ -5556,12 +5629,12 @@ function toggleCardCollapse(id) {
     const noteArea = document.getElementById(`comment-area-${id}`);
     if (noteArea) {
       const noteOpen = card.dataset.noteOpen;
-      if (noteOpen === 'true' || (noteOpen === undefined && noteBox?.value?.trim())) {
+      // Only open note if user explicitly opened it before (noteOpen === 'true')
+      // Never auto-open even if there's content — user must tap Note button
+      if (noteOpen === 'true') {
         noteArea.classList.add('open');
-      } else if (noteOpen === 'false') {
+      } else {
         noteArea.classList.remove('open');
-      } else if (noteBox?.value?.trim()) {
-        noteArea.classList.add('open');
       }
     }
     setFocusMode(id);
@@ -5774,6 +5847,20 @@ function toggleDone(id) {
       refreshOrderNums();
       refreshCardMiniCharts(id);
       if (_todayHideDone) applyTodayFilters();
+      // Scroll next uncompleted exercise into view below sticky elements
+      requestAnimationFrame(() => {
+        const nextCard = list.querySelector('.exercise-card:not(.completed)');
+        if (nextCard) {
+          const _chips = document.getElementById('todayMuscleChipsWrap');
+          const _finishBar = document.querySelector('.today-actions');
+          const _chipsBottom = (_chips && getComputedStyle(_chips).display !== 'none') ? _chips.getBoundingClientRect().bottom : 0;
+          const _finishBottom = (_finishBar && getComputedStyle(_finishBar).display !== 'none') ? _finishBar.getBoundingClientRect().bottom : 0;
+          const _anchorBottom = Math.max(_chipsBottom, _finishBottom);
+          const _cardTop = nextCard.getBoundingClientRect().top;
+          const _diff = _cardTop - (_anchorBottom + 8);
+          if (Math.abs(_diff) > 4) window.scrollBy({ top: _diff, behavior: 'smooth' });
+        }
+      });
     }, 320);
   } else {
     btn.innerHTML = 'MARK AS DONE'; btn.classList.remove('is-done');
@@ -5824,7 +5911,9 @@ function resetCardSets(exId) {
   if (!defaults.length) return;
   const tbody = document.getElementById(`set-body-${exId}`);
   if (!tbody) return;
-  tbody.querySelectorAll('.set-row').forEach(r => r.remove());
+  // Close any open inline editor first — its input reference will be stale after row removal
+  if (window.closeInlineKgEditor) closeInlineKgEditor();
+  tbody.querySelectorAll('.set-row, .kg-inline-editor-row').forEach(r => r.remove());
   setCounters[exId] = 0;
   defaults.forEach(s => {
     addSet(exId, s.kg, s.reps);
@@ -5922,11 +6011,7 @@ function openKgEditor(inputEl, exId) {
     window._kgEditorVal = extra > 0 ? String(extra) : '';
     display.textContent = extra > 0 ? `BW+${extra}` : 'BW';
     if (unit) unit.textContent = '';
-    // Highlight BW button
-    setTimeout(() => {
-      const _bwBtn = document.getElementById('kgBWBtn');
-      if (_bwBtn) { _bwBtn.style.borderColor = '#34d399'; _bwBtn.style.color = '#34d399'; }
-    }, 50);
+    // BW button will be highlighted via bwActive in the HTML template below
   } else {
     const cur = parseFloat(inputEl.value);
     display.textContent = !isNaN(cur) && cur > 0 ? String(cur) : '—';
@@ -5954,7 +6039,7 @@ function openKgEditor(inputEl, exId) {
   // Reset BW mode on every open (will be re-applied below if needed)
   _kgBWMode = false;
   window._kgEditorBWMode = false;
-  const _bwBtnReset = document.getElementById('kgBWBtn');
+  const _bwBtnReset = document.getElementById('kgBWBtnInline') || document.getElementById('kgBWBtn');
   const _kgUnitReset = document.getElementById('kgEditorUnit');
   if (_bwBtnReset) { _bwBtnReset.style.borderColor = '#555'; _bwBtnReset.style.color = '#aaa'; }
   if (_kgUnitReset) _kgUnitReset.textContent = 'kg';
@@ -5998,17 +6083,18 @@ function closeKgEditor() {
 let _kgSignMode = 1; // 1 = plus, -1 = minus
 
 function kgPadReset() {
+  // Restore to the original prefilled value (from defaultSets — frozen at card load)
   const prev = window._kgEditorPrevKg;
   if (!prev || prev <= 0) return;
-  const display = document.getElementById('kgEditorDisplay');
-  const unit = document.getElementById('kgEditorUnit');
+  // Original BW state comes from the input's data-orig-bw attribute (set at addSet time)
+  // defaultSets never have BW mode, so original state is always plain kg
+  const input = window._kgEditorInput;
+  const wasBW = input?.dataset.origBw === '1';
+  _kgBWMode = wasBW;
+  window._kgEditorBWMode = wasBW;
+  _applyBWMode();
   window._kgEditorVal = String(prev);
-  if (window._kgEditorBWMode) {
-    display.textContent = prev > 0 ? `BW+${prev}` : 'BW';
-    if (unit) unit.textContent = '';
-  } else {
-    display.textContent = window._kgEditorVal;
-  }
+  _updateKgDisplay(window._kgEditorVal, window._kgEditorBWMode);
 }
 
 function kgPadToggleSign() {
@@ -6032,68 +6118,113 @@ function kgPadToggleSign() {
 }
 
 function kgPadAdd(amount) {
-  const display = document.getElementById('kgEditorDisplay');
-  const unit = document.getElementById('kgEditorUnit');
+/* DBG_START */   window._dbgLog('kgPadAdd ' + amount + ' | editorInput=' + !!window._kgEditorInput + ' val=' + window._kgEditorVal, '#a78bfa'); /* DBG_END */
   const cur = parseFloat(window._kgEditorVal) || 0;
   const newVal = parseFloat((cur + _kgSignMode * amount).toFixed(2));
   if (newVal < 0) return;
   window._kgEditorVal = String(newVal);
-  if (window._kgEditorBWMode) {
-    display.textContent = newVal > 0 ? `BW+${newVal}` : 'BW';
-    if (unit) unit.textContent = '';
-  } else {
-    display.textContent = window._kgEditorVal;
-  }
+  _updateKgDisplay(window._kgEditorVal, window._kgEditorBWMode);
 }
 function kgPadPress(char) {
-  const display = document.getElementById('kgEditorDisplay');
-  const unit = document.getElementById('kgEditorUnit');
+/* DBG_START */   window._dbgLog('kgPadPress ' + char + ' | editorInput=' + !!window._kgEditorInput + ' val=' + window._kgEditorVal + ' displayRow=' + !!document.getElementById('kg-display-row'), '#a78bfa'); /* DBG_END */
   let val = window._kgEditorVal || '';
   if (char === '.' && val.includes('.')) return;
   if (char === '.' && val === '') val = '0';
   if (val.length >= 6) return;
   val += char;
   window._kgEditorVal = val;
-  if (window._kgEditorBWMode) {
-    display.textContent = val ? `BW+${val}` : 'BW';
-    if (unit) unit.textContent = '';
-  } else {
-    display.textContent = val;
-  }
+  _updateKgDisplay(val, window._kgEditorBWMode);
 }
 function kgPadBack() {
-  const display = document.getElementById('kgEditorDisplay');
-  const unit = document.getElementById('kgEditorUnit');
+/* DBG_START */   window._dbgLog('kgPadBack | val=' + window._kgEditorVal + ' input=' + !!window._kgEditorInput, '#a78bfa'); /* DBG_END */
   let val = window._kgEditorVal || '';
   val = val.slice(0, -1);
   window._kgEditorVal = val;
-  if (window._kgEditorBWMode) {
-    display.textContent = val ? `BW+${val}` : 'BW';
-    if (unit) unit.textContent = '';
-  } else {
-    display.textContent = val || '—';
-    if (unit) unit.textContent = val ? '' : '';
-  }
+  _updateKgDisplay(val, window._kgEditorBWMode);
 }
+/* DBG_START */
+// ── DEBUG OVERLAY ─────────────────────────────────────────────────────────
+window._dbgLog = function(msg, color) {
+  const el = document.getElementById('_dbg_panel');
+  if (!el) return;
+  const line = document.createElement('div');
+  line.style.cssText = 'color:' + (color||'#e8ff47') + ';font-size:11px;border-bottom:1px solid #222;padding:3px 0;white-space:pre-wrap;word-break:break-all;';
+  line.textContent = new Date().toISOString().slice(11,23) + ' ' + msg;
+  el.insertBefore(line, el.firstChild);
+  while (el.children.length > 60) el.removeChild(el.lastChild);
+};
+
+// ── PROPERTY WATCHERS — catch every write to key globals ──────────────────
+(function _installWatchers() {
+  function watchProp(name, color) {
+    let _val = window[name];
+    Object.defineProperty(window, name, {
+      get() { return _val; },
+      set(v) {
+        const stack = new Error().stack.split('\n').slice(1,3).map(s=>s.trim().replace(/.*at /,'')).join(' → ');
+        window._dbgLog('SET window.' + name + ' = ' + (v && typeof v === 'object' ? '[obj]' : v) + '  ← ' + stack, color);
+        _val = v;
+      },
+      configurable: true
+    });
+  }
+  // Watch after DOM ready so dbgLog panel exists
+  document.addEventListener('DOMContentLoaded', () => {
+    watchProp('_kgEditorVal', '#ff8c42');
+    watchProp('_kgEditorInput', '#7ec8e3');
+    watchProp('_kgEditorOpening', '#a78bfa');
+    watchProp('_inlineKgEditorId', '#f87171');
+  });
+})();
+
+(function _injectDbgUI() {
+  const panel = document.createElement('div');
+  panel.id = '_dbg_panel';
+  panel.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#0a0a0aee;border-bottom:2px solid #e8ff47;padding:6px 8px;max-height:220px;overflow-y:auto;font-family:monospace;display:none;';
+  const hdr = document.createElement('div');
+  hdr.style.cssText = 'display:flex;gap:6px;margin-bottom:4px;';
+  const toggle2 = document.createElement('button');
+  toggle2.textContent = 'CLEAR';
+  toggle2.style.cssText = 'background:#333;color:#fff;font-size:10px;border:none;border-radius:4px;padding:2px 6px;cursor:pointer;';
+  toggle2.onclick = () => { panel.querySelectorAll('div:not(:first-child)').forEach(d=>d.remove()); };
+  hdr.appendChild(toggle2);
+  const snapBtn = document.createElement('button');
+  snapBtn.textContent = 'SNAP';
+  snapBtn.style.cssText = 'background:#333;color:#e8ff47;font-size:10px;border:none;border-radius:4px;padding:2px 6px;cursor:pointer;';
+  snapBtn.onclick = () => {
+    window._dbgLog('SNAP: val=' + window._kgEditorVal + ' input=' + !!window._kgEditorInput + ' id=' + window._inlineKgEditorId + ' opening=' + window._kgEditorOpening + ' displayEl=' + !!document.getElementById('kgEditorDisplay'), '#ffffff');
+  };
+  hdr.appendChild(snapBtn);
+  panel.appendChild(hdr);
+  const toggle = document.createElement('button');
+  toggle.textContent = 'DBG';
+  toggle.style.cssText = 'position:fixed;top:4px;right:8px;z-index:100000;background:#e8ff47;color:#000;font-size:10px;font-weight:700;border:none;border-radius:6px;padding:5px 9px;cursor:pointer;';
+  toggle.onclick = () => { panel.style.display = panel.style.display === 'none' ? 'block' : 'none'; };
+  document.addEventListener('DOMContentLoaded', () => { document.body.appendChild(panel); document.body.appendChild(toggle); });
+})();
+// ─────────────────────────────────────────────────────────────────────────
+/* DBG_END */
 function confirmKgEditor() {
   const input = window._kgEditorInput;
   const exId = window._kgEditorExId;
+/* DBG_START */   window._dbgLog('confirmKgEditor | input=' + !!input + ' exId=' + exId + ' val=' + window._kgEditorVal + ' bwMode=' + window._kgEditorBWMode + ' opening=' + window._kgEditorOpening, '#34d399'); /* DBG_END */
+/* DBG_START */   window._dbgLog('confirmKgEditor branch | bwMode=' + window._kgEditorBWMode + ' _userBW=' + _userBW + ' val=' + window._kgEditorVal, '#ff8c42'); /* DBG_END */
   if (window._kgEditorBWMode && _userBW) {
     const extra = parseFloat(window._kgEditorVal) || 0;
     const displayVal = extra > 0 ? `BW+${extra}` : 'BW';
     const totalVal = _userBW + extra;
+/* DBG_START */     window._dbgLog('BW path | extra=' + extra + ' total=' + totalVal + ' input=' + !!input + ' td=' + !!input?.parentElement, '#34d399'); /* DBG_END */
     if (input) {
       // Store total for calculations, display as BW+X
       input.value = totalVal;
       input.dataset.bwDisplay = displayVal;
       input.dataset.bwExtra = extra;
       input.dataset.bwTotal = totalVal;
-      // Show BW label in input visually
-      input.style.color = '#34d399';
       input.setAttribute('data-display-override', displayVal);
       // Update displayed text via a sibling span if possible
       const td = input.parentElement;
       // Remove any existing BW label
+/* DBG_START */       window._dbgLog('removing old BW label, td children=' + td.children.length, '#7ec8e3'); /* DBG_END */
       td.querySelector('.bw-display-label')?.remove();
       // Show BW display as a clickable span over the input
       const bwLabel = document.createElement('div');
@@ -6104,10 +6235,13 @@ function confirmKgEditor() {
         : `<span style="font-size:15px;font-weight:600;color:var(--accent);">BW</span>`;
       bwLabel.onclick = () => openInlineKgEditor(input, exId);
       td.appendChild(bwLabel);
+/* DBG_START */       window._dbgLog('BW label appended, input.display set to none. td.innerHTML=' + td.innerHTML.slice(0,80), '#34d399'); /* DBG_END */
       input.style.display = 'none';
+/* DBG_START */       window._dbgLog('input.style.display set to none | display=' + input.style.display + ' bwLabel=' + !!td.querySelector('.bw-display-label'), '#34d399'); /* DBG_END */
       input.classList.remove('prefilled');
       dismissBanner(input);
       saveSession();
+/* DBG_START */       window._dbgLog('after saveSession | input.display=' + input.style.display + ' bwLabel=' + !!input.parentElement.querySelector('.bw-display-label'), '#ff8c42'); /* DBG_END */
       updateVolProgressBar(exId);
       updateIgnoreButtons(exId);
     }
@@ -6117,9 +6251,12 @@ function confirmKgEditor() {
       input.value = val;
       input.style.display = '';
       input.style.color = '';
-      // Remove BW label if switching back
+      // Remove BW label and clear all BW data
       input.parentElement.querySelector('.bw-display-label')?.remove();
       delete input.dataset.bwDisplay;
+      delete input.dataset.bwExtra;
+      delete input.dataset.bwTotal;
+      input.removeAttribute('data-display-override');
       input.classList.remove('prefilled');
       dismissBanner(input);
       saveSession();
@@ -6132,22 +6269,35 @@ function confirmKgEditor() {
   window._kgEditorBWMode = false;
   closeKgEditor();
   closeInlineKgEditor();
+  // Clear the double-open guard immediately so the next set can be opened right away
+  window._kgEditorOpening = false;
+/* DBG_START */
+  const _doneInput = window._kgEditorInput; // already null here — use saved ref
+  window._dbgLog('confirmKgEditor DONE | opening=' + window._kgEditorOpening + ' inlineId=' + _inlineKgEditorId, '#34d399');
+/* DBG_END */
 }
 
 function addSet(exId, defaultKg=null, defaultReps=null, defaultDone=false) {
   setCounters[exId] = (setCounters[exId]||0)+1;
   const n = setCounters[exId];
   // Inherit from last row if no explicit default
+  let _inheritBWExtra = null;
+  let _inheritBWTotal = null;
   if (defaultKg===null) {
     const rows = document.querySelectorAll(`#${exId} .set-row`);
     if (rows.length) {
-      const inp = rows[rows.length-1].querySelectorAll('.set-input');
-      const lk=parseFloat(inp[0].value);
-      // reps: read from spinner span data-reps or hidden input
-      const repsSpan = rows[rows.length-1].querySelector('.reps-spin-val');
+      const lastRow = rows[rows.length-1];
+      const inp = lastRow.querySelectorAll('.set-input');
+      const lk = parseFloat(inp[0].value);
+      const repsSpan = lastRow.querySelector('.reps-spin-val');
       const lr = repsSpan ? (parseInt(repsSpan.dataset.reps)||0) : (parseInt(inp[1]?.value)||0);
       if (!isNaN(lk)&&lk>0) defaultKg=lk;
       if (!isNaN(lr)&&lr>0) defaultReps=lr;
+      // Inherit BW mode from previous set
+      if (inp[0].dataset.bwExtra !== undefined) {
+        _inheritBWExtra = parseFloat(inp[0].dataset.bwExtra) || 0;
+        _inheritBWTotal = parseFloat(inp[0].dataset.bwTotal) || defaultKg;
+      }
     }
   }
   const tbody = document.getElementById(`set-body-${exId}`);
@@ -6164,7 +6314,7 @@ function addSet(exId, defaultKg=null, defaultReps=null, defaultDone=false) {
   tr.innerHTML = `
     <td><span class="set-num">${n}</span></td>
     <td class="set-rm-label" style="width:28px;padding:0 2px;"></td>
-    <td><input class="${kgClass}" type="number" placeholder="—" min="0" step="0.5" ${kg} readonly onfocus="this.blur();openInlineKgEditor(this,'${exId}')" onclick="openInlineKgEditor(this,'${exId}')" oninput="this.classList.remove('prefilled');dismissBanner(this);saveSession();updateVolProgressBar(this.closest('.exercise-card')?.id)"/></td>
+    <td><input class="${kgClass}" type="number" placeholder="—" min="0" step="0.5" ${kg} data-orig-bw="0" readonly onclick="openInlineKgEditor(this,'${exId}')" oninput="this.classList.remove('prefilled');dismissBanner(this);saveSession();updateVolProgressBar(this.closest('.exercise-card')?.id)"/></td>
     <td>
       <div class="reps-spinner">
         <span class="${repsValClass}" data-reps="${repsHidden}" onclick="openRepsPopup(this,'${exId}')" style="cursor:pointer;padding:4px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);">${repsDisplay}</span>
@@ -6175,6 +6325,25 @@ function addSet(exId, defaultKg=null, defaultReps=null, defaultDone=false) {
     <td style="white-space:nowrap;"><button class="btn-ignore-set" style="display:none;" onclick="toggleIgnoreSet(this,'${exId}')">IGN</button></td>
     <td><button class="btn-delete-set" onclick="const _eid='${exId}';this.closest('tr').remove();this.closest('tr')?.nextElementSibling?.remove();renumberSets(_eid);saveSession();updateVolProgressBar(_eid);updateIgnoreButtons(_eid);checkResetBtn(_eid);if(window._isNewWorkoutFlow)updateWflowCloseBtn(_eid)">✕</button></td>`;
   tbody.appendChild(tr);
+  // Apply BW mode from previous set if inherited
+  if (_inheritBWExtra !== null) {
+    const newInput = tr.querySelector('.set-input');
+    if (newInput) {
+      newInput.dataset.bwExtra = _inheritBWExtra;
+      newInput.dataset.bwTotal = _inheritBWTotal;
+      const displayVal = _inheritBWExtra > 0 ? `BW+${_inheritBWExtra}` : 'BW';
+      const td = newInput.parentElement;
+      newInput.style.display = 'none';
+      const bwLabel = document.createElement('div');
+      bwLabel.className = 'bw-display-label';
+      bwLabel.style.cssText = 'font-family:"DM Sans";font-size:15px;font-weight:600;color:var(--text);text-align:center;cursor:pointer;padding:6px 4px;min-width:52px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;display:inline-flex;align-items:baseline;justify-content:center;gap:1px;';
+      bwLabel.innerHTML = _inheritBWExtra > 0
+        ? `<span style="font-size:10px;font-weight:700;color:var(--accent);letter-spacing:.3px;">BW+</span><span style="font-size:15px;font-weight:600;color:var(--text);">${_inheritBWExtra}</span>`
+        : `<span style="font-size:15px;font-weight:600;color:var(--accent);">BW</span>`;
+      bwLabel.onclick = () => openInlineKgEditor(newInput, exId);
+      td.appendChild(bwLabel);
+    }
+  }
   // Add inline KG editor row
   const editorTr = document.createElement('tr');
   editorTr.className = 'kg-inline-editor-row';
@@ -12154,7 +12323,7 @@ window.addEventListener('load', function() {
       <div style="display:flex;justify-content:center;margin-bottom:12px;">
         <img src="logo.svg" alt="Brand Logo" style="height:44px;width:auto;" onerror="this.style.display='none'"/>
       </div>
-      <div style="font-size:11px;color:#555;font-weight:600;letter-spacing:1.5px;margin-bottom:24px;">VERSION v3.6</div>
+      <div style="font-size:11px;color:#555;font-weight:600;letter-spacing:1.5px;margin-bottom:24px;">VERSION v3.7</div>
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:20px;text-align:left;margin-bottom:16px;">
         <div style="font-family:'DM Sans';font-size:13px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;">FEATURES</div>
         <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;color:var(--text);font-weight:500;line-height:1.5;">
@@ -12177,9 +12346,7 @@ window.addEventListener('load', function() {
     </div>
   </div>
 </div>
-<button id="installBtn" style="display:none;position:fixed;bottom:20px;right:20px;z-index:999;">
-Install App
-</button>
+<button id="installBtn" style="display:none;"></button>
 
 <!-- DB -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -12224,13 +12391,17 @@ let deferredPrompt;
 window.addEventListener("beforeinstallprompt", e => {
   e.preventDefault();
   deferredPrompt = e;
-  document.getElementById("installBtn").style.display = "block";
+  document.getElementById("installBtn").style.display = "none"; // hidden, used as relay
+  const wrap = document.getElementById("install-btn-wrap");
+  if (wrap) wrap.style.display = "block";
 });
 
 document.getElementById("installBtn").addEventListener("click", async () => {
   if (!deferredPrompt) return;
   deferredPrompt.prompt();
   await deferredPrompt.userChoice;
+  const wrapAfter = document.getElementById("install-btn-wrap");
+  if (wrapAfter) wrapAfter.style.display = "none";
 });
 </script>
 
@@ -12369,7 +12540,7 @@ if ('serviceWorker' in navigator && location.hostname !== '127.0.0.1' && locatio
         <div id="coachProfileLastSaved" style="font-size:11px;color:#555;text-align:center;min-height:16px;">Not saved yet</div>
 
         <div style="display:flex;gap:8px;">
-          <button id="coachProfileCancelBtn" onclick="cancelCoachProfileEdit()" style="flex:1;background:transparent;border:1px solid #333;border-radius:10px;color:#555;font-family:'DM Sans';font-size:14px;font-weight:700;padding:13px;cursor:pointer;display:none;">Reset</button>
+          <button id="coachProfileCancelBtn" onclick="cancelCoachProfileEdit()" style="flex:1;background:transparent;border:1px solid #333;border-radius:10px;color:#555;font-family:'DM Sans';font-size:14px;font-weight:700;padding:13px;cursor:pointer;display:none;">RST</button>
           <button onclick="showCoachProfilePreview()" style="flex:1;background:transparent;border:1px solid rgba(126,200,227,.4);border-radius:10px;color:#7ec8e3;font-family:'DM Sans';font-size:14px;font-weight:700;padding:13px;cursor:pointer;">Preview</button>
           <button id="coachProfileSaveBtn" onclick="saveCoachProfile()" style="flex:1;background:#34d39922;border:1px solid #34d39966;border-radius:10px;color:#34d399;font-family:'DM Sans';font-size:14px;font-weight:700;padding:13px;cursor:pointer;transition:opacity .3s;opacity:0.4;pointer-events:none;">Profile is saved</button>
         </div>
@@ -17080,25 +17251,31 @@ function hideExFloatBar() {
 
 function _updateExFloatBar(cardId) {
   if (!cardId) return;
-  // Note button — highlight if note is open
+  // Note button — highlight if note is open, badge if has content
   const noteArea = document.getElementById(`comment-area-${cardId}`);
+  const noteBox = document.getElementById(`comment-${cardId}`);
   const noteBtn = document.getElementById('ex-float-note');
-  if (noteBtn) noteBtn.style.color = noteArea?.classList.contains('open') ? 'var(--accent)' : '';
+  const noteBadge = document.getElementById('ex-float-note-badge');
+  const _grey = 'var(--muted)';
+  if (noteBtn) noteBtn.style.color = noteArea?.classList.contains('open') ? '#7ec8e3' : _grey;
+  if (noteBadge) noteBadge.style.display = noteBox?.value?.trim() ? 'block' : 'none';
 
-  // Timer button — highlight if timer is running
+  // Timer button — highlight if timer panel open or running
   const timerBtn = document.getElementById(`timer-btn-${cardId}`);
   const floatTimer = document.getElementById('ex-float-timer');
-  if (floatTimer) floatTimer.style.color = timerBtn?.classList.contains('running') ? '#7ec8e3' : '';
+  const timerPanel = document.getElementById(`timer-panel-${cardId}`);
+  const timerOpen = timerPanel?.classList.contains('open') || timerBtn?.classList.contains('running');
+  if (floatTimer) floatTimer.style.color = timerOpen ? '#7ec8e3' : _grey;
 
   // Graph button — highlight if graph is open
   const chartDiv = document.getElementById(`mini-chart-${cardId}`);
   const floatGraph = document.getElementById('ex-float-graph');
-  if (floatGraph) floatGraph.style.color = chartDiv?.classList.contains('visible') ? '#34d399' : '';
+  if (floatGraph) floatGraph.style.color = chartDiv?.classList.contains('visible') ? '#7ec8e3' : _grey;
 
   // PRO button — highlight if pro bar is open
   const proBar = document.getElementById(`vol-target-bar-${cardId}`);
   const floatPro = document.getElementById('ex-float-pro');
-  if (floatPro) floatPro.style.color = proBar?.dataset.proOpen === 'true' ? '#34d399' : '';
+  if (floatPro) floatPro.style.color = proBar?.dataset.proOpen === 'true' ? '#34d399' : _grey;
 }
 
 function exFloatAction(action) {
@@ -17106,12 +17283,30 @@ function exFloatAction(action) {
   if (!id) return;
   if (action === 'note') {
     toggleComment(id);
+    // Scroll card bottom into view so note area is visible
+    setTimeout(() => {
+      const card = document.getElementById(id);
+      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }, 120);
   } else if (action === 'timer') {
     toggleTimer(id);
+    setTimeout(() => {
+      const card = document.getElementById(id);
+      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }, 120);
   } else if (action === 'graph') {
     toggleMiniChart(id);
+    setTimeout(() => {
+      const card = document.getElementById(id);
+      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }, 120);
   } else if (action === 'pro') {
     toggleSessionProgress(id);
+    // Scroll card top into view so PRO bar is visible
+    setTimeout(() => {
+      const card = document.getElementById(id);
+      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 120);
   }
   setTimeout(() => _updateExFloatBar(id), 100);
 }
@@ -17310,8 +17505,25 @@ let _repsPopupSpan = null;
 let _repsPopupExId = null;
 
 function openRepsPopup(span, exId) {
+  // Toggle: close if same span tapped again
+  const _togglePopup = document.getElementById('reps-popup');
+  if (_togglePopup?.classList.contains('open') && window._repsPopupTriggerSpan === span) {
+    _togglePopup.classList.remove('open');
+    document.removeEventListener('click', _closeRepsPopup);
+    if (_repsPopupSpan) {
+      const _rNumEl = _repsPopupSpan.closest('tr')?.querySelector('.set-num[data-reps-highlighted]');
+      if (_rNumEl && !_rNumEl.dataset.highlighted) { _rNumEl.style.color = ''; delete _rNumEl.dataset.repsHighlighted; }
+      else if (_rNumEl) { delete _rNumEl.dataset.repsHighlighted; }
+    }
+    _repsPopupSpan = null; _repsPopupExId = null; window._repsPopupTriggerSpan = null;
+    return;
+  }
   _repsPopupSpan = span;
   _repsPopupExId = exId;
+  // Highlight set number yellow
+  const _repsRow = span.closest('tr');
+  const _repsNumEl = _repsRow?.querySelector('.set-num');
+  if (_repsNumEl) { _repsNumEl.style.color = 'var(--accent)'; _repsNumEl.dataset.repsHighlighted = '1'; }
   const popup = document.getElementById('reps-popup');
   const valEl = document.getElementById('reps-popup-val');
   if (!popup || !valEl) return;
@@ -17332,10 +17544,11 @@ function openRepsPopup(span, exId) {
     popup.style.top = top + 'px';
     popup.style.visibility = '';
   });
-  // Close on outside tap
+  // Close on outside tap — store the span so we can ignore clicks on it
+  window._repsPopupTriggerSpan = span;
   setTimeout(() => {
     document.addEventListener('click', _closeRepsPopup);
-  }, 0);
+  }, 100);
 }
 
 function adjustRepsPopup(delta) {
@@ -17359,11 +17572,20 @@ function adjustRepsPopup(delta) {
 
 function _closeRepsPopup(e) {
   const popup = document.getElementById('reps-popup');
+  // Ignore clicks on the trigger span itself (let openRepsPopup handle toggle)
+  if (e.target === window._repsPopupTriggerSpan) return;
   if (popup && !popup.contains(e.target)) {
     popup.classList.remove('open');
     document.removeEventListener('click', _closeRepsPopup);
+    // Reset set number color only if KG editor isn't open for same row
+    if (_repsPopupSpan) {
+      const _rNumEl = _repsPopupSpan.closest('tr')?.querySelector('.set-num[data-reps-highlighted]');
+      if (_rNumEl && !_rNumEl.dataset.highlighted) { _rNumEl.style.color = ''; delete _rNumEl.dataset.repsHighlighted; }
+      else if (_rNumEl) { delete _rNumEl.dataset.repsHighlighted; }
+    }
     _repsPopupSpan = null;
     _repsPopupExId = null;
+    window._repsPopupTriggerSpan = null;
   }
 }
 // ─────────────────────────────────────────────────────────────────────────
@@ -17372,7 +17594,7 @@ function _closeRepsPopup(e) {
 let _userBW = null; // cached from Firestore
 let _kgBWMode = false; // is KG editor in BW mode?
 
-async function loadUserBW() {
+window.loadUserBW = async function loadUserBW() {
   if (!window._currentUserData) return;
   const bw = window._currentUserData.bodyWeight;
   if (bw) { _userBW = parseFloat(bw); _updateBWMenuLabel(); }
@@ -17420,7 +17642,6 @@ async function confirmBWModal() {
 
 function kgPadBW() {
   if (!_userBW) {
-    // First time — ask user to set BW
     openBWModal();
     return;
   }
@@ -17429,25 +17650,18 @@ function kgPadBW() {
 }
 
 function _applyBWMode() {
-  const btn = document.getElementById('kgBWBtn');
-  const display = document.getElementById('kgEditorDisplay');
-  const unit = document.getElementById('kgEditorUnit');
+  // Always sync window._kgEditorBWMode regardless of UI element availability
+  window._kgEditorBWMode = _kgBWMode;
+  const btn = document.getElementById('kgBWBtnInline') || document.getElementById('kgBWBtn');
+  const display = document.getElementById('kgEditorDisplay') || document.getElementById('kgEditorDisplayModal');
+  const unit = document.getElementById('kgEditorUnit') || document.getElementById('kgEditorUnitModal');
+  if (!btn || !display) return;
   if (_kgBWMode) {
-    btn.style.borderColor = '#34d399';
-    btn.style.color = '#34d399';
-    // Show BW + current extra kg
-    const extra = parseFloat(window._kgEditorVal) || 0;
-    display.textContent = extra > 0 ? `BW+${extra}` : 'BW';
-    if (unit) unit.textContent = '';
-    // Mark input as BW mode
-    window._kgEditorBWMode = true;
+    btn.classList.add('kg-bw-btn-active');
+    _updateKgDisplay(window._kgEditorVal, true);
   } else {
-    btn.style.borderColor = '#555';
-    btn.style.color = '#aaa';
-    const extra = parseFloat(window._kgEditorVal) || 0;
-    display.textContent = extra > 0 ? extra : '—';
-    if (unit) unit.textContent = 'kg';
-    window._kgEditorBWMode = false;
+    btn.classList.remove('kg-bw-btn-active');
+    _updateKgDisplay(window._kgEditorVal, false);
   }
 }
 
@@ -17459,39 +17673,277 @@ const _origKgPadPress = window.kgPadPress;
 // ── INLINE KG EDITOR ─────────────────────────────────────────────────────
 let _inlineKgEditorId = null; // currently open editor id
 
-function openInlineKgEditor(inputEl, exId) {
-  if (window._kgEditorOpening) return;
-  window._kgEditorOpening = true;
-  setTimeout(() => { window._kgEditorOpening = false; }, 300);
 
+// ── KG EDITOR FOCUS MODE ─────────────────────────────────────────────────────
+function _kgEditorFocusEnter(exId) {
+  const _chips0 = document.getElementById('todayMuscleChipsWrap');
+  const _ta0 = document.querySelector('.today-actions');
+  const _wnb0 = document.getElementById('workoutNameBar');
+  /* DBG_START */ window._dbgLog('ENTER START: chips computed=' + (_chips0 && getComputedStyle(_chips0).display) + ' kgOrig=' + _chips0?.dataset.kgOrigDisplay + ' | ta computed=' + (_ta0 && getComputedStyle(_ta0).display) + ' | wnb visible=' + _wnb0?.classList.contains('visible') + ' kgOrigVis=' + _wnb0?.dataset.kgOrigVisible, '#e8ff47'); /* DBG_END */
+  // Hide workout-level chrome
+  // workoutNameBar uses classList.visible — handle separately
+  const _wnb = document.getElementById('workoutNameBar');
+  if (_wnb) {
+    // Only save original visibility once
+    if (_wnb.dataset.kgOrigVisible === undefined) {
+      _wnb.dataset.kgOrigVisible = _wnb.classList.contains('visible') ? '1' : '0';
+    }
+    _wnb.dataset.kgHideVisible = _wnb.dataset.kgOrigVisible;
+    _wnb.classList.remove('visible');
+    /* DBG_START */ window._dbgLog('ENTER: workoutNameBar orig=' + _wnb.dataset.kgOrigVisible, '#ff8c42'); /* DBG_END */
+  }
+  // finishWorkoutBtn — via style.display
+  // finishWorkoutBtn is inside todayActions — no need to hide separately
+  // todayMuscleChipsWrap — only save if not already hidden from a previous enter
+  const _chips = document.getElementById('todayMuscleChipsWrap');
+  if (_chips && !_chips.dataset.kgOrigDisplay) {
+    _chips.dataset.kgOrigDisplay = getComputedStyle(_chips).display;
+  }
+  if (_chips) {
+    _chips.dataset.kgHide = _chips.dataset.kgOrigDisplay || getComputedStyle(_chips).display;
+    _chips.style.display = 'none';
+    /* DBG_START */ window._dbgLog('ENTER: todayMuscleChipsWrap saved=' + _chips.dataset.kgHide + ' orig=' + _chips.dataset.kgOrigDisplay, '#ff8c42'); /* DBG_END */
+  }
+  // Hide today-actions row (clear/load/finish buttons)
+  const todayActions = document.querySelector('.today-actions');
+  if (todayActions) {
+    if (!todayActions.dataset.kgOrigDisplay) {
+      todayActions.dataset.kgOrigDisplay = getComputedStyle(todayActions).display;
+    }
+    todayActions.dataset.kgHide = todayActions.dataset.kgOrigDisplay;
+    todayActions.style.display = 'none';
+  }
+  // Hide add exercise row
+  const addExRow = document.querySelector('.add-ex-row');
+  if (addExRow) {
+    if (!addExRow.dataset.kgOrigDisplay) {
+      addExRow.dataset.kgOrigDisplay = getComputedStyle(addExRow).display;
+    }
+    addExRow.dataset.kgHide = addExRow.dataset.kgOrigDisplay;
+    addExRow.style.display = 'none';
+  }
+  // Hide float bar
+  const floatBar = document.getElementById('ex-float-bar');
+  if (floatBar) { floatBar.dataset.kgHide = floatBar.style.display || 'none'; floatBar.style.display = 'none'; }
+  // todayMuscleChipsWrap already handled above in the forEach
+  // Dim all other exercise cards, hide other sets within the active card
+  document.querySelectorAll('#exerciseList .exercise-card').forEach(card => {
+    if (card.id === exId) {
+      // Find the edited set-row and its paired editor row
+      const _editedSetRow = window._kgEditorInput?.closest('tr.set-row');
+      const _editedEditorRow = _editedSetRow?.nextElementSibling;
+      // Hide all other set rows and editor rows
+      card.querySelectorAll('.set-row, .kg-inline-editor-row').forEach(row => {
+        if (row !== _editedSetRow && row !== _editedEditorRow) {
+          row.dataset.kgHide = '1';
+          row.style.display = 'none';
+        }
+      });
+      // Hide mark-as-done button row and set-rm-label
+      card.querySelectorAll('.btn-done, .cancel-done-btn').forEach(el => {
+        el.dataset.kgHide = el.style.display || ''; el.style.display = 'none';
+      });
+      // Hide + and RST footer buttons
+      const exFooter = card.querySelector('.ex-footer');
+      if (exFooter) { exFooter.dataset.kgHide = exFooter.style.display || ''; exFooter.style.display = 'none'; }
+      // Hide note, timer, graph panels if open
+      [
+        card.querySelector('.comment-area.open'),
+        card.querySelector('.timer-panel.open'),
+        card.querySelector('.ex-mini-chart.visible'),
+      ].forEach(panel => {
+        if (panel) { panel.dataset.kgHidePanel = '1'; panel.classList.remove('open','visible'); }
+      });
+    } else {
+      // Save actual computed display so we restore correctly
+      card.dataset.kgHide = getComputedStyle(card).display;
+      card.style.display = 'none';
+    }
+  });
+}
+
+function _kgEditorFocusLeave() {
+  const _chips2 = document.getElementById('todayMuscleChipsWrap');
+  const _ta2 = document.querySelector('.today-actions');
+  const _wnb2 = document.getElementById('workoutNameBar');
+  /* DBG_START */ window._dbgLog('LEAVE START: chips kgHide=' + _chips2?.dataset.kgHide + ' kgOrig=' + _chips2?.dataset.kgOrigDisplay + ' | ta kgHide=' + _ta2?.dataset.kgHide + ' kgOrig=' + _ta2?.dataset.kgOrigDisplay + ' | wnb kgHideVis=' + _wnb2?.dataset.kgHideVisible + ' kgOrigVis=' + _wnb2?.dataset.kgOrigVisible, '#e8ff47'); /* DBG_END */
+  // Restore workout-level chrome
+  const _wnbR = document.getElementById('workoutNameBar');
+  if (_wnbR && _wnbR.dataset.kgHideVisible !== undefined) {
+    const _restoreVis = _wnbR.dataset.kgHideVisible;
+    if (_restoreVis === '1') _wnbR.classList.add('visible');
+    delete _wnbR.dataset.kgHideVisible;
+    delete _wnbR.dataset.kgOrigVisible;
+    /* DBG_START */ window._dbgLog('LEAVE: workoutNameBar restoreVisible=' + _restoreVis, '#34d399'); /* DBG_END */
+  }
+  // finishWorkoutBtn restored via todayActions — no separate restore needed
+  const _chipsR = document.getElementById('todayMuscleChipsWrap');
+  if (_chipsR && _chipsR.dataset.kgHide !== undefined) {
+    const _chipsRestore = _chipsR.dataset.kgHide;
+    _chipsR.style.display = _chipsRestore;
+    delete _chipsR.dataset.kgHide;
+    delete _chipsR.dataset.kgOrigDisplay;
+    /* DBG_START */ window._dbgLog('LEAVE: todayMuscleChipsWrap restored=' + _chipsRestore, '#34d399'); /* DBG_END */
+  }
+  const todayActions = document.querySelector('.today-actions');
+  if (todayActions && todayActions.dataset.kgHide !== undefined) {
+    const _taRestore = todayActions.dataset.kgHide;
+    todayActions.style.display = _taRestore;
+    delete todayActions.dataset.kgHide;
+    delete todayActions.dataset.kgOrigDisplay;
+    /* DBG_START */ window._dbgLog('LEAVE: todayActions restored=' + _taRestore, '#34d399'); /* DBG_END */
+  }
+  const addExRow = document.querySelector('.add-ex-row');
+  if (addExRow && addExRow.dataset.kgHide !== undefined) {
+    addExRow.style.display = addExRow.dataset.kgHide;
+    delete addExRow.dataset.kgHide;
+  }
+  const floatBar = document.getElementById('ex-float-bar');
+  if (floatBar && floatBar.dataset.kgHide !== undefined) {
+    const _wActive = document.getElementById('today-workout-area')?.style.display !== 'none';
+    floatBar.style.display = _wActive ? floatBar.dataset.kgHide : 'none';
+    delete floatBar.dataset.kgHide;
+  }
+
+  // Restore all exercise cards and set rows
+  // Keep completed cards hidden — they sit above the active card creating a gap
+  // They will reappear naturally when user scrolls or interacts
+  document.querySelectorAll('#exerciseList .exercise-card').forEach(card => {
+    if (card.dataset.kgHide !== undefined) {
+      // Only restore non-completed cards; completed ones stay hidden
+      if (!card.classList.contains('completed')) {
+        card.style.display = '';
+      }
+      delete card.dataset.kgHide;
+    }
+    card.querySelectorAll('.set-row, .kg-inline-editor-row').forEach(row => {
+      if (row.dataset.kgHide) {
+        row.style.display = '';
+        delete row.dataset.kgHide;
+      }
+    });
+    card.querySelectorAll('.btn-done, .cancel-done-btn').forEach(el => {
+      if (el.dataset.kgHide !== undefined) {
+        el.style.display = el.dataset.kgHide;
+        delete el.dataset.kgHide;
+      }
+    });
+    const exFooter = card.querySelector('.ex-footer');
+    if (exFooter && exFooter.dataset.kgHide !== undefined) {
+      exFooter.style.display = exFooter.dataset.kgHide;
+      delete exFooter.dataset.kgHide;
+    }
+    // Restore note, timer, graph panels that were open
+    [
+      card.querySelector('.comment-area[data-kg-hide-panel]'),
+      card.querySelector('.timer-panel[data-kg-hide-panel]'),
+      card.querySelector('.ex-mini-chart[data-kg-hide-panel]'),
+    ].forEach(panel => {
+      if (panel) {
+        panel.classList.add(panel.classList.contains('ex-mini-chart') ? 'visible' : 'open');
+        delete panel.dataset.kgHidePanel;
+      }
+    });
+  });
+  // Re-apply today filters (Hide ✓ / muscle filter) after restoring cards
+  if (typeof applyTodayFilters === 'function') applyTodayFilters();
+  // Scroll active card into view after restore so it's visible without hunting
+  const _leaveExId = window._kgEditorExId;
+
+}
+// ─────────────────────────────────────────────────────────────────────────────
+function openInlineKgEditor(inputEl, exId) {
+/* DBG_START */   const _openStack = new Error().stack.split('\n').slice(1,4).map(s=>s.trim().replace(/.*at /,'')).join(' > '); /* DBG_END */
   const row = inputEl.closest('tr');
   const editorRow = row?.nextElementSibling;
   const editorDiv = editorRow?.querySelector('.kg-inline-editor');
-  if (!editorDiv) return;
+  const editorId = editorDiv ? editorDiv.id : 'NO_DIV';
+/* DBG_START */   window._dbgLog('openInlineKgEditor START | exId=' + exId + ' editorId="' + editorId + '" opening=' + window._kgEditorOpening + ' currId="' + _inlineKgEditorId + '" editorRow=' + editorRow?.className + ' | ' + _openStack, '#ff8c42'); /* DBG_END */
+  if (!editorDiv) {/* DBG_START */  window._dbgLog('openInlineKgEditor ABORT: no editorDiv found. editorRow=' + editorRow?.outerHTML?.slice(0,80), '#f87171'); /* DBG_END */ return; }
 
-  const editorId = editorDiv.id;
+  // Prevent double-fire on the exact same input (onfocus+onclick)
+  if (window._kgEditorOpening && window._kgOpeningInput === inputEl) {
+/* DBG_START */     window._dbgLog('openInlineKgEditor BLOCKED (same input double-fire)', '#f87171'); /* DBG_END */
+    return;
+  }
+  window._kgEditorOpening = true;
+  window._kgOpeningInput = inputEl;
+  setTimeout(() => { window._kgEditorOpening = false; window._kgOpeningInput = null; }, 400);
 
-  // If this editor is already open, close it
+  // If this editor is already open, close it (toggle)
   if (_inlineKgEditorId === editorId) {
-    closeInlineKgEditor();
+/* DBG_START */     window._dbgLog('openInlineKgEditor TOGGLE-CLOSE: _inlineKgEditorId="' + _inlineKgEditorId + '" === editorId="' + editorId + '"', '#f87171'); /* DBG_END */
+    closeInlineKgEditor(true);
     return;
   }
 
-  // Close any currently open editor
-  closeInlineKgEditor();
+  // Close any currently open editor (without restoring focus — we're about to open a new one)
+/* DBG_START */   window._dbgLog('openInlineKgEditor closing-prev id=' + _inlineKgEditorId, '#888'); /* DBG_END */
+  closeInlineKgEditor(false);
+
+  // Highlight set number yellow
+  const _setNumEl = row?.querySelector('.set-num');
+  if (_setNumEl) { _setNumEl.style.color = 'var(--accent)'; _setNumEl.dataset.highlighted = '1'; }
+
+  // Position editor visually below the tapped row using margin-top
+  // We'll set this after opening
 
   // Set up editor state
   window._kgEditorInput = inputEl;
   window._kgEditorExId = exId;
   window._kgEditorVal = '';
   _inlineKgEditorId = editorId;
+  window._activeInlineEditorDiv = editorDiv;
+  _kgEditorFocusEnter(exId);
+  // Scroll active card just below muscle chips
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const _activeCard = document.getElementById(exId);
+      if (!_activeCard) { /* DBG_START */ window._dbgLog('SCROLL-ENTER: NO CARD for ' + exId, '#f87171'); /* DBG_END */ return; }
+      const _r = _activeCard.getBoundingClientRect();
+      const _chipsWrap2 = document.getElementById('todayMuscleChipsWrap');
+      const _chipsBottom2 = _chipsWrap2 ? _chipsWrap2.getBoundingClientRect().bottom : 0;
+      const _chipsStyle2 = _chipsWrap2 ? _chipsWrap2.style.display : 'N/A';
+      const _chipsComputed2 = _chipsWrap2 ? getComputedStyle(_chipsWrap2).display : 'N/A';
+      const _targetTop2 = _chipsBottom2 + 8;
+      const _diff2 = _r.top - _targetTop2;
+      /* DBG_START */ window._dbgLog('SCROLL-ENTER: cardTop=' + Math.round(_r.top) + ' chipsBottom=' + Math.round(_chipsBottom2) + ' chipsStyle=' + _chipsStyle2 + ' chipsComputed=' + _chipsComputed2 + ' diff=' + Math.round(_diff2) + ' scrollY=' + window.scrollY, '#20d4c8'); /* DBG_END */
+      if (Math.abs(_diff2) > 4) {
+        window.scrollBy({ top: _diff2, behavior: 'smooth' });
+        /* DBG_START */ setTimeout(() => window._dbgLog('SCROLL-ENTER after: cardTop=' + Math.round(_activeCard.getBoundingClientRect().top) + ' scrollY=' + window.scrollY, '#20d4c8'), 600); /* DBG_END */
+      } else {
+        /* DBG_START */ window._dbgLog('SCROLL-ENTER: diff too small, no scroll', '#20d4c8'); /* DBG_END */
+      }
+    });
+  });
+  // Save original state for Cancel restore
+  window._kgEditorOrigVal = inputEl.value;
+  window._kgEditorOrigDisplay = inputEl.style.display;
+  window._kgEditorOrigColor = inputEl.style.color;
+  window._kgEditorOrigBWDisplay = inputEl.dataset.bwDisplay || null;
+  window._kgEditorOrigBWExtra = inputEl.dataset.bwExtra !== undefined ? inputEl.dataset.bwExtra : null;
+  window._kgEditorOrigBWTotal = inputEl.dataset.bwTotal !== undefined ? inputEl.dataset.bwTotal : null;
+  // Save whether a BW label existed
+  const _origBWLabel = inputEl.parentElement?.querySelector('.bw-display-label');
+  window._kgEditorOrigBWLabelHTML = _origBWLabel ? _origBWLabel.outerHTML : null;
 
   const cur = parseFloat(inputEl.value);
-  const isBW = inputEl.dataset.bwExtra !== undefined;
+  // Check BW mode: only from bwExtra on the input itself
+  // _hasBWLabel checks the input's own td (not siblings)
+  const _inputTd = inputEl.parentElement;
+  const _hasBWLabel = _inputTd?.querySelector('.bw-display-label') !== null && inputEl.style.display === 'none';
+  const isBW = inputEl.dataset.bwExtra !== undefined || _hasBWLabel;
+  // If inherited via BW label but no bwExtra yet, copy extra from label
+  if (_hasBWLabel && inputEl.dataset.bwExtra === undefined) {
+    const _labelSpan = _inputTd?.querySelector('.bw-display-label span:last-child');
+    const _extraVal = _labelSpan ? parseFloat(_labelSpan.textContent) || 0 : 0;
+    inputEl.dataset.bwExtra = _extraVal;
+    inputEl.dataset.bwTotal = (_userBW || 0) + _extraVal;
+  }
 
-  // Reset BW mode
+  // Reset BW mode — set immediately and authoritatively, not via _applyBWMode timing
   _kgBWMode = isBW;
-  window._kgEditorBWMode = isBW;
+  window._kgEditorBWMode = isBW;  // confirmKgEditor reads this — must be set before Done
 
   if (isBW) {
     const extra = parseFloat(inputEl.dataset.bwExtra) || 0;
@@ -17500,18 +17952,17 @@ function openInlineKgEditor(inputEl, exId) {
     window._kgEditorVal = !isNaN(cur) && cur > 0 ? String(cur) : '';
   }
 
-  // Get exercise name and prev kg
+  // Get exercise name and the set index (1-based) of the tapped input
   const card = document.getElementById(exId);
   const exName = card?.dataset.exname || '';
-  let prevKg = null;
-  for (const w of workouts) {
-    if (w._draft || w._template) continue;
-    const prevEx = w.exercises.find(e => e.name === exName || e.label === exName);
-    if (prevEx) {
-      const done = prevEx.sets.filter(s => s.done && !s.ignored);
-      if (done.length) { prevKg = Math.max(...done.map(s => s.kg)); break; }
-    }
-  }
+  const _prevSetRow = inputEl.closest('tr');
+  const _prevSetNumEl = _prevSetRow?.querySelector('.set-num');
+  const _setIndex = _prevSetNumEl ? (parseInt(_prevSetNumEl.textContent) - 1) : -1; // 0-based
+  // prevKg = the original prefilled value for this set position from defaultSets
+  // (set once when the exercise card loads, never changes regardless of edits).
+  const _defaults = card ? JSON.parse(card.dataset.defaultSets || '[]') : [];
+  const _defaultSet = _setIndex >= 0 ? _defaults[_setIndex] : null;
+  const prevKg = (_defaultSet?.kg > 0) ? _defaultSet.kg : null;
   window._kgEditorPrevKg = prevKg;
 
   // Reset sign mode
@@ -17519,24 +17970,26 @@ function openInlineKgEditor(inputEl, exId) {
 
   // Build display value
   const displayVal = isBW
-    ? (window._kgEditorVal ? `BW+${window._kgEditorVal}` : 'BW')
+    ? (window._kgEditorVal ? `+${window._kgEditorVal}` : '+0')
     : (window._kgEditorVal || '—');
 
   const prevHtml = prevKg > 0 ? `<span style="color:#ff8c42;font-weight:700;font-size:11px;">prev: ${prevKg}kg</span>` : '';
-  const bwActive = isBW ? 'border-color:#34d399;color:#34d399;' : '';
+  const bwActiveClass = isBW ? ' kg-bw-btn-active' : '';
 
   editorDiv.querySelector('.kg-inline-editor-inner').innerHTML = `
     <div style="position:relative;margin-bottom:6px;">
-      <button onclick="closeInlineKgEditor()" style="position:absolute;top:0;right:0;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:8px;color:var(--muted);cursor:pointer;font-size:16px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;z-index:1;">✕</button>
+      
       <div style="text-align:center;font-size:11px;padding-top:4px;margin-bottom:8px;">${prevHtml}</div>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <button onclick="kgPadReset()" style="background:transparent;border:1px solid #555;border-radius:8px;color:#aaa;font-family:'DM Sans';font-size:11px;font-weight:700;padding:6px 10px;cursor:pointer;flex-shrink:0;">RST</button>
-        <button onclick="kgPadBW()" id="kgBWBtn" style="background:transparent;border:1px solid #555;border-radius:8px;color:#aaa;font-family:'DM Sans';font-size:11px;font-weight:700;padding:6px 10px;cursor:pointer;transition:all .2s;flex-shrink:0;${bwActive}">BW +</button>
-        <div style="flex:1;display:flex;align-items:baseline;justify-content:center;gap:4px;">
-          <span id="kgEditorDisplay" style="font-family:'Bebas Neue';font-size:52px;letter-spacing:2px;color:var(--accent);line-height:1;">${displayVal}</span>
-          <span id="kgEditorUnit" style="font-family:'Bebas Neue';font-size:22px;color:var(--muted);">${isBW ? '' : 'kg'}</span>
+      <div style="position:relative;display:flex;align-items:center;justify-content:center;">
+        <div style="position:absolute;left:0;display:flex;flex-direction:column;align-items:center;gap:3px;">
+          <button onclick="kgPadBW()" id="kgBWBtnInline" class="${bwActiveClass}" style="background:transparent;border:1px solid #555;border-radius:8px;color:#aaa;font-family:'DM Sans';font-size:11px;font-weight:700;padding:6px 10px;cursor:pointer;transition:all .2s;width:100%;">BW +</button>
+          <span onclick="kgPadBW()" style="font-family:'DM Sans';font-size:9px;font-weight:600;color:${_userBW ? '#666' : '#ff8c42'};cursor:pointer;text-align:center;white-space:nowrap;">${_userBW ? 'Body Weight ' + _userBW + 'kg' : 'Define body weight'}</span>
         </div>
-        <div style="width:32px;flex-shrink:0;"></div>
+        <div id="kg-display-row" style="position:relative;display:flex;align-items:baseline;justify-content:center;">
+          <span id="kgEditorDisplay" style="font-family:'DM Sans';font-size:52px;font-weight:700;color:#fff;line-height:1;">${displayVal.startsWith('+') ? '<span style=\'color:var(--accent)\'>+</span>' + displayVal.slice(1) : displayVal}</span>
+          <span id="kgEditorUnit" style="position:absolute;left:100%;bottom:6px;font-family:'DM Sans';font-size:16px;font-weight:600;color:var(--muted);margin-left:4px;">'kg'</span>
+        </div>
+        <button onclick="kgPadReset()" style="position:absolute;right:0;background:transparent;border:1px solid #555;border-radius:8px;color:#aaa;font-family:'DM Sans';font-size:11px;font-weight:700;padding:6px 10px;cursor:pointer;">RST</button>
       </div>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:8px;">
@@ -17560,20 +18013,164 @@ function openInlineKgEditor(inputEl, exId) {
       <button class="kg-pad-btn" onclick="kgPadBack()" style="font-size:18px;">⌫</button>
     </div>
     <div style="display:flex;gap:8px;">
-      <button onclick="closeInlineKgEditor()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:700;padding:11px;cursor:pointer;">Cancel</button>
+      <button onclick="cancelInlineKgEditor()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:700;padding:11px;cursor:pointer;">Cancel</button>
       <button onclick="confirmKgEditor()" style="flex:2;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:18px;font-weight:700;padding:11px;cursor:pointer;">Done</button>
     </div>`;
 
   // Slide open
-  requestAnimationFrame(() => editorDiv.classList.add('open'));
+  requestAnimationFrame(() => {
+    editorDiv.classList.add('open');
+    if (_kgBWMode) setTimeout(() => _applyBWMode(), 50);
+  });
 }
 
-function closeInlineKgEditor() {
+function cancelInlineKgEditor() {
+  // Restore original input value and BW state before closing
+  const input = window._kgEditorInput;
+  const exId = window._kgEditorExId;
+  if (input) {
+    const origVal = window._kgEditorOrigVal;
+    const origBWLabelHTML = window._kgEditorOrigBWLabelHTML;
+    const td = input.parentElement;
+    // Remove any BW label added during editing
+    td?.querySelector('.bw-display-label')?.remove();
+    if (origBWLabelHTML) {
+      // Restore original BW label
+      td.insertAdjacentHTML('beforeend', origBWLabelHTML);
+      td.querySelector('.bw-display-label').onclick = () => openInlineKgEditor(input, exId);
+      input.style.display = 'none';
+      // Restore BW data attrs
+      if (window._kgEditorOrigBWExtra !== null) input.dataset.bwExtra = window._kgEditorOrigBWExtra;
+      if (window._kgEditorOrigBWTotal !== null) input.dataset.bwTotal = window._kgEditorOrigBWTotal;
+      if (window._kgEditorOrigBWDisplay !== null) input.dataset.bwDisplay = window._kgEditorOrigBWDisplay;
+    } else {
+      // Restore plain numeric value
+      input.value = origVal;
+      input.style.display = window._kgEditorOrigDisplay || '';
+      input.style.color = window._kgEditorOrigColor || '';
+      delete input.dataset.bwExtra;
+      delete input.dataset.bwTotal;
+      delete input.dataset.bwDisplay;
+      input.removeAttribute('data-display-override');
+    }
+    // Always reset BW mode state
+    _kgBWMode = false;
+    window._kgEditorBWMode = false;
+    // Restore Analyze Session to original value
+    if (exId) updateVolProgressBar(exId);
+  }
+  closeInlineKgEditor();
+}
+
+function closeInlineKgEditor(restoreFocus = true) {
+/* DBG_START */   window._dbgLog('closeInlineKgEditor | id=' + _inlineKgEditorId + ' input=' + !!window._kgEditorInput + ' restoreFocus=' + restoreFocus, '#7ec8e3'); /* DBG_END */
+  if (restoreFocus) _kgEditorFocusLeave();
   if (!_inlineKgEditorId) return;
   const editorDiv = document.getElementById(_inlineKgEditorId);
-  if (editorDiv) editorDiv.classList.remove('open');
+  if (editorDiv) {
+    editorDiv.classList.remove('open');
+    // Clear innerHTML so stale kg-display-row / kgEditorDisplay IDs are removed from DOM
+    const inner = editorDiv.querySelector('.kg-inline-editor-inner');
+    // Check BW label state before clearing
+    const _inputBeforeClose = window._kgEditorInput;
+    const _bwLabelBeforeClose = _inputBeforeClose?.parentElement?.querySelector('.bw-display-label');
+/* DBG_START */     window._dbgLog('closeInlineKgEditor before clear | bwLabel=' + !!_bwLabelBeforeClose + ' inputDisplay=' + _inputBeforeClose?.style?.display, '#7ec8e3'); /* DBG_END */
+    if (inner) inner.innerHTML = '';
+    // Check BW label state after clearing
+    const _bwLabelAfterClose = _inputBeforeClose?.parentElement?.querySelector('.bw-display-label');
+/* DBG_START */     window._dbgLog('closeInlineKgEditor after clear | bwLabel=' + !!_bwLabelAfterClose + ' inputDisplay=' + _inputBeforeClose?.style?.display, '#7ec8e3'); /* DBG_END */
+  }
+  // Reset set number color — find the row from the stored input element
+  const _closingInput = window._kgEditorInput;
+  const _closingRow = _closingInput?.closest('tr');
+  const _numEl = _closingRow?.querySelector('.set-num[data-highlighted]');
+  if (_numEl && !_numEl.dataset.repsHighlighted) { _numEl.style.color = ''; delete _numEl.dataset.highlighted; }
+  else if (_numEl) { delete _numEl.dataset.highlighted; }
   _inlineKgEditorId = null;
   window._kgEditorInput = null;
+  window._activeInlineEditorDiv = null;
+}
+// Expose functions defined in this script block globally
+// so earlier script blocks can reference them via onclick handlers
+/* DBG_END */
+window.openInlineKgEditor = openInlineKgEditor;
+window._kgEditorFocusEnter = _kgEditorFocusEnter;
+window._kgEditorFocusLeave = _kgEditorFocusLeave;
+window.closeInlineKgEditor = closeInlineKgEditor;
+window.cancelInlineKgEditor = cancelInlineKgEditor;
+window.showExFloatBar = showExFloatBar;
+window.hideExFloatBar = hideExFloatBar;
+window.exFloatAction = exFloatAction;
+// ─────────────────────────────────────────────────────────────────────────
+
+// ── KG DISPLAY OVERLAY SYNC ───────────────────────────────────────────────
+function _syncKgDisplayOverlay(display) {
+  const overlay = document.getElementById('kg-display-overlay');
+  if (!overlay || !display) return;
+  const rect = display.getBoundingClientRect();
+  if (rect.width === 0) { overlay.style.display = 'none'; return; }
+  overlay.textContent = display.textContent;
+  overlay.style.display = 'block';
+  overlay.style.left = rect.left + 'px';
+  overlay.style.top = rect.top + 'px';
+  overlay.style.width = rect.width + 'px';
+  overlay.style.background = getComputedStyle(display.closest('.kg-inline-editor-inner') || document.body).background || '#1a1a2e';
+}
+// ─────────────────────────────────────────────────────────────────────────
+
+// ── KG DISPLAY UPDATE ────────────────────────────────────────────────────
+function _updateKgDisplay(val, isBWMode) {
+  const text = isBWMode ? (val ? `+${val}` : '+0') : (val || '—');
+  const unitText = 'kg';
+  // Use the stored active editorDiv reference — avoids stale duplicate-ID lookups
+  const activeDiv = window._activeInlineEditorDiv;
+  const displayRow = activeDiv ? activeDiv.querySelector('#kg-display-row') : null;
+  if (displayRow) {
+    const _prefix = text.startsWith('+') ? '<span style="color:var(--accent);">+</span>' : '';
+    const _numOnly = text.startsWith('+') ? text.slice(1) : text;
+    displayRow.innerHTML = `<span id="kgEditorDisplay" style="font-family:'DM Sans';font-size:52px;font-weight:700;color:#fff;line-height:1;">${_prefix}${_numOnly}</span><span id="kgEditorUnit" style="position:absolute;left:100%;bottom:6px;font-family:'DM Sans';font-size:16px;font-weight:600;color:var(--muted);margin-left:4px;">${unitText}</span>`;
+  } else {
+    // Fallback: modal editor
+    const modalDisplay = document.getElementById('kgEditorDisplayModal');
+    if (modalDisplay) modalDisplay.textContent = text;
+    const modalUnit = document.getElementById('kgEditorUnitModal');
+    if (modalUnit) modalUnit.textContent = unitText;
+  }
+  // Live-update the cell to reflect current editor state
+  const liveInput = window._kgEditorInput;
+  const liveExId = window._kgEditorExId;
+  if (liveInput && liveExId) {
+    const numVal = isBWMode
+      ? ((_userBW || 0) + (parseFloat(val) || 0))
+      : (parseFloat(val) || 0);
+    const td = liveInput.parentElement;
+    if (isBWMode) {
+      // In BW mode: show BW label live, hide raw input
+      liveInput.value = numVal > 0 ? numVal : liveInput.value;
+      liveInput.style.display = 'none';
+      // Update or create live BW label
+      let liveBWLabel = td?.querySelector('.bw-display-label');
+      const extra = parseFloat(val) || 0;
+      const labelHTML = extra > 0
+        ? `<span style="font-size:10px;font-weight:700;color:var(--accent);letter-spacing:.3px;">BW+</span><span style="font-size:15px;font-weight:600;color:var(--text);">${extra}</span>`
+        : `<span style="font-size:15px;font-weight:600;color:var(--accent);">BW</span>`;
+      if (!liveBWLabel) {
+        liveBWLabel = document.createElement('div');
+        liveBWLabel.className = 'bw-display-label';
+        liveBWLabel.style.cssText = 'font-family:"DM Sans";font-size:15px;font-weight:600;color:var(--text);text-align:center;cursor:pointer;padding:6px 4px;min-width:52px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;display:inline-flex;align-items:baseline;justify-content:center;gap:1px;';
+        liveBWLabel.onclick = () => openInlineKgEditor(liveInput, liveExId);
+        td.appendChild(liveBWLabel);
+      }
+      liveBWLabel.innerHTML = labelHTML;
+    } else {
+      // Plain kg mode: remove any BW label, show input with current value
+      td?.querySelector('.bw-display-label')?.remove();
+      liveInput.style.display = '';
+      liveInput.style.color = '';
+      if (numVal > 0) liveInput.value = numVal;
+    }
+    updateVolProgressBar(liveExId);
+  }
 }
 // ─────────────────────────────────────────────────────────────────────────
 </script>
@@ -17586,8 +18183,9 @@ function closeInlineKgEditor() {
   </div>
 </div>
 <div id="ex-float-bar" style="display:none;flex-direction:row;">
-  <button id="ex-float-note" onclick="exFloatAction('note')" title="Note">
+  <button id="ex-float-note" onclick="exFloatAction('note')" title="Note" style="position:relative;">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+    <span id="ex-float-note-badge" style="display:none;position:absolute;top:2px;right:6px;font-size:16px;font-weight:700;color:#e8ff47;line-height:1;">✓</span>
     Note
   </button>
   <button id="ex-float-timer" onclick="exFloatAction('timer')" title="Timer">
@@ -17598,9 +18196,8 @@ function closeInlineKgEditor() {
     <svg width="20" height="20" viewBox="0 0 140 100" fill="none"><line x1="14" y1="2" x2="14" y2="90" stroke="currentColor" stroke-width="8" stroke-linecap="round"/><line x1="14" y1="90" x2="138" y2="90" stroke="currentColor" stroke-width="8" stroke-linecap="round"/><polyline points="14,85 34,55 54,70 80,30 104,48 130,10" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="14" cy="85" r="8" fill="currentColor"/><circle cx="34" cy="55" r="8" fill="currentColor"/><circle cx="54" cy="70" r="8" fill="currentColor"/><circle cx="80" cy="30" r="8" fill="currentColor"/><circle cx="104" cy="48" r="8" fill="currentColor"/><circle cx="130" cy="10" r="8" fill="currentColor"/></svg>
     Graph
   </button>
-  <button id="ex-float-pro" onclick="exFloatAction('pro')" title="PRO">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
-    PRO
+  <button id="ex-float-pro" onclick="exFloatAction('pro')" title="PRO" style="justify-content:center;">
+    <span style="font-size:16px;letter-spacing:1px;">PRO</span>
   </button>
 </div>
 </body>

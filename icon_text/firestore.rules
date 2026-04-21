@@ -1,0 +1,154 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSuper() {
+      return request.auth != null && (
+        request.auth.uid == 'YoTIuT3nFoRpVMTupQpS9szjJ3O2' ||
+        (
+          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          (
+            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.super_admin == 'super_admin' ||
+            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin'
+          )
+        )
+      );
+    }
+
+    function isBrandAdmin(brandId) {
+      return request.auth != null && (
+        isSuper() ||
+        (
+          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles[brandId] in ['brand_admin', 'ops_admin']
+        )
+      );
+    }
+
+    function isBrandMember(brandId) {
+      return request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        brandId in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles;
+    }
+
+    function isCoachOf(clientUid) {
+      return request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(clientUid)) &&
+        get(/databases/$(database)/documents/users/$(clientUid)).data.coachId == request.auth.uid;
+    }
+
+    // ── BRANDS ───────────────────────────────────────────────────────────────
+    // Only members of a brand can read its config.
+    // Only brand admins or super admin can write.
+    match /brands/{brandId} {
+      allow read: if isBrandMember(brandId) || isSuper();
+      allow write: if isBrandAdmin(brandId) || isSuper();
+    }
+
+    // ── USERS ─────────────────────────────────────────────────────────────────
+    // Users can read/write their own document.
+    // Super admin can read/write any user.
+    // A coach can read (not write) their client's document.
+    match /users/{userId} {
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if isSuper();
+      allow read: if isCoachOf(userId);
+    }
+
+    // ── USER DATA (per brand) ─────────────────────────────────────────────────
+    // Users can read/write their own brand data.
+    // Brand admins can read/write all users in their brand.
+    // A coach can read (not write) their client's brand data.
+    match /userData/{brandId}/users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if isBrandAdmin(brandId);
+      allow read: if isCoachOf(userId);
+    }
+
+    // ── LIBRARY ───────────────────────────────────────────────────────────────
+    // Any authenticated brand member can read the library.
+    // Brand admins, coaches, and site managers can write.
+    match /library/{brandId}/{type}/{docId} {
+      allow read: if isBrandMember(brandId) || isSuper();
+      allow write: if isBrandAdmin(brandId) ||
+        (
+          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles[brandId] in ['coach', 'site_manager']
+        );
+    }
+
+    // ── SITES ─────────────────────────────────────────────────────────────────
+    match /sites/{siteId} {
+      allow read: if request.auth != null;
+      allow write: if isSuper() || isBrandAdmin(resource.data.brandId);
+    }
+
+    // ── COACH PROFILES ────────────────────────────────────────────────────────
+    match /coachProfiles/{coachUid} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == coachUid;
+    }
+
+    // ── COACH LIBRARY ─────────────────────────────────────────────────────────
+    match /coachLibrary/{coachUid}/{type}/{itemId} {
+      allow read, write: if request.auth != null && request.auth.uid == coachUid;
+      allow read: if request.auth != null &&
+        exists(/databases/$(database)/documents/coachConnections/$(coachUid + '_' + request.auth.uid));
+    }
+
+    // ── COACH CONNECTIONS ─────────────────────────────────────────────────────
+    match /coachConnections/{connectionId} {
+      allow read: if request.auth != null && (
+        resource.data.clientUid == request.auth.uid ||
+        resource.data.coachUid == request.auth.uid ||
+        isBrandAdmin(resource.data.brandId)
+      );
+      allow write: if isSuper() || isBrandAdmin(request.resource.data.brandId);
+    }
+
+    // ── COACH REQUESTS ────────────────────────────────────────────────────────
+    match /coachRequests/{requestId} {
+      allow read: if request.auth != null && (
+        resource.data.clientUid == request.auth.uid ||
+        resource.data.coachUid == request.auth.uid ||
+        isBrandAdmin(resource.data.brandId)
+      );
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && (
+        resource.data.coachUid == request.auth.uid ||
+        isBrandAdmin(resource.data.brandId)
+      );
+    }
+
+    // ── CLIENT ASSIGNMENTS ────────────────────────────────────────────────────
+    // FIX: previously allowed any logged-in user to write any client's assignments.
+    // Now restricted: only the client themselves, their assigned coach, or a
+    // brand admin can read. Only the coach or brand admin can write.
+    match /clientAssignments/{clientUid}/items/{itemId} {
+      allow read: if request.auth != null && (
+        request.auth.uid == clientUid ||
+        isCoachOf(clientUid) ||
+        isSuper()
+      );
+      allow write: if request.auth != null && (
+        isCoachOf(clientUid) ||
+        isSuper()
+      );
+    }
+
+    // ── NOTIFICATIONS ─────────────────────────────────────────────────────────
+    match /notifications/{uid}/items/{itemId} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow create: if request.auth != null;
+    }
+
+    // ── PENDING INVITES ───────────────────────────────────────────────────────
+    match /pendingInvites/{inviteId} {
+      allow read: if request.auth != null;
+      allow create: if isSuper() || isBrandAdmin(request.resource.data.brandId);
+      allow write: if isSuper() || isBrandAdmin(resource.data.brandId);
+    }
+
+  }
+}

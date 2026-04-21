@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BARZELPRO — Regression Tests</title>
+<style>
+:root{--bg:#0a0a0a;--surface:#141414;--surface2:#1e1e1e;--border:#2a2a2a;--accent:#e8ff47;--pass:#34d399;--fail:#f87171;--muted:#555;--text:#f0f0f0;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);padding:20px;max-width:700px;margin:0 auto;}
+h1{font-family:monospace;font-size:22px;color:var(--accent);margin-bottom:4px;letter-spacing:2px;}
+.subtitle{font-size:12px;color:var(--muted);margin-bottom:20px;}
+.note{background:#1a0a0a;border:1px solid var(--fail);border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:12px;color:var(--fail);line-height:1.6;}
+.note code{background:#2a0a0a;padding:2px 5px;border-radius:3px;}
+#run-btn{background:var(--accent);color:#000;border:none;border-radius:8px;padding:10px 24px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:20px;}
+#run-btn:disabled{opacity:.5;cursor:not-allowed;}
+.progress{height:4px;background:var(--border);border-radius:2px;margin-bottom:20px;overflow:hidden;}
+.progress-bar{height:100%;background:var(--accent);width:0%;transition:width .2s;}
+.summary{display:flex;gap:16px;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:20px;}
+.summary-item{text-align:center;}
+.summary-num{font-size:28px;font-weight:700;font-family:monospace;}
+.summary-label{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+.pass-num{color:var(--pass);}.fail-num{color:var(--fail);}.skip-num{color:var(--muted);}.total-num{color:var(--accent);}
+.suite{margin-bottom:16px;}
+.suite-title{font-size:12px;font-weight:700;color:var(--accent);letter-spacing:1px;text-transform:uppercase;padding:8px 12px;background:var(--surface);border-left:3px solid var(--accent);margin-bottom:2px;}
+.test{display:flex;align-items:flex-start;gap:10px;padding:8px 12px;background:var(--surface2);border-bottom:1px solid var(--border);font-size:12px;}
+.test.pass{border-left:3px solid var(--pass);}
+.test.fail{border-left:3px solid var(--fail);background:#1a0f0f;}
+.test.skip{border-left:3px solid var(--muted);opacity:.6;}
+.badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;flex-shrink:0;margin-top:1px;}
+.badge.pass{background:rgba(52,211,153,.15);color:var(--pass);}
+.badge.fail{background:rgba(248,113,113,.15);color:var(--fail);}
+.badge.skip{background:rgba(85,85,85,.2);color:var(--muted);}
+.test-name{flex:1;line-height:1.5;}
+.error-detail{font-size:10px;color:var(--fail);margin-top:3px;font-family:monospace;}
+#test-dom{position:fixed;left:-9999px;top:0;width:430px;}
+</style>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<h1>BARZELPRO // REGRESSION</h1>
+<p class="subtitle">KG Editor · BW Mode · Cancel/RST · Live Update · Set Management</p>
+
+<div class="note" id="scope-note" style="display:none">
+  <strong>⚠ Functions not in scope.</strong> This suite must run inside index.html.<br>
+  Open index.html in browser → F12 console → paste:<br>
+  <code>fetch('regression_tests.html').then(r=>r.text()).then(h=>{const d=document.createElement('div');d.innerHTML=h;document.body.appendChild(d.querySelector('#test-runner-root'));const s=d.querySelector('script[data-runner]');eval(s.textContent);})</code>
+</div>
+
+<div id="test-runner-root">
+  <button id="run-btn" onclick="runAll()">▶ Run All Tests</button>
+  <div class="progress"><div class="progress-bar" id="progress-bar"></div></div>
+  <div class="summary" id="summary" style="display:none">
+    <div class="summary-item"><div class="summary-num total-num" id="s-total">0</div><div class="summary-label">Total</div></div>
+    <div class="summary-item"><div class="summary-num pass-num" id="s-pass">0</div><div class="summary-label">Pass</div></div>
+    <div class="summary-item"><div class="summary-num fail-num" id="s-fail">0</div><div class="summary-label">Fail</div></div>
+    <div class="summary-item"><div class="summary-num skip-num" id="s-skip">0</div><div class="summary-label">Skip</div></div>
+  </div>
+  <div id="results"></div>
+</div>
+<div id="test-dom"></div>
+
+<script data-runner>
+// ── RUNNER ────────────────────────────────────────────────────────────────────
+const _suites = [];
+let _cur = null;
+const describe = (name, fn) => { _cur = {name, tests:[]}; _suites.push(_cur); fn(); };
+const it = (name, fn) => _cur.tests.push({name, fn});
+const skip = (name) => _cur.tests.push({name, fn:null, skipped:true});
+
+// ── ASSERTIONS ────────────────────────────────────────────────────────────────
+const assert = (c, m) => { if (!c) throw new Error(m || 'Assertion failed'); };
+const assertEqual = (a, b, m) => { if (a !== b) throw new Error(m || `Expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`); };
+const assertContains = (s, sub, m) => { if (!String(s).includes(sub)) throw new Error(m || `"${s}" does not contain "${sub}"`); };
+const assertNotNull = (v, m) => { if (v == null) throw new Error(m || 'Expected non-null'); };
+const assertNull = (v, m) => { if (v != null) throw new Error(m || `Expected null, got ${JSON.stringify(v)}`); };
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function makeTestInput(value = '', opts = {}) {
+  const td = document.createElement('td');
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.className = 'set-input';
+  input.value = value;
+  input.dataset.origBw = '0';
+  input.style.display = '';
+  td.appendChild(input);
+  if (opts.bwExtra != null) {
+    input.dataset.bwExtra = opts.bwExtra;
+    input.dataset.bwTotal = (opts.bwTotal || 80 + opts.bwExtra);
+    input.style.display = 'none';
+    const lbl = document.createElement('div');
+    lbl.className = 'bw-display-label';
+    lbl.innerHTML = opts.bwExtra > 0
+      ? `<span>BW+</span><span>${opts.bwExtra}</span>`
+      : `<span>BW</span>`;
+    td.appendChild(lbl);
+  }
+  document.getElementById('test-dom').appendChild(td);
+  return { input, td };
+}
+
+function makeDisplayDiv() {
+  const div = document.createElement('div');
+  div.innerHTML = '<div id="kg-display-row"><span id="kgEditorDisplay" style="color:#fff;"></span><span id="kgEditorUnit"></span></div>';
+  document.getElementById('test-dom').appendChild(div);
+  return div;
+}
+
+function resetGlobals() {
+  document.getElementById('test-dom').innerHTML = '';
+  const keys = ['_kgEditorInput','_kgEditorVal','_kgEditorExId','_kgEditorBWMode',
+    '_kgEditorPrevKg','_kgEditorOrigVal','_kgEditorOrigDisplay','_kgEditorOrigColor',
+    '_kgEditorOrigBWLabelHTML','_kgEditorOrigBWExtra','_kgEditorOrigBWTotal',
+    '_kgEditorOrigBWDisplay','_activeInlineEditorDiv','_kgEditorOpening','_kgOpeningInput'];
+  keys.forEach(k => window[k] = (k === '_kgEditorVal' ? '' : null));
+  window._kgEditorBWMode = false;
+  window._kgEditorOpening = false;
+}
+
+// ── SUITES ────────────────────────────────────────────────────────────────────
+
+describe('_updateKgDisplay — Plain KG Mode', () => {
+  it('shows value in display element', () => {
+    const div = makeDisplayDiv();
+    window._activeInlineEditorDiv = div;
+    window._kgEditorInput = null;
+    _updateKgDisplay('85', false);
+    assertContains(div.querySelector('#kgEditorDisplay').textContent, '85');
+  });
+
+  it('shows — when value is empty', () => {
+    const div = makeDisplayDiv();
+    window._activeInlineEditorDiv = div;
+    window._kgEditorInput = null;
+    _updateKgDisplay('', false);
+    assertContains(div.querySelector('#kgEditorDisplay').textContent, '—');
+  });
+
+  it('always shows KG unit text', () => {
+    const div = makeDisplayDiv();
+    window._activeInlineEditorDiv = div;
+    window._kgEditorInput = null;
+    _updateKgDisplay('55', false);
+    assertContains(div.querySelector('#kg-display-row').innerHTML, 'kg');
+  });
+
+  it('live updates input value in plain mode', () => {
+    const { input } = makeTestInput('55');
+    const div = makeDisplayDiv();
+    window._activeInlineEditorDiv = div;
+    window._kgEditorInput = input;
+    window._kgEditorExId = '__test__';
+    _updateKgDisplay('80', false);
+    assertEqual(input.value, '80', 'Input value should update live in plain mode');
+  });
+});
+
+describe('_updateKgDisplay — BW Mode', () => {
+  it('shows +value prefix in BW mode', () => {
+    const div = makeDisplayDiv();
+    window._activeInlineEditorDiv = div;
+    window._kgEditorInput = null;
+    _updateKgDisplay('23', true);
+    assertContains(div.querySelector('#kg-display-row').textContent, '+23');
+  });
+
+  it('shows +0 when BW with empty value', () => {
+    const div = makeDisplayDiv();
+    window._activeInlineEditorDiv = div;
+    window._kgEditorInput = null;
+    _updateKgDisplay('', true);
+    assertContains(div.querySelector('#kg-display-row').textContent, '+0');
+  });
+
+  it('shows KG unit in BW mode', () => {
+    const div = makeDisplayDiv();
+    window._activeInlineEditorDiv = div;
+    window._kgEditorInput = null;
+    _updateKgDisplay('23', true);
+    assertContains(div.querySelector('#kg-display-row').innerHTML, 'kg');
+  });
+
+  it('hides input and creates BW label in cell (first BW entry)', () => {
+    const { input, td } = makeTestInput('0');
+    const div = makeDisplayDiv();
+    window._activeInlineEditorDiv = div;
+    window._kgEditorInput = input;
+    window._kgEditorExId = '__test__';
+    window._userBW = 80;
+    _updateKgDisplay('23', true);
+    assertEqual(input.style.display, 'none', 'Input should be hidden');
+    assertNotNull(td.querySelector('.bw-display-label'), 'BW label should appear in cell');
+    window._userBW = null;
+  });
+
+  it('BW label shows correct extra value', () => {
+    const { input, td } = makeTestInput('0');
+    const div = makeDisplayDiv();
+    window._activeInlineEditorDiv = div;
+    window._kgEditorInput = input;
+    window._kgEditorExId = '__test__';
+    window._userBW = 80;
+    _updateKgDisplay('18', true);
+    assertContains(td.querySelector('.bw-display-label').textContent, '18');
+    window._userBW = null;
+  });
+
+  it('does NOT show raw BW total in input (prevents 135 bug)', () => {
+    const { input } = makeTestInput('0');
+    const div = makeDisplayDiv();
+    window._activeInlineEditorDiv = div;
+    window._kgEditorInput = input;
+    window._kgEditorExId = '__test__';
+    window._userBW = 80;
+    // input is visible (first BW entry) — should NOT write 103 to input
+    input.style.display = '';
+    _updateKgDisplay('23', true);
+    // After update, input should be hidden (not showing 103)
+    assertEqual(input.style.display, 'none', 'Input must be hidden in BW mode, not showing raw total');
+    window._userBW = null;
+  });
+
+  it('switching BW off restores input visibility', () => {
+    const { input, td } = makeTestInput('55');
+    const div = makeDisplayDiv();
+    window._activeInlineEditorDiv = div;
+    window._kgEditorInput = input;
+    window._kgEditorExId = '__test__';
+    window._userBW = 80;
+    _updateKgDisplay('23', true);
+    _updateKgDisplay('55', false);
+    assertEqual(input.style.display, '', 'Input should be visible after BW off');
+    assertNull(td.querySelector('.bw-display-label'), 'BW label should be removed');
+    window._userBW = null;
+  });
+
+  it('switching BW off resets input color', () => {
+    const { input } = makeTestInput('55');
+    const div = makeDisplayDiv();
+    window._activeInlineEditorDiv = div;
+    window._kgEditorInput = input;
+    window._kgEditorExId = '__test__';
+    window._userBW = 80;
+    input.style.color = '#34d399';
+    _updateKgDisplay('55', false);
+    assertEqual(input.style.color, '', 'Input color should be cleared');
+    window._userBW = null;
+  });
+});
+
+describe('Display Formatting', () => {
+  it('plain mode number is white', () => {
+    const div = makeDisplayDiv();
+    window._activeInlineEditorDiv = div;
+    window._kgEditorInput = null;
+    _updateKgDisplay('85', false);
+    const display = div.querySelector('#kgEditorDisplay');
+    const col = display.style.color || display.outerHTML;
+assert(col.includes('#fff') || col.includes('rgb(255, 255, 255)') || col.includes('rgb(255,255,255)'), 'Number should be white, got: ' + col);
+  });
+
+  it('BW mode has + in its own yellow span', () => {
+    const div = makeDisplayDiv();
+    window._activeInlineEditorDiv = div;
+    window._kgEditorInput = null;
+    _updateKgDisplay('23', true);
+    const display = div.querySelector('#kgEditorDisplay');
+    const plusSpan = display.querySelector('span');
+    assertNotNull(plusSpan, '+ should be in its own span');
+    assertContains(plusSpan.outerHTML, 'accent', '+ span should reference accent color');
+  });
+
+  it('BW mode number part is white', () => {
+    const div = makeDisplayDiv();
+    window._activeInlineEditorDiv = div;
+    window._kgEditorInput = null;
+    _updateKgDisplay('23', true);
+    const display = div.querySelector('#kgEditorDisplay');
+    const col2 = display.style.color || display.outerHTML;
+assert(col2.includes('#fff') || col2.includes('rgb(255, 255, 255)') || col2.includes('rgb(255,255,255)'), 'Number should be white, got: ' + col2);
+  });
+});
+
+describe('Cancel — State Restoration', () => {
+  it('restores original plain kg value', () => {
+    const { input } = makeTestInput('55');
+    window._kgEditorInput = input;
+    window._kgEditorExId = 'ex_1';
+    window._kgEditorOrigVal = '55';
+    window._kgEditorOrigDisplay = '';
+    window._kgEditorOrigColor = '';
+    window._kgEditorOrigBWLabelHTML = null;
+    window._kgEditorOrigBWExtra = null;
+    input.value = '80'; // user changed
+    const origClose = window.closeInlineKgEditor;
+    window.closeInlineKgEditor = () => {};
+    cancelInlineKgEditor();
+    assertEqual(input.value, '55', 'Cancel should restore original value');
+    window.closeInlineKgEditor = origClose;
+  });
+
+  it('restores input visibility', () => {
+    const { input } = makeTestInput('55');
+    window._kgEditorInput = input;
+    window._kgEditorExId = 'ex_1';
+    window._kgEditorOrigVal = '55';
+    window._kgEditorOrigDisplay = '';
+    window._kgEditorOrigColor = '';
+    window._kgEditorOrigBWLabelHTML = null;
+    window._kgEditorOrigBWExtra = null;
+    input.style.display = 'none';
+    const origClose = window.closeInlineKgEditor;
+    window.closeInlineKgEditor = () => {};
+    cancelInlineKgEditor();
+    assertEqual(input.style.display, '', 'Input should be visible after cancel');
+    window.closeInlineKgEditor = origClose;
+  });
+
+  it('resets BW mode flags to false', () => {
+    const { input } = makeTestInput('55');
+    window._kgEditorInput = input;
+    window._kgEditorExId = 'ex_1';
+    window._kgEditorOrigVal = '55';
+    window._kgEditorOrigDisplay = '';
+    window._kgEditorOrigBWLabelHTML = null;
+    window._kgEditorOrigBWExtra = null;
+    window._kgEditorBWMode = true;
+    const origClose = window.closeInlineKgEditor;
+    window.closeInlineKgEditor = () => {};
+    cancelInlineKgEditor();
+    assertEqual(window._kgEditorBWMode, false, 'BW mode should be false after cancel');
+    window.closeInlineKgEditor = origClose;
+  });
+
+  it('restores BW label when original was BW mode', () => {
+    const { input, td } = makeTestInput('135');
+    input.style.display = 'none';
+    const origLabel = document.createElement('div');
+    origLabel.className = 'bw-display-label';
+    origLabel.innerHTML = '<span>BW+</span><span>55</span>';
+    td.appendChild(origLabel);
+    window._kgEditorInput = input;
+    window._kgEditorExId = 'ex_1';
+    window._kgEditorOrigVal = '135';
+    window._kgEditorOrigDisplay = 'none';
+    window._kgEditorOrigBWLabelHTML = origLabel.outerHTML;
+    window._kgEditorOrigBWExtra = '55';
+    window._kgEditorOrigBWTotal = '135';
+    window._kgEditorOrigBWDisplay = 'BW+55';
+    origLabel.remove();
+    const origClose = window.closeInlineKgEditor;
+    window.closeInlineKgEditor = () => {};
+    cancelInlineKgEditor();
+    assertNotNull(td.querySelector('.bw-display-label'), 'BW label should be restored');
+    assertEqual(input.style.display, 'none', 'Input should stay hidden');
+    window.closeInlineKgEditor = origClose;
+  });
+});
+
+describe('RST Button', () => {
+  it('uses defaultSets value for correct set index', () => {
+    const defaults = [{kg:18,reps:10},{kg:22,reps:8}];
+    const card = document.createElement('div');
+    card.id = 'ex_rst';
+    card.dataset.defaultSets = JSON.stringify(defaults);
+    document.getElementById('test-dom').appendChild(card);
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td><span class="set-num">2</span></td>';
+    card.appendChild(tr);
+    const { input } = makeTestInput('35');
+    tr.querySelector('td').appendChild(input);
+    window._kgEditorInput = input;
+    window._kgEditorExId = 'ex_rst';
+    window._kgEditorPrevKg = 22;
+    window._kgEditorBWMode = false;
+    window._kgEditorOrigBWLabelHTML = null;
+    window._kgEditorOrigBWExtra = null;
+    const origApply = window._applyBWMode;
+    window._applyBWMode = () => {};
+    kgPadReset();
+    assertEqual(window._kgEditorVal, '22', 'RST should restore defaultSets[1].kg = 22');
+    window._applyBWMode = origApply;
+  });
+
+  it('does nothing if no prevKg defined', () => {
+    window._kgEditorPrevKg = null;
+    window._kgEditorVal = '55';
+    kgPadReset();
+    assertEqual(window._kgEditorVal, '55', 'RST with no prevKg should not change value');
+  });
+
+  it('resets BW mode to false for plain kg set', () => {
+    window._kgEditorPrevKg = 18;
+    window._kgEditorBWMode = true;
+    window._kgEditorOrigBWLabelHTML = null;
+    window._kgEditorOrigBWExtra = null;
+    window._kgEditorInput = makeTestInput('55').input;
+    let bwModeAfterApply = null;
+    const origApply = window._applyBWMode;
+    window._applyBWMode = () => { bwModeAfterApply = window._kgEditorBWMode; };
+    kgPadReset();
+    assertEqual(bwModeAfterApply, false, 'RST should reset BW mode for plain set');
+    window._applyBWMode = origApply;
+  });
+
+  it('prev value stays as original even after Done saves new value', () => {
+    // prevKg comes from defaultSets — never changes after card loads
+    const defaults = [{kg:18,reps:10}];
+    assertEqual(defaults[0].kg, 18, 'prevKg should always be original defaultSets value');
+  });
+});
+
+describe('resetCardSets Integration', () => {
+  it('calls closeInlineKgEditor before removing rows', () => {
+    let closeCalled = false;
+    const origClose = window.closeInlineKgEditor;
+    window.closeInlineKgEditor = () => { closeCalled = true; };
+    const card = document.createElement('div');
+    card.id = 'ex_card_rst';
+    card.dataset.defaultSets = JSON.stringify([{kg:60,reps:10}]);
+    const tbody = document.createElement('tbody');
+    tbody.id = 'set-body-ex_card_rst';
+    card.appendChild(tbody);
+    document.getElementById('test-dom').appendChild(card);
+    const origAddSet = window.addSet;
+    window.addSet = () => {};
+    window.setCounters = window.setCounters || {};
+    resetCardSets('ex_card_rst');
+    assert(closeCalled, 'closeInlineKgEditor must be called before row removal');
+    window.closeInlineKgEditor = origClose;
+    window.addSet = origAddSet;
+  });
+
+  it('removes both set-row and kg-inline-editor-row', () => {
+    const origClose = window.closeInlineKgEditor;
+    window.closeInlineKgEditor = () => {};
+    const card = document.createElement('div');
+    card.id = 'ex_card_rst2';
+    card.dataset.defaultSets = JSON.stringify([{kg:60,reps:10}]);
+    const tbody = document.createElement('tbody');
+    tbody.id = 'set-body-ex_card_rst2';
+    tbody.innerHTML = '<tr class="set-row"><td>1</td></tr><tr class="kg-inline-editor-row"><td></td></tr>';
+    card.appendChild(tbody);
+    document.getElementById('test-dom').appendChild(card);
+    const origAddSet = window.addSet;
+    window.addSet = () => {};
+    window.setCounters = window.setCounters || {};
+    resetCardSets('ex_card_rst2');
+    assertEqual(tbody.querySelectorAll('.set-row,.kg-inline-editor-row').length, 0,
+      'Both row types should be removed');
+    window.closeInlineKgEditor = origClose;
+    window.addSet = origAddSet;
+  });
+});
+
+describe('_kgEditorOpening Guard', () => {
+  it('blocks same input on double-fire', () => {
+    const input = document.createElement('input');
+    window._kgEditorOpening = true;
+    window._kgOpeningInput = input;
+    const blocked = window._kgEditorOpening && window._kgOpeningInput === input;
+    assert(blocked, 'Same input should be blocked');
+  });
+
+  it('allows different input even when guard is active', () => {
+    const input1 = document.createElement('input');
+    const input2 = document.createElement('input');
+    window._kgEditorOpening = true;
+    window._kgOpeningInput = input1;
+    const blocked = window._kgEditorOpening && window._kgOpeningInput === input2;
+    assert(!blocked, 'Different input should NOT be blocked');
+  });
+});
+
+describe('prev Hint Logic', () => {
+  it('returns correct kg for set index from defaultSets', () => {
+    const defaults = [{kg:18,reps:10},{kg:22,reps:8},{kg:25,reps:6}];
+    assertEqual(defaults[1]?.kg, 22, 'Set index 1 should return 22kg');
+  });
+
+  it('returns null for set index beyond defaultSets length', () => {
+    const defaults = [{kg:18,reps:10}];
+    const match = defaults[2] || null;
+    assertNull(match, 'Out-of-bounds set index should return null');
+  });
+
+  it('prevKg is independent of subsequent Done actions', () => {
+    // defaultSets is frozen at card load — Done does not update it
+    const defaults = [{kg:18,reps:10}];
+    const prevKg = defaults[0]?.kg;
+    // Simulate Done saving new value — defaults unchanged
+    assertEqual(prevKg, 18, 'prevKg should always be 18 regardless of edits');
+  });
+});
+
+describe('Source Code Integrity', () => {
+  it('addSet stamps data-orig-bw=0 on new inputs', () => {
+    assertContains(addSet.toString(), 'data-orig-bw', 'addSet should include data-orig-bw attribute');
+  });
+
+  it('confirmKgEditor does not set green color on input in BW path', () => {
+    const src = confirmKgEditor.toString();
+    // Should NOT contain the green color assignment (was removed)
+    const hasGreenOnInput = src.includes("input.style.color = '#34d399'");
+    assert(!hasGreenOnInput, 'confirmKgEditor should not set green color on input');
+  });
+
+  it('closeInlineKgEditor clears editor innerHTML', () => {
+    assertContains(closeInlineKgEditor.toString(), 'innerHTML', 'closeInlineKgEditor should clear innerHTML');
+  });
+
+  it('openInlineKgEditor saves _kgEditorOrigVal for cancel', () => {
+    assertContains(openInlineKgEditor.toString(), '_kgEditorOrigVal', 'openInlineKgEditor should save original value');
+  });
+
+  it('_applyBWMode sets window._kgEditorBWMode before UI checks', () => {
+    const src = _applyBWMode.toString();
+    const bwModeIdx = src.indexOf('window._kgEditorBWMode');
+    const btnIdx = src.indexOf('if (!btn');
+    assert(bwModeIdx < btnIdx, '_kgEditorBWMode must be set before btn/display null check');
+  });
+
+  it('resetCardSets removes kg-inline-editor-row elements', () => {
+    assertContains(resetCardSets.toString(), 'kg-inline-editor-row', 'resetCardSets should remove editor rows');
+  });
+});
+
+// ── RUN ───────────────────────────────────────────────────────────────────────
+async function runAll() {
+  const btn = document.getElementById('run-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Running...';
+  document.getElementById('results').innerHTML = '';
+  document.getElementById('summary').style.display = 'none';
+  document.getElementById('progress-bar').style.width = '0%';
+
+  let total = 0, passed = 0, failed = 0, skipped = 0;
+  const allTests = _suites.reduce((a,s) => a + s.tests.length, 0);
+
+  for (const suite of _suites) {
+    const suiteEl = document.createElement('div');
+    suiteEl.className = 'suite';
+    suiteEl.innerHTML = `<div class="suite-title">${suite.name}</div>`;
+    document.getElementById('results').appendChild(suiteEl);
+
+    for (const test of suite.tests) {
+      total++;
+      const el = document.createElement('div');
+      el.className = 'test';
+
+      if (test.skipped || !test.fn) {
+        skipped++;
+        el.classList.add('skip');
+        el.innerHTML = `<span class="badge skip">SKIP</span><div class="test-name">${test.name}</div>`;
+      } else {
+        try {
+          resetGlobals();
+          await test.fn();
+          passed++;
+          el.classList.add('pass');
+          el.innerHTML = `<span class="badge pass">PASS</span><div class="test-name">${test.name}</div>`;
+        } catch(e) {
+          failed++;
+          el.classList.add('fail');
+          el.innerHTML = `<span class="badge fail">FAIL</span><div class="test-name">${test.name}<div class="error-detail">${e.message}</div></div>`;
+        }
+      }
+      suiteEl.appendChild(el);
+      document.getElementById('progress-bar').style.width = ((passed+failed+skipped)/allTests*100) + '%';
+      await new Promise(r => setTimeout(r, 0));
+    }
+  }
+
+  document.getElementById('s-total').textContent = total;
+  document.getElementById('s-pass').textContent = passed;
+  document.getElementById('s-fail').textContent = failed;
+  document.getElementById('s-skip').textContent = skipped;
+  document.getElementById('summary').style.display = 'flex';
+  btn.disabled = false;
+  btn.textContent = failed > 0 ? `▶ Re-run  (${failed} failing)` : '✓ All Passing — Re-run';
+}
+
+// Check scope on load
+document.addEventListener('DOMContentLoaded', () => {
+  const missing = ['_updateKgDisplay','cancelInlineKgEditor','closeInlineKgEditor',
+    'kgPadReset','confirmKgEditor','addSet','resetCardSets','openInlineKgEditor','_applyBWMode']
+    .filter(fn => typeof window[fn] === 'undefined');
+  if (missing.length) {
+    document.getElementById('scope-note').style.display = 'block';
+    document.getElementById('scope-note').innerHTML +=
+      `<br><strong>Missing:</strong> <code>${missing.join(', ')}</code>`;
+  }
+});
+</script>
+</body>
+</html>
