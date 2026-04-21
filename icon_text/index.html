@@ -196,6 +196,14 @@ body.desktop-mode .pages-wrap {
 #kgBWBtnInline{will-change:color,border-color;-webkit-transform:translateZ(0);transform:translateZ(0);}
 #kgEditorDisplay{will-change:contents;-webkit-transform:translateZ(0);transform:translateZ(0);display:inline-block;}
 .kg-inline-editor{height:0;overflow:visible;transition:height .3s cubic-bezier(.4,0,.2,1);background:#1a1a2e;border-top:0px solid var(--border);}
+@keyframes kgFocusHide{from{opacity:1;transform:translateY(0);}to{opacity:0;transform:translateY(-12px);}}
+@keyframes kgFocusShow{from{opacity:0;transform:translateY(-12px);}to{opacity:1;transform:translateY(0);}}
+.kg-focus-hiding{animation:kgFocusHide 300ms cubic-bezier(.4,0,.2,1) forwards;}
+.kg-focus-showing{animation:kgFocusShow 300ms cubic-bezier(.4,0,.2,1) forwards;}
+@keyframes expandHide{from{opacity:1;transform:translateY(0);}to{opacity:0;transform:translateY(-8px);}}
+@keyframes expandShow{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:translateY(0);}}
+.expand-hiding{animation:expandHide 400ms cubic-bezier(.4,0,.2,1) forwards;}
+.expand-showing{animation:expandShow 400ms cubic-bezier(.4,0,.2,1) forwards;}
 .kg-inline-editor .kg-inline-editor-inner{opacity:0;transition:opacity .25s ease;pointer-events:none;}
 .kg-inline-editor.open{height:auto;border-top:1px solid var(--border);}
 .kg-inline-editor.open .kg-inline-editor-inner{opacity:1;pointer-events:auto;overflow-y:auto;max-height:520px;}
@@ -1043,7 +1051,7 @@ function hidAuthScreen() {
       <button class="btn-load-history" onclick="window._loadFromToday=true;switchTab('workouts')" style="display:none;"></button>
       <button class="btn-finish-workout" id="finishWorkoutBtn" onclick="finishWorkout()">FINISH WORKOUT</button>
     </div>
-    <div id="todayMuscleChipsWrap" style="display:none;align-items:center;gap:0;padding:2px 0 4px;margin-top:3px;">
+    <div id="todayMuscleChipsWrap" style="display:none;align-items:center;gap:0;padding:2px 0 4px;margin-top:3px;flex-wrap:nowrap;overflow:hidden;">
       <div id="todayMuscleChipsFixed" style="display:flex;gap:6px;flex-shrink:0;background:var(--bg);z-index:3;padding-right:6px;"></div>
       <div id="todayMuscleChips" style="display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;scrollbar-width:none;flex:1;"></div>
     </div>
@@ -4699,7 +4707,9 @@ function updateTodayMuscleChips() {
   const entries = Object.entries(counts);
   if (!entries.length) { wrap.style.display = 'none'; fixedEl.innerHTML = ''; scrollEl.innerHTML = ''; _todayMuscleFilter = null; _todayHideDone = false; return; }
   if (_todayMuscleFilter && !counts[_todayMuscleFilter]) _todayMuscleFilter = null;
-  wrap.style.display = 'flex';
+  // Only show chips if no card is currently expanded
+  const _anyCardOpen = !!document.querySelector('#exerciseList .exercise-card[data-open="true"]');
+  wrap.style.display = _anyCardOpen ? 'none' : 'flex';
   const MUSCLE_ABBR = { Chest:'Chest', Back:'Back', Legs:'Legs', Shoulders:'Shldr', Arms:'Arms', Core:'Abs', Compound:'Comp' };
   const allActive = !_todayMuscleFilter;
   const anyDone = true;
@@ -5547,7 +5557,31 @@ function toggleCardCollapse(id) {
     body.style.maxHeight = '0'; body.style.opacity = '0'; body.classList.add('collapsed'); body.classList.remove('open');
     card.dataset.open = 'false';
     chevBtn?.classList.remove('open');
+    // Fade out completely, wait for layout to settle, then fade in
+    card.style.opacity = '1';
+    card.style.transition = 'opacity 250ms ease';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      card.style.opacity = '0';
+      setTimeout(() => {
+        // Layout has settled — fade back in
+        card.style.transition = 'opacity 350ms ease';
+        card.style.opacity = '1';
+        setTimeout(() => { card.style.transition = ''; card.style.opacity = ''; }, 370);
+      }, 270);
+    }));
     hideExFloatBar();
+    // Restore muscle chips and workout name when card collapses
+    const _chipsOnClose = document.getElementById('todayMuscleChipsWrap');
+    if (_chipsOnClose && _chipsOnClose.dataset.preExpandDisplay) {
+      _expandAnimShow(_chipsOnClose, 'flex');
+      delete _chipsOnClose.dataset.preExpandDisplay;
+    }
+    const _wnbOnClose = document.getElementById('workoutNameBar');
+    if (_wnbOnClose && _wnbOnClose.dataset.preExpandVisible) {
+      _wnbOnClose.classList.add('visible');
+      _expandAnimShow(_wnbOnClose);
+      delete _wnbOnClose.dataset.preExpandVisible;
+    }
     const impSec = document.getElementById(`imp-section-${id}`);
     if (impSec) impSec.style.display = 'none';
     if (_timers[id]?.running) chevBtn?.classList.add('timer-active');
@@ -5598,6 +5632,22 @@ function toggleCardCollapse(id) {
     body.style.maxHeight = '4000px'; body.style.opacity = '1'; body.classList.remove('collapsed'); body.classList.add('open');
     card.dataset.open = 'true';
     chevBtn?.classList.add('open');
+    // Fade in the card itself from 0
+    card.style.opacity = '0';
+    card.style.transition = 'opacity 400ms ease';
+    requestAnimationFrame(() => requestAnimationFrame(() => { card.style.opacity = '1'; }));
+    setTimeout(() => { card.style.transition = ''; card.style.opacity = ''; }, 450);
+    // Hide muscle chips and workout name when card expands
+    const _chipsOnOpen = document.getElementById('todayMuscleChipsWrap');
+    if (_chipsOnOpen && getComputedStyle(_chipsOnOpen).display !== 'none') {
+      _chipsOnOpen.dataset.preExpandDisplay = 'flex';
+      _expandAnimHide(_chipsOnOpen);
+    }
+    const _wnbOnOpen = document.getElementById('workoutNameBar');
+    if (_wnbOnOpen && _wnbOnOpen.classList.contains('visible')) {
+      _wnbOnOpen.dataset.preExpandVisible = '1';
+      _expandAnimHide(_wnbOnOpen);
+    }
     // Defer heavy work until after expand animation settles
     setTimeout(() => updateVolProgressBar(id), _isMobile ? 0 : 50);
     // Reset chart div state based on whether graph was previously open
@@ -17675,6 +17725,36 @@ let _inlineKgEditorId = null; // currently open editor id
 
 
 // ── KG EDITOR FOCUS MODE ─────────────────────────────────────────────────────
+function _expandAnimHide(el, done) {
+  if (!el || getComputedStyle(el).display === 'none') { if (done) done(); return; }
+  el.classList.remove('expand-showing');
+  el.classList.add('expand-hiding');
+  const _onEnd = () => { el.removeEventListener('animationend', _onEnd); el.style.display = 'none'; el.classList.remove('expand-hiding'); if (done) done(); };
+  el.addEventListener('animationend', _onEnd);
+}
+function _expandAnimShow(el, displayVal) {
+  if (!el) return;
+  el.style.display = displayVal || '';
+  el.classList.remove('expand-hiding');
+  el.classList.add('expand-showing');
+  const _onEnd = () => { el.removeEventListener('animationend', _onEnd); el.classList.remove('expand-showing'); };
+  el.addEventListener('animationend', _onEnd);
+}
+function _kgFocusAnimHide(el, done) {
+  if (!el || getComputedStyle(el).display === 'none') { if (done) done(); return; }
+  el.classList.remove('kg-focus-showing');
+  el.classList.add('kg-focus-hiding');
+  const _onEnd = () => { el.removeEventListener('animationend', _onEnd); el.style.display = 'none'; el.classList.remove('kg-focus-hiding'); if (done) done(); };
+  el.addEventListener('animationend', _onEnd);
+}
+function _kgFocusAnimShow(el) {
+  if (!el) return;
+  el.style.display = '';
+  el.classList.remove('kg-focus-hiding');
+  el.classList.add('kg-focus-showing');
+  const _onEnd = () => { el.removeEventListener('animationend', _onEnd); el.classList.remove('kg-focus-showing'); };
+  el.addEventListener('animationend', _onEnd);
+}
 function _kgEditorFocusEnter(exId) {
   const _chips0 = document.getElementById('todayMuscleChipsWrap');
   const _ta0 = document.querySelector('.today-actions');
@@ -17684,34 +17764,38 @@ function _kgEditorFocusEnter(exId) {
   // workoutNameBar uses classList.visible — handle separately
   const _wnb = document.getElementById('workoutNameBar');
   if (_wnb) {
-    // Only save original visibility once
     if (_wnb.dataset.kgOrigVisible === undefined) {
       _wnb.dataset.kgOrigVisible = _wnb.classList.contains('visible') ? '1' : '0';
     }
     _wnb.dataset.kgHideVisible = _wnb.dataset.kgOrigVisible;
-    _wnb.classList.remove('visible');
     /* DBG_START */ window._dbgLog('ENTER: workoutNameBar orig=' + _wnb.dataset.kgOrigVisible, '#ff8c42'); /* DBG_END */
+    if (_wnb.classList.contains('visible')) {
+      _wnb.classList.add('kg-focus-hiding');
+      setTimeout(() => { _wnb.classList.remove('visible', 'kg-focus-hiding'); }, 300);
+    }
   }
   // finishWorkoutBtn — via style.display
   // finishWorkoutBtn is inside todayActions — no need to hide separately
   // todayMuscleChipsWrap — only save if not already hidden from a previous enter
   const _chips = document.getElementById('todayMuscleChipsWrap');
   if (_chips && !_chips.dataset.kgOrigDisplay) {
-    _chips.dataset.kgOrigDisplay = getComputedStyle(_chips).display;
+    const _chipsComputed = getComputedStyle(_chips).display;
+    _chips.dataset.kgOrigDisplay = _chipsComputed === 'none' ? 'none' : 'flex';
   }
   if (_chips) {
-    _chips.dataset.kgHide = _chips.dataset.kgOrigDisplay || getComputedStyle(_chips).display;
-    _chips.style.display = 'none';
-    /* DBG_START */ window._dbgLog('ENTER: todayMuscleChipsWrap saved=' + _chips.dataset.kgHide + ' orig=' + _chips.dataset.kgOrigDisplay, '#ff8c42'); /* DBG_END */
+    _chips.dataset.kgHide = _chips.dataset.kgOrigDisplay || 'flex';
+    /* DBG_START */ window._dbgLog('ENTER: todayMuscleChipsWrap saved=' + _chips.dataset.kgHide, '#ff8c42'); /* DBG_END */
+    _kgFocusAnimHide(_chips);
   }
   // Hide today-actions row (clear/load/finish buttons)
   const todayActions = document.querySelector('.today-actions');
   if (todayActions) {
     if (!todayActions.dataset.kgOrigDisplay) {
-      todayActions.dataset.kgOrigDisplay = getComputedStyle(todayActions).display;
+      const _taComputed = getComputedStyle(todayActions).display;
+      todayActions.dataset.kgOrigDisplay = _taComputed === 'none' ? 'none' : 'flex';
     }
     todayActions.dataset.kgHide = todayActions.dataset.kgOrigDisplay;
-    todayActions.style.display = 'none';
+    _kgFocusAnimHide(todayActions);
   }
   // Hide add exercise row
   const addExRow = document.querySelector('.add-ex-row');
@@ -17720,7 +17804,7 @@ function _kgEditorFocusEnter(exId) {
       addExRow.dataset.kgOrigDisplay = getComputedStyle(addExRow).display;
     }
     addExRow.dataset.kgHide = addExRow.dataset.kgOrigDisplay;
-    addExRow.style.display = 'none';
+    _kgFocusAnimHide(addExRow);
   }
   // Hide float bar
   const floatBar = document.getElementById('ex-float-bar');
@@ -17736,7 +17820,7 @@ function _kgEditorFocusEnter(exId) {
       card.querySelectorAll('.set-row, .kg-inline-editor-row').forEach(row => {
         if (row !== _editedSetRow && row !== _editedEditorRow) {
           row.dataset.kgHide = '1';
-          row.style.display = 'none';
+          _kgFocusAnimHide(row);
         }
       });
       // Hide mark-as-done button row and set-rm-label
@@ -17745,7 +17829,7 @@ function _kgEditorFocusEnter(exId) {
       });
       // Hide + and RST footer buttons
       const exFooter = card.querySelector('.ex-footer');
-      if (exFooter) { exFooter.dataset.kgHide = exFooter.style.display || ''; exFooter.style.display = 'none'; }
+      if (exFooter) { exFooter.dataset.kgHide = exFooter.style.display || ''; _kgFocusAnimHide(exFooter); }
       // Hide note, timer, graph panels if open
       [
         card.querySelector('.comment-area.open'),
@@ -17757,7 +17841,7 @@ function _kgEditorFocusEnter(exId) {
     } else {
       // Save actual computed display so we restore correctly
       card.dataset.kgHide = getComputedStyle(card).display;
-      card.style.display = 'none';
+      _kgFocusAnimHide(card);
     }
   });
 }
@@ -17779,7 +17863,8 @@ function _kgEditorFocusLeave() {
   // finishWorkoutBtn restored via todayActions — no separate restore needed
   const _chipsR = document.getElementById('todayMuscleChipsWrap');
   if (_chipsR && _chipsR.dataset.kgHide !== undefined) {
-    const _chipsRestore = _chipsR.dataset.kgHide;
+    // Always restore as flex (it's a flex container)
+    const _chipsRestore = _chipsR.dataset.kgHide === 'none' ? 'none' : 'flex';
     _chipsR.style.display = _chipsRestore;
     delete _chipsR.dataset.kgHide;
     delete _chipsR.dataset.kgOrigDisplay;
@@ -17787,7 +17872,7 @@ function _kgEditorFocusLeave() {
   }
   const todayActions = document.querySelector('.today-actions');
   if (todayActions && todayActions.dataset.kgHide !== undefined) {
-    const _taRestore = todayActions.dataset.kgHide;
+    const _taRestore = todayActions.dataset.kgHide === 'none' ? 'none' : 'flex';
     todayActions.style.display = _taRestore;
     delete todayActions.dataset.kgHide;
     delete todayActions.dataset.kgOrigDisplay;
@@ -17895,27 +17980,22 @@ function openInlineKgEditor(inputEl, exId) {
   _inlineKgEditorId = editorId;
   window._activeInlineEditorDiv = editorDiv;
   _kgEditorFocusEnter(exId);
-  // Scroll active card just below muscle chips
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      const _activeCard = document.getElementById(exId);
-      if (!_activeCard) { /* DBG_START */ window._dbgLog('SCROLL-ENTER: NO CARD for ' + exId, '#f87171'); /* DBG_END */ return; }
-      const _r = _activeCard.getBoundingClientRect();
-      const _chipsWrap2 = document.getElementById('todayMuscleChipsWrap');
-      const _chipsBottom2 = _chipsWrap2 ? _chipsWrap2.getBoundingClientRect().bottom : 0;
-      const _chipsStyle2 = _chipsWrap2 ? _chipsWrap2.style.display : 'N/A';
-      const _chipsComputed2 = _chipsWrap2 ? getComputedStyle(_chipsWrap2).display : 'N/A';
-      const _targetTop2 = _chipsBottom2 + 8;
-      const _diff2 = _r.top - _targetTop2;
-      /* DBG_START */ window._dbgLog('SCROLL-ENTER: cardTop=' + Math.round(_r.top) + ' chipsBottom=' + Math.round(_chipsBottom2) + ' chipsStyle=' + _chipsStyle2 + ' chipsComputed=' + _chipsComputed2 + ' diff=' + Math.round(_diff2) + ' scrollY=' + window.scrollY, '#20d4c8'); /* DBG_END */
-      if (Math.abs(_diff2) > 4) {
-        window.scrollBy({ top: _diff2, behavior: 'smooth' });
-        /* DBG_START */ setTimeout(() => window._dbgLog('SCROLL-ENTER after: cardTop=' + Math.round(_activeCard.getBoundingClientRect().top) + ' scrollY=' + window.scrollY, '#20d4c8'), 600); /* DBG_END */
-      } else {
-        /* DBG_START */ window._dbgLog('SCROLL-ENTER: diff too small, no scroll', '#20d4c8'); /* DBG_END */
-      }
+  // Scroll active card into view after animations complete (300ms)
+  setTimeout(() => {
+    const _activeCard = document.getElementById(exId);
+    if (!_activeCard) return;
+    const _r = _activeCard.getBoundingClientRect();
+    const _chipsWrap2 = document.getElementById('todayMuscleChipsWrap');
+    const _finishBar2 = document.querySelector('.today-actions');
+    let _anchor2 = 0;
+    ['todayMuscleChipsWrap','workoutNameBar'].forEach(eid => {
+      const el = document.getElementById(eid);
+      if (el && getComputedStyle(el).display !== 'none') _anchor2 = Math.max(_anchor2, el.getBoundingClientRect().bottom);
     });
-  });
+    if (_finishBar2 && getComputedStyle(_finishBar2).display !== 'none') _anchor2 = Math.max(_anchor2, _finishBar2.getBoundingClientRect().bottom);
+    const _diff2 = _r.top - (_anchor2 + 8);
+    if (Math.abs(_diff2) > 4) window.scrollBy({ top: _diff2, behavior: 'smooth' });
+  }, 320);
   // Save original state for Cancel restore
   window._kgEditorOrigVal = inputEl.value;
   window._kgEditorOrigDisplay = inputEl.style.display;
@@ -17987,7 +18067,7 @@ function openInlineKgEditor(inputEl, exId) {
         </div>
         <div id="kg-display-row" style="position:relative;display:flex;align-items:baseline;justify-content:center;">
           <span id="kgEditorDisplay" style="font-family:'DM Sans';font-size:52px;font-weight:700;color:#fff;line-height:1;">${displayVal.startsWith('+') ? '<span style=\'color:var(--accent)\'>+</span>' + displayVal.slice(1) : displayVal}</span>
-          <span id="kgEditorUnit" style="position:absolute;left:100%;bottom:6px;font-family:'DM Sans';font-size:16px;font-weight:600;color:var(--muted);margin-left:4px;">'kg'</span>
+          <span id="kgEditorUnit" style="position:absolute;left:100%;bottom:6px;font-family:'DM Sans';font-size:16px;font-weight:600;color:var(--muted);margin-left:4px;">kg</span>
         </div>
         <button onclick="kgPadReset()" style="position:absolute;right:0;background:transparent;border:1px solid #555;border-radius:8px;color:#aaa;font-family:'DM Sans';font-size:11px;font-weight:700;padding:6px 10px;cursor:pointer;">RST</button>
       </div>
@@ -18096,6 +18176,8 @@ function closeInlineKgEditor(restoreFocus = true) {
 window.openInlineKgEditor = openInlineKgEditor;
 window._kgEditorFocusEnter = _kgEditorFocusEnter;
 window._kgEditorFocusLeave = _kgEditorFocusLeave;
+window._expandAnimHide = _expandAnimHide;
+window._expandAnimShow = _expandAnimShow;
 window.closeInlineKgEditor = closeInlineKgEditor;
 window.cancelInlineKgEditor = cancelInlineKgEditor;
 window.showExFloatBar = showExFloatBar;
