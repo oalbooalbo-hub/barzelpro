@@ -18254,6 +18254,49 @@ function _updateKgDisplay(val, isBWMode) {
     updateVolProgressBar(liveExId);
   }
 }
+
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+  if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', (event) => {
+          if (event.data && event.data.type === 'SW_UPDATED') {
+              document.getElementById('update-overlay').classList.add('show');
+          }
+      });
+  }
+
+  const updateBtn = document.getElementById('update-button');
+  if (updateBtn) {
+      updateBtn.addEventListener('click', () => {
+          navigator.serviceWorker.getRegistration().then(reg => {
+              if (reg && reg.waiting) {
+                  reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+              }
+              window.location.reload();
+          });
+      });
+  }
+
+  window.addEventListener('appinstalled', (evt) => {
+      if (!isIOS) {
+          document.getElementById('success-overlay').classList.add('show');
+      }
+  });
+
+  function finishSetup() {
+      window.close();
+      const textEl = document.getElementById('success-text');
+      if (textEl) {
+          textEl.innerHTML = "<strong>Almost there!</strong> Manually close this tab and open the app from your home screen.";
+      }
+      const btn = document.querySelector('#success-modal button');
+      if (btn) {
+          btn.innerText = "I'LL CLOSE IT";
+          btn.style.background = "#333";
+          btn.style.color = "#fff";
+      }
+  }
+  
 // ─────────────────────────────────────────────────────────────────────────
 </script>
 
