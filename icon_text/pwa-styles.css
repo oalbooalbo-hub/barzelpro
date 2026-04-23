@@ -1,25 +1,32 @@
-/* ── PWA UPDATE MODAL ── */
+/* ── PWA MODALS (Update & Success) ── */
 
-#update-overlay {
+/* הגדרת משתנה לצבע המותג - יתעדכן אוטומטית מה-JS */
+:root {
+    --accent-color: #e8ff47; 
+}
+
+/* הגדרות כלליות לשכבת הרקע (Overlay) */
+#update-overlay, #success-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(0, 0, 0, 0.7); /* The dimming effect */
-    backdrop-filter: blur(4px); /* Modern blurred background */
-    display: none; /* Hidden by default */
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    display: none; /* חבוי כברירת מחדל */
     justify-content: center;
     align-items: center;
     z-index: 10000;
 }
 
-/* When the JavaScript adds the 'show' class to the OVERLAY */
-#update-overlay.show {
+/* הצגת המודל באמצעות Class */
+#update-overlay.show, #success-overlay.show {
     display: flex;
 }
 
-#update-modal {
+/* עיצוב המודל עצמו */
+.pwa-modal {
     background: #1a1a1a;
     padding: 30px;
     border-radius: 20px;
@@ -31,15 +38,15 @@
     animation: modalPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-#update-modal span {
+.pwa-modal span {
     display: block;
     font-family: 'Bebas Neue', sans-serif;
     font-size: 24px;
-    color: #e8ff47; /* Your accent color */
+    color: var(--accent-color); /* שימוש במשתנה */
     margin-bottom: 10px;
 }
 
-#update-modal p {
+.pwa-modal p {
     font-family: 'DM Sans', sans-serif;
     font-size: 14px;
     color: #aaa;
@@ -47,17 +54,22 @@
     line-height: 1.4;
 }
 
-#update-modal button {
-    background: #e8ff47;
+.pwa-modal button {
+    background: var(--accent-color); /* שימוש במשתנה */
     color: #0a0a0a;
     border: none;
     padding: 14px 0;
-    width: 100%; /* Full width button for easier tapping */
+    width: 100%;
     border-radius: 10px;
     font-family: 'Bebas Neue', sans-serif;
     font-size: 18px;
     letter-spacing: 1px;
     cursor: pointer;
+    transition: transform 0.2s active;
+}
+
+.pwa-modal button:active {
+    transform: scale(0.98); /* אפקט לחיצה בטלפון */
 }
 
 @keyframes modalPop {
