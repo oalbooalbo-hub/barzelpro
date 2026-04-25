@@ -429,7 +429,9 @@
     _deferredPrompt.userChoice.then(choice => {
       if (choice.outcome === 'accepted') {
         sessionStorage.setItem('bp_skip_install', '1');
-        setTimeout(() => window.location.replace('./index.html'), 800);
+        // Show success modal — wait for user to tap GOT IT
+        const modal = document.getElementById('install-success-modal');
+        if (modal) modal.style.display = 'flex';
       }
       _deferredPrompt = null;
     });
