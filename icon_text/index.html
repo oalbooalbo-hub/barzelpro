@@ -131,6 +131,7 @@ body.desktop-mode .pages-wrap {
 .btn-chevron.timer-done{color:#ff4444;border-color:#ff4444;animation:chevBlinkRed 2s ease-in-out infinite;}@keyframes chevBlinkRed{0%,100%{opacity:1;color:#ff4444;border-color:#ff4444;}50%{opacity:.2;color:#ff4444;border-color:#ff4444;}}
 .btn-chevron .chev{display:none;}/* arrow via transform, no extra span needed */
 #ex-float-bar{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:calc(min(430px,100%) - 32px);background:var(--surface);border:1px solid var(--border);border-radius:16px;display:none;gap:0;z-index:50;box-shadow:0 8px 32px rgba(0,0,0,.5);overflow:hidden;}
+#ex-float-bar-block{display:none;position:fixed;bottom:0;left:0;right:0;height:calc(16px + env(safe-area-inset-bottom));background:var(--bg);z-index:49;}
 #ex-float-bar button{flex:1;background:transparent;border:none;border-right:1px solid var(--border);color:var(--muted);padding:14px 0;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;transition:color .2s,background .15s;font-family:'DM Sans';font-size:10px;font-weight:700;letter-spacing:.3px;}
 #ex-float-bar button:last-child{border-right:none;}
 #ex-float-bar button:hover,#ex-float-bar button.active{color:var(--accent);}
@@ -196,14 +197,18 @@ body.desktop-mode .pages-wrap {
 #kgBWBtnInline{will-change:color,border-color;-webkit-transform:translateZ(0);transform:translateZ(0);}
 #kgEditorDisplay{will-change:contents;-webkit-transform:translateZ(0);transform:translateZ(0);display:inline-block;}
 .kg-inline-editor{height:0;overflow:visible;transition:height .3s cubic-bezier(.4,0,.2,1);background:#1a1a2e;border-top:0px solid var(--border);}
+/* Exercise slide nav */
+#ex-nav-slider{display:flex;width:200%;transition:transform .35s cubic-bezier(.4,0,.2,1);will-change:transform;}
+#ex-nav-list{width:50%;flex-shrink:0;}
+#ex-nav-detail{width:50%;flex-shrink:0;overflow-y:auto;}
+#ex-nav-slider.detail-open{transform:translateX(-50%);}
+#ex-detail-back{display:flex;align-items:center;gap:8px;padding:10px 0 6px;cursor:pointer;color:var(--accent);font-family:"DM Sans";font-size:15px;font-weight:700;}
+#ex-detail-back svg{flex-shrink:0;}
 @keyframes kgFocusHide{from{opacity:1;transform:translateY(0);}to{opacity:0;transform:translateY(-12px);}}
 @keyframes kgFocusShow{from{opacity:0;transform:translateY(-12px);}to{opacity:1;transform:translateY(0);}}
 .kg-focus-hiding{animation:kgFocusHide 300ms cubic-bezier(.4,0,.2,1) forwards;}
 .kg-focus-showing{animation:kgFocusShow 300ms cubic-bezier(.4,0,.2,1) forwards;}
-@keyframes expandHide{from{opacity:1;transform:translateY(0);}to{opacity:0;transform:translateY(-8px);}}
-@keyframes expandShow{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:translateY(0);}}
-.expand-hiding{animation:expandHide 400ms cubic-bezier(.4,0,.2,1) forwards;}
-.expand-showing{animation:expandShow 400ms cubic-bezier(.4,0,.2,1) forwards;}
+
 .kg-inline-editor .kg-inline-editor-inner{opacity:0;transition:opacity .25s ease;pointer-events:none;}
 .kg-inline-editor.open{height:auto;border-top:1px solid var(--border);}
 .kg-inline-editor.open .kg-inline-editor-inner{opacity:1;pointer-events:auto;overflow-y:auto;max-height:520px;}
@@ -286,9 +291,12 @@ body.desktop-mode .pages-wrap {
 
 /* ── COMMENT ───────────────────────────────────── */
 .comment-area{padding:0 14px;max-height:0;overflow:hidden;transition:max-height .3s ease,padding .25s ease;margin-top:6px;}
+#today-chips-block{display:none;position:fixed;bottom:0;left:0;right:0;height:calc(64px + env(safe-area-inset-bottom));background:var(--bg);z-index:47;}
+#note-kbd-toolbar{display:none;position:fixed;bottom:0;left:0;right:0;z-index:999;background:var(--surface2);border-top:1px solid var(--border);padding:8px 16px;padding-bottom:calc(8px + env(safe-area-inset-bottom));justify-content:flex-end;}
+#note-kbd-done{background:transparent;border:none;color:#7ec8e3;font-family:'DM Sans';font-size:16px;font-weight:700;cursor:pointer;padding:4px 8px;}
 .comment-area.open{max-height:120px;padding:0 14px 8px;}
 .comment-box{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:'DM Sans';font-size:13px;padding:9px 11px;outline:none;resize:none;height:68px;line-height:1.5;transition:border-color .2s;}
-.comment-box:focus{border-color:var(--accent);}
+.comment-box:focus{border-color:#7ec8e3;}
 .comment-box::placeholder{color:var(--muted);}
 
 /* ── MINI PROGRESS CHART IN CARD ───────────────── */
@@ -1045,21 +1053,38 @@ function hidAuthScreen() {
   </div>
 
   <!-- ACTIVE WORKOUT: hidden until user picks an option -->
-  <div id="today-workout-area" style="display:none;">
+  <div id="today-workout-area" style="display:none;overflow:hidden;">
     <div class="today-actions" style="margin:0;padding:0;">
       <button class="btn-clear-workout" onclick="clearSession()" style="display:none;"></button>
       <button class="btn-load-history" onclick="window._loadFromToday=true;switchTab('workouts')" style="display:none;"></button>
       <button class="btn-finish-workout" id="finishWorkoutBtn" onclick="finishWorkout()">FINISH WORKOUT</button>
     </div>
-    <div id="todayMuscleChipsWrap" style="display:none;align-items:center;gap:0;padding:2px 0 4px;margin-top:3px;flex-wrap:nowrap;overflow:hidden;">
+    <div id="today-chips-block"></div>
+    <div id="todayMuscleChipsWrap" style="display:none;align-items:center;gap:0;padding:2px 0 4px;margin-top:3px;flex-wrap:nowrap;overflow:hidden;position:fixed;bottom:calc(64px + env(safe-area-inset-bottom));left:0;right:0;width:100%;max-width:430px;margin-left:auto;margin-right:auto;background:var(--bg);z-index:48;padding:8px 16px;box-sizing:border-box;border-top:1px solid var(--border);">
       <div id="todayMuscleChipsFixed" style="display:flex;gap:6px;flex-shrink:0;background:var(--bg);z-index:3;padding-right:6px;"></div>
       <div id="todayMuscleChips" style="display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;scrollbar-width:none;flex:1;"></div>
     </div>
-    <div id="exerciseList"></div>
-    <div class="add-ex-row">
-      <button class="btn-add-exercise" onclick="enterPickMode(_todayMuscleFilter)">+ ADD EXERCISE</button>
+    <div id="ex-nav-slider">
+      <div id="ex-nav-list">
+        <div id="exerciseList"></div>
+        <div class="add-ex-row">
+          <button class="btn-add-exercise" onclick="enterPickMode(_todayMuscleFilter)">+ ADD EXERCISE</button>
+        </div>
+      </div>
+      <div id="ex-nav-detail">
+        <div id="ex-detail-back" onclick="closeExDetail()">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><polyline points="13,4 7,10 13,16" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span id="ex-detail-back-label">Back</span>
+        </div>
+        <div id="ex-detail-content"></div>
+      </div>
     </div>
   </div>
+</div>
+
+<!-- NOTE KEYBOARD TOOLBAR -->
+<div id="note-kbd-toolbar">
+  <button id="note-kbd-done" onmousedown="event.preventDefault();noteKbdDone()" ontouchstart="event.preventDefault();noteKbdDone()">Done</button>
 </div>
 
 <!-- HISTORY -->
@@ -2339,6 +2364,11 @@ function updateVolProgressBar(exId) {
 
 function showTodayStartScreen() {
   _headerWorkoutModeOff();
+  // Restore header when back on start screen
+  const _hdrS = document.querySelector('.header');
+  const _hintS = document.getElementById('header-chevron-hint');
+  if (_hdrS) _hdrS.classList.remove('collapsed');
+  if (_hintS) _hintS.style.display = 'none'; // no hint on start screen
   if (window.hideExFloatBar) hideExFloatBar();
   window._isNewWorkoutFlow = false;
   document.getElementById('today-start-screen').style.display = 'flex';
@@ -2626,9 +2656,14 @@ function _headerWorkoutModeOff() {
 function showTodayWorkoutArea(isNew=false) {
   document.getElementById('today-start-screen').style.display = 'none';
   document.getElementById('today-workout-area').style.display = '';
-  // Enable header collapse (only in workout mode)
+  // Hide header completely when workout is active
   _headerWorkoutModeOn();
-  setTimeout(collapseHeader, 2000);
+  const _hdrW = document.querySelector('.header');
+  const _hintW = document.getElementById('header-chevron-hint');
+  const _collapseW = document.getElementById('header-collapse-hint');
+  if (_hdrW) _hdrW.classList.add('collapsed');
+  if (_hintW) _hintW.style.display = 'none';
+  if (_collapseW) _collapseW.style.display = 'none';
   document.getElementById('workoutNameBar').classList.toggle('visible', !(window._createNewMode && window._newFromWorkouts));
   // Hide tab bar when workout is active
   const _tabsEl = document.querySelector('.tabs');
@@ -4700,32 +4735,49 @@ function updateTodayMuscleChips() {
   if (!wrap || !fixedEl || !scrollEl) return;
   const muscleColors = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171',Compound:'#20d4c8' };
   const counts = {};
-  document.querySelectorAll('#exerciseList .exercise-card').forEach(card => {
+  const remainCounts = {};
+  // Count all cards regardless of location (list or detail panel)
+  document.querySelectorAll('.exercise-card').forEach(card => {
     const m = card.dataset.exmuscle || 'Chest';
     counts[m] = (counts[m]||0) + 1;
+    if (!card.classList.contains('completed')) {
+      remainCounts[m] = (remainCounts[m]||0) + 1;
+    }
   });
   const entries = Object.entries(counts);
   if (!entries.length) { wrap.style.display = 'none'; fixedEl.innerHTML = ''; scrollEl.innerHTML = ''; _todayMuscleFilter = null; _todayHideDone = false; return; }
   if (_todayMuscleFilter && !counts[_todayMuscleFilter]) _todayMuscleFilter = null;
-  // Only show chips if no card is currently expanded
+  // Only show chips if no card is open in detail panel
   const _anyCardOpen = !!document.querySelector('#exerciseList .exercise-card[data-open="true"]');
-  wrap.style.display = _anyCardOpen ? 'none' : 'flex';
+  const _detailOpen = !!window._exDetailCardId;
+  const _chipsBlock = document.getElementById('today-chips-block');
+  const _chipsVisible = !(_anyCardOpen || _detailOpen);
+  wrap.style.display = _chipsVisible ? 'flex' : 'none';
+  if (_chipsBlock) _chipsBlock.style.display = _chipsVisible ? 'block' : 'none';
   const MUSCLE_ABBR = { Chest:'Chest', Back:'Back', Legs:'Legs', Shoulders:'Shldr', Arms:'Arms', Core:'Abs', Compound:'Comp' };
   const allActive = !_todayMuscleFilter;
   const anyDone = true;
 
   // Fixed chips — Hide ✓ only shown when not in new workout creation flow
   const showHideChip = !window._isNewWorkoutFlow;
-  const hideDoneHtml = showHideChip ? `<button onclick="toggleTodayHideDone()" ${!anyDone ? 'disabled' : ''} style="display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:${_todayHideDone ? 'rgba(251,191,36,.2)' : 'var(--surface2)'};border:1px solid ${_todayHideDone ? '#fbbf24' : 'var(--border)'};border-radius:8px;padding:7px 4px;width:54px;flex-shrink:0;font-family:'DM Sans';cursor:${anyDone ? 'pointer' : 'default'};transition:all .15s;"><span style="font-size:16px;font-weight:700;color:${_todayHideDone ? '#fbbf24' : anyDone ? '#fff' : '#555'};line-height:1;"> </span><span style="font-size:11px;font-weight:600;color:${_todayHideDone ? '#fbbf24' : anyDone ? '#fff' : '#555'};letter-spacing:.2px;line-height:1;">Hide ✓</span></button>` : '';
-  const allChipHtml = entries.length > 1 ? `<button onclick="filterTodayByMuscle(null)" style="display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:${allActive ? 'rgba(255,255,255,.15)' : 'var(--surface2)'};border:1px solid ${allActive ? '#fff' : 'var(--border)'};border-radius:8px;padding:7px 4px;width:54px;flex-shrink:0;font-family:'DM Sans';cursor:pointer;transition:all .15s;"><span style="font-size:16px;font-weight:700;color:#fff;line-height:1;"> </span><span style="font-size:11px;font-weight:600;color:#fff;letter-spacing:.2px;line-height:1;">All</span></button>` : '';
-  fixedEl.innerHTML = hideDoneHtml + allChipHtml;
+  const _btnBase = `display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-radius:8px;padding:7px 4px;width:54px;flex-shrink:0;font-family:'DM Sans';cursor:pointer;transition:all .15s;`;
 
-  // Scrollable muscle chips
-  scrollEl.innerHTML = entries.map(([m, c]) => {
+  // Only Hide button stays fixed/sticky
+  const hideDoneHtml = showHideChip ? `<button onclick="toggleTodayHideDone()" ${!anyDone ? 'disabled' : ''} style="${_btnBase}background:${_todayHideDone ? 'rgba(251,191,36,.2)' : 'var(--surface2)'};border:1px solid ${_todayHideDone ? '#fbbf24' : 'var(--border)'};cursor:${anyDone ? 'pointer' : 'default'};"><span style="font-size:16px;font-weight:700;color:${_todayHideDone ? '#fbbf24' : anyDone ? '#fff' : '#555'};line-height:1;">✓</span><span style="font-size:11px;font-weight:600;color:${_todayHideDone ? '#fbbf24' : anyDone ? '#fff' : '#555'};letter-spacing:.2px;line-height:1;">Hide</span></button>` : '';
+  fixedEl.innerHTML = hideDoneHtml;
+
+  // Scrollable: All button + muscle chips
+  const _totalDisplay = _todayHideDone
+    ? Object.values(remainCounts).reduce((a,b)=>a+b,0)
+    : Object.values(counts).reduce((a,b)=>a+b,0);
+  const allChipHtml = entries.length > 1 ? `<button onclick="filterTodayByMuscle(null)" style="${_btnBase}background:${allActive ? 'rgba(255,255,255,.2)' : 'rgba(255,255,255,.08)'};border:1px solid ${allActive ? '#fff' : 'rgba(255,255,255,.3)'};"><span style="font-size:16px;font-weight:700;color:#fff;line-height:1;">${_totalDisplay}</span><span style="font-size:11px;font-weight:600;color:${allActive ? '#fff' : 'rgba(255,255,255,.7)'};letter-spacing:.2px;line-height:1;">All</span></button>` : '';
+
+  scrollEl.innerHTML = allChipHtml + entries.map(([m, c]) => {
     const color = muscleColors[m] || '#888';
     const label = MUSCLE_ABBR[m] || m.slice(0,2).toUpperCase();
     const active = _todayMuscleFilter === m;
-    return `<button onclick="filterTodayByMuscle('${m}')" style="display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:${active ? color+'33' : color+'18'};border:1px solid ${active ? color : color+'55'};border-radius:8px;padding:7px 4px;width:54px;flex-shrink:0;font-family:'DM Sans';cursor:pointer;transition:all .15s;"><span style="font-size:16px;font-weight:700;color:${color};line-height:1;">${c}</span><span style="font-size:11px;font-weight:600;color:${active ? color : color+'cc'};letter-spacing:.2px;line-height:1;white-space:nowrap;">${label}</span></button>`;
+    const displayCount = _todayHideDone ? (remainCounts[m] || 0) : c;
+    return `<button onclick="filterTodayByMuscle('${m}')" style="display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:${active ? color+'33' : color+'18'};border:1px solid ${active ? color : color+'55'};border-radius:8px;padding:7px 4px;width:54px;flex-shrink:0;font-family:'DM Sans';cursor:pointer;transition:all .15s;"><span style="font-size:16px;font-weight:700;color:${color};line-height:1;">${displayCount}</span><span style="font-size:11px;font-weight:600;color:${active ? color : color+'cc'};letter-spacing:.2px;line-height:1;white-space:nowrap;">${label}</span></button>`;
   }).join('');
 }
 
@@ -4784,26 +4836,11 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
   const muscleColor = muscleColors[ex.muscle] || 'var(--muted)';
   nameBlock.innerHTML = `<div style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:${muscleColor};flex-shrink:0;display:inline-block;"></span><div class="ex-name" style="flex:1;min-width:0;">${ex.label}</div></div>`;
 
-  const delBtn = document.createElement('button');
-  delBtn.className = 'btn-trash';
-  delBtn.innerHTML = `<svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 5h14M8 5V3h4v2M5 5l1 11a1 1 0 001 1h6a1 1 0 001-1l1-11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><line x1="8" y1="9" x2="8" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="12" y1="9" x2="12" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`;
-  delBtn.title = 'Remove exercise';
-  delBtn.onclick = () => confirmDeleteExercise(card, ex.label);
-
-  const chevBtn = document.createElement('button');
-  chevBtn.className = 'btn-chevron' + (card.dataset.open === 'true' ? ' open' : '');
-  chevBtn.id = `chev-${id}`;
-  chevBtn.innerHTML = '▲';
-  chevBtn.onclick = () => toggleCardCollapse(id);
-
-  const btnWrap = document.createElement('div');
-  btnWrap.className = 'ex-header-btns';
-  btnWrap.append(delBtn, chevBtn);
   const titleArea = document.createElement('div');
   titleArea.style.cssText = 'display:flex;align-items:center;gap:10px;flex:1;min-width:0;cursor:pointer;';
-  titleArea.onclick = () => toggleCardCollapse(id);
+  titleArea.onclick = () => openExDetail(id);
   titleArea.append(orderNum, nameBlock);
-  header.append(titleArea, btnWrap);
+  header.append(titleArea);
 
   // BODY
   const isOpen = card.dataset.open === 'true';
@@ -4866,7 +4903,7 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
       <tbody class="set-body" id="set-body-${id}"></tbody>
     </table>
     <div class="comment-area" id="comment-area-${id}">
-      <textarea class="comment-box" id="comment-${id}" placeholder="Note… felt strong, increase next session…" oninput="updateNoteBtn('${id}');saveSession();if(window._isNewWorkoutFlow)updateWflowCloseBtn('${id}');this.style.direction=/[\u0590-\u05FF]/.test(this.value)?'rtl':'ltr';this.style.textAlign=/[\u0590-\u05FF]/.test(this.value)?'right':'left'"></textarea>
+      <textarea class="comment-box" id="comment-${id}" placeholder="Note… felt strong, increase next session…" oninput="updateNoteBtn('${id}');saveSession();if(window._isNewWorkoutFlow)updateWflowCloseBtn('${id}');this.style.direction=/[\u0590-\u05FF]/.test(this.value)?'rtl':'ltr';this.style.textAlign=/[\u0590-\u05FF]/.test(this.value)?'right':'left'" onfocus="showNoteToolbar('${id}')" onblur="hideNoteToolbar()"></textarea>
     </div>
     <div class="ex-footer">
       <div class="ex-footer-row">
@@ -4947,7 +4984,7 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
   const completeBar = document.createElement('div');
   completeBar.className = 'ex-complete-bar';
   completeBar.id = `complete-bar-${id}`;
-  completeBar.innerHTML = `<div class="ex-complete-check" onclick="if(card.dataset.open==='false')toggleCardCollapse('${id}')">✓</div><div class="ex-complete-summary" id="complete-summary-${id}" onclick="if(card.dataset.open==='false')toggleCardCollapse('${id}')">Done</div><div class="ex-imp-indicator" id="imp-indicator-${id}"></div><button onclick="event.stopPropagation();toggleDone('${id}')" style="margin-left:auto;background:transparent;border:1px solid #333;border-radius:8px;color:#888;font-family:'DM Sans';font-size:11px;font-weight:600;padding:5px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Cancel</button>`;
+  completeBar.innerHTML = `<div class="ex-complete-check" onclick="if(card.dataset.open==='false')openExDetail('${id}')">✓</div><div class="ex-complete-summary" id="complete-summary-${id}" onclick="if(card.dataset.open==='false')openExDetail('${id}')">Done</div><div class="ex-imp-indicator" id="imp-indicator-${id}"></div><button onclick="event.stopPropagation();toggleDone('${id}')" style="margin-left:auto;background:transparent;border:1px solid #333;border-radius:8px;color:#888;font-family:'DM Sans';font-size:11px;font-weight:600;padding:5px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Cancel</button>`;
 
   card.append(header, body, completeBar);
   document.getElementById('exerciseList').appendChild(card);
@@ -5496,6 +5533,95 @@ function setFocusMode(activeId) {
   }
 }
 
+function openExDetail(id) {
+  const card = document.getElementById(id);
+  if (!card) return;
+  const slider = document.getElementById('ex-nav-slider');
+  const detail = document.getElementById('ex-detail-content');
+  const backLabel = document.getElementById('ex-detail-back-label');
+  if (!slider || !detail) return;
+  // Store which card is open
+  window._exDetailCardId = id;
+  // Set back label to exercise name
+  const exName = card.querySelector('.ex-name')?.textContent || '';
+  if (backLabel) backLabel.textContent = exName || 'Back';
+  // Move card into detail panel
+  detail.appendChild(card);
+  card.dataset.open = 'true';
+  card.querySelector('.ex-card-body')?.classList.remove('collapsed');
+  card.querySelector('.ex-card-body')?.classList.add('open');
+  const body = card.querySelector('.ex-card-body');
+  if (body) { body.style.maxHeight = '4000px'; body.style.opacity = '1'; }
+  // Slide
+  slider.classList.add('detail-open');
+  // Hide top chrome + header
+  const _chipsOnOpen = document.getElementById('todayMuscleChipsWrap');
+  if (_chipsOnOpen && getComputedStyle(_chipsOnOpen).display !== 'none') {
+    _chipsOnOpen.dataset.preExpandDisplay = 'flex';
+    _expandAnimHide(_chipsOnOpen);
+  }
+  const _wnbOnOpen = document.getElementById('workoutNameBar');
+  if (_wnbOnOpen && _wnbOnOpen.classList.contains('visible')) {
+    _wnbOnOpen.dataset.preExpandVisible = '1';
+    _expandAnimHide(_wnbOnOpen);
+  }
+
+  // Show float bar
+  if (window.showExFloatBar) showExFloatBar(id);
+  // Swipe to go back
+  _attachExDetailSwipe();
+}
+
+function closeExDetail() {
+  const slider = document.getElementById('ex-nav-slider');
+  const list = document.getElementById('exerciseList');
+  const detail = document.getElementById('ex-detail-content');
+  const id = window._exDetailCardId;
+  if (!slider || !id) return;
+  const card = document.getElementById(id);
+  // Slide back
+  slider.classList.remove('detail-open');
+  // Restore card to list after transition
+  setTimeout(() => {
+    if (card && list) {
+      // Collapse card body
+      const body = card.querySelector('.ex-card-body');
+      if (body) { body.style.maxHeight = '0'; body.style.opacity = '0'; body.classList.add('collapsed'); body.classList.remove('open'); }
+      card.dataset.open = 'false';
+      card.querySelector('.chev-btn')?.classList.remove('open');
+      list.appendChild(card);
+      detail.innerHTML = '';
+    }
+    window._exDetailCardId = null;
+  }, 360);
+  // Restore top chrome + header
+  const _chipsOnClose = document.getElementById('todayMuscleChipsWrap');
+  if (_chipsOnClose && _chipsOnClose.dataset.preExpandDisplay) {
+    _expandAnimShow(_chipsOnClose, 'flex');
+    delete _chipsOnClose.dataset.preExpandDisplay;
+  }
+  const _wnbOnClose = document.getElementById('workoutNameBar');
+  if (_wnbOnClose && _wnbOnClose.dataset.preExpandVisible) {
+    _wnbOnClose.classList.add('visible');
+    _expandAnimShow(_wnbOnClose);
+    delete _wnbOnClose.dataset.preExpandVisible;
+  }
+
+  if (window.hideExFloatBar) hideExFloatBar();
+}
+
+function _attachExDetailSwipe() {
+  const detail = document.getElementById('ex-nav-detail');
+  if (!detail || detail._swipeAttached) return;
+  detail._swipeAttached = true;
+  let _sx = 0;
+  detail.addEventListener('touchstart', e => { _sx = e.touches[0].clientX; }, { passive: true });
+  detail.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - _sx;
+    if (dx > 60) closeExDetail();
+  }, { passive: true });
+}
+
 function toggleCardCollapse(id) {
   // Restore any completed cards hidden by KG editor focus mode
   document.querySelectorAll('#exerciseList .exercise-card.completed').forEach(c => {
@@ -5557,18 +5683,6 @@ function toggleCardCollapse(id) {
     body.style.maxHeight = '0'; body.style.opacity = '0'; body.classList.add('collapsed'); body.classList.remove('open');
     card.dataset.open = 'false';
     chevBtn?.classList.remove('open');
-    // Fade out completely, wait for layout to settle, then fade in
-    card.style.opacity = '1';
-    card.style.transition = 'opacity 250ms ease';
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      card.style.opacity = '0';
-      setTimeout(() => {
-        // Layout has settled — fade back in
-        card.style.transition = 'opacity 350ms ease';
-        card.style.opacity = '1';
-        setTimeout(() => { card.style.transition = ''; card.style.opacity = ''; }, 370);
-      }, 270);
-    }));
     hideExFloatBar();
     // Restore muscle chips and workout name when card collapses
     const _chipsOnClose = document.getElementById('todayMuscleChipsWrap');
@@ -5632,11 +5746,7 @@ function toggleCardCollapse(id) {
     body.style.maxHeight = '4000px'; body.style.opacity = '1'; body.classList.remove('collapsed'); body.classList.add('open');
     card.dataset.open = 'true';
     chevBtn?.classList.add('open');
-    // Fade in the card itself from 0
-    card.style.opacity = '0';
-    card.style.transition = 'opacity 400ms ease';
-    requestAnimationFrame(() => requestAnimationFrame(() => { card.style.opacity = '1'; }));
-    setTimeout(() => { card.style.transition = ''; card.style.opacity = ''; }, 450);
+
     // Hide muscle chips and workout name when card expands
     const _chipsOnOpen = document.getElementById('todayMuscleChipsWrap');
     if (_chipsOnOpen && getComputedStyle(_chipsOnOpen).display !== 'none') {
@@ -5886,10 +5996,21 @@ function toggleDone(id) {
       // Only show in expanded view
       if (card.dataset.open !== 'true') impSection.style.display = 'none';
     }
-    // Place after last completed exercise, or prepend if none
+    // Close detail panel first, then reposition
     setTimeout(() => {
-      if (card.dataset.open === 'true') toggleCardCollapse(id);
+      // If card is in detail panel, close it first
+      if (window._exDetailCardId === id && window.closeExDetail) {
+        closeExDetail();
+        // Wait for slide animation then reposition
+        setTimeout(() => _repositionDoneCard(id), 370);
+      } else {
+        _repositionDoneCard(id);
+      }
+    }, 320);
+    function _repositionDoneCard(id) {
+      const card = document.getElementById(id);
       const list = document.getElementById('exerciseList');
+      if (!card || !list) return;
       const completed = list.querySelectorAll('.exercise-card.completed');
       const lastCompleted = [...completed].filter(c=>c.id!==id).pop();
       if (lastCompleted) lastCompleted.after(card);
@@ -5899,7 +6020,8 @@ function toggleDone(id) {
       if (_todayHideDone) applyTodayFilters();
       // Scroll next uncompleted exercise into view below sticky elements
       requestAnimationFrame(() => {
-        const nextCard = list.querySelector('.exercise-card:not(.completed)');
+        const _list2 = document.getElementById('exerciseList');
+        const nextCard = _list2?.querySelector('.exercise-card:not(.completed)');
         if (nextCard) {
           const _chips = document.getElementById('todayMuscleChipsWrap');
           const _finishBar = document.querySelector('.today-actions');
@@ -5911,7 +6033,7 @@ function toggleDone(id) {
           if (Math.abs(_diff) > 4) window.scrollBy({ top: _diff, behavior: 'smooth' });
         }
       });
-    }, 320);
+    }
   } else {
     btn.innerHTML = 'MARK AS DONE'; btn.classList.remove('is-done');
     const cancelBtn2 = document.getElementById(`cancel-done-btn-${id}`);
@@ -6662,6 +6784,35 @@ function updateNoteBtn(id) {
   if (btn) btn.classList.toggle('has-note', !!txt);
 }
 
+function showNoteToolbar(id) {
+  const toolbar = document.getElementById('note-kbd-toolbar');
+  if (toolbar) { toolbar.style.display = 'flex'; toolbar._noteId = id; }
+}
+function hideNoteToolbar() {
+  // Small delay so blur from Done tap doesn't conflict
+  setTimeout(() => {
+    const toolbar = document.getElementById('note-kbd-toolbar');
+    if (toolbar && document.activeElement?.classList.contains('comment-box')) return;
+    if (toolbar) toolbar.style.display = 'none';
+  }, 150);
+}
+function noteKbdDone() {
+  const toolbar = document.getElementById('note-kbd-toolbar');
+  const id = toolbar?._noteId;
+  if (toolbar) toolbar.style.display = 'none';
+  if (!id) return;
+  const box = document.getElementById(`comment-${id}`);
+  const hasNote = !!(box?.value?.trim());
+  updateNoteBtn(id);
+  if (box) box.blur();
+  // Lock badge before blur so _updateExFloatBar can't reset it
+  const noteBadge = document.getElementById('ex-float-note-badge');
+  if (noteBadge) {
+    noteBadge.style.display = hasNote ? 'block' : 'none';
+    noteBadge.dataset.locked = '1';
+    setTimeout(() => { delete noteBadge.dataset.locked; }, 500);
+  }
+}
 function toggleComment(id) {
   const area = document.getElementById(`comment-area-${id}`);
   const btn  = document.getElementById(`note-btn-${id}`);
@@ -6670,7 +6821,13 @@ function toggleComment(id) {
   const card = document.getElementById(id);
   if (card) card.dataset.noteOpen = isOpen ? 'true' : 'false';
   if (isOpen) {
-    document.getElementById(`comment-${id}`).focus();
+    const _noteBox = document.getElementById(`comment-${id}`);
+    // Only auto-focus if empty — if has content, just show without focusing
+    if (!_noteBox?.value?.trim()) {
+      _noteBox?.focus();
+    } else {
+      _noteBox?.blur();
+    }
   } else {
     const txt = document.getElementById(`comment-${id}`)?.value?.trim();
     if (!txt && btn) btn.classList.remove('has-note');
@@ -17284,19 +17441,23 @@ let _exFloatCardId = null;
 function showExFloatBar(cardId) {
   _exFloatCardId = cardId;
   const bar = document.getElementById('ex-float-bar');
+  const block = document.getElementById('ex-float-bar-block');
   if (!bar) return;
   // Only show on Today tab with active workout
   const onToday = document.getElementById('page-log')?.classList.contains('active');
   const workoutActive = document.getElementById('today-workout-area')?.style.display !== 'none';
   if (!onToday || !workoutActive) return;
   bar.style.display = 'flex';
+  if (block) block.style.display = 'block';
   _updateExFloatBar(cardId);
 }
 
 function hideExFloatBar() {
   _exFloatCardId = null;
   const bar = document.getElementById('ex-float-bar');
+  const block = document.getElementById('ex-float-bar-block');
   if (bar) bar.style.display = 'none';
+  if (block) block.style.display = 'none';
 }
 
 function _updateExFloatBar(cardId) {
@@ -17308,7 +17469,12 @@ function _updateExFloatBar(cardId) {
   const noteBadge = document.getElementById('ex-float-note-badge');
   const _grey = 'var(--muted)';
   if (noteBtn) noteBtn.style.color = noteArea?.classList.contains('open') ? '#7ec8e3' : _grey;
-  if (noteBadge) noteBadge.style.display = noteBox?.value?.trim() ? 'block' : 'none';
+  // For badge: also check toolbar._noteId in case _exFloatCardId is stale
+  // Don't reset badge if it was locked by noteKbdDone
+  if (!noteBadge?.dataset.locked) {
+    const _hasNote = !!(noteBox?.value?.trim());
+    if (noteBadge) noteBadge.style.display = _hasNote ? 'block' : 'none';
+  }
 
   // Timer button — highlight if timer panel open or running
   const timerBtn = document.getElementById(`timer-btn-${cardId}`);
@@ -17727,18 +17893,12 @@ let _inlineKgEditorId = null; // currently open editor id
 // ── KG EDITOR FOCUS MODE ─────────────────────────────────────────────────────
 function _expandAnimHide(el, done) {
   if (!el || getComputedStyle(el).display === 'none') { if (done) done(); return; }
-  el.classList.remove('expand-showing');
-  el.classList.add('expand-hiding');
-  const _onEnd = () => { el.removeEventListener('animationend', _onEnd); el.style.display = 'none'; el.classList.remove('expand-hiding'); if (done) done(); };
-  el.addEventListener('animationend', _onEnd);
+  el.style.display = 'none';
+  if (done) done();
 }
 function _expandAnimShow(el, displayVal) {
   if (!el) return;
   el.style.display = displayVal || '';
-  el.classList.remove('expand-hiding');
-  el.classList.add('expand-showing');
-  const _onEnd = () => { el.removeEventListener('animationend', _onEnd); el.classList.remove('expand-showing'); };
-  el.addEventListener('animationend', _onEnd);
 }
 function _kgFocusAnimHide(el, done) {
   if (!el || getComputedStyle(el).display === 'none') { if (done) done(); return; }
@@ -17786,6 +17946,8 @@ function _kgEditorFocusEnter(exId) {
     _chips.dataset.kgHide = _chips.dataset.kgOrigDisplay || 'flex';
     /* DBG_START */ window._dbgLog('ENTER: todayMuscleChipsWrap saved=' + _chips.dataset.kgHide, '#ff8c42'); /* DBG_END */
     _kgFocusAnimHide(_chips);
+    const _chipsBlk = document.getElementById('today-chips-block');
+    if (_chipsBlk) _chipsBlk.style.display = 'none';
   }
   // Hide today-actions row (clear/load/finish buttons)
   const todayActions = document.querySelector('.today-actions');
@@ -17868,6 +18030,8 @@ function _kgEditorFocusLeave() {
     _chipsR.style.display = _chipsRestore;
     delete _chipsR.dataset.kgHide;
     delete _chipsR.dataset.kgOrigDisplay;
+    const _chipsBlkR = document.getElementById('today-chips-block');
+    if (_chipsBlkR) _chipsBlkR.style.display = _chipsRestore === 'none' ? 'none' : 'block';
     /* DBG_START */ window._dbgLog('LEAVE: todayMuscleChipsWrap restored=' + _chipsRestore, '#34d399'); /* DBG_END */
   }
   const todayActions = document.querySelector('.today-actions');
@@ -18178,6 +18342,11 @@ window._kgEditorFocusEnter = _kgEditorFocusEnter;
 window._kgEditorFocusLeave = _kgEditorFocusLeave;
 window._expandAnimHide = _expandAnimHide;
 window._expandAnimShow = _expandAnimShow;
+window.openExDetail = openExDetail;
+window.closeExDetail = closeExDetail;
+window.noteKbdDone = noteKbdDone;
+window.showNoteToolbar = showNoteToolbar;
+window.hideNoteToolbar = hideNoteToolbar;
 window.closeInlineKgEditor = closeInlineKgEditor;
 window.cancelInlineKgEditor = cancelInlineKgEditor;
 window.showExFloatBar = showExFloatBar;
@@ -18264,6 +18433,7 @@ function _updateKgDisplay(val, isBWMode) {
     <button class="reps-pop-btn" onclick="adjustRepsPopup(1)">+</button>
   </div>
 </div>
+<div id="ex-float-bar-block"></div>
 <div id="ex-float-bar" style="display:none;flex-direction:row;">
   <button id="ex-float-note" onclick="exFloatAction('note')" title="Note" style="position:relative;">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
