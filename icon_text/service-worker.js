@@ -1,21 +1,19 @@
 /**
- * service-worker.js — BARZELPRO PWA Service Worker v2.2.1
+ * service-worker.js — BARZELPRO PWA Service Worker v2.3.0
  */
 
-const APP_VERSION   = 'v2.2.5';
+const APP_VERSION   = 'v2.3.0';
 const STATIC_CACHE  = `barzelpro-static-${APP_VERSION}`;
 const RUNTIME_CACHE = `barzelpro-runtime-${APP_VERSION}`;
-
-// Removed config.js from here so it defaults to Network First
 
 const STATIC_ASSETS = [
   './',
   './index.html',
+  './install.html',      // ← Install landing page (LCP critical)
   './offline.html',
-  './pwa-styles.css',
   './manifest.json',
   './brand_library.json',
-  './logo.svg'
+  './logo.svg',
 ];
 
 const NETWORK_ONLY_PATTERNS = [
@@ -37,7 +35,9 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then(cache => Promise.allSettled(
-        STATIC_ASSETS.map(asset => cache.add(asset).catch(e => console.warn('[SW] Pre-cache failed:', asset)))
+        STATIC_ASSETS.map(asset =>
+          cache.add(asset).catch(e => console.warn('[SW] Pre-cache failed:', asset, e))
+        )
       ))
       .then(() => self.skipWaiting())
   );
@@ -49,13 +49,18 @@ self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys()
       .then(keys => Promise.all(
-        keys.filter(key => key !== STATIC_CACHE && key !== RUNTIME_CACHE)
-            .map(key => caches.delete(key))
+        keys
+          .filter(key => key !== STATIC_CACHE && key !== RUNTIME_CACHE)
+          .map(key => caches.delete(key))
       ))
       .then(() => self.clients.claim())
-      .then(() => self.clients.matchAll({ type: 'window' }).then(clients => {
-        clients.forEach(client => client.postMessage({ type: 'SW_UPDATED', version: APP_VERSION }));
-      }))
+      .then(() =>
+        self.clients.matchAll({ type: 'window' }).then(clients =>
+          clients.forEach(client =>
+            client.postMessage({ type: 'SW_UPDATED', version: APP_VERSION })
+          )
+        )
+      )
   );
 });
 
@@ -63,41 +68,67 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
-  
+
   if (request.method !== 'GET' || !url.protocol.startsWith('http')) return;
 
-  // 1. Firebase/Firestore (Always live)
-  if (NETWORK_ONLY_PATTERNS.some(p => p.test(request.url))) { 
-    event.respondWith(fetch(request)); 
-    return; 
-  }
-
-  // 2. CDNs/Fonts (Fastest + Update in background)
-  if (SWR_PATTERNS.some(p => p.test(request.url))) { 
-    event.respondWith(staleWhileRevalidate(request)); 
-    return; 
-  }
-
-  // 3. HTML & Config (Try latest first, 3s timeout)
-  if (
-    request.headers.get('accept')?.includes('text/html') || 
-    url.pathname.endsWith('.html') || 
-    url.pathname.endsWith('/') ||
-    url.pathname.includes('config.js') // Added config.js here
-  ) {
-    event.respondWith(networkFirst(request)); 
+  // 1. Firebase/Firestore — always live, never cache
+  if (NETWORK_ONLY_PATTERNS.some(p => p.test(request.url))) {
+    event.respondWith(fetch(request));
     return;
   }
 
-  // 4. Other static assets (Images, JSON)
+  // 2. CDNs / Fonts — stale-while-revalidate
+  if (SWR_PATTERNS.some(p => p.test(request.url))) {
+    event.respondWith(staleWhileRevalidate(request));
+    return;
+  }
+
+  // 3. install.html — cache-first for instant LCP, revalidate in background
+  if (url.pathname.endsWith('install.html')) {
+    event.respondWith(cacheFirstWithRevalidate(request));
+    return;
+  }
+
+  // 4. index.html / config.js / HTML navigations — network-first (3s timeout)
+  if (
+    request.headers.get('accept')?.includes('text/html') ||
+    url.pathname.endsWith('.html') ||
+    url.pathname.endsWith('/') ||
+    url.pathname.includes('config.js')
+  ) {
+    event.respondWith(networkFirst(request));
+    return;
+  }
+
+  // 5. Everything else (images, JSON, etc.) — cache-first
   event.respondWith(cacheFirst(request));
 });
 
 // ── STRATEGIES ───────────────────────────────────────────────────────────────
 
+/**
+ * Cache-first with background revalidate — instant LCP for install.html.
+ * Serves from cache immediately, then fetches fresh copy in background.
+ */
+async function cacheFirstWithRevalidate(request) {
+  const cache = await caches.open(STATIC_CACHE);
+  const cached = await cache.match(request);
+
+  // Revalidate in background regardless
+  const fetchPromise = fetch(request)
+    .then(res => { if (res.ok) cache.put(request, res.clone()); return res; })
+    .catch(() => null);
+
+  // Serve cached instantly if available — zero network wait = low LCP
+  return cached || fetchPromise || caches.match('./offline.html');
+}
+
+/**
+ * Network-first with 3s timeout, fallback to cache.
+ */
 async function networkFirst(request) {
   const cache = await caches.open(STATIC_CACHE);
-  const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve(null), 3000));
+  const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(null), 3000));
 
   try {
     const res = await Promise.race([fetch(request), timeoutPromise]);
@@ -105,16 +136,11 @@ async function networkFirst(request) {
       cache.put(request, res.clone());
       return res;
     }
-    
-    // 1. Try to find the specific page in cache
     const cached = await cache.match(request);
     if (cached) return cached;
-
-    // 2. If it's a page navigation, show the offline page
     if (request.headers.get('accept')?.includes('text/html')) {
       return caches.match('./offline.html');
     }
-
     return Response.error();
   } catch {
     const cached = await cache.match(request);
@@ -126,11 +152,13 @@ async function networkFirst(request) {
   }
 }
 
+/**
+ * Cache-first, fill from network on miss.
+ */
 async function cacheFirst(request) {
   const cache = await caches.open(STATIC_CACHE);
   const cached = await cache.match(request);
   if (cached) return cached;
-  
   try {
     const res = await fetch(request);
     if (res.ok) cache.put(request, res.clone());
@@ -140,15 +168,15 @@ async function cacheFirst(request) {
   }
 }
 
+/**
+ * Stale-while-revalidate — serve cached, update in background.
+ */
 async function staleWhileRevalidate(request) {
   const cache = await caches.open(RUNTIME_CACHE);
   const cached = await cache.match(request);
-  
-  const fresh = fetch(request).then(r => { 
-    if (r.ok) cache.put(request, r.clone()); 
-    return r; 
-  }).catch(() => null);
-
+  const fresh = fetch(request)
+    .then(r => { if (r.ok) cache.put(request, r.clone()); return r; })
+    .catch(() => null);
   return cached || fresh;
 }
 

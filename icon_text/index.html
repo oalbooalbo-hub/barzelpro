@@ -2,7 +2,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>
+  // Redirect non-installed users to install landing page
+  (function() {
+    var isInstalled = window.matchMedia('(display-mode: standalone)').matches
+      || window.navigator.standalone === true;
+    var skipInstall = sessionStorage.getItem('bp_skip_install');
+    if (!isInstalled && !skipInstall) {
+      window.location.replace('./install.html');
+    }
+  })();
+</script>
 <meta charset="UTF-8">
+<link rel="icon" href="./logo.svg" type="image/svg+xml">
+<link rel="shortcut icon" href="./logo.svg">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -291,9 +304,8 @@ body.desktop-mode .pages-wrap {
 
 /* ── COMMENT ───────────────────────────────────── */
 .comment-area{padding:0 14px;max-height:0;overflow:hidden;transition:max-height .3s ease,padding .25s ease;margin-top:6px;}
-#today-chips-block{display:none;position:fixed;bottom:0;left:0;right:0;height:calc(64px + env(safe-area-inset-bottom));background:var(--bg);z-index:47;}
-#note-kbd-toolbar{display:none;position:fixed;bottom:0;left:0;right:0;z-index:999;background:var(--surface2);border-top:1px solid var(--border);padding:8px 16px;padding-bottom:calc(8px + env(safe-area-inset-bottom));justify-content:flex-end;}
-#note-kbd-done{background:transparent;border:none;color:#7ec8e3;font-family:'DM Sans';font-size:16px;font-weight:700;cursor:pointer;padding:4px 8px;}
+#today-chips-block{display:none;position:fixed;bottom:0;left:0;right:0;height:calc(16px + env(safe-area-inset-bottom));background:var(--bg);z-index:47;}
+
 .comment-area.open{max-height:120px;padding:0 14px 8px;}
 .comment-box{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:'DM Sans';font-size:13px;padding:9px 11px;outline:none;resize:none;height:68px;line-height:1.5;transition:border-color .2s;}
 .comment-box:focus{border-color:#7ec8e3;}
@@ -1012,7 +1024,7 @@ function hidAuthScreen() {
   <div style="display:flex;align-items:center;gap:8px;">
     <input type="text" id="workoutName" placeholder="WORKOUT NAME" readonly style="flex:1;cursor:default;pointer-events:none;"/>
     <div style="position:relative;flex-shrink:0;">
-    <button id="workoutNameEditBtn" onclick="toggleWorkoutMenu(event)" style="background:transparent;border:none;color:var(--muted);cursor:pointer;padding:4px 6px;display:flex;align-items:center;justify-content:center;border-radius:6px;transition:color .2s;" aria-label="Workout options">
+    <button id="workoutNameEditBtn" onclick="toggleWorkoutMenu(event)" style="background:transparent;border:none;color:var(--text);cursor:pointer;padding:4px 6px;display:flex;align-items:center;justify-content:center;border-radius:6px;transition:color .2s;" aria-label="Workout options">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
     </button>
     <div id="workoutMenuDropdown" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;z-index:100;min-width:170px;box-shadow:0 8px 24px rgba(0,0,0,.4);">
@@ -1060,7 +1072,7 @@ function hidAuthScreen() {
       <button class="btn-finish-workout" id="finishWorkoutBtn" onclick="finishWorkout()">FINISH WORKOUT</button>
     </div>
     <div id="today-chips-block"></div>
-    <div id="todayMuscleChipsWrap" style="display:none;align-items:center;gap:0;padding:2px 0 4px;margin-top:3px;flex-wrap:nowrap;overflow:hidden;position:fixed;bottom:calc(64px + env(safe-area-inset-bottom));left:0;right:0;width:100%;max-width:430px;margin-left:auto;margin-right:auto;background:var(--bg);z-index:48;padding:8px 16px;box-sizing:border-box;border-top:1px solid var(--border);">
+    <div id="todayMuscleChipsWrap" style="display:none;align-items:center;gap:0;padding:2px 0 4px;margin-top:3px;flex-wrap:nowrap;overflow:hidden;position:fixed;bottom:calc(16px + env(safe-area-inset-bottom));left:0;right:0;width:100%;max-width:430px;margin-left:auto;margin-right:auto;background:var(--bg);z-index:48;padding:8px 16px;box-sizing:border-box;border-top:1px solid var(--border);">
       <div id="todayMuscleChipsFixed" style="display:flex;gap:6px;flex-shrink:0;background:var(--bg);z-index:3;padding-right:6px;"></div>
       <div id="todayMuscleChips" style="display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;scrollbar-width:none;flex:1;"></div>
     </div>
@@ -1080,11 +1092,6 @@ function hidAuthScreen() {
       </div>
     </div>
   </div>
-</div>
-
-<!-- NOTE KEYBOARD TOOLBAR -->
-<div id="note-kbd-toolbar">
-  <button id="note-kbd-done" onmousedown="event.preventDefault();noteKbdDone()" ontouchstart="event.preventDefault();noteKbdDone()">Done</button>
 </div>
 
 <!-- HISTORY -->
@@ -4910,6 +4917,7 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
         <button class="btn-add-set" onclick="addSet('${id}');updateVolProgressBar('${id}')" title="Add set">+</button>
         <button class="btn-reset-sets" id="reset-btn-${id}" onclick="resetCardSets('${id}')" style="display:none;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:'DM Sans';font-size:14px;font-weight:600;padding:10px 18px;cursor:pointer;transition:all .2s;">RST</button>
         <div style="flex:1;"></div>
+        <button id="note-done-btn-${id}" onmousedown="event.preventDefault();noteKbdDone()" ontouchstart="event.preventDefault();noteKbdDone()" style="display:none;background:transparent;border:none;color:#7ec8e3;font-family:'DM Sans';font-size:16px;font-weight:700;cursor:pointer;padding:4px 8px;">Done</button>
         <button class="workouts-flow-only" id="wflow-close-btn-${id}" onclick="toggleCardCollapse('${id}')" style="background:transparent;border:1px solid rgba(232,255,71,.4);border-radius:8px;color:var(--accent);font-family:'DM Sans';font-size:12px;font-weight:700;padding:6px 12px;cursor:pointer;display:none;">Close</button>
         <!-- Note/Timer/Graph moved to floating bar -->
         <button onclick="toggleMiniChart('${id}')" id="mini-chart-toggle-${id}" style="display:none;"></button>
@@ -6785,21 +6793,31 @@ function updateNoteBtn(id) {
 }
 
 function showNoteToolbar(id) {
+  // Store id for noteKbdDone
   const toolbar = document.getElementById('note-kbd-toolbar');
-  if (toolbar) { toolbar.style.display = 'flex'; toolbar._noteId = id; }
+  if (toolbar) { toolbar._noteId = id; }
+  // Show inline Done button in footer row
+  const doneBtn = document.getElementById(`note-done-btn-${id}`);
+  if (doneBtn) doneBtn.style.display = 'block';
+  window._noteEditingId = id;
 }
 function hideNoteToolbar() {
-  // Small delay so blur from Done tap doesn't conflict
   setTimeout(() => {
-    const toolbar = document.getElementById('note-kbd-toolbar');
-    if (toolbar && document.activeElement?.classList.contains('comment-box')) return;
-    if (toolbar) toolbar.style.display = 'none';
+    if (document.activeElement?.classList.contains('comment-box')) return;
+    const id = window._noteEditingId;
+    if (id) {
+      const doneBtn = document.getElementById(`note-done-btn-${id}`);
+      if (doneBtn) doneBtn.style.display = 'none';
+    }
+    window._noteEditingId = null;
   }, 150);
 }
 function noteKbdDone() {
   const toolbar = document.getElementById('note-kbd-toolbar');
-  const id = toolbar?._noteId;
-  if (toolbar) toolbar.style.display = 'none';
+  const id = toolbar?._noteId || window._noteEditingId;
+  // Hide inline Done button
+  if (id) { const db = document.getElementById(`note-done-btn-${id}`); if (db) db.style.display = 'none'; }
+  window._noteEditingId = null;
   if (!id) return;
   const box = document.getElementById(`comment-${id}`);
   const hasNote = !!(box?.value?.trim());
@@ -17438,6 +17456,22 @@ function toggleExTabCardMenu(safeId) {
 // ── EXERCISE FLOATING BAR ─────────────────────────────────────────────────
 let _exFloatCardId = null;
 
+function _repositionChips(floatBarVisible) {
+  const chips = document.getElementById('todayMuscleChipsWrap');
+  const chipsBlock = document.getElementById('today-chips-block');
+  if (!chips) return;
+  if (floatBarVisible) {
+    // Measure float bar actual height and position it exactly above
+    const bar = document.getElementById('ex-float-bar');
+    const barRect = bar ? bar.getBoundingClientRect() : null;
+    const barTop = barRect ? (window.innerHeight - barRect.top) : 88;
+    chips.style.bottom = barTop + 'px';
+    if (chipsBlock) chipsBlock.style.height = barTop + 'px';
+  } else {
+    chips.style.bottom = 'calc(16px + env(safe-area-inset-bottom))';
+    if (chipsBlock) chipsBlock.style.height = 'calc(16px + env(safe-area-inset-bottom))';
+  }
+}
 function showExFloatBar(cardId) {
   _exFloatCardId = cardId;
   const bar = document.getElementById('ex-float-bar');
@@ -17449,6 +17483,7 @@ function showExFloatBar(cardId) {
   if (!onToday || !workoutActive) return;
   bar.style.display = 'flex';
   if (block) block.style.display = 'block';
+  requestAnimationFrame(() => _repositionChips(true));
   _updateExFloatBar(cardId);
 }
 
@@ -17458,6 +17493,7 @@ function hideExFloatBar() {
   const block = document.getElementById('ex-float-bar-block');
   if (bar) bar.style.display = 'none';
   if (block) block.style.display = 'none';
+  _repositionChips(false);
 }
 
 function _updateExFloatBar(cardId) {
@@ -18347,6 +18383,7 @@ window.closeExDetail = closeExDetail;
 window.noteKbdDone = noteKbdDone;
 window.showNoteToolbar = showNoteToolbar;
 window.hideNoteToolbar = hideNoteToolbar;
+window._repositionChips = _repositionChips;
 window.closeInlineKgEditor = closeInlineKgEditor;
 window.cancelInlineKgEditor = cancelInlineKgEditor;
 window.showExFloatBar = showExFloatBar;

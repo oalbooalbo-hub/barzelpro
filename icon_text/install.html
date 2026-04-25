@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0a0a">
+  <meta name="description" content="Track your workouts, monitor progress, and crush your fitness goals.">
+  <link rel="icon" href="./logo.svg" type="image/svg+xml">
+  <link rel="shortcut icon" href="./logo.svg">
+  <title>BARZELPRO — Install</title>
+  <link rel="manifest" href="./manifest.json">
+
+  <!-- Preconnect for fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <style>
+    /* Critical CSS inlined for instant LCP */
+    *{box-sizing:border-box;margin:0;padding:0;}
+    :root{
+      --bg:#0a0a0a;
+      --surface:#141414;
+      --border:#2a2a2a;
+      --accent:#e8ff47;
+      --text:#f0f0f0;
+      --muted:#666;
+    }
+    html,body{
+      height:100%;
+      background:var(--bg);
+      color:var(--text);
+      font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;
+      overflow:hidden;
+      -webkit-font-smoothing:antialiased;
+    }
+
+    /* ── LAYOUT ── */
+    .screen{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:space-between;
+      min-height:100dvh;
+      padding:env(safe-area-inset-top,24px) 24px env(safe-area-inset-bottom,24px);
+      padding-top:max(env(safe-area-inset-top),48px);
+      padding-bottom:max(env(safe-area-inset-bottom),40px);
+    }
+
+    /* ── TOP SECTION ── */
+    .top{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:0;
+      flex:1;
+      justify-content:center;
+    }
+
+    /* ── LOGO — LCP element, no web font dependency ── */
+    .logo{
+      font-family:'Arial Black',Arial,sans-serif;
+      font-size:clamp(42px,12vw,64px);
+      font-weight:900;
+      letter-spacing:-1px;
+      color:var(--accent);
+      line-height:1;
+      text-align:center;
+      /* Ensure LCP fires immediately — no layout shift */
+      contain:layout;
+    }
+    .logo-sub{
+      font-size:13px;
+      font-weight:500;
+      color:var(--muted);
+      letter-spacing:3px;
+      text-transform:uppercase;
+      margin-top:8px;
+      text-align:center;
+    }
+
+    /* ── FEATURE LIST ── */
+    .features{
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      margin-top:48px;
+      width:100%;
+      max-width:320px;
+    }
+    .feature{
+      display:flex;
+      align-items:center;
+      gap:14px;
+    }
+    .feature-icon{
+      width:36px;
+      height:36px;
+      border-radius:10px;
+      background:rgba(232,255,71,.1);
+      border:1px solid rgba(232,255,71,.2);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex-shrink:0;
+      font-size:18px;
+    }
+    .feature-text{
+      font-size:14px;
+      font-weight:500;
+      color:var(--text);
+      line-height:1.3;
+    }
+    .feature-text span{
+      display:block;
+      font-size:12px;
+      color:var(--muted);
+      font-weight:400;
+      margin-top:2px;
+    }
+
+    /* ── BOTTOM CTA ── */
+    .bottom{
+      width:100%;
+      max-width:400px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      align-items:center;
+    }
+
+    .btn-install{
+      width:100%;
+      padding:18px;
+      background:var(--accent);
+      color:#000;
+      border:none;
+      border-radius:14px;
+      font-family:inherit;
+      font-size:18px;
+      font-weight:900;
+      letter-spacing:.5px;
+      cursor:pointer;
+      transition:transform .15s,opacity .15s;
+      -webkit-tap-highlight-color:transparent;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+    }
+    .btn-install:active{transform:scale(.97);opacity:.9;}
+    .btn-install svg{flex-shrink:0;}
+
+    .btn-open{
+      width:100%;
+      padding:16px;
+      background:transparent;
+      color:var(--muted);
+      border:1px solid var(--border);
+      border-radius:14px;
+      font-family:inherit;
+      font-size:15px;
+      font-weight:600;
+      cursor:pointer;
+      transition:border-color .2s,color .2s;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .btn-open:active{border-color:var(--accent);color:var(--accent);}
+
+    .install-hint{
+      font-size:12px;
+      color:var(--muted);
+      text-align:center;
+      line-height:1.5;
+      display:none;
+    }
+    .install-hint.visible{display:block;}
+
+    /* iOS manual install hint */
+    .ios-hint{
+      display:none;
+      flex-direction:column;
+      align-items:center;
+      gap:8px;
+      padding:16px;
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:14px;
+      width:100%;
+      max-width:400px;
+    }
+    .ios-hint.visible{display:flex;}
+    .ios-hint-text{
+      font-size:13px;
+      color:var(--text);
+      text-align:center;
+      line-height:1.6;
+    }
+    .ios-hint-text strong{color:var(--accent);}
+    .ios-share-icon{
+      color:var(--accent);
+      flex-shrink:0;
+    }
+
+    /* Already installed state */
+    .already-installed{display:none;flex-direction:column;align-items:center;gap:8px;}
+    .already-installed.visible{display:flex;}
+    .already-installed p{font-size:13px;color:var(--muted);text-align:center;}
+
+    /* Shimmer for perceived speed */
+    @keyframes shimmer{
+      0%{background-position:-400px 0;}
+      100%{background-position:400px 0;}
+    }
+  </style>
+</head>
+<body>
+
+<div class="screen">
+  <div class="top">
+    <!-- LCP element: pure CSS, no font load dependency -->
+    <div class="logo">BARZEL<br>PRO</div>
+    <div class="logo-sub">Workout Tracker</div>
+
+    <div class="features">
+      <div class="feature">
+        <div class="feature-icon">💪</div>
+        <div class="feature-text">
+          Track Sets & Weight
+          <span>KG editor with body weight mode</span>
+        </div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">📈</div>
+        <div class="feature-text">
+          Progress Analytics
+          <span>1RM, volume, and max tracking</span>
+        </div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">⏱</div>
+        <div class="feature-text">
+          Rest Timer
+          <span>Auto-start between sets</span>
+        </div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">📋</div>
+        <div class="feature-text">
+          Workout Library
+          <span>Save and reuse your programs</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom">
+    <!-- Android / Desktop: native install prompt -->
+    <button class="btn-install" id="btn-install" style="display:none;" onclick="triggerInstall()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2v13M7 11l5 5 5-5"/><path d="M3 19h18"/>
+      </svg>
+      INSTALL APP
+    </button>
+
+    <!-- iOS: manual install instructions -->
+    <div class="ios-hint" id="ios-hint">
+      <svg class="ios-share-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>
+      </svg>
+      <div class="ios-hint-text">
+        Tap <strong>Share</strong> then<br>
+        <strong>"Add to Home Screen"</strong>
+      </div>
+    </div>
+
+    <!-- Already installed / open in browser -->
+    <button class="btn-open" id="btn-open" onclick="openApp()">
+      Open in Browser
+    </button>
+
+    <p class="install-hint" id="install-hint">
+      Free · No account required · Works offline
+    </p>
+  </div>
+</div>
+
+<script>
+  // ── PWA install detection ─────────────────────────────────────────────────
+  let _deferredPrompt = null;
+
+  // Check if already running as installed PWA
+  const isInstalled = window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true;
+
+  if (isInstalled) {
+    // Already installed — redirect straight to app
+    window.location.replace('./index.html');
+  }
+
+  // Detect iOS
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+  // Detect Android / Chrome desktop
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    _deferredPrompt = e;
+    document.getElementById('btn-install').style.display = 'flex';
+    document.getElementById('install-hint').classList.add('visible');
+  });
+
+  // iOS Safari: show manual instructions
+  if (isIOS && isSafari) {
+    document.getElementById('ios-hint').classList.add('visible');
+    document.getElementById('install-hint').classList.add('visible');
+  }
+
+  // If neither prompt nor iOS, just show open in browser
+  setTimeout(() => {
+    const installBtn = document.getElementById('btn-install');
+    const iosHint = document.getElementById('ios-hint');
+    if (installBtn.style.display === 'none' && !iosHint.classList.contains('visible')) {
+      document.getElementById('install-hint').classList.add('visible');
+    }
+  }, 1000);
+
+  function triggerInstall() {
+    if (!_deferredPrompt) return;
+    _deferredPrompt.prompt();
+    _deferredPrompt.userChoice.then(choice => {
+      if (choice.outcome === 'accepted') {
+        sessionStorage.setItem('bp_skip_install', '1');
+        setTimeout(() => window.location.replace('./index.html'), 800);
+      }
+      _deferredPrompt = null;
+    });
+  }
+
+  function openApp() {
+    sessionStorage.setItem('bp_skip_install', '1');
+    window.location.href = './index.html';
+  }
+
+  // ── Service Worker registration ───────────────────────────────────────────
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./service-worker.js', { scope: './' })
+      .then(reg => console.log('[SW] Registered', reg.scope))
+      .catch(err => console.warn('[SW] Registration failed', err));
+  }
+</script>
+</body>
+</html>
