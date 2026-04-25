@@ -15,6 +15,13 @@
       font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;
       -webkit-font-smoothing:antialiased;
     }
+    @keyframes fadeInScale{
+      from{opacity:0;transform:scale(.94);}
+      to{opacity:1;transform:scale(1);}
+    }
+    .screen{
+      animation:fadeInScale 500ms cubic-bezier(.22,1,.36,1) forwards;
+    }
     .screen{
       display:flex;
       flex-direction:column;
@@ -25,6 +32,7 @@
       box-sizing:border-box;
       width:100%;
       overflow-x:hidden;
+      animation:fadeInScale 500ms cubic-bezier(.22,1,.36,1) forwards;
     }
     .main{
       display:flex;
@@ -166,7 +174,9 @@
 <script>
   function gotIt() {
     sessionStorage.setItem('bp_skip_install', '1');
-    window.location.replace('./index.html');
+    // Fade out before navigating
+    document.querySelector('.screen').style.cssText += ';animation:none;transition:opacity 300ms ease,transform 300ms ease;opacity:0;transform:scale(.96)';
+    setTimeout(() => window.location.replace('./index.html'), 320);
   }
 
   // Apply brand name if config is available

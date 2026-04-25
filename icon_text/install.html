@@ -428,8 +428,10 @@
     _deferredPrompt.prompt();
     _deferredPrompt.userChoice.then(choice => {
       if (choice.outcome === 'accepted') {
-        // Redirect to success page — avoids page refresh killing the modal
-        window.location.replace('./success.html');
+        // Fade out install page then navigate to success
+        document.body.style.transition = 'opacity 400ms ease';
+        document.body.style.opacity = '0';
+        setTimeout(() => window.location.replace('./success.html'), 420);
       }
       _deferredPrompt = null;
     });
