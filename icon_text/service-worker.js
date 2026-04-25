@@ -2,7 +2,7 @@
  * service-worker.js — BARZELPRO PWA Service Worker v2.3.0
  */
 
-const APP_VERSION   = 'v2.3.1';
+const APP_VERSION   = 'v2.3.0';
 const STATIC_CACHE  = `barzelpro-static-${APP_VERSION}`;
 const RUNTIME_CACHE = `barzelpro-runtime-${APP_VERSION}`;
 
@@ -10,6 +10,7 @@ const STATIC_ASSETS = [
   './',
   './index.html',
   './install.html',      // ← Install landing page (LCP critical)
+  './success.html',      // ← Post-install success page
   './offline.html',
   './manifest.json',
   './brand_library.json',

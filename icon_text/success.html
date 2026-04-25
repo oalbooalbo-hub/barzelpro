@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0a0a">
+  <title>Installed!</title>
+  <link rel="icon" href="./logo.svg" type="image/svg+xml">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    html,body{
+      height:100%;
+      background:#0a0a0a;
+      color:#f0f0f0;
+      font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;
+      -webkit-font-smoothing:antialiased;
+    }
+    .screen{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:space-between;
+      min-height:100dvh;
+      padding:max(env(safe-area-inset-top),56px) 24px max(env(safe-area-inset-bottom),40px);
+    }
+    .main{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:28px;
+      width:100%;
+      max-width:380px;
+    }
+    .hero{
+      display:flex;
+      align-items:center;
+      gap:18px;
+      width:100%;
+    }
+    .checkmark{flex-shrink:0;}
+    .title{
+      font-size:clamp(24px,7vw,30px);
+      font-weight:900;
+      color:#fff;
+      line-height:1.15;
+      letter-spacing:-.3px;
+    }
+    .hint-box{
+      background:#161616;
+      border-radius:16px;
+      padding:18px 20px;
+      width:100%;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+    }
+    .hint-label{
+      font-size:15px;
+      font-weight:500;
+      color:#888;
+    }
+    .hint-illustration{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:16px;
+    }
+    .app-icon-wrap{
+      width:64px;
+      height:64px;
+      border-radius:16px;
+      overflow:hidden;
+      border:1px solid #333;
+      flex-shrink:0;
+      background:#1a1a1a;
+    }
+    .app-icon-wrap img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+    }
+    .btn-got-it{
+      width:100%;
+      max-width:380px;
+      padding:20px;
+      background:#e8ff47;
+      color:#000;
+      border:none;
+      border-radius:14px;
+      font-family:inherit;
+      font-size:18px;
+      font-weight:900;
+      cursor:pointer;
+      letter-spacing:.5px;
+      -webkit-tap-highlight-color:transparent;
+      transition:opacity .15s;
+    }
+    .btn-got-it:active{opacity:.85;}
+  </style>
+</head>
+<body>
+<div class="screen">
+
+  <!-- Top spacer -->
+  <div></div>
+
+  <!-- Main content -->
+  <div class="main">
+
+    <!-- Checkmark + Title -->
+    <div class="hero">
+      <div class="checkmark">
+        <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+          <circle cx="36" cy="36" r="34" stroke="#e8ff47" stroke-width="1.5" opacity=".3"/>
+          <polyline points="18,36 30,50 54,22" stroke="#e8ff47" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="title">INSTALLATION<br>SUCCESSFUL!</div>
+    </div>
+
+    <!-- Hint box -->
+    <div class="hint-box">
+      <div class="hint-label">Next time, open with icon</div>
+      <div class="hint-illustration">
+        <!-- Phone -->
+        <svg width="60" height="80" viewBox="0 0 60 80" fill="none">
+          <rect x="1" y="1" width="58" height="78" rx="10" stroke="#444" stroke-width="1.5"/>
+          <rect x="6" y="7" width="48" height="58" rx="4" fill="#222"/>
+          <rect x="20" y="70" width="20" height="5" rx="2.5" fill="#444"/>
+          <rect x="10" y="13" width="9" height="9" rx="2.5" fill="#2a2a2a"/>
+          <rect x="25" y="13" width="9" height="9" rx="2.5" fill="#2a2a2a"/>
+          <rect x="40" y="13" width="9" height="9" rx="2.5" fill="#2a2a2a"/>
+          <rect x="10" y="27" width="9" height="9" rx="2.5" fill="#2a2a2a"/>
+          <rect x="25" y="27" width="9" height="9" rx="2.5" fill="#e8ff47" opacity=".9"/>
+          <rect x="40" y="27" width="9" height="9" rx="2.5" fill="#2a2a2a"/>
+          <rect x="10" y="41" width="9" height="9" rx="2.5" fill="#2a2a2a"/>
+          <rect x="25" y="41" width="9" height="9" rx="2.5" fill="#2a2a2a"/>
+          <rect x="40" y="41" width="9" height="9" rx="2.5" fill="#2a2a2a"/>
+        </svg>
+        <!-- Arrow -->
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+          <path d="M4 14h20M18 8l6 6-6 6" stroke="#e8ff47" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <!-- App icon -->
+        <div class="app-icon-wrap">
+          <img src="./icons/icon-192.png" alt="app icon" onerror="this.parentElement.style.background='#e8ff47'">
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- GOT IT button -->
+  <button class="btn-got-it" onclick="gotIt()">GOT IT, CONTINUE</button>
+
+</div>
+
+<script>
+  function gotIt() {
+    sessionStorage.setItem('bp_skip_install', '1');
+    window.location.replace('./index.html');
+  }
+
+  // Apply brand name if config is available
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./service-worker.js', { scope: './' })
+      .catch(err => console.warn('[SW]', err));
+  }
+</script>
+</body>
+</html>

@@ -428,10 +428,8 @@
     _deferredPrompt.prompt();
     _deferredPrompt.userChoice.then(choice => {
       if (choice.outcome === 'accepted') {
-        sessionStorage.setItem('bp_skip_install', '1');
-        // Show success modal — wait for user to tap GOT IT
-        const modal = document.getElementById('install-success-modal');
-        if (modal) modal.style.display = 'flex';
+        // Redirect to success page — avoids page refresh killing the modal
+        window.location.replace('./success.html');
       }
       _deferredPrompt = null;
     });
@@ -445,9 +443,7 @@
   // ── Service Worker registration ───────────────────────────────────────────
   // Show success modal on install
   window.addEventListener('appinstalled', () => {
-    sessionStorage.setItem('bp_skip_install', '1');
-    const modal = document.getElementById('install-success-modal');
-    if (modal) modal.style.display = 'flex';
+    window.location.replace('./success.html');
   });
 
   function closeInstallSuccess() {
