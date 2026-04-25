@@ -8,7 +8,8 @@
     var isInstalled = window.matchMedia('(display-mode: standalone)').matches
       || window.navigator.standalone === true;
     var skipInstall = sessionStorage.getItem('bp_skip_install');
-    if (!isInstalled && !skipInstall) {
+    var isDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    if (!isInstalled && !skipInstall && !isDev) {
       window.location.replace('./install.html');
     }
   })();
@@ -47,6 +48,7 @@ if ('serviceWorker' in navigator) {
 :root{--bg:#0a0a0a;--surface:#141414;--surface2:#1e1e1e;--border:#2a2a2a;--accent:#e8ff47;--accent2:#ff4747;--text:#f0f0f0;--muted:#666;--radius:14px;}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 button{cursor:pointer;touch-action:manipulation;-webkit-appearance:none;}
+#workoutMenuDropdown button{display:flex!important;align-items:center;gap:10px;}
 input[type="text"],input[type="number"],textarea{font-size:16px;-webkit-appearance:none;}
 input[type="date"]{color-scheme:dark;}
 select{font-size:16px;}
@@ -1027,18 +1029,15 @@ function hidAuthScreen() {
     <button id="workoutNameEditBtn" onclick="toggleWorkoutMenu(event)" style="background:transparent;border:none;color:var(--text);cursor:pointer;padding:4px 6px;display:flex;align-items:center;justify-content:center;border-radius:6px;transition:color .2s;" aria-label="Workout options">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
     </button>
-    <div id="workoutMenuDropdown" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;z-index:100;min-width:170px;box-shadow:0 8px 24px rgba(0,0,0,.4);">
-      <button onclick="toggleWorkoutMenu();openWorkoutNameModal()" style="width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);font-family:'DM Sans';font-size:14px;font-weight:600;padding:14px 16px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:10px;transition:background .15s;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-        Rename
+    <div id="workoutMenuDropdown" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;z-index:100;min-width:210px;box-shadow:0 8px 24px rgba(0,0,0,.4);">
+      <button onclick="toggleWorkoutMenu();openWorkoutNameModal()" style="width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);font-family:'DM Sans';font-size:14px;font-weight:600;padding:14px 16px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:10px;transition:background .15s;white-space:nowrap;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
+        <span style="width:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span><span>Rename</span>
       </button>
-      <button onclick="toggleWorkoutMenu();changeWorkoutFromMenu()" style="width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);font-family:'DM Sans';font-size:14px;font-weight:600;padding:14px 16px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:10px;transition:background .15s;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.49"/></svg>
-        Change Workout
+      <button onclick="toggleWorkoutMenu();changeWorkoutFromMenu()" style="width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);font-family:'DM Sans';font-size:14px;font-weight:600;padding:14px 16px;cursor:pointer;text-align:left;display:flex!important;align-items:center;gap:10px;transition:background .15s;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
+        <span style="width:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="15" height="15" viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18C6 11.373 11.373 6 18 6c3.866 0 7.312 1.733 9.6 4.4"/><path d="M30 18C30 24.627 24.627 30 18 30c-3.866 0-7.312-1.733-9.6-4.4"/><polyline points="25,6 27.6,10.4 23,10.8"/><polyline points="11,30 8.4,25.6 13,25.2"/></svg></span><span>Change Workout</span>
       </button>
-      <button onclick="toggleWorkoutMenu();clearSession()" style="width:100%;background:transparent;border:none;color:#ff4747;font-family:'DM Sans';font-size:14px;font-weight:600;padding:14px 16px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:10px;transition:background .15s;" onmouseover="this.style.background='rgba(255,71,71,.08)'" onmouseout="this.style.background='transparent'">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-        Delete
+      <button onclick="toggleWorkoutMenu();clearSession()" style="width:100%;background:transparent;border:none;color:#ff4747;font-family:'DM Sans';font-size:14px;font-weight:600;padding:14px 16px;cursor:pointer;text-align:left;display:flex!important;align-items:center;gap:10px;transition:background .15s;" onmouseover="this.style.background='rgba(255,71,71,.08)'" onmouseout="this.style.background='transparent'">
+        <span style="width:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></span><span>Delete</span>
       </button>
     </div>
   </div>
@@ -1061,6 +1060,38 @@ function hidAuthScreen() {
     </div>
     <div id="install-btn-wrap" style="width:100%;max-width:380px;display:none;">
       <button id="installBtnToday" onclick="document.getElementById('installBtn').click()" style="width:100%;padding:16px;background:rgba(32,212,200,.1);color:#20d4c8;border:1px solid rgba(32,212,200,.4);border-radius:12px;font-family:'DM Sans';font-size:18px;letter-spacing:0;cursor:pointer;box-sizing:border-box;line-height:1;font-weight:700;">INSTALL APP</button>
+    </div>
+    <div style="width:100%;max-width:380px;">
+      <button onclick="openShareQR()" style="width:100%;padding:14px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:12px;font-family:'DM Sans';font-size:16px;letter-spacing:0;cursor:pointer;box-sizing:border-box;line-height:1;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        SHARE APP
+      </button>
+    </div>
+  </div>
+
+  <!-- QR Share Full Screen -->
+  <div id="share-qr-modal" style="display:none;position:fixed;inset:0;background:#0a0a0a;z-index:200;flex-direction:column;align-items:center;justify-content:space-between;padding:max(env(safe-area-inset-top),48px) 28px max(env(safe-area-inset-bottom),32px);">
+    <!-- Top: logo + title -->
+    <div style="display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;">
+      <img src="./logo.svg" alt="logo" style="width:clamp(120px,40vw,180px);height:auto;object-fit:contain;" onerror="this.style.display='none'">
+    </div>
+    <!-- Middle: QR box with URL inside -->
+    <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
+      <div id="share-qr-title" style="font-family:'DM Sans';font-size:18px;font-weight:700;color:#fff;letter-spacing:.5px;text-align:center;margin-bottom:12px;"></div>
+      <div style="background:#e8ff47;border-radius:20px;padding:16px;display:flex;flex-direction:column;align-items:center;gap:8px;">
+        <canvas id="share-qr-canvas" width="220" height="220"></canvas>
+        <div id="share-qr-url" style="font-family:'DM Sans';font-size:11px;font-weight:600;color:#000;text-align:center;word-break:break-all;max-width:220px;"></div>
+      </div>
+      <div style="font-family:'DM Sans';font-size:14px;font-weight:400;color:#666;margin-top:16px;text-align:center;">Scan to open and install the app.</div>
+    </div>
+    <!-- Bottom: share + close -->
+    <div style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%;max-width:380px;">
+      <button onclick="shareQRLink()" style="width:100%;padding:16px;background:var(--accent);color:#000;border:none;border-radius:12px;font-family:'DM Sans';font-size:17px;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;">
+        SHARE LINK
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      </button>
+      <div id="share-qr-tagline" style="font-family:'DM Sans';font-size:13px;color:#444;text-align:center;"></div>
+      <button onclick="closeShareQR()" style="background:transparent;border:none;color:#444;font-family:'DM Sans';font-size:13px;cursor:pointer;padding:4px;">© 2024 BARZELPRO FITNESS</button>
     </div>
   </div>
 
@@ -17266,7 +17297,7 @@ function toggleSessionProgress(cardId) {
   const isVisible = bar.dataset.proOpen === 'true';
   const newState = !isVisible;
   window._proBarOpen = newState;
-  document.querySelectorAll('#exerciseList .exercise-card').forEach(card => {
+  document.querySelectorAll('.exercise-card').forEach(card => {
     const b = document.getElementById(`vol-target-bar-${card.id}`);
     if (!b) return;
     b.dataset.proOpen = newState ? 'true' : 'false';
@@ -18379,6 +18410,67 @@ window._kgEditorFocusLeave = _kgEditorFocusLeave;
 window._expandAnimHide = _expandAnimHide;
 window._expandAnimShow = _expandAnimShow;
 window.openExDetail = openExDetail;
+
+function openShareQR() {
+  const modal = document.getElementById('share-qr-modal');
+  if (!modal) return;
+  modal.style.display = 'flex';
+  const url = window.location.origin + window.location.pathname.replace(/[^/]*$/, '') + 'index.html';
+  window._shareQRUrl = url;
+  document.getElementById('share-qr-url').textContent = url;
+  // Set title and tagline from BRAND_CONFIG if available
+  const appName = window.BRAND_CONFIG?.name || 'BARZELPRO';
+  const tagline = window.BRAND_CONFIG?.tagline || 'Track your workouts, monitor progress.';
+  const titleEl = document.getElementById('share-qr-title');
+  const tagEl = document.getElementById('share-qr-tagline');
+  if (titleEl) titleEl.textContent = 'SHARE ' + appName.toUpperCase();
+  if (tagEl) tagEl.textContent = tagline;
+  // Generate QR
+  const canvas = document.getElementById('share-qr-canvas');
+  if (!canvas) return;
+  if (window.QRCode) {
+    _renderQR(canvas, url);
+  } else {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+    s.onload = () => _renderQR(canvas, url);
+    document.head.appendChild(s);
+  }
+}
+function _renderQR(canvas, url) {
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  try {
+    new QRCode(canvas, {
+      text: url,
+      width: 220,
+      height: 220,
+      colorDark: '#000000',
+      colorLight: '#e8ff47',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+  } catch(e) {
+    ctx.fillStyle = '#000';
+    ctx.font = '11px monospace';
+    ctx.fillText('Scan failed', 10, 110);
+  }
+}
+function shareQRLink() {
+  const url = window._shareQRUrl || window.location.href;
+  const appName = window.BRAND_CONFIG?.name || 'BARZELPRO';
+  if (navigator.share) {
+    navigator.share({ title: appName, text: 'Try ' + appName + ' — workout tracker', url });
+  } else {
+    navigator.clipboard?.writeText(url).then(() => alert('Link copied!'));
+  }
+}
+function closeShareQR() {
+  const modal = document.getElementById('share-qr-modal');
+  if (modal) modal.style.display = 'none';
+}
+window.openShareQR = openShareQR;
+window.closeShareQR = closeShareQR;
+window.shareQRLink = shareQRLink;
 window.closeExDetail = closeExDetail;
 window.noteKbdDone = noteKbdDone;
 window.showNoteToolbar = showNoteToolbar;

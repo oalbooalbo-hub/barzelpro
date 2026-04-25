@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0a0a0a">
+  <meta name="theme-color" content="#e8ff47">
   <meta name="description" content="Track your workouts, monitor progress, and crush your fitness goals.">
   <link rel="icon" href="./logo.svg" type="image/svg+xml">
   <link rel="shortcut icon" href="./logo.svg">
-  <title>BARZELPRO — Install</title>
+  <title>icon_test_2 — Install</title>
   <link rel="manifest" href="./manifest.json">
 
   <!-- Preconnect for fonts -->
@@ -57,6 +57,13 @@
     }
 
     /* ── LOGO — LCP element, no web font dependency ── */
+    .logo-img{
+      width:clamp(200px,70vw,300px);
+      height:auto;
+      object-fit:contain;
+      /* Ensure LCP fires immediately */
+      contain:layout;
+    }
     .logo{
       font-family:'Arial Black',Arial,sans-serif;
       font-size:clamp(42px,12vw,64px);
@@ -65,7 +72,6 @@
       color:var(--accent);
       line-height:1;
       text-align:center;
-      /* Ensure LCP fires immediately — no layout shift */
       contain:layout;
     }
     .logo-sub{
@@ -166,14 +172,6 @@
     }
     .btn-open:active{border-color:var(--accent);color:var(--accent);}
 
-    .install-hint{
-      font-size:12px;
-      color:var(--muted);
-      text-align:center;
-      line-height:1.5;
-      display:none;
-    }
-    .install-hint.visible{display:block;}
 
     /* iOS manual install hint */
     .ios-hint{
@@ -201,6 +199,86 @@
       flex-shrink:0;
     }
 
+    /* ── PHONE MOCKUP ── */
+    .preview-wrap{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:10px;
+      margin-top:32px;
+      margin-bottom:8px;
+    }
+    .preview-label{
+      font-size:11px;
+      font-weight:600;
+      color:var(--muted);
+      letter-spacing:2px;
+      text-transform:uppercase;
+    }
+    .phone-mockup{
+      width:120px;
+      height:185px;
+      background:#1a1a1a;
+      border:2px solid #333;
+      border-radius:20px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      padding:10px 6px 8px;
+      gap:0;
+      position:relative;
+      box-shadow:0 8px 32px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    .phone-notch{
+      width:28px;
+      height:5px;
+      background:#333;
+      border-radius:3px;
+      margin-bottom:10px;
+      flex-shrink:0;
+    }
+    .phone-screen{
+      flex:1;
+      width:100%;
+      background:#ffffff;
+      border-radius:10px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+      padding:8px 4px;
+    }
+    .app-icon-wrap{
+      position:relative;
+      width:44px;
+      height:44px;
+    }
+    .app-icon{
+      width:44px;
+      height:44px;
+      border-radius:10px;
+      object-fit:cover;
+    }
+
+    .app-icon-label{
+      font-size:7px;
+      font-weight:700;
+      color:var(--text);
+      letter-spacing:.3px;
+      text-align:center;
+      width:100%;
+      display:block;
+    }
+    .phone-home-bar{
+      width:28px;
+      height:3px;
+      background:#333;
+      border-radius:2px;
+      margin-top:6px;
+      flex-shrink:0;
+    }
+
     /* Already installed state */
     .already-installed{display:none;flex-direction:column;align-items:center;gap:8px;}
     .already-installed.visible{display:flex;}
@@ -217,8 +295,9 @@
 
 <div class="screen">
   <div class="top">
-    <!-- LCP element: pure CSS, no font load dependency -->
-    <div class="logo">BARZEL<br>PRO</div>
+    <!-- LCP element: SVG logo -->
+    <img src="./logo.svg" alt="icon_test_2" class="logo-img" width="280" height="120" onerror="this.style.display='none';document.getElementById('logo-fallback').style.display='block'">
+    <div class="logo" id="logo-fallback" style="display:none;">icon_test_2</div>
     <div class="logo-sub">Workout Tracker</div>
 
     <div class="features">
@@ -253,6 +332,22 @@
     </div>
   </div>
 
+  <!-- Phone mockup preview -->
+  <div class="preview-wrap" id="preview-wrap">
+    <div class="preview-label">Preview</div>
+    <div class="phone-mockup">
+      <div class="phone-notch"></div>
+      <div class="phone-screen">
+        <div class="app-icon-wrap">
+          <img src="./icons/icon-512.png" alt="icon_test_2 icon" class="app-icon" onerror="this.src='./logo.svg'">
+
+        </div>
+        <div class="app-icon-label">icon_test_2</div>
+      </div>
+      <div class="phone-home-bar"></div>
+    </div>
+  </div>
+
   <div class="bottom">
     <!-- Android / Desktop: native install prompt -->
     <button class="btn-install" id="btn-install" style="display:none;" onclick="triggerInstall()">
@@ -278,9 +373,7 @@
       Open in Browser
     </button>
 
-    <p class="install-hint" id="install-hint">
-      Free · No account required · Works offline
-    </p>
+
   </div>
 </div>
 
@@ -291,6 +384,12 @@
   // Check if already running as installed PWA
   const isInstalled = window.matchMedia('(display-mode: standalone)').matches
     || window.navigator.standalone === true;
+
+  // Detect mobile
+  const isMobile = /android|iphone|ipad|ipod/i.test(navigator.userAgent);
+  if (isMobile) {
+    document.getElementById('btn-open').style.display = 'none';
+  }
 
   if (isInstalled) {
     // Already installed — redirect straight to app
@@ -306,13 +405,13 @@
     e.preventDefault();
     _deferredPrompt = e;
     document.getElementById('btn-install').style.display = 'flex';
-    document.getElementById('install-hint').classList.add('visible');
+    
   });
 
   // iOS Safari: show manual instructions
   if (isIOS && isSafari) {
     document.getElementById('ios-hint').classList.add('visible');
-    document.getElementById('install-hint').classList.add('visible');
+    
   }
 
   // If neither prompt nor iOS, just show open in browser
@@ -320,7 +419,7 @@
     const installBtn = document.getElementById('btn-install');
     const iosHint = document.getElementById('ios-hint');
     if (installBtn.style.display === 'none' && !iosHint.classList.contains('visible')) {
-      document.getElementById('install-hint').classList.add('visible');
+      
     }
   }, 1000);
 
