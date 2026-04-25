@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#e8ff47">
+  <meta name="theme-color" content="#0a0a0a">
   <meta name="description" content="Track your workouts, monitor progress, and crush your fitness goals.">
   <link rel="icon" href="./logo.svg" type="image/svg+xml">
   <link rel="shortcut icon" href="./logo.svg">
@@ -441,11 +441,84 @@
   }
 
   // ── Service Worker registration ───────────────────────────────────────────
+  // Show success modal on install
+  window.addEventListener('appinstalled', () => {
+    sessionStorage.setItem('bp_skip_install', '1');
+    const modal = document.getElementById('install-success-modal');
+    if (modal) modal.style.display = 'flex';
+  });
+
+  function closeInstallSuccess() {
+    const modal = document.getElementById('install-success-modal');
+    if (modal) modal.style.display = 'none';
+  }
+
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./service-worker.js', { scope: './' })
       .then(reg => console.log('[SW] Registered', reg.scope))
       .catch(err => console.warn('[SW] Registration failed', err));
   }
 </script>
+  <!-- Installation Success Modal -->
+  <div id="install-success-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:999;align-items:flex-end;justify-content:center;padding-bottom:env(safe-area-inset-bottom,0px);">
+    <div style="background:#111;border-radius:28px 28px 0 0;width:100%;max-width:430px;padding:32px 28px calc(32px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:20px;animation:slideUp .4s cubic-bezier(.4,0,.2,1);">
+
+      <!-- Checkmark -->
+      <div style="width:72px;height:72px;background:rgba(232,255,71,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid rgba(232,255,71,.3);">
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+          <polyline points="6,18 14,26 30,10" stroke="#e8ff47" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+
+      <!-- Title -->
+      <div style="text-align:center;">
+        <div style="font-family:'DM Sans',-apple-system,sans-serif;font-size:26px;font-weight:900;color:#fff;letter-spacing:-.3px;line-height:1.2;">INSTALLATION<br>SUCCESSFUL!</div>
+      </div>
+
+      <!-- Hint box -->
+      <div style="background:#1a1a1a;border-radius:14px;padding:14px 18px;width:100%;display:flex;align-items:center;gap:14px;">
+        <div style="flex:1;">
+          <div style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;color:#aaa;">Next time, open with icon</div>
+        </div>
+        <!-- Phone + icon illustration -->
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+          <svg width="36" height="50" viewBox="0 0 36 50" fill="none">
+            <rect x="1" y="1" width="34" height="48" rx="6" stroke="#444" stroke-width="1.5"/>
+            <rect x="5" y="5" width="26" height="36" rx="3" fill="#222"/>
+            <rect x="12" y="44" width="12" height="3" rx="1.5" fill="#444"/>
+            <!-- App grid dots -->
+            <rect x="8" y="9" width="5" height="5" rx="1.5" fill="#333"/>
+            <rect x="15" y="9" width="5" height="5" rx="1.5" fill="#333"/>
+            <rect x="22" y="9" width="5" height="5" rx="1.5" fill="#333"/>
+            <rect x="8" y="16" width="5" height="5" rx="1.5" fill="#333"/>
+            <rect x="15" y="16" width="5" height="5" rx="1.5" fill="#e8ff47" opacity=".9"/>
+            <rect x="22" y="16" width="5" height="5" rx="1.5" fill="#333"/>
+            <rect x="8" y="23" width="5" height="5" rx="1.5" fill="#333"/>
+            <rect x="15" y="23" width="5" height="5" rx="1.5" fill="#333"/>
+            <rect x="22" y="23" width="5" height="5" rx="1.5" fill="#333"/>
+          </svg>
+          <!-- Arrow -->
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M4 10h12M12 6l4 4-4 4" stroke="#e8ff47" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <!-- App icon -->
+          <div style="width:42px;height:42px;border-radius:12px;overflow:hidden;border:1px solid #333;flex-shrink:0;">
+            <img src="./icons/icon-192.png" alt="app" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.style.background='#e8ff47'">
+          </div>
+        </div>
+      </div>
+
+      <!-- CTA button -->
+      <button onclick="closeInstallSuccess()" style="width:100%;padding:18px;background:#e8ff47;color:#000;border:none;border-radius:14px;font-family:'DM Sans',sans-serif;font-size:17px;font-weight:900;cursor:pointer;letter-spacing:.3px;-webkit-tap-highlight-color:transparent;">GOT IT, CONTINUE</button>
+    </div>
+  </div>
+
+  <style>
+    @keyframes slideUp {
+      from { transform: translateY(100%); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+  </style>
+
 </body>
 </html>
