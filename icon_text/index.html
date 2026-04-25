@@ -658,6 +658,16 @@ body.desktop-mode .pages-wrap {
 .trash-select-check.selected{background:var(--accent);border-color:var(--accent);background-image:url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 6l3 3 5-5' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:center;}
 </style>
 <script src="config.js"></script>
+<script>
+  // Apply BRAND_CONFIG to page metadata immediately after config.js loads
+  (function() {
+    const name = window.BRAND_CONFIG?.name;
+    if (!name) return;
+    document.title = name;
+    const metaTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+    if (metaTitle) metaTitle.setAttribute('content', name);
+  })();
+</script>
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, sendPasswordResetEmail } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
@@ -892,6 +902,7 @@ function hidAuthScreen() {
   opacity: 1;
 }
 </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
 </head>
 <body>
 
@@ -1049,10 +1060,9 @@ function hidAuthScreen() {
 
   <!-- START SCREEN: shown when no workout is active -->
   <div id="today-start-screen" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px 32px;gap:12px;">
-    <div style="font-family:'Bebas Neue';font-size:28px;letter-spacing:2px;color:var(--text);margin-bottom:4px;">START WORKOUT</div>
     <div id="today-plan-card" style="width:100%;max-width:380px;display:none;"></div>
     <div id="today-load-btn-wrap" style="width:100%;max-width:380px;display:none;">
-      <button onclick="window._isNewWorkoutFlow=false;window._loadFromToday=true;loadOrSwitchWorkouts()" style="width:100%;padding:16px;background:var(--accent);color:#000;border:1px solid var(--accent);border-radius:12px;font-family:'DM Sans';font-size:22px;letter-spacing:0;cursor:pointer;box-sizing:border-box;line-height:1;font-weight:700;">PICK</button>
+      <button onclick="window._isNewWorkoutFlow=false;window._loadFromToday=true;loadOrSwitchWorkouts()" style="width:100%;padding:16px;background:var(--accent);color:#000;border:1px solid var(--accent);border-radius:12px;font-family:'DM Sans';font-size:22px;letter-spacing:0;cursor:pointer;box-sizing:border-box;line-height:1;font-weight:700;">START WORKOUT</button>
     </div>
     <div style="width:100%;max-width:380px;display:flex;gap:8px;">
       <button onclick="startNewWorkout()" style="flex:1;padding:16px;background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:12px;font-family:'DM Sans';font-size:18px;letter-spacing:0;cursor:pointer;box-sizing:border-box;line-height:1;font-weight:700;">CREATE NEW</button>
@@ -1079,8 +1089,8 @@ function hidAuthScreen() {
     <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
       <div id="share-qr-title" style="font-family:'DM Sans';font-size:18px;font-weight:700;color:#fff;letter-spacing:.5px;text-align:center;margin-bottom:12px;"></div>
       <div style="background:#e8ff47;border-radius:20px;padding:16px;display:flex;flex-direction:column;align-items:center;gap:8px;">
-        <canvas id="share-qr-canvas" width="220" height="220"></canvas>
-        <div id="share-qr-url" style="font-family:'DM Sans';font-size:11px;font-weight:600;color:#000;text-align:center;word-break:break-all;max-width:220px;"></div>
+        <div id="share-qr-canvas" style="width:220px;height:220px;"></div>
+
       </div>
       <div style="font-family:'DM Sans';font-size:14px;font-weight:400;color:#666;margin-top:16px;text-align:center;">Scan to open and install the app.</div>
     </div>
@@ -1090,8 +1100,8 @@ function hidAuthScreen() {
         SHARE LINK
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
       </button>
-      <div id="share-qr-tagline" style="font-family:'DM Sans';font-size:13px;color:#444;text-align:center;"></div>
-      <button onclick="closeShareQR()" style="background:transparent;border:none;color:#444;font-family:'DM Sans';font-size:13px;cursor:pointer;padding:4px;">© 2024 BARZELPRO FITNESS</button>
+
+      <button onclick="closeShareQR()" style="width:100%;padding:14px;background:transparent;color:#555;border:1px solid #333;border-radius:12px;font-family:'DM Sans';font-size:16px;font-weight:700;cursor:pointer;">CLOSE</button>
     </div>
   </div>
 
@@ -18417,7 +18427,7 @@ function openShareQR() {
   modal.style.display = 'flex';
   const url = window.location.origin + window.location.pathname.replace(/[^/]*$/, '') + 'index.html';
   window._shareQRUrl = url;
-  document.getElementById('share-qr-url').textContent = url;
+  if (document.getElementById('share-qr-url')) document.getElementById('share-qr-url').textContent = url;
   // Set title and tagline from BRAND_CONFIG if available
   const appName = window.BRAND_CONFIG?.name || 'BARZELPRO';
   const tagline = window.BRAND_CONFIG?.tagline || 'Track your workouts, monitor progress.';
@@ -18426,33 +18436,34 @@ function openShareQR() {
   if (titleEl) titleEl.textContent = 'SHARE ' + appName.toUpperCase();
   if (tagEl) tagEl.textContent = tagline;
   // Generate QR
-  const canvas = document.getElementById('share-qr-canvas');
-  if (!canvas) return;
-  if (window.QRCode) {
-    _renderQR(canvas, url);
-  } else {
-    const s = document.createElement('script');
-    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
-    s.onload = () => _renderQR(canvas, url);
-    document.head.appendChild(s);
-  }
+  const qrEl = document.getElementById('share-qr-canvas');
+  if (!qrEl) return;
+  // Small delay to ensure element is visible before rendering
+  setTimeout(() => {
+    if (window.QRCode) {
+      _renderQR(qrEl, url);
+    } else {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+      s.onload = () => _renderQR(qrEl, url);
+      document.head.appendChild(s);
+    }
+  }, 50);
 }
-function _renderQR(canvas, url) {
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+function _renderQR(el, url) {
+  // Clear previous QR
+  el.innerHTML = '';
   try {
-    new QRCode(canvas, {
+    new QRCode(el, {
       text: url,
       width: 220,
       height: 220,
       colorDark: '#000000',
-      colorLight: '#e8ff47',
+      colorLight: '#ffffff',
       correctLevel: QRCode.CorrectLevel.M
     });
   } catch(e) {
-    ctx.fillStyle = '#000';
-    ctx.font = '11px monospace';
-    ctx.fillText('Scan failed', 10, 110);
+    el.innerHTML = '<div style="color:#000;font-size:11px;text-align:center;padding:20px;">Failed to generate QR</div>';
   }
 }
 function shareQRLink() {
