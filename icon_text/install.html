@@ -3,19 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0a0a0a">
+  <meta name="theme-color" content="#47d1ff">
   <meta name="description" content="Track your workouts, monitor progress, and crush your fitness goals.">
   <link rel="icon" href="./logo.svg" type="image/svg+xml">
   <link rel="shortcut icon" href="./logo.svg">
-  <title>icon_test_2 — Install</title>
+  <title>BarzelPro — Install</title>
   <link rel="manifest" href="./manifest.json">
 
-  <!-- Preconnect for fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
   <style>
-    /* Critical CSS inlined for instant LCP */
     *{box-sizing:border-box;margin:0;padding:0;}
     :root{
       --bg:#0a0a0a;
@@ -25,99 +23,63 @@
       --text:#f0f0f0;
       --muted:#666;
     }
-    html,body{
-      height:100%;
-      background:var(--bg);
-      color:var(--text);
-      font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;
-      overflow:hidden;
-      -webkit-font-smoothing:antialiased;
+    
+    /* מניעת הבהוב בזמן בדיקת התקנה */
+    body {
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
     }
 
-    /* ── LAYOUT ── */
     .screen{
       display:flex;
       flex-direction:column;
       align-items:center;
       justify-content:space-between;
       min-height:100dvh;
-      padding:env(safe-area-inset-top,24px) 24px env(safe-area-inset-bottom,24px);
-      padding-top:max(env(safe-area-inset-top),48px);
-      padding-bottom:max(env(safe-area-inset-bottom),40px);
+      padding: env(safe-area-inset-top,24px) 24px env(safe-area-inset-bottom,24px);
     }
 
-    /* ── TOP SECTION ── */
     .top{
       display:flex;
       flex-direction:column;
       align-items:center;
-      gap:0;
       flex:1;
       justify-content:center;
     }
 
-    /* ── LOGO — LCP element, no web font dependency ── */
     .logo-img{
       width:clamp(200px,70vw,300px);
       height:auto;
       object-fit:contain;
-      /* Ensure LCP fires immediately */
-      contain:layout;
-    }
-    .logo{
-      font-family:'Arial Black',Arial,sans-serif;
-      font-size:clamp(42px,12vw,64px);
-      font-weight:900;
-      letter-spacing:-1px;
-      color:var(--accent);
-      line-height:1;
-      text-align:center;
-      contain:layout;
-    }
-    .logo-sub{
-      font-size:13px;
-      font-weight:500;
-      color:var(--muted);
-      letter-spacing:3px;
-      text-transform:uppercase;
-      margin-top:8px;
-      text-align:center;
     }
 
-    /* ── FEATURE LIST ── */
-
-    /* ── BOTTOM CTA ── */
-    .bottom{
-      width:100%;
-      max-width:400px;
-      display:flex;
-      flex-direction:column;
-      gap:12px;
-      align-items:center;
-    }
-
+    /* אנדרואיד - סטייל Material 3 עדכני */
     .btn-install{
       width:100%;
       max-width:380px;
-      padding:20px;
+      padding:22px;
       background:var(--accent);
       color:#000;
       border:none;
-      border-radius:14px;
+      border-radius:28px; /* Material 3 Radius */
       font-family:inherit;
-      font-size:20px;
+      font-size:18px;
       font-weight:900;
-      letter-spacing:.5px;
+      letter-spacing:1.2px;
       cursor:pointer;
-      transition:transform .15s,opacity .15s;
-      -webkit-tap-highlight-color:transparent;
+      transition: transform .15s, box-shadow .15s;
+      box-shadow: 0 4px 15px rgba(232, 255, 71, 0.2);
       display:flex;
       align-items:center;
       justify-content:center;
       gap:12px;
     }
-    .btn-install:active{transform:scale(.97);opacity:.9;}
-    .btn-install svg{flex-shrink:0;}
+    .btn-install:active{transform:scale(.96); box-shadow: 0 2px 8px rgba(232, 255, 71, 0.1);}
 
     .btn-open{
       width:100%;
@@ -126,217 +88,43 @@
       color:var(--muted);
       border:1px solid var(--border);
       border-radius:14px;
-      font-family:inherit;
-      font-size:14px;
-      font-weight:600;
+      margin-top: 10px;
       cursor:pointer;
-      transition:border-color .2s,color .2s;
-      -webkit-tap-highlight-color:transparent;
     }
-    .btn-open:active{border-color:var(--accent);color:var(--accent);}
 
-    /* Shimmer for perceived speed */
-    @keyframes shimmer{
-      0%{background-position:-400px 0;}
-      100%{background-position:400px 0;}
+    /* אנימציית חץ ל-iOS */
+    @keyframes bounceDown {
+      0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+      40% {transform: translateY(10px);}
+      60% {transform: translateY(5px);}
+    }
+
+    .bounce-arrow {
+      animation: bounceDown 2s infinite;
     }
   </style>
 </head>
 <body>
 
-<div class="screen">
+<div class="screen" id="main-screen">
   <div class="top">
-    <!-- LCP element: SVG logo -->
-    <img src="./logo.svg" alt="icon_test_2" class="logo-img" width="280" height="120" onerror="this.style.display='none';document.getElementById('logo-fallback').style.display='block'">
-    <div class="logo" id="logo-fallback" style="display:none;">icon_test_2</div>
-    <div class="logo-sub">Workout Tracker</div><div class="bottom">
-    <!-- Android / Desktop: native install prompt -->
+    <img src="./logo.svg" alt="BarzelPro" class="logo-img" width="280" height="120" fetchpriority="high">
+    <div class="logo-sub">Workout Tracker</div>
+  </div>
+
+  <div class="bottom">
     <button class="btn-install" id="btn-install" style="display:none;" onclick="triggerInstall()">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
         <path d="M12 2v13M7 11l5 5 5-5"/><line x1="3" y1="19" x2="21" y2="19"/>
       </svg>
-      INSTALL APP
+      INSTALL BARZELPRO
     </button>
-</div>
 
-    <!-- Already installed / open in browser -->
     <button class="btn-open" id="btn-open" onclick="openApp()">
       Open in Browser
     </button>
-
   </div>
 </div>
 
-<script>
-  // ── PWA install detection ─────────────────────────────────────────────────
-  let _deferredPrompt = null;
-
-  // Check if already running as installed PWA
-  const isInstalled = window.matchMedia('(display-mode: standalone)').matches
-    || window.navigator.standalone === true;
-
-  // Detect mobile
-
-  if (isInstalled) {
-    // Already installed — redirect straight to app
-    window.location.replace('./index.html');
-  }
-
-  // Detect iOS
-  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
-  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-
-  // Detect Android / Chrome desktop
-  window.addEventListener('beforeinstallprompt', e => {
-    e.preventDefault();
-    _deferredPrompt = e;
-    document.getElementById('btn-install').style.display = 'flex';
-    
-  });
-
-  // iOS Safari: show bottom sheet with slide-up animation
-  if (isIOS && isSafari) {
-    const sheet = document.getElementById('ios-install-sheet');
-    if (sheet) {
-      sheet.style.display = 'block';
-      const inner = sheet.querySelector('div');
-      inner.style.transform = 'translateY(100%)';
-      const nameEl = document.getElementById('ios-app-name');
-      if (nameEl) nameEl.textContent = window.BRAND_CONFIG?.name || 'App';
-      setTimeout(() => {
-        inner.style.transition = 'transform 450ms cubic-bezier(.22,1,.36,1)';
-        inner.style.transform = 'translateY(0)';
-      }, 800);
-    }
-    // Hide Android-only elements
-    const btnInstall = document.getElementById('btn-install');
-    const btnOpen = document.getElementById('btn-open');
-    if (btnInstall) btnInstall.style.display = 'none';
-    if (btnOpen) btnOpen.style.display = 'none';
-  }
-
-  function triggerInstall() {
-    if (!_deferredPrompt) return;
-    _deferredPrompt.prompt();
-    _deferredPrompt.userChoice.then(choice => {
-      if (choice.outcome === 'accepted') {
-        // Fade out install page then navigate to success
-        document.body.style.transition = 'opacity 400ms ease';
-        document.body.style.opacity = '0';
-        setTimeout(() => window.location.replace('./success.html'), 420);
-      }
-      _deferredPrompt = null;
-    });
-  }
-
-  function openApp() {
-    sessionStorage.setItem('bp_skip_install', '1');
-    window.location.href = './index.html';
-  }
-
-  // ── Service Worker registration ───────────────────────────────────────────
-  // Show success modal on install
-  window.addEventListener('appinstalled', () => {
-    window.location.replace('./success.html');
-  });
-
-  function closeInstallSuccess() {
-    const modal = document.getElementById('install-success-modal');
-    if (modal) {
-      modal.style.display = 'none';
-    }
-  }
-
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./service-worker.js', { scope: './' })
-      .then(reg => console.log('[SW] Registered', reg.scope))
-      .catch(err => console.warn('[SW] Registration failed', err));
-  }
-</script>
-  <!-- Installation Success Modal — Full Screen -->
-  <div id="install-success-modal" style="display:none;position:fixed;inset:0;background:#0a0a0a;z-index:999;flex-direction:column;align-items:center;justify-content:space-between;padding:max(env(safe-area-inset-top),56px) 24px max(env(safe-area-inset-bottom),40px);">
-
-    <!-- Top spacer -->
-    <div></div>
-
-    <!-- Main content -->
-    <div style="display:flex;flex-direction:column;align-items:center;gap:28px;width:100%;max-width:380px;">
-
-      <!-- Checkmark left + Title right -->
-      <div style="display:flex;align-items:center;gap:18px;width:100%;">
-        <div style="flex-shrink:0;">
-          <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
-            <circle cx="36" cy="36" r="34" stroke="#e8ff47" stroke-width="1.5" opacity=".3"/>
-            <polyline points="18,36 30,50 54,22" stroke="#e8ff47" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </div>
-        <div style="font-family:'DM Sans',-apple-system,sans-serif;font-size:28px;font-weight:900;color:#fff;line-height:1.15;letter-spacing:-.3px;">INSTALLATION<br>SUCCESSFUL!</div>
-      </div>
-
-      <!-- Hint box -->
-      <div style="background:#161616;border-radius:16px;padding:18px 20px;width:100%;display:flex;flex-direction:column;gap:14px;">
-        <div style="font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;color:#888;">Next time, open with icon</div>
-        <div style="display:flex;align-items:center;justify-content:center;gap:16px;">
-          <!-- Phone illustration -->
-          <svg width="60" height="80" viewBox="0 0 60 80" fill="none">
-            <rect x="1" y="1" width="58" height="78" rx="10" stroke="#444" stroke-width="1.5"/>
-            <rect x="6" y="7" width="48" height="58" rx="4" fill="#222"/>
-            <rect x="20" y="70" width="20" height="5" rx="2.5" fill="#444"/>
-            <rect x="10" y="13" width="9" height="9" rx="2.5" fill="#2a2a2a"/>
-            <rect x="25" y="13" width="9" height="9" rx="2.5" fill="#2a2a2a"/>
-            <rect x="40" y="13" width="9" height="9" rx="2.5" fill="#2a2a2a"/>
-            <rect x="10" y="27" width="9" height="9" rx="2.5" fill="#2a2a2a"/>
-            <rect x="25" y="27" width="9" height="9" rx="2.5" fill="#e8ff47" opacity=".9"/>
-            <rect x="40" y="27" width="9" height="9" rx="2.5" fill="#2a2a2a"/>
-            <rect x="10" y="41" width="9" height="9" rx="2.5" fill="#2a2a2a"/>
-            <rect x="25" y="41" width="9" height="9" rx="2.5" fill="#2a2a2a"/>
-            <rect x="40" y="41" width="9" height="9" rx="2.5" fill="#2a2a2a"/>
-          </svg>
-          <!-- Arrow -->
-          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-            <path d="M4 14h20M18 8l6 6-6 6" stroke="#e8ff47" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          <!-- App icon -->
-          <div style="width:64px;height:64px;border-radius:16px;overflow:hidden;border:1px solid #333;flex-shrink:0;">
-            <img src="./icons/icon-192.png" alt="app icon" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.style.background='#e8ff47'">
-          </div>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- GOT IT button -->
-    <div style="width:100%;max-width:380px;">
-      <button onclick="closeInstallSuccess()" style="width:100%;padding:20px;background:#e8ff47;color:#000;border:none;border-radius:14px;font-family:'DM Sans',sans-serif;font-size:18px;font-weight:900;cursor:pointer;letter-spacing:.5px;-webkit-tap-highlight-color:transparent;">GOT IT, CONTINUE</button>
-    </div>
-
-  </div>
-
-  <!-- iOS Install Bottom Sheet -->
-  <div id="ios-install-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:100;max-width:430px;margin:0 auto;">
-    <div style="background:#1c1c1e;border-radius:20px 20px 0 0;padding:20px 24px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -8px 40px rgba(0,0,0,.6);">
-      <div style="width:36px;height:4px;background:#48484a;border-radius:2px;margin:0 auto 20px;"></div>
-      <div style="font-family:'DM Sans',sans-serif;font-size:18px;font-weight:700;color:#fff;margin-bottom:16px;">Install <span id="ios-app-name">App</span>:</div>
-      <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:20px;">
-        <div style="display:flex;align-items:center;gap:14px;">
-          <div style="width:28px;height:28px;background:#2c2c2e;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;color:#fff;">1</div>
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-            <span style="font-family:'DM Sans',sans-serif;font-size:15px;color:#ebebf5;">Tap the share button below</span>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 2v13" stroke="#0a84ff" stroke-width="2" stroke-linecap="round"/><path d="M8 6l4-4 4 4" stroke="#0a84ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 12H5a1 1 0 00-1 1v7a1 1 0 001 1h14a1 1 0 001-1v-7a1 1 0 00-1-1h-3" stroke="#0a84ff" stroke-width="2" stroke-linecap="round"/></svg>
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;gap:14px;">
-          <div style="width:28px;height:28px;background:#2c2c2e;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;color:#fff;">2</div>
-          <span style="font-family:'DM Sans',sans-serif;font-size:15px;color:#ebebf5;">Select <strong style="color:#fff;">"Add to Home Screen"</strong></span>
-        </div>
-      </div>
-      <div style="display:flex;justify-content:center;">
-        <svg width="28" height="36" viewBox="0 0 28 36" fill="none">
-          <path d="M14 2v26M4 22l10 12 10-12" stroke="#e8ff47" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-    </div>
-  </div>
-
-</body>
-</html>
+<div id="ios-install-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:100;user-select:none;">
+  <div style="background:rgba(28, 28, 30, 0.94); backdrop-filter:blur(15px); border-radius:20px 20px 0 0; padding:20px 24px calc(20px + env(
