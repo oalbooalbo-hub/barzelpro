@@ -136,13 +136,14 @@
 
     .btn-install{
       width:100%;
-      padding:18px;
+      max-width:380px;
+      padding:20px;
       background:var(--accent);
       color:#000;
       border:none;
       border-radius:14px;
       font-family:inherit;
-      font-size:18px;
+      font-size:20px;
       font-weight:900;
       letter-spacing:.5px;
       cursor:pointer;
@@ -151,53 +152,26 @@
       display:flex;
       align-items:center;
       justify-content:center;
-      gap:10px;
+      gap:12px;
     }
     .btn-install:active{transform:scale(.97);opacity:.9;}
     .btn-install svg{flex-shrink:0;}
 
     .btn-open{
       width:100%;
-      padding:16px;
+      padding:12px;
       background:transparent;
       color:var(--muted);
       border:1px solid var(--border);
       border-radius:14px;
       font-family:inherit;
-      font-size:15px;
+      font-size:14px;
       font-weight:600;
       cursor:pointer;
       transition:border-color .2s,color .2s;
       -webkit-tap-highlight-color:transparent;
     }
     .btn-open:active{border-color:var(--accent);color:var(--accent);}
-
-
-    /* iOS manual install hint */
-    .ios-hint{
-      display:none;
-      flex-direction:column;
-      align-items:center;
-      gap:8px;
-      padding:16px;
-      background:var(--surface);
-      border:1px solid var(--border);
-      border-radius:14px;
-      width:100%;
-      max-width:400px;
-    }
-    .ios-hint.visible{display:flex;}
-    .ios-hint-text{
-      font-size:13px;
-      color:var(--text);
-      text-align:center;
-      line-height:1.6;
-    }
-    .ios-hint-text strong{color:var(--accent);}
-    .ios-share-icon{
-      color:var(--accent);
-      flex-shrink:0;
-    }
 
     /* ── PHONE MOCKUP ── */
     .preview-wrap{
@@ -279,11 +253,6 @@
       flex-shrink:0;
     }
 
-    /* Already installed state */
-    .already-installed{display:none;flex-direction:column;align-items:center;gap:8px;}
-    .already-installed.visible{display:flex;}
-    .already-installed p{font-size:13px;color:var(--muted);text-align:center;}
-
     /* Shimmer for perceived speed */
     @keyframes shimmer{
       0%{background-position:-400px 0;}
@@ -351,28 +320,17 @@
   <div class="bottom">
     <!-- Android / Desktop: native install prompt -->
     <button class="btn-install" id="btn-install" style="display:none;" onclick="triggerInstall()">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 2v13M7 11l5 5 5-5"/><path d="M3 19h18"/>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2v13M7 11l5 5 5-5"/><line x1="3" y1="19" x2="21" y2="19"/>
       </svg>
       INSTALL APP
     </button>
-
-    <!-- iOS: manual install instructions -->
-    <div class="ios-hint" id="ios-hint">
-      <svg class="ios-share-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>
-      </svg>
-      <div class="ios-hint-text">
-        Tap <strong>Share</strong> then<br>
-        <strong>"Add to Home Screen"</strong>
-      </div>
-    </div>
+</div>
 
     <!-- Already installed / open in browser -->
     <button class="btn-open" id="btn-open" onclick="openApp()">
       Open in Browser
     </button>
-
 
   </div>
 </div>
@@ -386,10 +344,6 @@
     || window.navigator.standalone === true;
 
   // Detect mobile
-  const isMobile = /android|iphone|ipad|ipod/i.test(navigator.userAgent);
-  if (isMobile) {
-    document.getElementById('btn-open').style.display = 'none';
-  }
 
   if (isInstalled) {
     // Already installed — redirect straight to app
@@ -429,14 +383,6 @@
     if (btnOpen) btnOpen.style.display = 'none';
   }
 
-  // If neither prompt nor iOS, just show open in browser
-  setTimeout(() => {
-    const installBtn = document.getElementById('btn-install');
-    const iosHint = document.getElementById('ios-hint');
-    if (installBtn.style.display === 'none' && !iosHint.classList.contains('visible')) {
-      
-    }
-  }, 1000);
 
   function triggerInstall() {
     if (!_deferredPrompt) return;
