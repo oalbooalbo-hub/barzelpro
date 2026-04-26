@@ -24,107 +24,130 @@
       --muted:#666;
     }
     
-    /* מניעת הבהוב בזמן בדיקת התקנה */
     body {
-      opacity: 0;
-      transition: opacity 0.3s ease;
       background: var(--bg);
       color: var(--text);
-      font-family: 'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
       overflow: hidden;
       -webkit-font-smoothing: antialiased;
     }
 
-    .screen{
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      justify-content:space-between;
-      min-height:100dvh;
-      padding: env(safe-area-inset-top,24px) 24px env(safe-area-inset-bottom,24px);
+    /* אנימציית כניסה למניעת הבהוב */
+    .screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 100dvh;
+      padding: env(safe-area-inset-top, 24px) 24px env(safe-area-inset-bottom, 24px);
+      animation: fadeIn 0.4s ease-in;
     }
 
-    .top{
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      flex:1;
-      justify-content:center;
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
     }
 
-    .logo-img{
-      width:clamp(200px,70vw,300px);
-      height:auto;
-      object-fit:contain;
+    .top {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+      justify-content: center;
     }
 
-    /* אנדרואיד - סטייל Material 3 עדכני */
-    .btn-install{
-      width:100%;
-      max-width:380px;
-      padding:22px;
-      background:var(--accent);
-      color:#000;
-      border:none;
-      border-radius:28px; /* Material 3 Radius */
-      font-family:inherit;
-      font-size:18px;
-      font-weight:900;
-      letter-spacing:1.2px;
-      cursor:pointer;
-      transition: transform .15s, box-shadow .15s;
-      box-shadow: 0 4px 15px rgba(232, 255, 71, 0.2);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      gap:12px;
-    }
-    .btn-install:active{transform:scale(.96); box-shadow: 0 2px 8px rgba(232, 255, 71, 0.1);}
-
-    .btn-open{
-      width:100%;
-      padding:12px;
-      background:transparent;
-      color:var(--muted);
-      border:1px solid var(--border);
-      border-radius:14px;
-      margin-top: 10px;
-      cursor:pointer;
+    .logo-img {
+      width: clamp(200px, 70vw, 300px);
+      height: auto;
+      object-fit: contain;
     }
 
-    /* אנימציית חץ ל-iOS */
+    .logo-sub {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-top: 8px;
+    }
+
+    .bottom {
+      width: 100%;
+      max-width: 400px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .btn-install {
+      width: 100%;
+      padding: 22px;
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: 28px;
+      font-family: inherit;
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: 1.2px;
+      cursor: pointer;
+      display: none; /* יוצג רק אם נתפס אירוע באנדרואיד */
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      transition: transform 0.1s;
+    }
+
+    .btn-install:active { transform: scale(0.96); }
+
+    .btn-open {
+      width: 100%;
+      padding: 14px;
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      cursor: pointer;
+    }
+
+    /* iOS Styles */
     @keyframes bounceDown {
-      0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
-      40% {transform: translateY(10px);}
-      60% {transform: translateY(5px);}
+      0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+      40% { transform: translateY(10px); }
+      60% { transform: translateY(5px); }
     }
-
-    .bounce-arrow {
-      animation: bounceDown 2s infinite;
-    }
+    .bounce-arrow { animation: bounceDown 2s infinite; }
   </style>
 </head>
 <body>
 
-<div class="screen" id="main-screen">
+<div class="screen">
   <div class="top">
     <img src="./logo.svg" alt="BarzelPro" class="logo-img" width="280" height="120" fetchpriority="high">
     <div class="logo-sub">Workout Tracker</div>
   </div>
 
   <div class="bottom">
-    <button class="btn-install" id="btn-install" style="display:none;" onclick="triggerInstall()">
+    <button class="btn-install" id="btn-install" onclick="triggerInstall()">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
         <path d="M12 2v13M7 11l5 5 5-5"/><line x1="3" y1="19" x2="21" y2="19"/>
       </svg>
-      INSTALL BARZELPRO
+      INSTALL APP
     </button>
-
     <button class="btn-open" id="btn-open" onclick="openApp()">
       Open in Browser
     </button>
   </div>
 </div>
 
-<div id="ios-install-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:100;user-select:none;">
-  <div style="background:rgba(28, 28, 30, 0.94); backdrop-filter:blur(15px); border-radius:20px 20px 0 0; padding:20px 24px calc(20px + env(
+<div id="ios-install-sheet" style="display:none; position:fixed; bottom:0; left:0; right:0; z-index:100; user-select:none;">
+  <div style="background:rgba(28, 28, 30, 0.95); backdrop-filter:blur(15px); border-radius:20px 20px 0 0; padding:20px 24px calc(24px + env(safe-area-inset-bottom)); box-shadow:0 -10px 40px rgba(0,0,0,0.5);">
+    <div style="width:36px; height:4px; background:#48484a; border-radius:2px; margin:0 auto 20px;"></div>
+    <div style="font-size:19px; font-weight:700; color:#fff; margin-bottom:20px;">Install BarzelPro:</div>
+    <div style="display:flex; flex-direction:column; gap:16px; margin-bottom:24px;">
+      <div style="display:flex; align-items:center; gap:14px;">
+        <div style="width:28px; height:28px; background:#e8ff47; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#000; font-weight:bold;">1</div>
+        <span style="color:#eee; font-size:16px;">Tap the share button <strong>[↑]</strong> below</span>
+      </div>
+      <div style="display:flex; align-items:center; gap
