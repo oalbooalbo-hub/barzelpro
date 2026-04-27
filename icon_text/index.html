@@ -88,7 +88,7 @@ body.desktop-mode .pages-wrap {
 .tab{flex:1;padding:12px 4px 10px;border-radius:0;border:none;background:transparent;color:var(--muted);font-family:'DM Sans';font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;outline:none;-webkit-tap-highlight-color:transparent;text-align:center;}
 .tab:focus,.tab:focus-visible{outline:none;border-color:var(--border);}
 .tab.active{background:transparent;color:var(--accent);border:none;font-weight:700;}.tab#tab-progress-btn.active,.tab#tab-progress-btn2.active{color:#34d399;border:none;}#tab-progress-btn,#tab-progress-btn2{flex:1;}
-.page{display:none;padding:14px 16px;padding-bottom:calc(130px + env(safe-area-inset-bottom));}
+.page{display:none;padding:14px 16px;padding-bottom:calc(130px + env(safe-area-inset-bottom));}.page.active.delayed-reveal{animation:pageFadeIn .15s ease .3s both;}@keyframes pageFadeIn{from{opacity:0}to{opacity:1}}
 .page.active{display:block;}
 .section-title{font-family:'DM Sans';font-size:20px;font-weight:700;margin-bottom:14px;color:var(--muted);letter-spacing:0;position:sticky;top:0;z-index:25;background:var(--bg);padding:10px 0 6px;}
 .section-title span{color:var(--text);}
@@ -4001,8 +4001,12 @@ function switchTab(tab) {
   if (tab === 'workouts' && _wtoggleBar) _wtoggleBar.style.display = '';
   if (tab === 'exercises' && _etoggleBar) _etoggleBar.style.display = '';
   if (tab === 'progress' && _ptoggleBar) _ptoggleBar.style.display = '';
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.getElementById('page-'+tab).classList.add('active');
+  // Check if header is visible — if so, delay page reveal to sync with header collapse
+  const _hdrVisible = !document.querySelector('.header')?.classList.contains('collapsed');
+  document.querySelectorAll('.page').forEach(p => { p.classList.remove('active'); p.classList.remove('delayed-reveal'); });
+  const _pageEl = document.getElementById('page-'+tab);
+  if (_hdrVisible && tab !== 'log') _pageEl.classList.add('delayed-reveal');
+  _pageEl.classList.add('active');
   if (tab==='workouts') {
     const _hdrW = document.querySelector('.header');
     const _alreadyCollapsed = !_hdrW || _hdrW.classList.contains('collapsed');
