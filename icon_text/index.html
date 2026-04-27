@@ -3990,26 +3990,20 @@ function switchTab(tab) {
     window._keepWorkoutsTabState = false;
     window._wtabSelectedIdx = null;
   }
+  // Pre-render workouts content before showing page to prevent jump
+  if (tab === 'workouts') {
+    _initWTabView();
+    renderWorkoutsTab();
+  }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-'+tab).classList.add('active');
   const _wtoggleBar = document.getElementById('workoutsToggleBar');
   const _etoggleBar = document.getElementById('exercisesToggleBar');
   const _ptoggleBar = document.getElementById('progressToggleBar');
-  // Hide all toggle bars first, show only the relevant one — BEFORE rendering content to prevent layout jump
   [_wtoggleBar, _etoggleBar, _ptoggleBar].forEach(b => { if (b) b.style.display = 'none'; });
   if (tab === 'workouts' && _wtoggleBar) _wtoggleBar.style.display = '';
   if (tab === 'exercises' && _etoggleBar) _etoggleBar.style.display = '';
   if (tab === 'progress' && _ptoggleBar) _ptoggleBar.style.display = '';
-  if (tab==='workouts') {
-    _initWTabView();
-    // Populate toggle bar HTML before rendering list — prevents position jump
-    const _wHasCoach2 = window._currentUserData?.coachId && window._currentUserData?.coachingExpires && new Date(window._currentUserData.coachingExpires) >= new Date();
-    if (_wtoggleBar && !_wtoggleBar.innerHTML.trim()) {
-      _wtoggleBar.innerHTML = `<div style="display:flex;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;"><button onclick="switchWTabView('created')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:var(--accent);color:#000;font-family:'DM Sans';font-size:15px;font-weight:900;transition:all .2s;">MY ZONE</button><button onclick="switchWTabView('library')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:transparent;color:var(--muted);font-family:'DM Sans';font-size:15px;font-weight:900;transition:all .2s;">EXPLORE</button>${_wHasCoach2?'<button onclick="switchWTabView(\'coach\')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:transparent;color:#7ec8e3;font-family:\'DM Sans\';font-size:15px;font-weight:900;transition:all .2s;">COACH</button>':''}</div>`;
-    }
-    renderWorkoutsTab();
-
-  }
   if (tab==='exercises') {
     _exTabView = 'created';
     if (!customExercises.length) _exTabView = 'library';
