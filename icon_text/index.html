@@ -3942,9 +3942,6 @@ function switchProgressView(view) {
 }
 
 function switchTab(tab) {
-  if (window._switchTabBusy) return;
-  window._switchTabBusy = true;
-  try {
   window._activeTab = tab;
   document.activeElement?.blur();
   // Hide floating bar when switching away from Today
@@ -3993,11 +3990,6 @@ function switchTab(tab) {
     window._keepWorkoutsTabState = false;
     window._wtabSelectedIdx = null;
   }
-  // Pre-render workouts content before showing page to prevent jump
-  if (tab === 'workouts') {
-    _initWTabView();
-    renderWorkoutsTab();
-  }
   // Show/hide toggle bars BEFORE page becomes visible
   const _wtoggleBar = document.getElementById('workoutsToggleBar');
   const _etoggleBar = document.getElementById('exercisesToggleBar');
@@ -4008,6 +4000,10 @@ function switchTab(tab) {
   if (tab === 'progress' && _ptoggleBar) _ptoggleBar.style.display = '';
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-'+tab).classList.add('active');
+  if (tab==='workouts') {
+    _initWTabView();
+    renderWorkoutsTab();
+  }
   if (tab==='exercises') {
     _exTabView = 'created';
     if (!customExercises.length) _exTabView = 'library';
@@ -4030,7 +4026,6 @@ function switchTab(tab) {
   if (tab !== 'log' && tab !== 'exercises') { if (!window._createNewMode) window._activeTabHighlight = null; if (tab !== 'workouts') { window._loadFromToday = false; window._isChangingWorkout = false; } }
   localStorage.setItem('ironlog_active_tab', tab);
   updatePickModeTabs();
-  } finally { window._switchTabBusy = false; }
 }
 
 function updatePickModeTabs() {
@@ -4103,9 +4098,8 @@ function renderWorkoutsTab() {
     : '';
   const _wToggleHtml = `<div style="display:flex;gap:0;margin-bottom:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;"><button onclick="switchWTabView('created')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_wTabView==='created'?'var(--accent)':'transparent'};color:${_wTabView==='created'?'#000':'var(--muted)'};font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">MY ZONE</button><button onclick="switchWTabView('library')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_wTabView==='library'?'var(--accent)':'transparent'};color:${_wTabView==='library'?'#000':'var(--muted)'};font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">EXPLORE</button>${_wHasCoach?`<button onclick="switchWTabView('coach')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_wTabView==='coach'?'#7ec8e3':'transparent'};color:${_wTabView==='coach'?'#000':'#7ec8e3'};font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">COACH</button>`:''}</div>${_wSubtitle}`;
   if (toggleBar) {
-    const isWorkoutsActive = window._activeTab === 'workouts';
     toggleBar.innerHTML = _wToggleHtml;
-    toggleBar.style.display = isWorkoutsActive ? '' : 'none';
+    // display is managed by switchTab — don't touch it here
   }
   const _mainListTitle = '';
 
