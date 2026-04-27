@@ -3942,6 +3942,9 @@ function switchProgressView(view) {
 }
 
 function switchTab(tab) {
+  if (window._switchTabBusy) return;
+  window._switchTabBusy = true;
+  try {
   window._activeTab = tab;
   document.activeElement?.blur();
   // Hide floating bar when switching away from Today
@@ -4027,6 +4030,7 @@ function switchTab(tab) {
   if (tab !== 'log' && tab !== 'exercises') { if (!window._createNewMode) window._activeTabHighlight = null; if (tab !== 'workouts') { window._loadFromToday = false; window._isChangingWorkout = false; } }
   localStorage.setItem('ironlog_active_tab', tab);
   updatePickModeTabs();
+  } finally { window._switchTabBusy = false; }
 }
 
 function updatePickModeTabs() {
