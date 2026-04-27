@@ -25,7 +25,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="BARZELPRO">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#e8ff47">
+<meta name="theme-color" content="#0a0a0a">
 <meta name="description" content="Track your workouts, monitor progress, and crush your fitness goals.">
 <link rel="manifest" href="manifest.json">
 <script>
@@ -39,7 +39,7 @@ if ('serviceWorker' in navigator) {
 
 <link rel="apple-touch-icon" href="logo.svg">
 <link rel="icon" type="image/svg+xml" href="logo.svg">
-<title>icon_test_2</title>
+<title>BARZELPRO</title>
 <!-- localForage: IndexedDB-backed offline storage -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -84,11 +84,11 @@ body.desktop-mode .pages-wrap {
 .logo{font-family:'Bebas Neue';font-size:34px;color:var(--accent);display:flex;flex-direction:column;align-items:flex-start;}
 .logo span{color:var(--muted);font-size:9px;font-family:'DM Sans';display:block;margin-top:-4px;letter-spacing:3px;}
 .date-badge{padding:6px 4px;font-size:12px;color:#fff;font-weight:600;}
-.tabs{display:flex;gap:6px;padding:14px 20px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:29;background:var(--bg);}
-.tab{flex:1;padding:9px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;outline:none;-webkit-tap-highlight-color:transparent;}
+.tabs{display:flex;gap:0;padding:0;border-top:1px solid var(--border);border-bottom:none;position:fixed;bottom:0;left:0;right:0;z-index:29;background:var(--bg);max-width:430px;margin:0 auto;padding-bottom:env(safe-area-inset-bottom);}
+.tab{flex:1;padding:12px 4px 10px;border-radius:0;border:none;background:transparent;color:var(--muted);font-family:'DM Sans';font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;outline:none;-webkit-tap-highlight-color:transparent;text-align:center;}
 .tab:focus,.tab:focus-visible{outline:none;border-color:var(--border);}
-.tab.active{background:transparent;color:var(--accent);border-color:var(--border);font-weight:700;}.tab#tab-progress-btn.active,.tab#tab-progress-btn2.active{color:#34d399;border-color:#34d399;}#tab-progress-btn,#tab-progress-btn2{flex:none;padding-left:14px;padding-right:14px;}
-.page{display:none;padding:14px 16px;}
+.tab.active{background:transparent;color:var(--accent);border:none;font-weight:700;}.tab#tab-progress-btn.active,.tab#tab-progress-btn2.active{color:#34d399;border:none;}#tab-progress-btn,#tab-progress-btn2{flex:1;}
+.page{display:none;padding:14px 16px;padding-bottom:calc(70px + env(safe-area-inset-bottom));}
 .page.active{display:block;}
 .section-title{font-family:'DM Sans';font-size:20px;font-weight:700;margin-bottom:14px;color:var(--muted);letter-spacing:0;position:sticky;top:0;z-index:25;background:var(--bg);padding:10px 0 6px;}
 .section-title span{color:var(--text);}
@@ -100,7 +100,7 @@ body.desktop-mode .pages-wrap {
 .empty-state .big{font-family:'Bebas Neue';font-size:48px;color:var(--surface2);display:block;}
 
 /* ── TODAY TAB ─────────────────────────────────── */
-.workout-name-bar{position:sticky;top:0;z-index:20;background:var(--bg);padding:8px 16px 2px;border-bottom:1px solid var(--border);display:none;}
+.workout-name-bar{position:sticky;top:0;z-index:20;background:var(--bg);padding:10px 16px;border-bottom:1px solid var(--border);display:none;}
 .workout-name-bar.visible{display:block;}
 .workout-name-bar input{width:100%;background:transparent;border:none;color:#34d399;font-family:'Bebas Neue';font-size:22px;padding:0;letter-spacing:1px;outline:none;text-align:left;direction:ltr;}
 .workout-name-bar input::placeholder{color:var(--muted);}
@@ -656,6 +656,10 @@ body.desktop-mode .pages-wrap {
 .trash-item.trash-selected{background:rgba(232,255,71,.06);}
 .trash-select-check{width:18px;height:18px;border-radius:4px;border:1.5px solid #333;flex-shrink:0;transition:all .15s;background:transparent;}
 .trash-select-check.selected{background:var(--accent);border-color:var(--accent);background-image:url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 6l3 3 5-5' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:center;}
+
+/* Tab icon styles — injected by inject-icons.js */
+.tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;}
+.tab svg{flex-shrink:0;}
 </style>
 <script src="config.js"></script>
 <script>
@@ -1018,10 +1022,19 @@ function hidAuthScreen() {
   <button onclick="toggleUserMenu();window._fbSignOut&&window._fbSignOut()" style="width:100%;background:transparent;border:none;border-radius:8px;color:#ff4747;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;text-align:left;transition:background .15s;" onmouseover="this.style.background='#1e1e1e'" onmouseout="this.style.background='transparent'">Sign Out</button>
 </div>
 <div class="tabs">
-  <button class="tab active" onclick="switchTab('log')">Today</button>
-  <button class="tab" onclick="if(!window._createNewMode)switchTab('workouts')">Workouts</button>
-  <button class="tab" onclick="switchTab('exercises')">Exercises</button>
-  <button class="tab" id="tab-progress-btn" onclick="switchTab('progress')">PRO</button>
+  <button class="tab active" id="tab-log-btn" onclick="switchTab('log')">
+  <svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" id="House-Chimney--Streamline-Ultimate" height="22" width="22" style="display:block;flex-shrink:0;"> <path d="M19.5 8.4V3.5A0.5 0.5 0 0 0 19 3h-2a0.5 0.5 0 0 0 -0.5 0.5v2.14l-4.162 -3.829a0.5 0.5 0 0 0 -0.678 0l-11 10.321A0.5 0.5 0 0 0 1 13h2.5v9.5a1 1 0 0 0 1 1h15a1 1 0 0 0 1 -1V13H23a0.5 0.5 0 0 0 0.339 -0.868Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> </svg>
+  <span>Today</span>
+</button>
+  <button class="tab" id="tab-workouts-btn" onclick="if(!window._createNewMode)switchTab('workouts')">
+  <svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" id="Paper-Write--Streamline-Ultimate" height="22" width="22" style="display:block;flex-shrink:0;"> <path d="M18.5 19v3.5a1 1 0 0 1 -1 1h-16a1 1 0 0 1 -1 -1v-18a1 1 0 0 1 1 -1h3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="M14.5 3.5h3a1 1 0 0 1 1 1V8" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="M8 1.999a1.5 1.5 0 1 0 3 0 1.5 1.5 0 1 0 -3 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="M10.915 2.5H13.5a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-8a1 1 0 0 1 -1 -1v-1a1 1 0 0 1 1 -1h2.585" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="m3.5 9.499 12 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="m3.5 13.499 9.466 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="m3.5 17.499 7.983 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="m17 17.5 -3.5 1 1 -3.5 5.982 -5.982a1.768 1.768 0 0 1 2.5 2.5Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> </svg>
+  <span>Workouts</span>
+</button>
+  <button class="tab" id="tab-exercises-btn" onclick="switchTab('exercises')">
+  <svg width="22" height="22" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 48 48" id="Dumbell--Streamline-Plump" height="22" width="22" style="display:block;flex-shrink:0;"> <g id="dumbell--sports-weights-dumbbell-sport-fitness-hotel"> <path id="Union" fill="currentColor" fill-rule="evenodd" d="M10.6236 10.1067C11.1353 9.79989 11.9217 9.5 13 9.5c1.0783 0 1.8647 0.29989 2.3764 0.6067 0.7881 0.4725 1.0246 1.2811 1.0363 1.8562 0.0234 1.1483 0.0873 4.9344 0.0873 12.0371 0 7.1027 -0.0639 10.8888 -0.0873 12.0371 -0.0117 0.5751 -0.2482 1.3837 -1.0363 1.8562 -0.5117 0.3068 -1.2981 0.6067 -2.3764 0.6067 -1.0783 0 -1.8647 -0.2999 -2.3764 -0.6067 -0.78811 -0.4725 -1.0246 -1.2811 -1.03632 -1.8562C9.56389 34.8888 9.5 31.1027 9.5 24c0 -7.1027 0.06388 -10.8888 0.08728 -12.0371 0.01171 -0.5751 0.2482 -1.3837 1.03632 -1.8562Zm26.7528 0C36.8647 9.79989 36.0783 9.5 35 9.5c-1.0783 0 -1.8647 0.29989 -2.3764 0.6067 -0.7881 0.4725 -1.0246 1.2811 -1.0363 1.8562C31.5639 13.1112 31.5 16.8973 31.5 24c0 7.1027 0.0639 10.8888 0.0873 12.0371 0.0117 0.5751 0.2482 1.3837 1.0363 1.8562 0.5117 0.3068 1.2981 0.6067 2.3764 0.6067 1.0783 0 1.8647 -0.2999 2.3764 -0.6067 0.7881 -0.4725 1.0246 -1.2811 1.0363 -1.8562 0.0234 -1.1483 0.0873 -4.9344 0.0873 -12.0371 0 -7.1027 -0.0639 -10.8888 -0.0873 -12.0371 -0.0117 -0.5751 -0.2482 -1.3837 -1.0363 -1.8562ZM4.5 14.5c-0.65951 0 -1.18898 0.12 -1.59431 0.2771 -1.01519 0.3934 -1.33025 1.356 -1.3448 1.9996C1.5406 17.6744 1.5 19.9737 1.5 24s0.04061 6.3256 0.0609 7.2233c0.01454 0.6436 0.3296 1.6062 1.34479 1.9996 0.40533 0.1571 0.9348 0.2771 1.59431 0.2771 0.65952 0 1.18899 -0.12 1.59432 -0.2771 1.01519 -0.3934 1.33024 -1.356 1.34479 -1.9996C7.4594 30.3256 7.5 28.0263 7.5 24s-0.0406 -6.3256 -0.06089 -7.2233c-0.01455 -0.6436 -0.32961 -1.6062 -1.3448 -1.9996C5.68898 14.62 5.15951 14.5 4.5 14.5Zm40.5943 0.2771C44.689 14.62 44.1595 14.5 43.5 14.5c-0.6595 0 -1.189 0.12 -1.5943 0.2771 -1.0152 0.3934 -1.3303 1.356 -1.3448 1.9996 -0.0203 0.8977 -0.0609 3.197 -0.0609 7.2233s0.0406 6.3256 0.0609 7.2233c0.0145 0.6436 0.3296 1.6062 1.3448 1.9996 0.4053 0.1571 0.9348 0.2771 1.5943 0.2771 0.6595 0 1.189 -0.12 1.5943 -0.2771 1.0152 -0.3934 1.3303 -1.356 1.3448 -1.9996 0.0203 -0.8977 0.0609 -3.197 0.0609 -7.2233s-0.0406 -6.3256 -0.0609 -7.2233c-0.0145 -0.6436 -0.3296 -1.6062 -1.3448 -1.9996ZM18.5 26.8565v-5.7136c0 -0.9484 0.7762 -1.446 1.6031 -1.5169 0.1721 -0.0147 0.4249 -0.0336 0.7646 -0.0523 0.6794 -0.0373 1.7069 -0.0737 3.1323 -0.0737 1.4254 0 2.4529 0.0364 3.1323 0.0737 0.3397 0.0187 0.5925 0.0376 0.7646 0.0523 0.827 0.0709 1.6029 0.5689 1.6031 1.5172v5.7142c-0.0002 0.9482 -0.7763 1.4457 -1.6031 1.5166 -0.1721 0.0147 -0.4249 0.0336 -0.7646 0.0523 -0.6794 0.0373 -1.7069 0.0737 -3.1323 0.0737 -1.4254 0 -2.4529 -0.0364 -3.1323 -0.0737 -0.3397 -0.0187 -0.5925 -0.0376 -0.7646 -0.0523 -0.8272 -0.0709 -1.6031 -0.5689 -1.6031 -1.5175Z" clip-rule="evenodd" stroke-width="1"></path> </g> </svg>
+  <span>Exercises</span>
+</button>
+  <button class="tab" id="tab-progress-btn" onclick="switchTab('progress')"><span>PRO</span></button>
 </div>
 <div id="workoutsToggleBar" style="display:none;position:sticky;top:0;z-index:20;background:var(--bg);padding:8px 16px 0;"></div>
 <div id="exercisesToggleBar" style="display:none;position:sticky;top:0;z-index:20;background:var(--bg);padding:8px 16px 0;"></div>
@@ -1035,7 +1048,7 @@ function hidAuthScreen() {
 <!-- WORKOUT NAME FIXED BAR (only shown on Today tab when workout is active) -->
 <div class="workout-name-bar" id="workoutNameBar">
   <div style="display:flex;align-items:center;gap:8px;">
-    <input type="text" id="workoutName" placeholder="WORKOUT NAME" readonly style="flex:1;cursor:default;pointer-events:none;"/>
+    <input type="text" id="workoutName" placeholder="WORKOUT NAME" readonly style="flex:1;cursor:default;pointer-events:none;background:transparent;border:none;outline:none;color:var(--accent);font-family:'DM Sans';font-size:16px;font-weight:700;padding:0;"/>
     <div style="position:relative;flex-shrink:0;">
     <button id="workoutNameEditBtn" onclick="toggleWorkoutMenu(event)" style="background:transparent;border:none;color:var(--text);cursor:pointer;padding:4px 6px;display:flex;align-items:center;justify-content:center;border-radius:6px;transition:color .2s;" aria-label="Workout options">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
@@ -1087,12 +1100,11 @@ function hidAuthScreen() {
     </div>
     <!-- Middle: QR box with URL inside -->
     <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
-      <div id="share-qr-title" style="font-family:'DM Sans';font-size:18px;font-weight:700;color:#fff;letter-spacing:.5px;text-align:center;margin-bottom:12px;"></div>
-      <div style="background:#e8ff47;border-radius:20px;padding:16px;display:flex;flex-direction:column;align-items:center;gap:8px;">
+      <div id="share-qr-wrap" style="background:var(--accent);border-radius:16px;padding:10px;display:inline-flex;flex-direction:column;align-items:center;gap:8px;">
         <div id="share-qr-canvas" style="width:220px;height:220px;"></div>
 
       </div>
-      <div style="font-family:'DM Sans';font-size:14px;font-weight:400;color:#666;margin-top:16px;text-align:center;">Scan to open and install the app.</div>
+      <div id="share-qr-title" style="font-family:'DM Sans';font-size:18px;font-weight:700;color:#fff;letter-spacing:.5px;text-align:center;margin-top:12px;"></div>
     </div>
     <!-- Bottom: share + close -->
     <div style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%;max-width:380px;">
@@ -1622,7 +1634,6 @@ function hidAuthScreen() {
   </div>
 </div>
 
-
 <!-- EDIT HISTORY MODAL -->
 <div class="modal-overlay" id="editHistoryOverlay" onclick="if(event.target===this)closeEditHistory()">
   <div class="modal-sheet" style="max-height:92dvh;">
@@ -1733,8 +1744,7 @@ const _OfflineQueue = {
     }
     await _IDB.set(this.QUEUE_KEY, remaining);
     this._flushing = false;
-    if (success > 0 && typeof showToast === 'function') showToast(`☁ Synced ${success} offline change${success>1?'s':''}`);
-  },
+    },
 
   async count() {
     const q = (await _IDB.get(this.QUEUE_KEY)) || [];
@@ -1848,7 +1858,6 @@ window._idbGet    = (k) => _IDB.get(k).then(v => { console.log(k, v); return v; 
 window._netQueue  = () => _OfflineQueue.count().then(n => { console.log('[Queue] Pending:', n); return n; });
 window._netFlush  = () => _OfflineQueue.flush();
 window._netSession= () => window.BarzelpNet.hasValidSession().then(v => { console.log('[Net] Valid session:', v); return v; });
-
 
 // ══════════════════════════════════════════════════════
 //  DATA
@@ -2073,7 +2082,6 @@ function _checkFinishReadyImpl() {
 let miniChartDefaultOpen = false;
 let miniChartRange = localStorage.getItem('ironlog_mini_range') || '3M';
 
-
 function selectMiniGraph(cardId, which) {
   const graphs = {wt:'#e8ff47', rm:'#ff8c42', vol:'#a78bfa'};
   const labels = {wt:'Max Wt', rm:'1RM', vol:'Volume'};
@@ -2157,13 +2165,11 @@ function setMiniChartRange(cardId, range) {
   });
 }
 
-
 function setExTabRange(safeId, exName, range) {
   miniChartRange = range;
   localStorage.setItem('ironlog_mini_range', range);
   renderExTabMiniChart(safeId, exName);
 }
-
 
 // ── LIVE VOLUME PROGRESS BAR (#1, #2) ──────────────
 function updateVolProgressBar(exId) {
@@ -2412,11 +2418,11 @@ function updateVolProgressBar(exId) {
 
 function showTodayStartScreen() {
   _headerWorkoutModeOff();
-  // Restore header when back on start screen
+  // Show header only on start screen
   const _hdrS = document.querySelector('.header');
   const _hintS = document.getElementById('header-chevron-hint');
   if (_hdrS) _hdrS.classList.remove('collapsed');
-  if (_hintS) _hintS.style.display = 'none'; // no hint on start screen
+  if (_hintS) _hintS.style.display = 'none';
   if (window.hideExFloatBar) hideExFloatBar();
   window._isNewWorkoutFlow = false;
   document.getElementById('today-start-screen').style.display = 'flex';
@@ -2513,7 +2519,6 @@ function cancelTodayPlan() {
     savePlanned();
     renderCalendar();
     renderTodayPlanCard();
-    showToast('Plan cancelled');
   };
 }
 
@@ -2666,7 +2671,6 @@ function renderTodayPlanCard() {
     }
   }, 50);
 }
-
 
 function collapseHeader() {
   if (!window._headerCollapseAllowed) return; // only during active workout
@@ -2966,7 +2970,6 @@ function clearSession() {
     updatePickModeTabs();
     showTodayStartScreen();
     if (_wasFromWorkouts2) switchTab('workouts');
-    showToast('Workout cleared');
   };
 }
 
@@ -3006,25 +3009,6 @@ function makeThumb(ex) {
   div.innerHTML = `<span class="ex-thumb-label" style="font-family:'DM Sans';font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;text-align:center;padding:4px;">${displayMuscle(ex.muscle)}</span>`;
   return div;
 }
-
-function makeListRow(ex) {
-  const color = getMuscleColor(ex.muscle || 'Chest');
-  const lastSets = getLastSets(ex.label);
-  const lastFmt = lastSets.length ? 'Last: ' + fmtShort(lastSets[0]?.date || 0) : 'Last: —';
-  const div = document.createElement('div');
-  div.style.cssText = 'margin-bottom:8px;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer;';
-  div.onclick = () => selectExercise(ex.name);
-  div.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;">
-      <div style="flex:1;min-width:0;">
-        <div style="font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;letter-spacing:0;-webkit-text-stroke:0.4px currentColor;color:var(--text);margin-bottom:2px;">${ex.label}</div>
-        <div style="font-size:11px;color:var(--muted);">${lastFmt}</div>
-      </div>
-      <div style="font-family:'DM Sans';font-size:11px;font-weight:700;letter-spacing:.3px;color:${color};flex-shrink:0;margin-left:10px;text-transform:uppercase;">${displayMuscle(ex.muscle)}</div>
-    </div>`;
-  return div;
-}
-
 
 // ══════════════════════════════════════════════════════
 //  TABS
@@ -3242,8 +3226,8 @@ function renderExercisesTab() {
   const _exSubtitle = () => {
     const _brandName = window._brandConfig?.name || window.BRAND_ID || 'Brand';
     const _userName = window._currentUserData?.displayName || 'you';
-    if (_exTabView === 'created') return `<div style="font-family:'DM Sans';font-size:13px;color:var(--text);padding:9px 2px 1px;letter-spacing:.2px;">List - ${_userName}</div>`;
-    if (_exTabView === 'library') return `<div style="font-family:'DM Sans';font-size:13px;color:var(--text);padding:9px 2px 1px;letter-spacing:.2px;">By ${_brandName}</div>`;
+    if (_exTabView === 'created') return '';
+    if (_exTabView === 'library') return '';
     return '';
   };
   const toggleHtml = `<div style="display:flex;gap:0;margin-bottom:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
@@ -3343,16 +3327,6 @@ function _initWTabView() {
 function switchExTabView(view) {
   _exTabView = view;
   renderExercisesTab();
-}
-
-function filterExTabSearch(query) {
-  const q = query.trim().toLowerCase();
-  const cards = document.querySelectorAll('#exercisesTabContent [data-exname]');
-  if (!q) { cards.forEach(c => c.style.display = ''); return; }
-  cards.forEach(c => {
-    const name = (c.dataset.exname || '').toLowerCase();
-    c.style.display = name.includes(q) ? '' : 'none';
-  });
 }
 
 function selectExTabMuscle(muscle) {
@@ -3576,7 +3550,6 @@ function confirmNewEx() {
     window._exploreExLocalPending = true;
     updateMyDataIcons();
     renderExercisesTab();
-    showToast(`"${name}" added to Explore`);
     setTimeout(() => {
       const libBtn = document.getElementById('extab-library-sync-btn');
       if (libBtn) { libBtn.style.opacity = '1'; libBtn.style.borderColor = '#34d399'; libBtn.style.background = 'rgba(52,211,153,.1)'; libBtn.style.pointerEvents = ''; libBtn.style.cursor = 'pointer'; }
@@ -3599,7 +3572,6 @@ function confirmNewEx() {
     const _afterAdd = () => {
       window._exTabMuscle = muscle;
       renderExercisesTab();
-      showToast(`"${name}" added!`);
       setTimeout(() => {
         const box = document.querySelector('#exercisesTabContent div[style*="overflow-y:auto"]');
         if (box) box.scrollTop = box.scrollHeight;
@@ -3614,8 +3586,7 @@ function confirmNewEx() {
         _coachExercises.push({ ...newEx, id });
         window._coachExLocalPending = true;
         _afterAdd();
-      }).catch(e => showToast('Error: ' + e.message));
-    } else {
+      }).catch(e => {}) } else {
       _coachExercises.push({ ...newEx, id: Date.now().toString() });
       window._coachExLocalPending = true;
       _afterAdd();
@@ -3661,7 +3632,6 @@ function confirmNewEx() {
     } else {
       window._exTabMuscle = muscle;
       renderExercisesTab();
-      showToast(`"${name}" added!`);
       setTimeout(() => {
         const box = document.querySelector('#exercisesTabContent div[style*="overflow-y:auto"]');
         if (box) box.scrollTop = box.scrollHeight;
@@ -3684,7 +3654,6 @@ function confirmNewEx() {
     } else {
       window._exTabMuscle = muscle;
       renderExercisesTab();
-      showToast(`"${name}" added!`);
       setTimeout(() => {
         const box = document.querySelector('#exercisesTabContent div[style*="overflow-y:auto"]');
         if (box) box.scrollTop = box.scrollHeight;
@@ -3692,18 +3661,6 @@ function confirmNewEx() {
     }
   }, 300);
 }
-
-function openPickerForExTab(muscle) {
-  window._exTabPickerMode = true;
-  window._exTabPickerMuscle = muscle;
-  pickerTargetId = null;
-  activeMuscle = muscle;
-  document.getElementById('exSearch').value = '';
-  filterExercises();
-  document.getElementById('pickerOverlay').classList.add('open');
-  localStorage.setItem('ironlog_modal', 'picker');
-}
-
 
 function openWeekSummary(weekStartStr) {
   const weekStart = new Date(weekStartStr);
@@ -3961,92 +3918,6 @@ function renderExTabMiniChart(safeId, exName) {
   }
 }
 
-
-function renderExTabCharts(safeId, exName) {
-  const weightMap = new Map(), volMap = new Map(), volumeMap = new Map();
-  workouts.filter(w => !w._draft && !w._template).forEach(w => {
-    w.exercises.filter(e => e.name === exName).forEach(e => {
-      const done = doneSets(e.sets);
-      const mx = done.length ? Math.max(0, ...done.map(s => s.kg)) : 0;
-      const rm = done.length ? Math.round(Math.max(...done.map(s => s.kg * (1 + s.reps / 30))) * 10) / 10 : 0;
-      const vol = done.length ? Math.round(done.reduce((a, s) => a + s.kg * s.reps, 0)) : 0;
-      const d = fmtShort(w.date);
-      if (mx > 0) weightMap.set(w.date, { date: d, val: mx });
-      if (rm > 0) volMap.set(w.date, { date: d, val: rm });
-      if (vol > 0) volumeMap.set(w.date, { date: d, val: vol });
-    });
-  });
-  const weightPts = [...weightMap.entries()].sort((a, b) => a[0] - b[0]).map(e => e[1]);
-  const rmPts = [...volMap.entries()].sort((a, b) => a[0] - b[0]).map(e => e[1]);
-  const volPts = [...volumeMap.entries()].sort((a, b) => a[0] - b[0]).map(e => e[1]);
-
-  const miniOpts = (color) => ({
-    responsive: true, maintainAspectRatio: false,
-    layout: { padding: { top: 22 } },
-    plugins: { legend: { display: false }, tooltip: { enabled: false } },
-    scales: {
-      x: { ticks: { color: '#555', font: { size: 8 }, maxTicksLimit: 5, autoSkip: true, maxRotation: 0 }, grid: { display: false } },
-      y: { ticks: { color: '#555', font: { size: 8 } }, grid: { color: '#1e1e1e' } }
-    }
-  });
-
-  const lastValPlugin = (color) => [{
-    id: 'lastValLabel',
-    afterDraw(chart) {
-      const ctx = chart.ctx;
-      const ds = chart.data.datasets[0];
-      const meta = chart.getDatasetMeta(0);
-      const lastIdx = ds.data.length - 1;
-      if (lastIdx < 0) return;
-      const pt = meta.data[lastIdx];
-      const val = ds.data[lastIdx];
-      if (val == null) return;
-      ctx.save();
-      ctx.font = 'bold 9px DM Sans, sans-serif';
-      ctx.fillStyle = color;
-      ctx.textAlign = 'center';
-      const isBar = chart.config.type === 'bar';
-      const y = isBar ? pt.y - 6 : pt.y - 8;
-      ctx.fillText(val, pt.x, y);
-      ctx.restore();
-    }
-  }];
-
-  const rmCanvas = document.getElementById(safeId + '-rm');
-  if (rmCanvas && rmPts.length >= 1) {
-    if (rmCanvas._chartInst) rmCanvas._chartInst.destroy();
-    rmCanvas._chartInst = new Chart(rmCanvas.getContext('2d'), {
-      type: 'line',
-      data: { labels: rmPts.map(p => p.date), datasets: [{ data: rmPts.map(p => p.val), borderColor: '#ff8c42', backgroundColor: 'rgba(255,140,66,.08)', pointBackgroundColor: rmPts.map((_,i) => i===rmPts.length-1 ? '#fff' : '#ff8c42'), pointRadius: rmPts.map((_,i) => i===rmPts.length-1 ? 3 : 2), tension:0, fill: true, borderWidth: 1.5 }] },
-      options: miniOpts('#ff8c42'),
-      plugins: lastValPlugin('#ff8c42')
-    });
-  }
-
-  const volCanvas = document.getElementById(safeId + '-vol');
-  if (volCanvas && volPts.length >= 1) {
-    if (volCanvas._chartInst) volCanvas._chartInst.destroy();
-    volCanvas._chartInst = new Chart(volCanvas.getContext('2d'), {
-      type: 'bar',
-      data: { labels: volPts.map(p => p.date), datasets: [{ data: volPts.map(p => p.val), backgroundColor: volPts.map((_,i) => i===volPts.length-1 ? '#a78bfa' : 'rgba(167,139,250,.5)'), borderColor: '#a78bfa', borderWidth: 1.5, borderRadius: 3 }] },
-      options: miniOpts('#a78bfa'),
-      plugins: lastValPlugin('#a78bfa')
-    });
-  }
-
-  const wtCanvas = document.getElementById(safeId + '-wt');
-  if (wtCanvas && weightPts.length >= 1) {
-    if (wtCanvas._chartInst) wtCanvas._chartInst.destroy();
-    wtCanvas._chartInst = new Chart(wtCanvas.getContext('2d'), {
-      type: 'line',
-      data: { labels: weightPts.map(p => p.date), datasets: [{ data: weightPts.map(p => p.val), borderColor: '#e8ff47', backgroundColor: 'rgba(232,255,71,.08)', pointBackgroundColor: weightPts.map((_,i) => i===weightPts.length-1 ? '#fff' : '#e8ff47'), pointRadius: weightPts.map((_,i) => i===weightPts.length-1 ? 3 : 2), tension:0, fill: true, borderWidth: 1.5 }] },
-      options: miniOpts('#e8ff47'),
-      plugins: lastValPlugin('#e8ff47')
-    });
-  }
-}
-
-
 function switchProgressView(view) {
   const graphsBtn = document.getElementById('progress-seg-graphs');
   const historyBtn = document.getElementById('progress-seg-history');
@@ -4074,11 +3945,22 @@ function switchTab(tab) {
   window._activeTab = tab;
   document.activeElement?.blur();
   // Hide floating bar when switching away from Today
-  if (tab !== 'log') { if (window.hideExFloatBar) hideExFloatBar(); _headerWorkoutModeOff(); }
+  if (tab !== 'log') {
+    if (window.hideExFloatBar) hideExFloatBar();
+    _headerWorkoutModeOff();
+    // Hide header on non-Today tabs
+    const _hdrSwitch = document.querySelector('.header');
+    const _hintSwitch = document.getElementById('header-chevron-hint');
+    if (_hdrSwitch) _hdrSwitch.classList.add('collapsed');
+    if (_hintSwitch) _hintSwitch.style.display = 'none';
+  }
   else {
     // On Today tab, only show float bar if workout area is active AND a card is expanded
     const _workoutActive = document.getElementById('today-workout-area')?.style.display !== 'none';
     if (!_workoutActive && window.hideExFloatBar) hideExFloatBar();
+    // Show header only if start screen is visible (not during workout)
+    const _hdrToday = document.querySelector('.header');
+    if (_hdrToday && !_workoutActive) _hdrToday.classList.remove('collapsed');
   }
   // Clean up any stuck overlays and expanded slots
   document.getElementById('wtab-menu-fade')?.remove();
@@ -4176,7 +4058,6 @@ function updatePickModeTabs() {
   }
 }
 
-
 // ══════════════════════════════════════════════════════
 //  WORKOUTS TAB
 // ══════════════════════════════════════════════════════
@@ -4212,7 +4093,7 @@ function renderWorkoutsTab() {
   const _wBrandName = window._brandConfig?.name || window.BRAND_ID || 'Brand';
   const _wUserName = window._currentUserData?.displayName || 'you';
   const _wSubtitle = _wTabView === 'created'
-    ? `<div style="font-family:'DM Sans';font-size:13px;color:var(--text);padding:9px 2px 1px;letter-spacing:.2px;">List - ${_wUserName}</div>`
+    ? ''
     : _wTabView === 'library'
     ? `<div style="font-family:'DM Sans';font-size:13px;color:var(--text);padding:9px 2px 1px;letter-spacing:.2px;">By ${_wBrandName}</div>`
     : '';
@@ -4238,7 +4119,6 @@ function renderWorkoutsTab() {
   const hiddenCount = 0;
   const showingHidden = false;
   let sorted = deduped;
-
 
   const toggleHiddenBtn = '';
 
@@ -4422,8 +4302,6 @@ function renderWorkoutsTab() {
   }, 50);
 }
 
-
-
 // ══════════════════════════════════════════════════════
 //  EXERCISE PICKER — MULTI-SELECT
 // ══════════════════════════════════════════════════════
@@ -4436,8 +4314,6 @@ let _pickerMuscle = 'Chest';
 let _pickerSelected = [];       // array of { name, muscle, label }
 let _pickerIsReplace = false;   // true when replacing a single exercise card
 
-function buildMuscleFilters() { renderPickerList(); }
-function musclePillLabel(m) { return PICKER_LABELS[m] || m; }
 function setMuscle(m) { _pickerMuscle = m; renderPickerList(); }
 
 function openPicker(cardId) {
@@ -4689,18 +4565,8 @@ function selectExercise(name) {
 
 function filterExercises() { renderPickerList(); }
 
-
 // ══════════════════════════════════════════════════════
 //  TODAY — EXERCISE CARDS
-// ══════════════════════════════════════════════════════
-function getOrderNum(id) {
-  const list = document.getElementById('exerciseList');
-  const cards = list.querySelectorAll('.exercise-card');
-  for (let i = 0; i < cards.length; i++) {
-    if (cards[i].id === id) return i + 1;
-  }
-  return 1;
-}
 let _todayMuscleFilter = null;
 let _todayHideDone = false;
 
@@ -4836,24 +4702,6 @@ function refreshOrderNums() {
   });
 }
 
-function confirmDeleteExercise(card, name) {
-  const overlay = document.createElement('div');
-  overlay.className = 'delete-confirm-overlay';
-  overlay.innerHTML = `
-    <div class="delete-confirm-sheet">
-      <div class="delete-confirm-title">Remove Exercise ?</div>
-      <div class="delete-confirm-sub">"${name}" and all its sets will be removed.</div>
-      <div class="delete-confirm-btns">
-        <button class="btn-del-cancel" id="_delCancel">Cancel</button>
-        <button class="btn-del-yes" id="_delConfirm">Delete</button>
-      </div>
-    </div>`;
-  document.body.appendChild(overlay);
-  const close = () => overlay.remove();
-  overlay.querySelector('#_delCancel').onclick = close;
-  overlay.querySelector('#_delConfirm').onclick = () => { close(); card.remove(); refreshOrderNums(); updateTodayMuscleChips(); checkFinishReady(); setFocusMode(null); saveSession(); };
-}
-
 function addExerciseCard(ex, asDone=false, sessionData=null) {
   const id = 'ex_' + (++exerciseCounter);
   const card = document.createElement('div');
@@ -4864,7 +4712,6 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
   card.dataset.exname = ex.label;
   card.dataset.exmuscle = ex.muscle||'Chest';
   card.dataset.open = (sessionData ? sessionData.open : false) ? 'true' : 'false';
-
 
   // HEADER
   const header = document.createElement('div');
@@ -5159,7 +5006,6 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
   }
   checkFinishReady();
 }
-
 
 // Store chart data for scrubber
 const _miniChartData = {};
@@ -5658,6 +5504,8 @@ function closeExDetail() {
 
   if (window.hideExFloatBar) hideExFloatBar();
 }
+window.openExDetail = openExDetail;
+window.closeExDetail = closeExDetail;
 
 function _attachExDetailSwipe() {
   const detail = document.getElementById('ex-nav-detail');
@@ -5872,7 +5720,6 @@ function markSetDone(btn, exId) {
   const repsVal = repsSpan ? parseInt(repsSpan.dataset.reps) : 0;
   // Only allow marking as done if reps is defined
   if (!btn.classList.contains('done') && (!repsVal || repsVal <= 0)) {
-    showToast('Define reps before marking as done');
     return;
   }
   btn.classList.toggle('done');
@@ -6102,7 +5949,6 @@ function toggleDone(id) {
   if (_todayHideDone) applyTodayFilters();
 }
 
-
 function checkResetBtn(exId) {
   const card = document.getElementById(exId);
   const btn = document.getElementById(`reset-btn-${exId}`);
@@ -6212,91 +6058,6 @@ function renumberSets(exId) {
   updateIgnoreButtons(exId);
 }
 
-function openKgEditor(inputEl, exId) {
-  // Prevent double-open from both onfocus and onclick firing together
-  if (window._kgEditorOpening) return;
-  window._kgEditorOpening = true;
-  setTimeout(() => { window._kgEditorOpening = false; }, 300);
-  window._kgEditorInput = inputEl;
-  window._kgEditorExId = exId;
-  window._kgEditorVal = '';
-  // Make input visible again in case it was hidden by BW mode
-  inputEl.style.display = '';
-  const display = document.getElementById('kgEditorDisplay');
-  const unit = document.getElementById('kgEditorUnit');
-  // Check if previously set as BW
-  if (inputEl.dataset.bwExtra !== undefined) {
-    _kgBWMode = true;
-    window._kgEditorBWMode = true;
-    const extra = parseFloat(inputEl.dataset.bwExtra) || 0;
-    window._kgEditorVal = extra > 0 ? String(extra) : '';
-    display.textContent = extra > 0 ? `BW+${extra}` : 'BW';
-    if (unit) unit.textContent = '';
-    // BW button will be highlighted via bwActive in the HTML template below
-  } else {
-    const cur = parseFloat(inputEl.value);
-    display.textContent = !isNaN(cur) && cur > 0 ? String(cur) : '—';
-    window._kgEditorVal = !isNaN(cur) && cur > 0 ? String(cur) : '';
-    if (unit) unit.textContent = 'kg';
-  }
-  // Label: exercise name
-  const card = document.getElementById(exId);
-  const exName = card ? (card.dataset.exname || '') : '';
-  document.getElementById('kgEditorLabel').textContent = exName;
-  // Prev session kg hint for this exercise
-  const exNameKey = card ? (card.dataset.exname || '') : '';
-  let prevKg = null;
-  for (const w of workouts) {
-    if (w._draft) continue;
-    if (w._template) continue;
-    const prevEx = w.exercises.find(e => e.name === exNameKey || e.label === exNameKey);
-    if (prevEx) {
-      const done = prevEx.sets.filter(s => s.done && !s.ignored);
-      if (done.length) { prevKg = Math.max(...done.map(s => s.kg)); break; }
-    }
-  }
-  document.getElementById('kgEditorPrev').innerHTML = prevKg > 0 ? `<span style="color:#ff8c42;font-weight:700;">prev: ${prevKg}kg</span>` : '';
-  window._kgEditorPrevKg = prevKg;
-  // Reset BW mode on every open (will be re-applied below if needed)
-  _kgBWMode = false;
-  window._kgEditorBWMode = false;
-  const _bwBtnReset = document.getElementById('kgBWBtnInline') || document.getElementById('kgBWBtn');
-  const _kgUnitReset = document.getElementById('kgEditorUnit');
-  if (_bwBtnReset) { _bwBtnReset.style.borderColor = '#555'; _bwBtnReset.style.color = '#aaa'; }
-  if (_kgUnitReset) _kgUnitReset.textContent = 'kg';
-  if (_userBW && _bwBtnReset) _bwBtnReset.title = `Your BW: ${_userBW}kg`;
-  // Reset sign mode to + on every open
-  _kgSignMode = 1;
-  const _toggle = document.getElementById('kgSignToggle');
-  if (_toggle) _toggle.innerHTML = '<span style="color:#555;">-/</span><span style="color:var(--accent);">+</span>';
-  ['kgAddBtn1','kgAddBtn2','kgAddBtn3'].forEach((id, i) => {
-    const b = document.getElementById(id);
-    if (!b) return;
-    b.textContent = ['+1.25','+2.5','+5'][i];
-    b.style.color = 'var(--accent)';
-    b.style.borderColor = 'rgba(232,255,71,.3)';
-  });
-  // Position below the tapped set row
-  // Use inline editor — keep overlay hidden
-  const overlay = document.getElementById('kgEditorOverlay');
-  if (overlay) overlay.style.display = 'none';
-  // Get row — use BW label if input is hidden
-  const row = inputEl.closest('tr');
-  const bwLabel = inputEl.parentElement?.querySelector('.bw-display-label');
-  const refEl = (bwLabel && inputEl.style.display === 'none') ? bwLabel : (row || inputEl);
-  sheet.style.visibility = 'hidden';
-  // Use setTimeout to ensure sheet is fully rendered before measuring
-  setTimeout(() => {
-    const rowRect = refEl.getBoundingClientRect();
-    const sheetH = sheet.offsetHeight;
-    let top = rowRect.bottom + 8;
-    const maxTop = window.innerHeight - sheetH - 8;
-    // Clamp: don't go above 16px, don't overflow bottom
-    top = Math.min(top, Math.max(16, maxTop));
-    sheet.style.top = top + 'px';
-    sheet.style.visibility = '';
-  }, 50);
-}
 function closeKgEditor() {
   document.getElementById('kgEditorOverlay').style.display = 'none';
   window._kgEditorInput = null;
@@ -6375,54 +6136,6 @@ window._dbgLog = function(msg, color) {
   while (el.children.length > 60) el.removeChild(el.lastChild);
 };
 
-// ── PROPERTY WATCHERS — catch every write to key globals ──────────────────
-(function _installWatchers() {
-  function watchProp(name, color) {
-    let _val = window[name];
-    Object.defineProperty(window, name, {
-      get() { return _val; },
-      set(v) {
-        const stack = new Error().stack.split('\n').slice(1,3).map(s=>s.trim().replace(/.*at /,'')).join(' → ');
-        window._dbgLog('SET window.' + name + ' = ' + (v && typeof v === 'object' ? '[obj]' : v) + '  ← ' + stack, color);
-        _val = v;
-      },
-      configurable: true
-    });
-  }
-  // Watch after DOM ready so dbgLog panel exists
-  document.addEventListener('DOMContentLoaded', () => {
-    watchProp('_kgEditorVal', '#ff8c42');
-    watchProp('_kgEditorInput', '#7ec8e3');
-    watchProp('_kgEditorOpening', '#a78bfa');
-    watchProp('_inlineKgEditorId', '#f87171');
-  });
-})();
-
-(function _injectDbgUI() {
-  const panel = document.createElement('div');
-  panel.id = '_dbg_panel';
-  panel.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#0a0a0aee;border-bottom:2px solid #e8ff47;padding:6px 8px;max-height:220px;overflow-y:auto;font-family:monospace;display:none;';
-  const hdr = document.createElement('div');
-  hdr.style.cssText = 'display:flex;gap:6px;margin-bottom:4px;';
-  const toggle2 = document.createElement('button');
-  toggle2.textContent = 'CLEAR';
-  toggle2.style.cssText = 'background:#333;color:#fff;font-size:10px;border:none;border-radius:4px;padding:2px 6px;cursor:pointer;';
-  toggle2.onclick = () => { panel.querySelectorAll('div:not(:first-child)').forEach(d=>d.remove()); };
-  hdr.appendChild(toggle2);
-  const snapBtn = document.createElement('button');
-  snapBtn.textContent = 'SNAP';
-  snapBtn.style.cssText = 'background:#333;color:#e8ff47;font-size:10px;border:none;border-radius:4px;padding:2px 6px;cursor:pointer;';
-  snapBtn.onclick = () => {
-    window._dbgLog('SNAP: val=' + window._kgEditorVal + ' input=' + !!window._kgEditorInput + ' id=' + window._inlineKgEditorId + ' opening=' + window._kgEditorOpening + ' displayEl=' + !!document.getElementById('kgEditorDisplay'), '#ffffff');
-  };
-  hdr.appendChild(snapBtn);
-  panel.appendChild(hdr);
-  const toggle = document.createElement('button');
-  toggle.textContent = 'DBG';
-  toggle.style.cssText = 'position:fixed;top:4px;right:8px;z-index:100000;background:#e8ff47;color:#000;font-size:10px;font-weight:700;border:none;border-radius:6px;padding:5px 9px;cursor:pointer;';
-  toggle.onclick = () => { panel.style.display = panel.style.display === 'none' ? 'block' : 'none'; };
-  document.addEventListener('DOMContentLoaded', () => { document.body.appendChild(panel); document.body.appendChild(toggle); });
-})();
 // ─────────────────────────────────────────────────────────────────────────
 /* DBG_END */
 function confirmKgEditor() {
@@ -6575,28 +6288,6 @@ function addSet(exId, defaultKg=null, defaultReps=null, defaultDone=false) {
 
 }
 
-function adjustReps(btn, delta) {
-  const td = btn.closest('td');
-  const span = td.querySelector('.reps-spin-val');
-  const hidden = td.querySelector('[data-reps-hidden]');
-  const cur = parseInt(span.dataset.reps) || 0;
-  const next = Math.max(1, cur + delta);
-  span.textContent = next;
-  span.dataset.reps = next;
-  span.classList.remove('prefilled');
-  if (hidden) hidden.value = next;
-  // Brief press flash, clear immediately
-  btn.classList.add('reps-active');
-  setTimeout(() => btn.classList.remove('reps-active'), 150);
-  // Clear any active highlight on all spin buttons in this row
-  const sibBtns = btn.closest('td').querySelectorAll('.reps-spin-btn');
-  sibBtns.forEach(b => { clearTimeout(b._ht); });
-  // trigger saveSession and chart refresh via the set row
-  const row = btn.closest('tr');
-  const exId = row.closest('.ex-card-body')?.id?.replace('body-','');
-  if (exId) { refreshCardMiniCharts(exId); saveSession(); updateVolProgressBar(exId); updateIgnoreButtons(exId); }
-}
-
 function dismissBanner(input) {
   const banner = input.closest('.ex-card-body')?.querySelector('.no-hist-banner');
   if (!banner) return;
@@ -6689,11 +6380,6 @@ function setTimerPreset(id, secs) {
   });
 }
 
-function startStopTimer(id) {
-  const t = _timers[id];
-  if (!t) return;
-  if (t.running) { stopTimer(id); } else { startTimer(id); }
-}
 function updateTimerChevronDot(exId, show) {
   const card = document.getElementById(exId);
   const chevBtn = document.getElementById(`chev-${exId}`);
@@ -7225,7 +6911,6 @@ function saveWorkoutToList() {
       const libBtn = document.getElementById('wtab-library-sync-btn');
       if (libBtn) { libBtn.style.opacity = '1'; libBtn.style.borderColor = '#34d399'; libBtn.style.background = 'rgba(52,211,153,.1)'; libBtn.style.pointerEvents = ''; libBtn.style.cursor = 'pointer'; }
     }, 150);
-    showToast(editId ? `"${name}" updated` : `"${name}" added to Explore`);
     return;
   }
 
@@ -7270,7 +6955,6 @@ function saveWorkoutToList() {
     switchTab('workouts');
     const _lbCoach = document.getElementById('saveToLibraryBtn');
     if (_lbCoach && canEditLibrary()) _lbCoach.style.display = '';
-    showToast(editId ? `"${name}" updated!` : `"${name}" saved!`);
     return;
   }
 
@@ -7333,7 +7017,6 @@ function saveWorkoutToList() {
     showTodayStartScreen();
     checkFinishReady();
     switchTab('workouts');
-    showToast(`"${name}" saved!`);
   }
 }
 function actionsRowRestore() {
@@ -7486,22 +7169,11 @@ function confirmSave() {
     });
   }
 }
-function discardWorkout() {
-  clearDraft();
-  window._pendingWorkout = null;
-  document.getElementById('summaryOverlay').classList.remove('open');
-  document.getElementById('workoutName').value = '';
-  resetWorkoutState();
-  showTodayStartScreen();
-  _LS.remove('ironlog_session');
-  showToast('Workout discarded');
-}
 
 // ══════════════════════════════════════════════════════
 //  LOAD HISTORY MODAL
 // ══════════════════════════════════════════════════════
 // (hide workout feature removed)
-
 
 function openWorkoutNameModal() {
   const current = document.getElementById('workoutName')?.value || '';
@@ -7619,93 +7291,6 @@ function closeNewWorkoutAction(proceed) {
       switchTab('workouts');
     }
   }
-}
-function openLoadHistory(showHidden) {
-  const body = document.getElementById('loadHistoryBody');
-  const seen = new Set();
-  const unique = workouts.filter(w => {
-    const name = w.name?.trim().toLowerCase() || '';
-    if (seen.has(name)) return false;
-    seen.add(name);
-    return true;
-  });
-  const visible = unique;
-
-  if (!unique.length) {
-    body.innerHTML = `<div class="empty-state"><span class="big">0</span><span style="color:#fff;">No saved workouts yet.</span></div>
-      <div style="padding:16px 0 4px;">
-        <button onclick="closeLoadHistory();startNewWorkout();" style="width:100%;padding:14px;background:var(--accent);color:#000;border:none;border-radius:12px;font-family:'Bebas Neue';font-size:18px;letter-spacing:1.5px;cursor:pointer;">+ CREATE NEW WORKOUT</button>
-      </div>`;
-  } else {
-    body.innerHTML = (visible.length ? visible.map((w)=>{
-    const i = workouts.indexOf(w);
-    const exDetails = w.exercises.map((e,ei)=>{
-      const isHebrew = /[\u0590-\u05FF]/.test(e.name);
-      const content = `<span style="flex:1;color:var(--text);font-weight:600;${isHebrew?'text-align:right;direction:rtl;':''}">${e.name}</span><span style="display:inline-flex;align-items:center;gap:0;flex-shrink:0;"><span style="color:var(--muted);font-family:'Bebas Neue';font-size:16px;line-height:1;width:16px;text-align:center;">X</span><span style="color:var(--muted);font-family:'Bebas Neue';font-size:16px;line-height:1;width:20px;text-align:left;">${(e.sets||[]).filter(s=>!s.ignored).length}</span></span>`;
-      const exMuscle = e.muscle || getAllExercises().find(x=>x.name===e.name||x.label===e.name)?.muscle || '';
-      return `<div class="ldet-ex-row" data-muscle="${exMuscle}" style="padding:7px 14px;border-top:1px solid var(--border);font-size:12px;color:var(--text);display:flex;align-items:center;gap:8px;transition:background .2s;">${content}</div>`;
-    }).join('');
-    const muscleCounts = {};
-    w.exercises.forEach(e => {
-      const m = e.muscle || getAllExercises().find(x=>x.name===e.name||x.label===e.name)?.muscle || 'Other';
-      muscleCounts[m] = (muscleCounts[m]||0) + 1;
-    });
-    const muscleChips = Object.entries(muscleCounts).map(([m,c])=>`<button class="hcard-muscle-chip" data-muscle="${m}" onclick="event.stopPropagation();highlightLoadMuscle('ldet-${i}',this)">${displayMuscle(m)} <strong>${c}</strong></button>`).join('');
-    return `<div class="load-hist-item">
-      <div style="display:flex;align-items:flex-start;gap:6px;padding:12px 10px 12px 12px;">
-        <div style="flex:1;min-width:0;">
-          <div class="load-hist-name" onclick="document.getElementById('wtab-chev-${i}').click()" style="cursor:pointer;">${w.name}</div>
-          <div class="hcard-muscles" style="padding:4px 0 0;">${muscleChips}</div>
-          <div style="height:60px;margin-top:8px;"><canvas id="load-chart-${i}"></canvas></div>
-        </div>
-        <div style="display:flex;flex-direction:row;gap:6px;flex-shrink:0;align-items:stretch;">
-          <button onclick="toggleLoadDetail('ldet-${i}',this)" style="background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--muted);font-size:16px;width:30px;height:30px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;">▾</button>
-          <button onclick="loadWorkout(${i})" style="background:rgba(232,255,71,.1);border:1px solid rgba(232,255,71,.35);border-radius:7px;color:var(--accent);font-size:12px;font-weight:700;padding:6px 8px;cursor:pointer;">Load</button>
-        </div>
-      </div>
-      <div id="ldet-${i}" style="max-height:0;overflow:hidden;transition:max-height .3s ease;">
-        ${exDetails}
-      </div>
-    </div>`;
-  }).join('') : `<div style="text-align:center;color:var(--muted);padding:24px;font-size:13px;">No workouts.</div>`);
-  }
-  document.getElementById('loadHistoryOverlay').classList.add('open');
-  // Render sets-by-body-part mini charts for each load item
-  setTimeout(() => {
-    const BODY_ORDER = ['Chest','Back','Legs','Shoulders','Arms','Core','Compound'];
-    const colors = ['#e8ff47','#7ec8e3','#ff8c42','#a78bfa','#34d399','#f87171','#20d4c8'];
-    visible.forEach(w => {
-      const i = workouts.indexOf(w);
-      const canvas = document.getElementById(`load-chart-${i}`);
-      if (!canvas) return;
-      const muscleExCount = {};
-      (w.exercises||[]).forEach(e => {
-        const m = e.muscle || getAllExercises().find(x=>x.name===e.name||x.label===e.name)?.muscle || 'Other';
-        muscleExCount[m] = (muscleExCount[m]||0) + 1;
-      });
-      const total = Object.values(muscleExCount).reduce((a,b)=>a+b,0);
-      const data = BODY_ORDER.map(m=>muscleExCount[m]||0);
-      const pcts = data.map(v=>v); // raw exercise counts
-      new Chart(canvas.getContext('2d'), {
-        type: 'bar',
-        data: { labels: BODY_ORDER.map(m=>displayMuscle(m)), datasets: [{ data: pcts, backgroundColor: colors.map(c=>c+'99'), borderColor: colors, borderWidth: 1.5, borderRadius: 4 }] },
-        options: { responsive: true, maintainAspectRatio: false, layout: { padding: { top: 14 } },
-          plugins: { legend: { display: false }, tooltip: { enabled: false } },
-          scales: { x: { ticks: { display: false }, grid: { display: false } }, y: { display: false } } },
-        plugins: [{ id: 'lhBarLabels', afterDraw(chart) {
-          const ctx = chart.ctx;
-          chart.data.datasets.forEach((ds,di) => {
-            chart.getDatasetMeta(di).data.forEach((bar,idx) => {
-              const val = ds.data[idx]; if (!val) return;
-              ctx.save(); ctx.fillStyle = '#aaa'; ctx.font = 'bold 10px DM Sans,sans-serif';
-              ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-              ctx.fillText(val, bar.x, bar.y - 2); ctx.restore();
-            });
-          });
-        }}]
-      });
-    });
-  }, 50);
 }
 function highlightLoadMuscle(detId, chipBtn) {
   const muscle = chipBtn.dataset.muscle;
@@ -7881,7 +7466,6 @@ function loadWorkout(idx) {
       }
     });
     closeLoadHistory();
-    showToast(`"${w.name}" loaded!`);
   };
   // If user already confirmed via Change Workout menu, skip second popup
   if (!anySetDone || window._isChangingWorkout) {
@@ -8343,7 +7927,6 @@ function saveEditHistory() {
   renderHistory();
   renderExercisesTab();
   closeEditHistory();
-  showToast('Workout updated!');
 }
 
 function closeEditHistory() {
@@ -8484,7 +8067,6 @@ function clearAllHistory() {
     }
     renderHistory(); updateTrashCount();
     if (typeof renderWorkoutsTab === 'function') { window._keepWorkoutsTabState = false; }
-    showToast(msgs.join(' · '));
   };
 }
 
@@ -8506,7 +8088,6 @@ function clearAllTrash() {
     const count = deletedWorkouts.length;
     deletedWorkouts = [];
     saveDeleted(); renderTrash();
-    showToast(`${count} workout${count!==1?'s':''} permanently deleted`);
   };
 }
 
@@ -8636,7 +8217,6 @@ function exportData(merged = false) {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    showToast('Backup downloaded!');
     return;
   }
 
@@ -8674,7 +8254,6 @@ function exportData(merged = false) {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  showToast('Backup downloaded!');
 }
 
 function importData(input) {
@@ -8749,9 +8328,7 @@ function importData(input) {
       renderExercisesTab();
       if (typeof switchProgressView === 'function') switchProgressView('history');
       if (typeof renderStrengthProgress === 'function') renderStrengthProgress();
-      showToast('Data imported successfully!');
     } catch(err) {
-      showToast('Failed to read file');
     }
   };
   reader.readAsText(file);
@@ -8829,7 +8406,6 @@ function bulkTrashAction(action) {
       overlay.remove();
       indices.forEach(i => deletedWorkouts.splice(i, 1));
       saveDeleted(); _trashSelected.clear(); renderTrash();
-      showToast(`${indices.length} workout${indices.length>1?'s':'' } permanently deleted`);
     };
   } else {
     indices.forEach(i => {
@@ -8841,47 +8417,9 @@ function bulkTrashAction(action) {
     });
     indices.sort((a,b)=>b-a).forEach(i => deletedWorkouts.splice(i,1));
     save(); saveDeleted(); _trashSelected.clear(); renderTrash(); renderHistory();
-    showToast(`${indices.length} workout${indices.length>1?'s':'' } restored!`);
   }
 }
-function permanentDeleteWorkout(i) {
-  const w = deletedWorkouts[i];
-  if (!w) return;
-  const overlay = document.createElement('div');
-  overlay.className = 'delete-confirm-overlay';
-  overlay.innerHTML = `
-    <div class="delete-confirm-sheet">
-      <div class="delete-confirm-title">Delete Permanently ?</div>
-      <div class="delete-confirm-sub">"${w.name}" will be gone forever.</div>
-      <div class="delete-confirm-btns">
-        <button class="btn-del-cancel" id="_permDelCancel">Cancel</button>
-        <button class="btn-del-yes" id="_permDelConfirm">Delete Forever</button>
-      </div>
-    </div>`;
-  document.body.appendChild(overlay);
-  overlay.querySelector('#_permDelCancel').onclick = () => overlay.remove();
-  overlay.querySelector('#_permDelConfirm').onclick = () => {
-    overlay.remove();
-    deletedWorkouts.splice(i, 1);
-    saveDeleted();
-    renderTrash();
-    showToast(`"${w.name}" permanently deleted`);
-  };
-}
 
-function undeleteWorkout(i) {
-  const w = deletedWorkouts.splice(i, 1)[0];
-  delete w._deletedAt;
-  // Insert in correct chronological position (workouts sorted newest first)
-  const wDate = new Date(w.date).getTime();
-  const idx = workouts.findIndex(existing => new Date(existing.date).getTime() <= wDate);
-  if (idx === -1) workouts.push(w);
-  else workouts.splice(idx, 0, w);
-  save(); saveDeleted();
-  renderTrash();
-  renderHistory();
-  showToast(`"${w.name}" restored!`);
-}
 function updateTrashCount() {
   const el = document.getElementById('trashCount');
   if (el) el.textContent = deletedWorkouts.length ? deletedWorkouts.length : '';
@@ -8920,7 +8458,6 @@ function deleteWorkout(wi) {
     renderHistory();
     renderWorkoutsTab();
     const label = removed._draft ? `Draft "${removed.name}" moved to recycle bin` : `"${removed.name}" moved to recycle bin`;
-    showToast(label);
   };
 }
 
@@ -8952,7 +8489,6 @@ function restoreWorkout(wi) {
       }
     });
     switchTab('log');
-    showToast(`"${w.name}" loaded!`);
   };
   if (!anySetDone) { doLoad(); return; }
   const overlay = document.createElement('div');
@@ -8997,7 +8533,6 @@ function filterByRange(data, range) {
   }
   return data.filter(w=>w.date>=cutoff);
 }
-
 
 // ── SYNC CHART DATE ALIGNMENT (#5) ─────────────────
 // Align x-axis dates: volume chart (bar) is reference
@@ -9063,14 +8598,12 @@ function applyCustomRange() {
     fromVal = todayStr;
     fromEl.style.borderColor = 'var(--accent2)';
     setTimeout(() => { fromEl.style.borderColor = ''; }, 1500);
-    showToast('From date capped to today');
   }
   if (toVal && toVal > todayStr) {
     toEl.value = todayStr;
     toVal = todayStr;
     toEl.style.borderColor = 'var(--accent2)';
     setTimeout(() => { toEl.style.borderColor = ''; }, 1500);
-    showToast('To date capped to today');
   }
   if (fromVal) localStorage.setItem('ironlog_custom_from', fromVal);
   if (toVal) localStorage.setItem('ironlog_custom_to', toVal);
@@ -9098,16 +8631,6 @@ function updateCustomRangeDays() {
   const diff = Math.round((to - from) / (864e5)) + 1;
   daysEl.textContent = diff > 0 ? `${diff} day${diff !== 1 ? 's' : ''} selected` : '';
 }
-function setStrengthMuscle(btn) {
-  strengthMuscle = btn.dataset.muscle;
-  document.querySelectorAll('#strengthMuscleButtons .time-pill').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  renderStrengthChart();
-}
-// Keep legacy aliases in case called elsewhere
-function setVolumeRange(btn){ setGlobalRange(btn); }
-function setStrengthRange(btn){ setGlobalRange(btn); }
-
 
 // ── PROGRESS HELPERS ──────────────────────────────────
 // Only count sets marked done
@@ -9392,7 +8915,6 @@ function renderCapacityWorkoutList() {
   }).join('');
 }
 
-
 function toggleCapacityName(name, checked) {
   if (checked) _capSelectedNames.add(name);
   else _capSelectedNames.delete(name);
@@ -9492,7 +9014,6 @@ function initCapacityCard() {
   renderCapacityWorkoutList();
   renderCapacityChart();
 }
-
 
 function renderVolumeChart() {
   const base = filterByRange(workouts.filter(w=>!w._draft&&!w._template), globalRange);
@@ -10058,7 +9579,6 @@ function renderStrengthChart() {
   }
 }
 
-
 // ══════════════════════════════════════════════════════
 //  VOLUME PROGRESS CHART
 // ══════════════════════════════════════════════════════
@@ -10071,13 +9591,6 @@ let exProgressMetric = 'max'; // 'max' | '1rm' | 'vol'
 
 function setVolProgressMuscle2(muscle) {
   volProgressMuscle = muscle;
-  renderVolumeProgressChart();
-}
-
-function setVolProgressMuscle(btn) {
-  volProgressMuscle = btn.dataset.muscle;
-  document.querySelectorAll('#volProgressMuscleButtons .time-pill').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
   renderVolumeProgressChart();
 }
 
@@ -10860,15 +10373,6 @@ function adjustTarget(type, delta) {
   if (selectedCalDay) selectCalDay(selectedCalDay);
 }
 
-function updateCardioTarget(val) {
-  const n = parseInt(val);
-  if (n > 0) { cardioWeekTarget = n; localStorage.setItem('ironlog_cardio_target', n); renderCalendar(); if (selectedCalDay) selectCalDay(selectedCalDay); }
-}
-function updateWorkoutTarget(val) {
-  const n = parseInt(val);
-  if (n > 0) { workoutWeekTarget = n; localStorage.setItem('ironlog_workout_target', n); renderCalendar(); if (selectedCalDay) selectCalDay(selectedCalDay); }
-}
-
 function showCalDay(key) {
   const ws = window._calWorkoutDays?.get(key)||[];
   const cs = window._calCardioDays?.get(key)||[];
@@ -11252,7 +10756,6 @@ function saveCardioEntry(key) {
   renderCalendar();
   // Re-select the same day so only that day's data shows
   selectCalDay(key);
-  showToast(`${type} ${mins}min saved!`);
 }
 
 function editCardioEntry(idx) {
@@ -11307,7 +10810,6 @@ function saveEditCardio(idx) {
   saveCardio();
   renderCalendar();
   if (selectedCalDay) selectCalDay(selectedCalDay);
-  showToast('Cardio updated');
 }
 
 function deleteCardioEntry(idx) {
@@ -11317,7 +10819,6 @@ function deleteCardioEntry(idx) {
   renderCalendar();
   // Re-select the same day to show correct (possibly empty) state
   if (selectedCalDay) selectCalDay(selectedCalDay);
-  showToast('Cardio deleted');
 }
 
 function confirmDeleteCardio(idx) {
@@ -11605,7 +11106,6 @@ function calLoadWorkout(wi) {
       if (card) setTimeout(()=>{ if(card.dataset.open==='true') toggleCardCollapse(card.id); }, 50);
     });
     switchTab('log');
-    showToast(`"${w.name}" loaded!`);
   };
   if (!anySetDone) { doLoad(); return; }
   const overlay = document.createElement('div');
@@ -11655,7 +11155,6 @@ function calDeleteWorkout(wi, btn) {
     renderWorkoutsTab();
     renderCalendar();
     if (selectedCalDay) selectCalDay(selectedCalDay);
-    showToast(`"${removed.name}" moved to recycle bin`);
   };
 }
 
@@ -11663,29 +11162,12 @@ function calDeleteWorkout(wi, btn) {
 //  SAMPLE DATA
 // ══════════════════════════════════════════════════════
 
-
 // ══════════════════════════════════════════════════════
 //  PLAN WORKOUT (FUTURE CALENDAR)
 // ══════════════════════════════════════════════════════
 let _planWorkoutKey = null;
 let _planSelectedExercises = [];
 
-function openPlanWorkoutModal(key) {
-  _planWorkoutKey = key;
-  _planSelectedExercises = [];
-  const [ky,km,kd] = key.split('-').map(Number);
-  const d = new Date(ky, km, kd);
-  document.getElementById('planWorkoutDateLabel').textContent = d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
-  document.getElementById('planWorkoutName').value = '';
-  const allEx = getAllExercises();
-  const el = document.getElementById('planWorkoutExList');
-  if (!allEx.length) {
-    el.innerHTML = '<div style="font-size:12px;color:var(--muted);text-align:center;padding:16px;">No exercises defined yet. Add exercises in the Exercises tab first.</div>';
-  } else {
-    el.innerHTML = allEx.map(ex => `<label style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--surface);border:1px solid var(--border);border-radius:9px;margin-bottom:6px;cursor:pointer;"><input type="checkbox" value="${ex.name}" onchange="togglePlanExercise(this)" style="accent-color:var(--accent);width:16px;height:16px;flex-shrink:0;"><div><div style="font-size:13px;font-weight:700;color:var(--text);">${ex.name}</div><div style="font-size:11px;color:var(--muted);">${displayMuscle(ex.muscle||'Chest')}</div></div></label>`).join('');
-  }
-  document.getElementById('planWorkoutOverlay').classList.add('open');
-}
 function togglePlanExercise(cb) {
   const name = cb.value;
   if (cb.checked) { const ex = getAllExercises().find(e=>e.name===name); if (ex) _planSelectedExercises.push({name:ex.name, muscle:ex.muscle||'Chest'}); }
@@ -11705,7 +11187,6 @@ function savePlanWorkout() {
   plannedWorkouts.push(plan); savePlanned();
   closePlanWorkoutModal(); renderCalendar();
   if (selectedCalDay) selectCalDay(selectedCalDay);
-  showToast('Workout planned!');
 }
 function completePlannedCardio(planId, key) {
   const p = plannedWorkouts.find(x => x.planId === planId);
@@ -11718,7 +11199,6 @@ function completePlannedCardio(planId, key) {
   savePlanned();
   renderCalendar();
   selectCalDay(key);
-  showToast(`${p.activity || 'Cardio'} ${p.mins}min logged!`);
 }
 
 function deletePlannedWorkout(planId) {
@@ -11770,8 +11250,7 @@ function loadPlannedWorkout(planId) {
       addExerciseCard(ex);
     });
     localStorage.setItem('ironlog_wip_plan_id', planId);
-    closeCalendar(); switchTab('log'); showToast('Planned workout loaded!');
-  };
+    closeCalendar(); switchTab('log');  };
   if (!anySetDone) { doLoad(); return; }
   const overlay = document.createElement('div');
   overlay.className = 'delete-confirm-overlay';
@@ -11825,7 +11304,6 @@ function loadOrSwitchWorkouts() {
       });
       localStorage.setItem('ironlog_wip_plan_id', _todayPlan.planId);
       checkFinishReady();
-      showToast("Today's planned workout loaded!");
     };
     if (!anySetDone) { doLoad(); return; }
     const overlay = document.createElement('div');
@@ -11925,47 +11403,6 @@ function _wtabCancelSelection() {
   }, 200);
 }
 
-function toggleWtabLoadMenu(idx, btn) {
-  // Close all other open menus first
-  document.querySelectorAll('[id^="wtab-load-menu-"]').forEach(m => {
-    if (m.id !== `wtab-load-menu-${idx}`) m.style.display = 'none';
-  });
-  const menu = document.getElementById(`wtab-load-menu-${idx}`);
-  if (!menu) return;
-  const isOpen = menu.style.display !== 'none';
-  menu.style.display = isOpen ? 'none' : 'block';
-  // Add/remove fade overlay behind popup
-  if (!isOpen) {
-    let overlay = document.getElementById('wtab-menu-fade');
-    if (!overlay) {
-      overlay = document.createElement('div');
-      overlay.id = 'wtab-menu-fade';
-      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:40;';
-      overlay.onclick = () => {
-        menu.style.display = 'none';
-        overlay.remove();
-        const card = btn.closest('.load-hist-item');
-        if (card) { card.style.position = ''; card.style.zIndex = ''; }
-      };
-      document.body.appendChild(overlay);
-    }
-    menu.style.zIndex = '51';
-    // Close on outside click
-    setTimeout(() => {
-      const close = (e) => {
-        if (!menu.contains(e.target) && e.target !== btn) {
-          menu.style.display = 'none';
-          document.getElementById('wtab-menu-fade')?.remove();
-          document.removeEventListener('click', close);
-        }
-      };
-      document.addEventListener('click', close);
-    }, 10);
-  } else {
-    document.getElementById('wtab-menu-fade')?.remove();
-  }
-}
-
 function openWtabCalendarPlan(idx) {
   const w = workouts[idx];
   if (!w) return;
@@ -12029,35 +11466,6 @@ function _confirmWtabPlan() {
   window._wtabPlanIdx = undefined;
   window._wtabPlanSelectedDays = new Set();
   closeCalendar();
-  showToast(`"${w.name}" planned for ${count} day${count!==1?'s':''}!`);
-}
-
-function deleteHiddenWorkout(idx) {
-  const w = workouts[idx];
-  if (!w) return;
-  const overlay = document.createElement('div');
-  overlay.className = 'delete-confirm-overlay';
-  overlay.innerHTML = `<div class="delete-confirm-sheet">
-    <div class="delete-confirm-title">Delete Workout ?</div>
-    <div class="delete-confirm-sub">"${w.name}" will be permanently deleted.</div>
-    <div class="delete-confirm-btns">
-      <button class="btn-del-cancel" id="_dhwCancel">Cancel</button>
-      <button class="btn-del-yes" id="_dhwConfirm">Delete</button>
-    </div></div>`;
-  document.body.appendChild(overlay);
-  overlay.querySelector('#_dhwCancel').onclick = () => overlay.remove();
-  overlay.querySelector('#_dhwConfirm').onclick = () => {
-    overlay.remove();
-    // Move to deleted
-    w._deletedAt = Date.now();
-    deletedWorkouts.unshift(w);
-    workouts.splice(idx, 1);
-    save(); saveDeleted(); updateTrashCount();
-    window._keepWorkoutsTabState=true;
-
-    renderWorkoutsTab();
-    showToast(`"${w.name}" deleted`);
-  };
 }
 
 function editWorkoutFromTab(idx) {
@@ -12080,7 +11488,6 @@ function editWorkoutFromTab(idx) {
   });
   checkFinishReady();
   switchTab('log');
-  showToast(`Editing "${w.name}"`);
 }
 
 function deleteWorkoutFromTab(idx) {
@@ -12105,7 +11512,6 @@ function deleteWorkoutFromTab(idx) {
     _LS.set('ironlog_deleted_tab_names', JSON.stringify(_deletedTabNames));
     window._keepWorkoutsTabState = true;
     renderWorkoutsTab();
-    showToast(`"${w.name}" deleted`);
   };
 }
 
@@ -12178,68 +11584,6 @@ function wtabCycleFilter(detId, dir) {
   detEl.style.maxHeight = detEl.scrollHeight + 300 + 'px';
 }
 
-
-
-
-function wtabBarClick(wIdx, mi) {
-  const BODY_ORDER = ['Chest','Back','Legs','Shoulders','Arms','Core','Compound'];
-  const colors = ['#e8ff47','#7ec8e3','#ff8c42','#a78bfa','#34d399','#f87171','#20d4c8'];
-  const muscle = BODY_ORDER[mi];
-  const canvas = document.getElementById(`wtab-chart-${wIdx}`);
-  const detEl = document.getElementById(`wtab-ldet-${wIdx}`);
-  const chevBtn = document.getElementById(`wtab-chev-${wIdx}`);
-
-  // Expand card if not open
-  if (detEl && (!detEl.style.maxHeight || detEl.style.maxHeight === '0px')) {
-    if (chevBtn) chevBtn.click();
-  }
-
-  const chartInst = canvas ? Chart.getChart(canvas) : null;
-  const labelWrap = document.getElementById(`wtab-xlabels-${wIdx}`);
-  const labels = labelWrap ? labelWrap.querySelectorAll('span') : [];
-
-  // Check if already selected
-  const alreadySelected = detEl && detEl._wtabSelectedMuscle === muscle;
-  if (alreadySelected) {
-    // Deselect — restore colors
-    detEl._wtabSelectedMuscle = null;
-    if (chartInst) {
-      chartInst.data.datasets[0].backgroundColor = colors.map(c=>c+'99');
-      chartInst.data.datasets[0].borderColor = colors;
-      chartInst.update('none');
-    }
-    // Restore label colors based on whether body part has exercises
-    const chartData = chartInst ? chartInst.data.datasets[0].data : [];
-    labels.forEach((l,li) => l.style.color = (chartData[li]>0) ? colors[li] : '#444');
-    if (detEl) detEl.querySelectorAll('.ldet-ex-row').forEach(r => r.style.opacity = '');
-    return;
-  }
-
-  // Select
-  if (detEl) detEl._wtabSelectedMuscle = muscle;
-  if (chartInst) {
-    chartInst.data.datasets[0].backgroundColor = colors.map((c,ci) => ci===mi ? c+'cc' : c+'33');
-    chartInst.data.datasets[0].borderColor = colors.map((c,ci) => ci===mi ? c : c+'33');
-    chartInst.update('none');
-    if (detEl) detEl._wtabChartReset = () => {
-      chartInst.data.datasets[0].backgroundColor = colors.map(c=>c+'99');
-      chartInst.data.datasets[0].borderColor = colors;
-      chartInst.update('none');
-      labels.forEach(l => l.style.color = '#666');
-      if (detEl) detEl.querySelectorAll('.ldet-ex-row').forEach(r => r.style.opacity = '');
-      if (detEl) detEl._wtabSelectedMuscle = null;
-    };
-  }
-  labels.forEach((l,li) => l.style.color = li===mi ? colors[mi] : '#333');
-
-  setTimeout(() => {
-    if (!detEl) return;
-    detEl.querySelectorAll('.ldet-ex-row').forEach(row => {
-      row.style.opacity = (!row.dataset.muscle || row.dataset.muscle === muscle) ? '1' : '0.25';
-    });
-  }, 50);
-}
-
 function openPlanCardioModal(key) {
   const [ky,km,kd] = key.split('-').map(Number);
   const dateStr = new Date(ky, km, kd).toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'});
@@ -12303,7 +11647,6 @@ function confirmPlanCardio(key) {
   savePlanned();
   document.getElementById('planCardioOverlay')?.remove();
   renderCalendar();
-  showToast(`Cardio planned!`);
 }
 
 function editPlannedCardio(planId, actionsId) {
@@ -12361,7 +11704,6 @@ function saveEditPlannedCardio(planId) {
   savePlanned();
   document.querySelector('.cal-cardio-form')?.remove();
   if (selectedCalDay) selectCalDay(selectedCalDay);
-  showToast('Plan updated!');
 }
 
 function replacePlannedWorkout(planId, key) {
@@ -12372,58 +11714,6 @@ function replacePlannedWorkout(planId, key) {
   closeCalendar();
   switchTab('workouts');
   window._inReplaceMode = false;
-  showToast('Select a workout to replace the plan');
-}
-
-function calPlanBarClick(detId, xlabId, mi, data, colors, bodyOrder) {
-  const BODY_ORDER = bodyOrder || ['Chest','Back','Legs','Shoulders','Arms','Core','Compound'];
-  const COLORS = colors || ['#e8ff47','#7ec8e3','#ff8c42','#a78bfa','#34d399','#f87171','#20d4c8'];
-  const detEl = document.getElementById(detId);
-  const labelWrap = document.getElementById(xlabId);
-  const labels = labelWrap ? labelWrap.querySelectorAll('span') : [];
-  const muscle = BODY_ORDER[mi];
-
-  // Find chart via canvas inside the card
-  const card = detEl ? detEl.previousElementSibling : null;
-  const canvas = card ? card.querySelector('canvas') : null;
-  const chartInst = canvas ? Chart.getChart(canvas) : null;
-  const chartData = chartInst ? chartInst.data.datasets[0].data : (data||[]);
-
-  // Toggle
-  const alreadySelected = detEl && detEl._calPlanSelectedMuscle === muscle;
-  if (alreadySelected) {
-    detEl._calPlanSelectedMuscle = null;
-    if (chartInst) {
-      chartInst.data.datasets[0].backgroundColor = COLORS.map(c=>c+'99');
-      chartInst.data.datasets[0].borderColor = COLORS;
-      chartInst.update('none');
-    }
-    labels.forEach((l,li) => l.style.color = chartData[li]>0 ? COLORS[li] : '#444');
-    if (detEl) detEl.querySelectorAll('.ldet-ex-row').forEach(r => r.style.opacity='');
-    return;
-  }
-
-  // Expand if not open
-  const chevId = detId.replace('cal-plan-det-','cal-plan-chev-');
-  const chevBtn = document.getElementById(chevId);
-  if (detEl && (!detEl.style.maxHeight || detEl.style.maxHeight === '0px')) {
-    if (chevBtn) chevBtn.click();
-  }
-
-  // Select
-  if (detEl) detEl._calPlanSelectedMuscle = muscle;
-  if (chartInst) {
-    chartInst.data.datasets[0].backgroundColor = COLORS.map((c,ci)=>ci===mi?c+'cc':c+'33');
-    chartInst.data.datasets[0].borderColor = COLORS.map((c,ci)=>ci===mi?c:c+'33');
-    chartInst.update('none');
-  }
-  labels.forEach((l,li) => l.style.color = li===mi ? COLORS[mi] : '#333');
-  setTimeout(() => {
-    if (!detEl) return;
-    detEl.querySelectorAll('.ldet-ex-row').forEach(row => {
-      row.style.opacity = (!row.dataset.muscle || row.dataset.muscle === muscle) ? '1' : '0.25';
-    });
-  }, 50);
 }
 
 function calPlanCycleFilter(detId, dir) {
@@ -12682,8 +11972,7 @@ if ('serviceWorker' in navigator && location.hostname !== '127.0.0.1' && locatio
           const newWorker = reg.installing;
           newWorker.addEventListener('statechange', () => {
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              if (typeof showToast === 'function') showToast('App updated — reloading...');
-            }
+    }
           });
         });
       })
@@ -12828,7 +12117,6 @@ if ('serviceWorker' in navigator && location.hostname !== '127.0.0.1' && locatio
 
   </div>
 </div>
-
 
 <!-- SITE MANAGER PANEL -->
 <div id="siteManagerOverlay" style="display:none;position:fixed;inset:0;z-index:9000;background:#0a0a0a;overflow-y:auto;">
@@ -13220,11 +12508,9 @@ window._onAuthReady = (user) => {
   customExercises = JSON.parse(_LS.get('ironlog_custom_ex') || '[]');
   plannedWorkouts = (() => { try { return JSON.parse(_LS.get('ironlog_planned') || '[]') || []; } catch(e) { return []; } })();
 
-  if (typeof showToast === 'function') showToast('☁ Loading your data...');
-  window.loadFromFirestore(user.uid).then(loaded => {
+  if (typeof showToast === 'function')  window.loadFromFirestore(user.uid).then(loaded => {
     if (typeof renderHistory === 'function') renderHistory();
-    if (loaded && typeof showToast === 'function') showToast('Data loaded from cloud');
-  });
+    });
   if (typeof loadLibrary === 'function') loadLibrary();
 
   // Restore debug role if super_admin had one saved
@@ -13258,8 +12544,7 @@ window.syncToFirestore = function() {
     },
     updatedAt: new Date().toISOString()
   }).then(() => {
-    if (typeof showToast === 'function') showToast('Synced to cloud');
-  }).catch(e => console.warn('Firestore sync failed:', e.message));
+    }).catch(e => console.warn('Firestore sync failed:', e.message));
 };
 
 window.loadFromFirestore = function(uid) {
@@ -13355,13 +12640,11 @@ function exportUsersCSV() {
     a.download = `${brandId}_users_${new Date().toISOString().slice(0,10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    showToast(`Exported ${users.length} users`);
   };
 
   if (_adminUsers.length) {
     doExport(_adminUsers);
   } else {
-    showToast('Loading users...');
     const { getDocs, collection, query, where } = window._fbFirestoreExtra || {};
     const brandId = window.BRAND_ID;
     getDocs(query(collection(window._fbDb,'users'), where('brands','array-contains',brandId))).then(snap => {
@@ -13371,8 +12654,8 @@ function exportUsersCSV() {
         return data;
       });
       doExport(users);
-    }).catch(e => showToast('Error: ' + e.message));
-  }
+    }).catch(e => {})
+    }
 }
 
 function runBulkInvite() {
@@ -13611,9 +12894,8 @@ function superUpdateLicense(brandId, role, value, locked) {
     .then(() => {
       const brand = _superBrands.find(b => b.id === brandId);
       if (brand) { if (!brand.licenses) brand.licenses = {}; if (!brand.licenses[role]) brand.licenses[role] = {}; brand.licenses[role].limit = parseInt(value)||0; }
-      showToast(`${ROLE_LABELS[role]} limit updated`);
-    }).catch(e => showToast('Error: ' + e.message));
-}
+    }).catch(e => {})
+    }
 
 function superToggleLock(brandId, role, locked) {
   const ref = window._fbDoc(window._fbDb, 'brands', brandId);
@@ -13621,10 +12903,9 @@ function superToggleLock(brandId, role, locked) {
     .then(() => {
       const brand = _superBrands.find(b => b.id === brandId);
       if (brand?.licenses?.[role]) brand.licenses[role].locked = locked;
-      showToast(locked ? `${ROLE_LABELS[role]} locked` : `${ROLE_LABELS[role]} unlocked`);
       openSuperBrandDetail(brandId); // re-render detail
-    }).catch(e => showToast('Error: ' + e.message));
-}
+    }).catch(e => {})
+    }
 
 function openAddBrandDialog() {
   const overlay = document.createElement('div');
@@ -13667,9 +12948,8 @@ function superSaveBrand(btn) {
     _superBrands.push({ id: brandId, name, accentColor });
     btn.closest('.delete-confirm-overlay').remove();
     renderSuperBrandsList();
-    showToast(`Brand "${name}" created!`);
-  }).catch(e => showToast('Error: ' + e.message));
-}
+  }).catch(e => {})
+  }
 let _adminUsers = [];
 let _adminSites = [];
 let _adminRoleFilter = 'all';
@@ -13678,12 +12958,6 @@ let _adminTab = 'users';
 const ROLE_COLORS = { super_admin:'#ff4747', ops_admin:'#ff8c42', brand_admin:'#f472b6', site_manager:'#a78bfa', coach:'#7ec8e3', client:'#e8ff47' };
 const ROLE_LABELS = { super_admin:'Super Admin', ops_admin:'Ops Admin', brand_admin:'Brand Admin', site_manager:'Site Manager', coach:'Coach', client:'Client' };
 const ALL_ROLES = ['brand_admin','site_manager','coach','client'];
-
-function getBrandRole(userData) {
-  const brandId = window.BRAND_ID;
-  if (userData?.roles?.[brandId]) return userData.roles[brandId];
-  return userData?.role || 'client';
-}
 
 function openAdminPanel() {
   const role = window._currentUserData?.role;
@@ -13885,9 +13159,8 @@ function _doChangeUserRole(uid, newRole, lic, brandId) {
     }
     renderAdminUsers(document.getElementById('adminSearch')?.value?.toLowerCase()||'');
     renderAdminStats();
-    showToast(`Role updated to ${ROLE_LABELS[newRole]||newRole}`);
-  }).catch(e => showToast('Error: ' + e.message));
-}
+  }).catch(e => {})
+  }
 
 function showLicenseBlockDialog(newRole, uid) {
   const myRole = window._currentUserData?.role;
@@ -13931,9 +13204,8 @@ function assignCoach(clientId, coachId) {
   window._fbSetDoc(ref, { coachId: coachId||null }, { merge: true }).then(() => {
     const client = _adminUsers.find(u => u.id === clientId);
     if (client) client.coachId = coachId||null;
-    showToast(coachId ? 'Coach assigned' : 'Coach removed');
-  }).catch(e => showToast('Error: ' + e.message));
-}
+  }).catch(e => {})
+  }
 
 function assignSite(userId, siteId) {
   const ref = window._fbDoc(window._fbDb, 'users', userId);
@@ -13942,9 +13214,8 @@ function assignSite(userId, siteId) {
   const newSites = siteId ? [...new Set([...currentSites, siteId])] : [];
   window._fbSetDoc(ref, { siteIds: newSites }, { merge: true }).then(() => {
     if (user) user.siteIds = newSites;
-    showToast(siteId ? 'Site assigned' : 'Site removed');
-  }).catch(e => showToast('Error: ' + e.message));
-}
+  }).catch(e => {})
+  }
 
 // ── SITES TAB ────────────────────────────────────────
 function loadAdminSites() {
@@ -14009,18 +13280,16 @@ function saveSite(btn) {
       _adminSites.push({ id: ref.id, name, address, brandId });
       btn.closest('.delete-confirm-overlay').remove();
       renderAdminSites();
-      showToast('Site added!');
-    }).catch(e => showToast('Error: ' + e.message));
-}
+    }).catch(e => {})
+    }
 
 function deleteSite(siteId) {
   if (!window._fbDeleteDoc) return;
   window._fbDeleteDoc(window._fbDoc(window._fbDb, 'sites', siteId)).then(() => {
     _adminSites = _adminSites.filter(s => s.id !== siteId);
     renderAdminSites();
-    showToast('Site removed');
-  }).catch(e => showToast('Error: ' + e.message));
-}
+  }).catch(e => {})
+  }
 
 // ── LICENSES TAB ─────────────────────────────────────
 function loadAdminLicenses() {
@@ -14079,15 +13348,15 @@ function updateWarningDays(value) {
   const days = parseInt(value) || 7;
   window._fbSetDoc(window._fbDoc(window._fbDb,'brands',brandId), { expiryWarningDays: days }, { merge:true })
     .then(() => { if (window._brandConfig) window._brandConfig.expiryWarningDays = days; showToast(`Warning set to ${days} days before expiry`); })
-    .catch(e => showToast('Error: ' + e.message));
-}
+    .catch(e => {})
+    }
 
 function updateLicenseLimit(role, value) {
   const brandId = window.BRAND_ID;
   const ref = window._fbDoc(window._fbDb, 'brands', brandId);
   window._fbSetDoc(ref, { licenses: { [role]: { limit: parseInt(value)||0 } } }, { merge: true })
-    .then(() => showToast(`${ROLE_LABELS[role]} limit updated`))
-    .catch(e => showToast('Error: ' + e.message));
+    .then(() => {})
+    .catch(e => {});
 }
 
 function toggleLicenseLock(role, locked) {
@@ -14095,8 +13364,8 @@ function toggleLicenseLock(role, locked) {
   const ref = window._fbDoc(window._fbDb, 'brands', brandId);
   window._fbSetDoc(ref, { licenses: { [role]: { locked } } }, { merge: true })
     .then(() => { showToast(locked ? `${ROLE_LABELS[role]} locked` : `${ROLE_LABELS[role]} unlocked`); loadAdminLicenses(); })
-    .catch(e => showToast('Error: ' + e.message));
-}
+    .catch(e => {})
+    }
 
 // ══════════════════════════════════════════════════════
 //  COACH PANEL
@@ -14244,17 +13513,6 @@ function selectGender(val, fromLoad) {
     btn.style.color = sel ? '#7ec8e3' : '#888';
     btn.style.background = sel ? 'rgba(126,200,227,.12)' : 'transparent';
   });
-}
-
-function toggleGenderVisibility() {
-  const opts = document.getElementById('genderOptions');
-  const btn = document.getElementById('genderHideBtn');
-  if (!opts || !btn) return;
-  const hidden = opts.style.display === 'none';
-  opts.style.display = hidden ? 'flex' : 'none';
-  btn.textContent = hidden ? 'Hide' : 'Show';
-  markCoachProfileDirty();
-  window._coachGenderHidden = !hidden;
 }
 
 function openCoachProfileEdit() {
@@ -14770,9 +14028,8 @@ function saveCoachExercise(btn) {
     _coachExercises.push({ id: ref.id, ...data });
     btn.closest('.delete-confirm-overlay').remove();
     renderCoachLibrary();
-    showToast('Exercise added!');
-  }).catch(e => showToast('Error: ' + e.message));
-}
+  }).catch(e => {})
+  }
 
 function saveCoachWorkout(btn) {
   const name = document.getElementById('_cwoName').value.trim();
@@ -14784,9 +14041,8 @@ function saveCoachWorkout(btn) {
     _coachWorkouts.push({ id: ref.id, ...data });
     btn.closest('.delete-confirm-overlay').remove();
     renderCoachLibrary();
-    showToast('Workout added!');
-  }).catch(e => showToast('Error: ' + e.message));
-}
+  }).catch(e => {})
+  }
 
 function deleteCoachItem(id, type) {
   const myUid = window._currentUser?.uid;
@@ -14795,9 +14051,8 @@ function deleteCoachItem(id, type) {
     if (type === 'exercises') _coachExercises = _coachExercises.filter(e=>e.id!==id);
     else _coachWorkouts = _coachWorkouts.filter(w=>w.id!==id);
     renderCoachLibrary();
-    showToast('Removed');
-  }).catch(e => showToast('Error: ' + e.message));
-}
+  }).catch(e => {})
+  }
 
 function assignCoachItem(itemId, type) {
   // Open client picker to assign item
@@ -14836,9 +14091,8 @@ function doAssignToClient(clientUid, itemId, type, btn) {
     // Create notification for client
     const nRef = window._fbDoc(window._fbDb,'notifications',clientUid,'items',Date.now().toString());
     window._fbSetDoc(nRef, { type:'coach_assignment', message:`Your coach sent you a new ${type==='exercises'?'exercise':'workout'}: ${item?.name||''}`, seen:false, createdAt:new Date().toISOString() });
-    showToast('Assigned to client!');
-  }).catch(e => showToast('Error: ' + e.message));
-}
+  }).catch(e => {})
+  }
 
 // ── CLIENT DATA VIEWER ────────────────────────────────
 function viewClientData(clientId, clientName) {
@@ -15007,11 +14261,10 @@ function requestCoach(coachUid, coachName) {
     // Notify coach
     const nRef = window._fbDoc(window._fbDb,'notifications',coachUid,'items',Date.now().toString());
     window._fbSetDoc(nRef, { type:'coach_request', message:`${window._currentUserData?.displayName||'A client'} requested you as their coach`, clientUid:myUid, seen:false, createdAt:new Date().toISOString() });
-    showToast(`Request sent to ${coachName}!`);
     closeCoachProfileView();
     closeFindCoach();
-  }).catch(e => showToast('Error: ' + e.message));
-}
+  }).catch(e => {})
+  }
 
 // ══════════════════════════════════════════════════════
 //  LIBRARY SYSTEM
@@ -15271,16 +14524,6 @@ function renderWorkoutLibraryList() {
   }
 }
 
-function addLibraryExToSession(name, muscle) {
-  const ex = getAllExercises().find(e=>e.name===name||e.label===name) || {name, label:name, muscle: muscle||'Chest', custom:false};
-  switchTab('log');
-  setTimeout(() => {
-    showTodayWorkoutArea();
-    addExerciseCard(ex);
-    showToast(`"${name}" added to today`);
-  }, 300);
-}
-
 function toggleLibExDetail(safeId) {
   const el = document.getElementById(safeId);
   if (!el) return;
@@ -15318,7 +14561,6 @@ function loadLibraryWorkout(id) {
       const ex = getAllExercises().find(e=>e.label===exData.name||e.name===exData.name) || {name:exData.name,label:exData.name,muscle:exData.muscle||'Chest',custom:false};
       addExerciseCard(ex);
     });
-    showToast(`"${w.name}" loaded!`);
   }, 300);
 }
 
@@ -15360,7 +14602,6 @@ function exportLibToFile() {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  showToast('brand_library.json exported!');
 }
 
 function syncExploreExercisesToFirestore() {
@@ -15415,30 +14656,8 @@ function syncExploreExercisesToFirestore() {
       }, 375);
     }, remaining);
   }).catch(e => {
-    showToast('Error: ' + e.message);
     if (libBtn) { libBtn.style.opacity = '1'; libBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 38 36" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 22 Q4 14 12 14 Q13 8 20 8 Q28 8 28 16 Q34 16 34 22 Q34 28 28 28 L8 28 Q4 28 4 22Z"/></svg> Library'; libBtn.style.pointerEvents = ''; }
   });
-}
-
-function openAddLibraryExercise() {
-  window._exploreExerciseMode = true;
-  openNewExModal(window._exTabMuscle || 'Chest');
-}
-
-function saveLibraryExercise(muscle, btn) {
-  const name = document.getElementById('_libExName').value.trim();
-  const desc = document.getElementById('_libExDesc').value.trim();
-  if (!name) { showToast('Enter a name'); return; }
-  if (!window._fbDb) return;
-  const brandId = window.BRAND_ID || 'default';
-  const ref = window._fbDoc(window._fbDb, 'library', brandId, 'exercises', Date.now().toString());
-  window._fbSetDoc(ref, { name, muscle, description: desc, createdBy: window._currentUser?.uid, createdAt: new Date().toISOString() })
-    .then(() => {
-      _libraryExercises.push({ id: ref.id, name, muscle, description: desc });
-      btn.closest('.delete-confirm-overlay').remove();
-      renderExercisesTab();
-      showToast('Added to library!');
-    }).catch(e => showToast('Error: ' + e.message));
 }
 
 function renameLibraryExercise(id) {
@@ -15476,7 +14695,6 @@ function confirmRenameLibEx(id, el) {
     const libBtn = document.getElementById('extab-library-sync-btn');
     if (libBtn) { libBtn.style.opacity = '1'; libBtn.style.borderColor = '#34d399'; libBtn.style.background = 'rgba(52,211,153,.1)'; libBtn.style.pointerEvents = ''; libBtn.style.cursor = 'pointer'; }
   }, 50);
-  showToast(`Renamed to "${name}"`);
 }
 
 function deleteLibraryExercise(id) {
@@ -15491,7 +14709,6 @@ function deleteLibraryExercise(id) {
     const libBtn = document.getElementById('extab-library-sync-btn');
     if (libBtn) { libBtn.style.opacity = '1'; libBtn.style.borderColor = '#34d399'; libBtn.style.background = 'rgba(52,211,153,.1)'; libBtn.style.pointerEvents = ''; libBtn.style.cursor = 'pointer'; }
   }, 50);
-  showToast('Exercise removed');
 }
 
 window._exploreLocalPending = false;
@@ -15540,29 +14757,6 @@ function openAddExploreWorkout() {
     setTimeout(() => _sb.remove(), 300);
     openWorkoutNameModal();
   }, 100);
-  showToast('Creating Explore workout');
-}
-
-function confirmAddExploreWorkout(btn) {
-  const name = document.getElementById('_exploreWName').value.trim();
-  const desc = document.getElementById('_exploreWDesc').value.trim();
-  if (!name) { showToast('Enter a name'); return; }
-  const newWkt = { id: 'local_' + Date.now(), name, description: desc, exercises: [], _local: true };
-  window._exploreLocalWorkouts.push(newWkt);
-  _libraryWorkouts.push(newWkt);
-  window._exploreLocalPending = true;
-  btn.closest('.delete-confirm-overlay').remove();
-  renderWorkoutLibraryList();
-  // Highlight Library button
-  const libBtn = document.getElementById('wtab-library-sync-btn');
-  if (libBtn) {
-    libBtn.style.opacity = '1';
-    libBtn.style.borderColor = '#34d399';
-    libBtn.style.background = 'rgba(52,211,153,.1)';
-    libBtn.style.pointerEvents = '';
-    libBtn.style.cursor = 'pointer';
-  }
-  showToast(`"${name}" added to Explore list`);
 }
 
 function syncExploreToFirestore() {
@@ -15629,35 +14823,12 @@ function syncExploreToFirestore() {
       }, 375);
     }, remaining);
   }).catch(e => {
-    showToast('Error: ' + e.message);
     if (libBtn) {
       libBtn.style.opacity = '1';
       libBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 38 36" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 22 Q4 14 12 14 Q13 8 20 8 Q28 8 28 16 Q34 16 34 22 Q34 28 28 28 L8 28 Q4 28 4 22Z"/></svg> Library';
       libBtn.style.pointerEvents = '';
     }
   });
-}
-
-function openAddLibraryWorkout() {
-  const overlay = document.createElement('div');
-  overlay.className = 'delete-confirm-overlay';
-  overlay.innerHTML = `<div class="delete-confirm-sheet">
-    <div class="delete-confirm-title">Save Workout to Library</div>
-    <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Save your current workout as a library template others can load.</div>
-    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
-      <input id="_libWName" type="text" placeholder="Workout name" style="background:#1a1a1a;border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans';font-size:15px;padding:12px;outline:none;"/>
-      <input id="_libWDesc" type="text" placeholder="Description (optional)" style="background:#1a1a1a;border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans';font-size:15px;padding:12px;outline:none;"/>
-    </div>
-    <div class="delete-confirm-btns">
-      <button class="btn-del-cancel" onclick="this.closest('.delete-confirm-overlay').remove()">Cancel</button>
-      <button class="btn-del-yes" onclick="saveLibraryWorkout(this)">Save</button>
-    </div>
-  </div>`;
-  document.body.appendChild(overlay);
-  // Pre-fill with current workout name
-  const curName = document.getElementById('workoutName')?.value?.trim();
-  if (curName) document.getElementById('_libWName').value = curName;
-  setTimeout(() => overlay.querySelector('#_libWName').focus(), 100);
 }
 
 function saveLibraryWorkout(btn) {
@@ -15674,9 +14845,8 @@ function saveLibraryWorkout(btn) {
     .then(() => {
       _libraryWorkouts.push({ id: ref.id, name, description: desc, exercises });
       btn.closest('.delete-confirm-overlay').remove();
-      showToast('Saved to library!');
-    }).catch(e => showToast('Error: ' + e.message));
-}
+    }).catch(e => {})
+    }
 
 function editLibraryWorkout(id) {
   const w = _libraryWorkouts.find(x => x.id === id);
@@ -15717,7 +14887,6 @@ function editLibraryWorkout(id) {
     _sb.style.opacity = '0';
     setTimeout(() => _sb.remove(), 300);
   }, 100);
-  showToast(`Editing "${w.name}"`);
 }
 
 function deleteLibraryWorkout(id) {
@@ -15727,9 +14896,8 @@ function deleteLibraryWorkout(id) {
   window._fbDeleteDoc(ref).then(() => {
     _libraryWorkouts = _libraryWorkouts.filter(w=>w.id!==id);
     renderWorkoutLibraryList();
-    showToast('Removed from library');
-  }).catch(e => showToast('Error: ' + e.message));
-}
+  }).catch(e => {})
+  }
 
 // ══════════════════════════════════════════════════════
 //  SITE MANAGER PANEL
@@ -15898,10 +15066,9 @@ function approveCoachRequest(reqId, clientUid, coachUid) {
     window._fbSetDoc(window._fbDoc(window._fbDb,'notifications',coachUid,'items',(Date.now()+1).toString()), {
       type:'coach_approved', message:`You have a new client connection approved until ${new Date(endDate).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`, seen:false, createdAt:new Date().toISOString()
     });
-    showToast('Connection approved!');
     loadSMRequests();
-  }).catch(e => showToast('Error: ' + e.message));
-}
+  }).catch(e => {})
+  }
 
 function declineCoachRequest(reqId, clientUid, coachUid) {
   window._fbSetDoc(window._fbDoc(window._fbDb,'coachRequests',reqId), { status:'declined', declinedAt:new Date().toISOString() }, { merge:true })
@@ -15910,10 +15077,9 @@ function declineCoachRequest(reqId, clientUid, coachUid) {
       window._fbSetDoc(window._fbDoc(window._fbDb,'notifications',clientUid,'items',Date.now().toString()), {
         type:'coach_declined', message:'Your coach request was not approved. Please contact your site manager or choose another coach.', seen:false, createdAt:new Date().toISOString()
       });
-      showToast('Request declined');
       loadSMRequests();
-    }).catch(e => showToast('Error: ' + e.message));
-}
+    }).catch(e => {})
+    }
 
 // ── ACTIVE CONNECTIONS ────────────────────────────────
 function loadSMActiveConnections() {
@@ -15972,10 +15138,9 @@ function extendConnection(connId, clientUid) {
   if (!newEnd) { showToast('Pick a new end date'); return; }
   window._fbSetDoc(window._fbDoc(window._fbDb,'coachConnections',connId), { endDate:newEnd }, { merge:true }).then(() => {
     window._fbSetDoc(window._fbDoc(window._fbDb,'users',clientUid), { coachingExpires:newEnd }, { merge:true });
-    showToast('Connection extended!');
     loadSMActiveConnections();
-  }).catch(e => showToast('Error: ' + e.message));
-}
+  }).catch(e => {})
+  }
 
 function terminateConnection(connId, clientUid, coachUid) {
   const today = new Date().toISOString().split('T')[0];
@@ -15987,10 +15152,9 @@ function terminateConnection(connId, clientUid, coachUid) {
     window._fbSetDoc(window._fbDoc(window._fbDb,'notifications',coachUid,'items',(Date.now()+1).toString()), {
       type:'coach_ended', message:'A coaching connection has been terminated by the site manager.', seen:false, createdAt:new Date().toISOString()
     });
-    showToast('Connection terminated');
     loadSMActiveConnections();
-  }).catch(e => showToast('Error: ' + e.message));
-}
+  }).catch(e => {})
+  }
 
 // ── COACHES AT SITE ───────────────────────────────────
 function loadSMCoaches() {
@@ -16032,10 +15196,9 @@ function toggleCoachAtSite(coachUid, isCurrentlyAssigned) {
     : [...new Set([...currentIds, coachUid])];
   window._fbSetDoc(window._fbDoc(window._fbDb,'sites',_smActiveSite), { coachIds:newIds }, { merge:true }).then(() => {
     site.coachIds = newIds;
-    showToast(isCurrentlyAssigned ? 'Coach removed from site' : 'Coach added to site');
     loadSMCoaches();
-  }).catch(e => showToast('Error: ' + e.message));
-}
+  }).catch(e => {})
+  }
 
 function showExpiryWarning(message) {
   const banner = document.getElementById('expiryWarningBanner');
@@ -16156,7 +15319,6 @@ function addCoachExToSession(name) {
   setTimeout(() => {
     showTodayWorkoutArea();
     addExerciseCard(ex);
-    showToast(`"${name}" added to today`);
   }, 300);
 }
 
@@ -16215,7 +15377,6 @@ function toggleDesktopOverride() {
     localStorage.setItem(DEVICE_OVERRIDE_KEY, current === 'desktop' ? 'mobile' : 'desktop');
   }
   applyDeviceLayout();
-  showToast((_getDeviceMode() === 'desktop' ? '🖥️ Desktop' : '📱 Mobile') + ' layout applied');
 }
 
 // Apply on load and on resize
@@ -16266,7 +15427,6 @@ function applyDebugRole(role) {
   if (!_isRealSuperAdmin()) return;
   localStorage.setItem(DEBUG_ROLE_KEY, role);
   _activateDebugRole(role);
-  showToast(`👁️ Viewing as ${ROLE_LABELS[role]}`);
 }
 
 function _activateDebugRole(role) {
@@ -16286,7 +15446,6 @@ function exitDebugRole() {
   if (window._currentUser) window._currentUser.role = realRole;
   _updateDebugBadge(null);
   _refreshUserMenuForRole(realRole);
-  showToast('✓ Returned to Super Admin view');
 }
 
 function _updateDebugBadge(role) {
@@ -16404,16 +15563,37 @@ function enterCoachMode() {
   loadCoachProfileData();
 }
 
+function _getTabIcon(id) {
+  // Return cached SVG for a tab icon (set by inject-icons.js)
+  return window._tabIcons?.[id] || '';
+}
+function _cacheTabIcons() {
+  // Cache SVG icons from current tab buttons so rebuilds preserve them
+  window._tabIcons = {};
+  ['tab-log-btn','tab-workouts-btn','tab-exercises-btn','tab-progress-btn'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) {
+      const svg = btn.querySelector('svg');
+      window._tabIcons[id] = svg ? svg.outerHTML : '';
+    }
+  });
+}
+// Cache tab icons on load
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', _cacheTabIcons);
+} else {
+  setTimeout(_cacheTabIcons, 100);
+}
 function exitCoachMode() {
   window._coachMode = false;
   window._coachModeSelectedClient = null;
-  // Restore original tabs
+  // Restore original tabs preserving injected icons
   const tabs = document.querySelector('.tabs');
   tabs.innerHTML = `
-    <button class="tab active" onclick="switchTab('log')">Today</button>
-    <button class="tab" onclick="if(!window._createNewMode)switchTab('workouts')">Workouts</button>
-    <button class="tab" onclick="switchTab('exercises')">Exercises</button>
-    <button class="tab" id="tab-progress-btn" onclick="switchTab('progress')">PRO</button>
+    <button class="tab active" id="tab-log-btn" onclick="switchTab('log')">${_getTabIcon('tab-log-btn')}<span>Today</span></button>
+    <button class="tab" id="tab-workouts-btn" onclick="if(!window._createNewMode)switchTab('workouts')">${_getTabIcon('tab-workouts-btn')}<span>Workouts</span></button>
+    <button class="tab" id="tab-exercises-btn" onclick="switchTab('exercises')">${_getTabIcon('tab-exercises-btn')}<span>Exercises</span></button>
+    <button class="tab" id="tab-progress-btn" onclick="switchTab('progress')"><span>PRO</span></button>
   `;
   document.getElementById('userMenuCoachModeBtn').style.display = 'block';
   document.getElementById('userMenuExitCoachModeBtn').style.display = 'none';
@@ -16513,7 +15693,6 @@ function coachModeClientAction(action) {
       clientBtns.forEach(btn => { if (btn.dataset.clientid === client.id) btn.click(); });
     }, 300);
   } else if (action === 'progress') {
-    showToast(`Viewing progress for ${client.displayName || client.email}`);
   }
 }
 
@@ -16583,9 +15762,8 @@ function deleteCoachModeExercise(id) {
     _coachExercises = _coachExercises.filter(e => e.id !== id);
     window._coachExLocalPending = true;
     renderExercisesTab();
-    showToast('Exercise removed');
-  }).catch(e => showToast('Error: ' + e.message));
-}
+  }).catch(e => {})
+  }
 
 function _coachLibBtnHtml(pending, synced) {
   const _cloudGreen = `<svg width="18" height="18" viewBox="0 0 38 36" fill="none" stroke="#34d399" stroke-width="2" stroke-linejoin="round"><path d="M4 22 Q4 14 12 14 Q13 8 20 8 Q28 8 28 16 Q34 16 34 22 Q34 28 28 28 L8 28 Q4 28 4 22Z"/></svg>`;
@@ -16646,7 +15824,6 @@ function uploadCoachExercisesToCloud(muscle) {
       }, 375);
     }, remaining);
   }).catch(e => {
-    showToast('Upload failed: ' + e.message);
     _updateCoachLibBtn('coach-upload-cloud-btn', true);
   });
 }
@@ -16686,7 +15863,6 @@ function syncCoachWorkoutsToCloud() {
       }, 375);
     }, remaining);
   }).catch(e => {
-    showToast('Error: ' + e.message);
     _updateCoachLibBtn('coach-wkt-library-btn', true);
   });
 }
@@ -16957,7 +16133,6 @@ function cwMenuAction(action, wid) {
   const w = (_coachWorkouts||[]).find(x => x.id === wid);
   if (!w) return;
   if (action === 'assign') {
-    showToast('Add to client — coming soon');
   } else if (action === 'category') {
     showCoachCategoryPanel(wid);
   } else if (action === 'edit') {
@@ -17086,7 +16261,6 @@ function saveCoachCategorySelection() {
     const coachUid = window._currentUser?.uid;
     window._fbSetDoc(window._fbDoc(window._fbDb, 'coachLibrary', coachUid, 'workouts', wid), { categories: w.categories }, { merge: true }).catch(()=>{});
   }
-  showToast('Categories saved!');
   exitCoachCategoryPanel();
 }
 
@@ -17134,7 +16308,6 @@ function editCoachWorkout(wid) {
   });
   switchTab('log');
   setTimeout(() => checkFinishReady(), 50);
-  showToast(`Editing "${w.name}"`);
 }
 
 function toggleCoachWktDetail(safeId) {
@@ -17200,26 +16373,8 @@ function deleteCoachWorkout(id) {
     _coachWorkouts = _coachWorkouts.filter(w => w.id !== id);
     window._coachWktLocalPending = true;
     renderWorkoutsTab();
-    showToast('Workout removed');
-  }).catch(e => showToast('Error: ' + e.message));
-}
-
-function renameCoachWorkout(id) {
-  const w = _coachWorkouts.find(w => w.id === id);
-  if (!w) return;
-  const newName = prompt('Rename workout:', w.name);
-  if (!newName || !newName.trim() || newName.trim() === w.name) return;
-  if (_coachWorkouts.some(x => x.id !== id && x.name === newName.trim())) {
-    showToast('A workout with this name already exists'); return;
+  }).catch(e => {})
   }
-  if (!window._fbDb || !window._fbDoc || !window._fbSetDoc) return;
-  const coachUid = window._currentUser?.uid;
-  window._fbSetDoc(window._fbDoc(window._fbDb, 'coachLibrary', coachUid, 'workouts', id), { name: newName.trim() }, { merge: true }).then(() => {
-    w.name = newName.trim();
-    renderWorkoutsTab();
-    showToast('Workout renamed');
-  }).catch(e => showToast('Error: ' + e.message));
-}
 
 // Override switchTab in coach mode
 const _origSwitchTab = switchTab;
@@ -17749,22 +16904,12 @@ function renderProgHistory() {
 }
 // ─────────────────────────────────────────────────────────────────────────
 
-
 // ── PERFORMANCE OPTIMIZATIONS ─────────────────────────────────────────────
 // requestIdleCallback polyfill for Safari
 window.requestIdleCallback = window.requestIdleCallback || function(cb) {
   return setTimeout(() => cb({ didTimeout: false, timeRemaining: () => 50 }), 1);
 };
 window.cancelIdleCallback = window.cancelIdleCallback || clearTimeout;
-
-// Throttle function for high-frequency events
-function _throttle(fn, ms) {
-  let last = 0;
-  return function(...args) {
-    const now = Date.now();
-    if (now - last >= ms) { last = now; fn.apply(this, args); }
-  };
-}
 
 // Lazy image/chart observer — only render charts when visible
 const _chartObserver = new IntersectionObserver((entries) => {
@@ -17928,7 +17073,6 @@ async function confirmBWModal() {
       window._currentUserData = { ...window._currentUserData, bodyWeight: val };
     }
   } catch(e) { console.error('BW save error:', e); }
-  showToast(`Body weight saved: ${val}kg`);
   // If KG editor is open in BW mode, update it
   if (_kgBWMode) { _applyBWMode(); }
 }
@@ -17966,7 +17110,6 @@ const _origKgPadPress = window.kgPadPress;
 // ── INLINE KG EDITOR ─────────────────────────────────────────────────────
 let _inlineKgEditorId = null; // currently open editor id
 
-
 // ── KG EDITOR FOCUS MODE ─────────────────────────────────────────────────────
 function _expandAnimHide(el, done) {
   if (!el || getComputedStyle(el).display === 'none') { if (done) done(); return; }
@@ -17982,14 +17125,6 @@ function _kgFocusAnimHide(el, done) {
   el.classList.remove('kg-focus-showing');
   el.classList.add('kg-focus-hiding');
   const _onEnd = () => { el.removeEventListener('animationend', _onEnd); el.style.display = 'none'; el.classList.remove('kg-focus-hiding'); if (done) done(); };
-  el.addEventListener('animationend', _onEnd);
-}
-function _kgFocusAnimShow(el) {
-  if (!el) return;
-  el.style.display = '';
-  el.classList.remove('kg-focus-hiding');
-  el.classList.add('kg-focus-showing');
-  const _onEnd = () => { el.removeEventListener('animationend', _onEnd); el.classList.remove('kg-focus-showing'); };
   el.addEventListener('animationend', _onEnd);
 }
 function _kgEditorFocusEnter(exId) {
@@ -18419,7 +17554,7 @@ window._kgEditorFocusEnter = _kgEditorFocusEnter;
 window._kgEditorFocusLeave = _kgEditorFocusLeave;
 window._expandAnimHide = _expandAnimHide;
 window._expandAnimShow = _expandAnimShow;
-window.openExDetail = openExDetail;
+
 
 function openShareQR() {
   const modal = document.getElementById('share-qr-modal');
@@ -18482,7 +17617,6 @@ function closeShareQR() {
 window.openShareQR = openShareQR;
 window.closeShareQR = closeShareQR;
 window.shareQRLink = shareQRLink;
-window.closeExDetail = closeExDetail;
 window.noteKbdDone = noteKbdDone;
 window.showNoteToolbar = showNoteToolbar;
 window.hideNoteToolbar = hideNoteToolbar;
@@ -18494,19 +17628,6 @@ window.hideExFloatBar = hideExFloatBar;
 window.exFloatAction = exFloatAction;
 // ─────────────────────────────────────────────────────────────────────────
 
-// ── KG DISPLAY OVERLAY SYNC ───────────────────────────────────────────────
-function _syncKgDisplayOverlay(display) {
-  const overlay = document.getElementById('kg-display-overlay');
-  if (!overlay || !display) return;
-  const rect = display.getBoundingClientRect();
-  if (rect.width === 0) { overlay.style.display = 'none'; return; }
-  overlay.textContent = display.textContent;
-  overlay.style.display = 'block';
-  overlay.style.left = rect.left + 'px';
-  overlay.style.top = rect.top + 'px';
-  overlay.style.width = rect.width + 'px';
-  overlay.style.background = getComputedStyle(display.closest('.kg-inline-editor-inner') || document.body).background || '#1a1a2e';
-}
 // ─────────────────────────────────────────────────────────────────────────
 
 // ── KG DISPLAY UPDATE ────────────────────────────────────────────────────

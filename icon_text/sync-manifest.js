@@ -97,8 +97,8 @@ const {
 // Resolve values with sensible fallbacks
 const resolvedName        = name        || null;
 const resolvedShortName   = shortName   || (name ? name.split(' ')[0] : null);
-const resolvedThemeColor  = themeColor  || accentColor || backgroundColor || null;
-const resolvedBgColor     = backgroundColor || themeColor || null;
+const resolvedThemeColor  = themeColor  || null;  // Only from themeColor — not accentColor
+const resolvedBgColor     = backgroundColor || null;
 const resolvedDescription = description || null;
 
 log(`\nExtracted values:`, cyan);
