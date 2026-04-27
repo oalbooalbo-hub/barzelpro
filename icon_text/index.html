@@ -3942,6 +3942,11 @@ function switchProgressView(view) {
 }
 
 function switchTab(tab) {
+  // Coach mode: intercept coach-specific tabs
+  if (window._coachMode && (tab === 'coach-profile' || tab === 'coach-clients')) {
+    _coachModeSwitchTab(tab);
+    return;
+  }
   window._activeTab = tab;
   document.activeElement?.blur();
   // Hide floating bar when switching away from Today
@@ -4026,6 +4031,10 @@ function switchTab(tab) {
   if (tab !== 'log' && tab !== 'exercises') { if (!window._createNewMode) window._activeTabHighlight = null; if (tab !== 'workouts') { window._loadFromToday = false; window._isChangingWorkout = false; } }
   localStorage.setItem('ironlog_active_tab', tab);
   updatePickModeTabs();
+  // Coach mode: re-style tabs blue after switchTab resets them
+  if (window._coachMode) {
+    document.querySelectorAll('.tabs .tab').forEach(t => { t.style.color = '#7ec8e3'; });
+  }
 }
 
 function updatePickModeTabs() {
@@ -16374,19 +16383,7 @@ function deleteCoachWorkout(id) {
   }).catch(e => {})
   }
 
-// Override switchTab in coach mode
-const _origSwitchTab = switchTab;
-switchTab = function(tab) {
-  if (window._coachMode && (tab === 'coach-profile' || tab === 'coach-clients')) {
-    _coachModeSwitchTab(tab);
-    return;
-  }
-  _origSwitchTab(tab);
-  if (window._coachMode) {
-    // Re-style tabs blue after switchTab resets them
-    document.querySelectorAll('.tabs .tab').forEach(t => { t.style.color = '#7ec8e3'; });
-  }
-};
+// Coach mode tab handling moved into switchTab directly
 </script>
 
 <div id="update-overlay">
