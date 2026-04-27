@@ -3953,11 +3953,9 @@ function switchTab(tab) {
   if (tab !== 'log') {
     if (window.hideExFloatBar) hideExFloatBar();
     _headerWorkoutModeOff();
-    // Hide header on non-Today tabs
+    // Collapse header when leaving Today tab
     const _hdrSwitch = document.querySelector('.header');
-    const _hintSwitch = document.getElementById('header-chevron-hint');
     if (_hdrSwitch) _hdrSwitch.classList.add('collapsed');
-    if (_hintSwitch) _hintSwitch.style.display = 'none';
   }
   else {
     // On Today tab, only show float bar if workout area is active AND a card is expanded
@@ -4006,8 +4004,17 @@ function switchTab(tab) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-'+tab).classList.add('active');
   if (tab==='workouts') {
-    _initWTabView();
-    renderWorkoutsTab();
+    // Check if header is visible — if so wait for collapse transition before rendering
+    const _hdrW = document.querySelector('.header');
+    const _hdrCollapsed = !_hdrW || _hdrW.classList.contains('collapsed');
+    if (_hdrCollapsed) {
+      _initWTabView();
+      renderWorkoutsTab();
+    } else {
+      // Header is collapsing — render after transition ends to prevent jump
+      const _delay = 320;
+      setTimeout(() => { _initWTabView(); renderWorkoutsTab(); }, _delay);
+    }
   }
   if (tab==='exercises') {
     _exTabView = 'created';
