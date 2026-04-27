@@ -4004,16 +4004,21 @@ function switchTab(tab) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-'+tab).classList.add('active');
   if (tab==='workouts') {
-    // Check if header is visible — if so wait for collapse transition before rendering
     const _hdrW = document.querySelector('.header');
-    const _hdrCollapsed = !_hdrW || _hdrW.classList.contains('collapsed');
-    if (_hdrCollapsed) {
+    const _alreadyCollapsed = !_hdrW || _hdrW.classList.contains('collapsed');
+    if (_alreadyCollapsed) {
       _initWTabView();
       renderWorkoutsTab();
     } else {
-      // Header is collapsing — render after transition ends to prevent jump
-      const _delay = 320;
-      setTimeout(() => { _initWTabView(); renderWorkoutsTab(); }, _delay);
+      // Render after header collapse animation finishes (350ms)
+      _hdrW.addEventListener('transitionend', function _wtabWait(e) {
+        if (e.propertyName !== 'max-height') return;
+        _hdrW.removeEventListener('transitionend', _wtabWait);
+        if (window._activeTab === 'workouts') {
+          _initWTabView();
+          renderWorkoutsTab();
+        }
+      });
     }
   }
   if (tab==='exercises') {
