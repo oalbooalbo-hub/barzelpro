@@ -1023,7 +1023,7 @@ function hidAuthScreen() {
 </div>
 <div class="tabs">
   <button class="tab active" id="tab-log-btn" onclick="switchTab('log')">
-  <svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" id="House-Chimney--Streamline-Ultimate" height="22" width="22" style="display:block;flex-shrink:0;"> <path d="M19.5 8.4V3.5A0.5 0.5 0 0 0 19 3h-2a0.5 0.5 0 0 0 -0.5 0.5v2.14l-4.162 -3.829a0.5 0.5 0 0 0 -0.678 0l-11 10.321A0.5 0.5 0 0 0 1 13h2.5v9.5a1 1 0 0 0 1 1h15a1 1 0 0 0 1 -1V13H23a0.5 0.5 0 0 0 0.339 -0.868Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> </svg>
+  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-home" style="display:block;flex-shrink:0;"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M5 12l-2 0l9 -9l9 9l-2 0" /><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" /><path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" /></svg>
   <span>Today</span>
 </button>
   <button class="tab" id="tab-workouts-btn" onclick="if(!window._createNewMode)switchTab('workouts')">
@@ -3995,13 +3995,18 @@ function switchTab(tab) {
   const _wtoggleBar = document.getElementById('workoutsToggleBar');
   const _etoggleBar = document.getElementById('exercisesToggleBar');
   const _ptoggleBar = document.getElementById('progressToggleBar');
-  // Hide all toggle bars first, show only the relevant one
+  // Hide all toggle bars first, show only the relevant one — BEFORE rendering content to prevent layout jump
   [_wtoggleBar, _etoggleBar, _ptoggleBar].forEach(b => { if (b) b.style.display = 'none'; });
   if (tab === 'workouts' && _wtoggleBar) _wtoggleBar.style.display = '';
   if (tab === 'exercises' && _etoggleBar) _etoggleBar.style.display = '';
   if (tab === 'progress' && _ptoggleBar) _ptoggleBar.style.display = '';
   if (tab==='workouts') {
     _initWTabView();
+    // Populate toggle bar HTML before rendering list — prevents position jump
+    const _wHasCoach2 = window._currentUserData?.coachId && window._currentUserData?.coachingExpires && new Date(window._currentUserData.coachingExpires) >= new Date();
+    if (_wtoggleBar && !_wtoggleBar.innerHTML.trim()) {
+      _wtoggleBar.innerHTML = `<div style="display:flex;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;"><button onclick="switchWTabView('created')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:var(--accent);color:#000;font-family:'DM Sans';font-size:15px;font-weight:900;transition:all .2s;">MY ZONE</button><button onclick="switchWTabView('library')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:transparent;color:var(--muted);font-family:'DM Sans';font-size:15px;font-weight:900;transition:all .2s;">EXPLORE</button>${_wHasCoach2?'<button onclick="switchWTabView(\'coach\')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:transparent;color:#7ec8e3;font-family:\'DM Sans\';font-size:15px;font-weight:900;transition:all .2s;">COACH</button>':''}</div>`;
+    }
     renderWorkoutsTab();
 
   }
