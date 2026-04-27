@@ -3995,8 +3995,7 @@ function switchTab(tab) {
     _initWTabView();
     renderWorkoutsTab();
   }
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.getElementById('page-'+tab).classList.add('active');
+  // Show/hide toggle bars BEFORE page becomes visible
   const _wtoggleBar = document.getElementById('workoutsToggleBar');
   const _etoggleBar = document.getElementById('exercisesToggleBar');
   const _ptoggleBar = document.getElementById('progressToggleBar');
@@ -4004,6 +4003,8 @@ function switchTab(tab) {
   if (tab === 'workouts' && _wtoggleBar) _wtoggleBar.style.display = '';
   if (tab === 'exercises' && _etoggleBar) _etoggleBar.style.display = '';
   if (tab === 'progress' && _ptoggleBar) _ptoggleBar.style.display = '';
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-'+tab).classList.add('active');
   if (tab==='exercises') {
     _exTabView = 'created';
     if (!customExercises.length) _exTabView = 'library';
