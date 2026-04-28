@@ -2803,6 +2803,7 @@ function _doStartNewWorkout(fromWorkouts=false) {
   openWorkoutNameModal();
 }
 function resetWorkoutState() {
+  window._sessionFinalized = false;
   document.getElementById('exerciseList').innerHTML = '';
   exerciseCounter = 0; setCounters = {};
   const fb = document.getElementById('finishWorkoutBtn');
@@ -2826,6 +2827,8 @@ function setAddExerciseBtnStyle(isNew) {
 }
 
 function saveSession() {
+  // Don't save session after workout has been confirmed saved
+  if (window._sessionFinalized) return;
   // Snapshot current in-progress workout to localStorage
   document.querySelectorAll('#exerciseList .exercise-card').forEach(c => checkResetBtn(c.id));
   const name = document.getElementById('workoutName')?.value || '';
@@ -7372,6 +7375,8 @@ function confirmSave() {
   const _startTime = window._sessionStartTime || (_storedStart ? parseInt(_storedStart) : _endTime);
   window._sessionStartTime = null;
   _LS.remove('ironlog_session_start');
+  // Finalize session — prevents saveSession() from writing it back
+  window._sessionFinalized = true;
   // Clear session immediately so refresh doesn't restore active workout
   _LS.remove('ironlog_session');
   const _durMs = _endTime - _startTime;
