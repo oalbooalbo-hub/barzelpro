@@ -1149,7 +1149,7 @@ function hidAuthScreen() {
 </div>
 
 <!-- HISTORY -->
-<div class="page" id="page-workouts2">
+<div class="page" id="page-workouts2" style="overflow-y:visible;">
   <div id="workouts2TabContent"></div>
 </div>
 
@@ -4187,17 +4187,19 @@ function renderWorkoutsTab2() {
     const _isSelected = _selIdx === i;
     const _isDimmed = _selIdx !== null && _selIdx !== undefined && !_isSelected && _noSpecialMode;
 
-    // Muscle chips
+    // Muscle chips — show all 7, active bright, inactive dim
     const muscleCounts = {};
     w.exercises.forEach(e => {
       const m = e.muscle || getAllExercises().find(x=>x.name===e.name||x.label===e.name)?.muscle || 'Other';
       muscleCounts[m] = (muscleCounts[m]||0) + 1;
     });
-    const chipHtml = Object.entries(muscleCounts)
-      .sort((a,b) => b[1]-a[1])
-      .slice(0,3)
-      .map(([m]) => `<span style="font-size:10px;font-weight:700;color:${MUSCLE_COLORS[m]||'#888'};background:${(MUSCLE_COLORS[m]||'#888')}22;border-radius:6px;padding:2px 7px;">${m}</span>`)
-      .join('');
+    const MUSCLE_ORDER = ['Chest','Back','Legs','Shoulders','Arms','Core','Compound'];
+    const MUSCLE_ABBR  = {Chest:'CH',Back:'BA',Legs:'LE',Shoulders:'SH',Arms:'AR',Core:'AB',Compound:'CP'};
+    const chipHtml = MUSCLE_ORDER.map(m => {
+      const active = !!muscleCounts[m];
+      const color = MUSCLE_COLORS[m] || '#888';
+      return `<span style="font-size:10px;font-weight:700;color:${active ? color : '#333'};letter-spacing:.3px;">${MUSCLE_ABBR[m]}</span>`;
+    }).join('<span style="color:#222;font-size:10px;"> </span>');
 
     // Ex count
     const exCount = w.exercises?.length || 0;
@@ -4212,16 +4214,20 @@ function renderWorkoutsTab2() {
       ? `<button onclick="window._activeTabHighlight=null;window._loadFromToday=false;loadWorkout(${i});switchTab('log');" style="background:var(--accent);border:none;border-radius:8px;color:#000;font-family:'DM Sans';font-size:13px;font-weight:700;padding:8px 14px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Load</button>`
       : `<button onclick="window._activeTabHighlight=null;window._loadFromToday=false;window._wtabSelectedIdx=null;loadWorkout(${i});switchTab('log');" style="background:var(--accent);border:none;border-radius:8px;color:#000;font-family:'DM Sans';font-size:13px;font-weight:700;padding:8px 14px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Load</button>`;
 
-    rowsHtml += `<div style="display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--border);transition:opacity .2s;${_isDimmed?'opacity:0.25;pointer-events:none;':''}" data-idx="${i}">
-      <div style="flex:1;min-width:0;">
-        <div style="font-family:'DM Sans';font-size:15px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${w.name||'Workout'}</div>
-        <div style="display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap;">
-          ${chipHtml}
-          <span style="font-size:11px;color:var(--muted);">${exCount} exercise${exCount!==1?'s':''}</span>
-          ${lastDate?`<span style="font-size:11px;color:var(--muted);">· ${lastDate}</span>`:''}
-        </div>
+    rowsHtml += `<div class="swipe-row-outer" style="position:relative;overflow:hidden;border-bottom:1px solid var(--border);${_isDimmed?'opacity:0.25;pointer-events:none;':''}">
+      <!-- Background action layer -->
+      <div class="swipe-bg" style="position:absolute;inset:0;background:var(--accent);display:flex;align-items:center;padding-left:24px;gap:10px;pointer-events:none;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="#000"><polygon points="5,3 19,12 5,21"/></svg>
+        <span style="font-family:'DM Sans';font-size:14px;font-weight:900;color:#000;">START</span>
       </div>
-      ${actionBtn}
+      <!-- Foreground row -->
+      <div class="swipe-row" data-idx="${i}" data-wid="${w.id||i}" style="position:relative;background:var(--bg);display:flex;align-items:center;gap:12px;padding:13px 0;touch-action:pan-y;will-change:transform;transition:transform .25s cubic-bezier(.4,0,.2,1);">
+        <div style="flex:1;min-width:0;">
+          <div style="font-family:'DM Sans';font-size:15px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${w.name||'Workout'}</div>
+          <div style="display:flex;align-items:center;gap:5px;margin-top:4px;">${chipHtml}</div>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--border)" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;opacity:.4;"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
     </div>`;
   });
 
@@ -4241,6 +4247,94 @@ function renderWorkoutsTab2() {
 
   // Render all at once — no async, no reflow
   el.innerHTML = `<div style="margin-top:4px;">${rowsHtml}</div>${_bottomBtns}`;
+
+  // ── Swipe-to-Start gesture ────────────────────────────
+  el.querySelectorAll('.swipe-row').forEach(row => {
+    let startX = 0, startY = 0, curX = 0, isDragging = false, isLocked = false, hapticFired = false;
+    const THRESHOLD = row.offsetWidth * 0.28 || 90;
+    const MAX_SWIPE = row.offsetWidth * 0.55 || 180;
+
+    function getIdx() { return parseInt(row.dataset.idx); }
+
+    function snapOpen() {
+      row.style.transition = 'transform .2s cubic-bezier(.4,0,.2,1)';
+      row.style.transform = `translateX(${MAX_SWIPE}px)`;
+    }
+    function snapClose() {
+      row.style.transition = 'transform .25s cubic-bezier(.4,0,.2,1)';
+      row.style.transform = 'translateX(0)';
+      isLocked = false;
+    }
+    function triggerStart() {
+      snapClose();
+      const idx = getIdx();
+      const w = workouts[idx];
+      if (w) {
+        window._activeTabHighlight = null;
+        window._loadFromToday = false;
+        window._wtabSelectedIdx = null;
+        loadWorkout(idx);
+        switchTab('log');
+      }
+    }
+
+    row.addEventListener('touchstart', e => {
+      if (isLocked) return;
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      curX = 0;
+      isDragging = false;
+      hapticFired = false;
+      row.style.transition = 'none';
+    }, { passive: true });
+
+    row.addEventListener('touchmove', e => {
+      if (isLocked) return;
+      const dx = e.touches[0].clientX - startX;
+      const dy = e.touches[0].clientY - startY;
+
+      // Lock to horizontal only — ignore if vertical scroll
+      if (!isDragging && Math.abs(dy) > Math.abs(dx) + 4) return;
+      if (!isDragging && Math.abs(dx) > 6) isDragging = true;
+      if (!isDragging) return;
+
+      curX = Math.max(0, Math.min(dx, MAX_SWIPE));
+      row.style.transform = `translateX(${curX}px)`;
+
+      // Haptic at threshold
+      if (!hapticFired && curX >= THRESHOLD) {
+        hapticFired = true;
+        if (navigator.vibrate) navigator.vibrate(10);
+      }
+    }, { passive: true });
+
+    row.addEventListener('touchend', () => {
+      if (!isDragging) return;
+      isDragging = false;
+      if (curX >= THRESHOLD) {
+        isLocked = true;
+        snapOpen();
+        // Auto-trigger after short pause
+        setTimeout(triggerStart, 300);
+      } else {
+        snapClose();
+      }
+    });
+
+    // Click on revealed background triggers start
+    const bg = row.previousElementSibling;
+    if (bg) bg.addEventListener('click', triggerStart);
+  });
+
+  // Close any open row when tapping elsewhere
+  document.addEventListener('touchstart', function _closeSwipes(e) {
+    if (!e.target.closest('.swipe-row-outer')) {
+      el.querySelectorAll('.swipe-row').forEach(r => {
+        r.style.transition = 'transform .25s cubic-bezier(.4,0,.2,1)';
+        r.style.transform = 'translateX(0)';
+      });
+    }
+  }, { passive: true, once: false });
 }
 
 // ══════════════════════════════════════════════════════
