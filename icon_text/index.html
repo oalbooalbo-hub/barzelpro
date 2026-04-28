@@ -48,6 +48,10 @@ if ('serviceWorker' in navigator) {
 :root{--bg:#0a0a0a;--surface:#141414;--surface2:#1e1e1e;--border:#2a2a2a;--accent:#e8ff47;--accent2:#ff4747;--text:#f0f0f0;--muted:#666;--radius:14px;}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 button{cursor:pointer;touch-action:manipulation;-webkit-appearance:none;}
+.swipe-row-outer,.swipe-row{-webkit-tap-highlight-color:transparent;}
+#page-workouts2{overflow:hidden;}
+#page-workouts2::-webkit-scrollbar{display:none;}
+#workouts2TabContent::-webkit-scrollbar{display:none;}
 #workoutMenuDropdown button{display:flex!important;align-items:center;gap:10px;}
 input[type="text"],input[type="number"],textarea{font-size:16px;-webkit-appearance:none;}
 input[type="date"]{color-scheme:dark;}
@@ -4214,19 +4218,19 @@ function renderWorkoutsTab2() {
       ? `<button onclick="window._activeTabHighlight=null;window._loadFromToday=false;loadWorkout(${i});switchTab('log');" style="background:var(--accent);border:none;border-radius:8px;color:#000;font-family:'DM Sans';font-size:13px;font-weight:700;padding:8px 14px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Load</button>`
       : `<button onclick="window._activeTabHighlight=null;window._loadFromToday=false;window._wtabSelectedIdx=null;loadWorkout(${i});switchTab('log');" style="background:var(--accent);border:none;border-radius:8px;color:#000;font-family:'DM Sans';font-size:13px;font-weight:700;padding:8px 14px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Load</button>`;
 
-    rowsHtml += `<div class="swipe-row-outer" style="position:relative;overflow:hidden;border-bottom:1px solid var(--border);${_isDimmed?'opacity:0.25;pointer-events:none;':''}">
+    rowsHtml += `<div class="swipe-row-outer" style="position:relative;overflow:hidden;border-bottom:1px solid var(--border);-webkit-tap-highlight-color:transparent;${_isDimmed?'opacity:0.25;pointer-events:none;':''}">
       <!-- Background action layer -->
       <div class="swipe-bg" style="position:absolute;inset:0;background:var(--accent);display:flex;align-items:center;padding-left:24px;gap:10px;pointer-events:none;">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="#000"><polygon points="5,3 19,12 5,21"/></svg>
         <span style="font-family:'DM Sans';font-size:14px;font-weight:900;color:#000;">START</span>
       </div>
       <!-- Foreground row -->
-      <div class="swipe-row" data-idx="${i}" data-wid="${w.id||i}" style="position:relative;background:var(--bg);display:flex;align-items:center;gap:12px;padding:13px 0;touch-action:pan-y;will-change:transform;transition:transform .25s cubic-bezier(.4,0,.2,1);">
+      <div class="swipe-row" data-idx="${i}" data-wid="${w.id||i}" style="position:relative;background:var(--bg);display:flex;align-items:center;gap:12px;padding:13px 0;touch-action:pan-y;will-change:transform;transition:transform .25s cubic-bezier(.4,0,.2,1);-webkit-tap-highlight-color:transparent;">
         <div style="flex:1;min-width:0;">
           <div style="font-family:'DM Sans';font-size:15px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${w.name||'Workout'}</div>
           <div style="display:flex;align-items:center;gap:5px;margin-top:4px;">${chipHtml}</div>
         </div>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--border)" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;opacity:.4;"><polyline points="9 18 15 12 9 6"/></svg>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;opacity:.7;"><polyline points="9 18 15 12 9 6"/></svg>
       </div>
     </div>`;
   });
