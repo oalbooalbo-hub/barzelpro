@@ -1035,6 +1035,7 @@ function hidAuthScreen() {
   <span>Exercises</span>
 </button>
   <button class="tab" id="tab-progress-btn" onclick="switchTab('progress')"><span>PRO</span></button>
+  <button class="tab" id="tab-workouts2-btn" onclick="switchTab('workouts2')"><span>W2</span></button>
 </div>
 <div id="workoutsToggleBar" style="display:none;position:fixed;bottom:calc(56px + env(safe-area-inset-bottom));left:0;right:0;z-index:28;background:var(--bg);padding:8px 16px;border-top:1px solid var(--border);max-width:430px;margin:0 auto;box-sizing:border-box;"></div>
 <div id="exercisesToggleBar" style="display:none;position:fixed;bottom:calc(56px + env(safe-area-inset-bottom));left:0;right:0;z-index:28;background:var(--bg);padding:8px 16px;border-top:1px solid var(--border);max-width:430px;margin:0 auto;box-sizing:border-box;"></div>
@@ -1148,6 +1149,10 @@ function hidAuthScreen() {
 </div>
 
 <!-- HISTORY -->
+<div class="page" id="page-workouts2">
+  <div id="workouts2TabContent"></div>
+</div>
+
 <div class="page" id="page-workouts" style="padding:8px 16px 14px;">
   <div id="workoutsTabContent"></div>
 </div>
@@ -3315,7 +3320,7 @@ function switchCoachPickView(view) {
 function switchWTabView(view) {
   _wTabView = view;
   window._keepWorkoutsTabState = true;
-  renderWorkoutsTab();
+  renderWorkoutsTab2();
 }
 
 function _initWTabView() {
@@ -4025,6 +4030,21 @@ function switchTab(tab) {
       });
     }
   }
+  if (tab==='workouts2') {
+    _initWTabView();
+    // Swap render target to workouts2TabContent
+    const _w2el = document.getElementById('workouts2TabContent');
+    const _w1el = document.getElementById('workoutsTabContent');
+    const _origEl = document.getElementById('workoutsTabContent');
+    if (_w2el) {
+      // Temporarily point renderWorkoutsTab2 to workouts2TabContent
+      _w2el.id = 'workoutsTabContent';
+      if (_w1el) _w1el.id = '_workoutsTabContent_bak';
+      renderWorkoutsTab2();
+      _w2el.id = 'workouts2TabContent';
+      if (_w1el) _w1el.id = 'workoutsTabContent';
+    }
+  }
   if (tab==='exercises') {
     _exTabView = 'created';
     if (!customExercises.length) _exTabView = 'library';
@@ -4080,6 +4100,147 @@ function updatePickModeTabs() {
     db.style.opacity = blocked ? '0.4' : '';
     db.style.cursor = blocked ? 'default' : 'pointer';
   }
+}
+
+
+// ══════════════════════════════════════════════════════
+//  WORKOUTS TAB v2 — flat list, no box, no async jump
+// ══════════════════════════════════════════════════════
+function renderWorkoutsTab2() {
+  clearTimeout(window._hiddenEmptyTimer);
+  if (!window._inReplaceMode && !window._keepWorkoutsTabState) window._replacePlanId = null;
+  if (!window._inPlanStrengthMode && !window._keepWorkoutsTabState) window._planStrengthKey = null;
+  window._keepWorkoutsTabState = false;
+  updatePickModeTabs();
+
+  const el = document.getElementById('workoutsTabContent');
+  const toggleBar = document.getElementById('workoutsToggleBar');
+  if (!el) return;
+
+  // Coach mode: delegate to existing coach renderer
+  if (window._coachMode) {
+    _renderCoachWorkoutsTab(el, toggleBar);
+    return;
+  }
+
+  // ── Toggle bar ────────────────────────────────────────
+  const _wHasCoach = window._currentUserData?.coachId && window._currentUserData?.coachingExpires && new Date(window._currentUserData.coachingExpires) >= new Date();
+  const _wToggleHtml = `<div style="display:flex;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+    <button onclick="switchWTabView('created')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_wTabView==='created'?'var(--accent)':'transparent'};color:${_wTabView==='created'?'#000':'var(--muted)'};font-family:'DM Sans';font-size:15px;font-weight:900;transition:all .2s;">MY ZONE</button>
+    <button onclick="switchWTabView('library')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_wTabView==='library'?'var(--accent)':'transparent'};color:${_wTabView==='library'?'#000':'var(--muted)'};font-family:'DM Sans';font-size:15px;font-weight:900;transition:all .2s;">EXPLORE</button>
+    ${_wHasCoach ? `<button onclick="switchWTabView('coach')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:${_wTabView==='coach'?'#7ec8e3':'transparent'};color:${_wTabView==='coach'?'#000':'#7ec8e3'};font-family:'DM Sans';font-size:15px;font-weight:900;transition:all .2s;">COACH</button>` : ''}
+  </div>`;
+  if (toggleBar) toggleBar.innerHTML = _wToggleHtml;
+
+  // ── Special modes: library / coach ───────────────────
+  if (_wTabView === 'library') {
+    const _addLibBtn = canEditLibrary() ? `<div style="display:flex;gap:8px;margin-top:12px;">
+      <button id="wtab-library-sync-btn" onclick="syncExploreToFirestore()" style="background:transparent;border:1px solid #34d39966;border-radius:10px;color:#34d399;font-family:'DM Sans';font-size:13px;font-weight:700;padding:10px 14px;cursor:pointer;flex-shrink:0;transition:all .2s;">☁ Library</button>
+      <button onclick="openAddExploreWorkout()" style="flex:1;background:transparent;border:1px dashed #34d399;border-radius:10px;color:#34d399;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;">+ Add to Explore</button>
+    </div>` : '';
+    el.innerHTML = `<div id="wtab-library-list" style="margin-top:4px;"></div>${_addLibBtn}`;
+    loadWorkoutLibrary();
+    return;
+  }
+  if (_wTabView === 'coach') {
+    el.innerHTML = `<div id="wtab-coach-list" style="margin-top:4px;"></div>`;
+    return;
+  }
+
+  // ── MY ZONE — flat list ───────────────────────────────
+  const all = workouts.filter(w => !w._draft);
+  const _deletedTabNames = JSON.parse(_LS.get('ironlog_deleted_tab_names') || '[]');
+  const _seen = new Set();
+  const sorted = [...all].sort((a,b) => b.date - a.date).filter(w => {
+    if (_deletedTabNames.includes(w.name)) return false;
+    const key = (w.name?.trim().toLowerCase()) || '';
+    if (_seen.has(key)) return false;
+    _seen.add(key);
+    return true;
+  });
+
+  const _cancelAction = window._replacePlanId
+    ? `const _bk=window._replacePlanKey;window._replacePlanId=null;window._replacePlanKey=null;if(_bk){const [_ry,_rm,_rd]=_bk.split('-').map(Number);planWorkoutOnDate(_ry,_rm,_rd);}else{switchTab('log');}`
+    : window._planStrengthKey
+    ? `const _psk=window._planStrengthKey;window._planStrengthKey=null;if(_psk){const [_sy,_sm,_sd]=_psk.split('-').map(Number);planWorkoutOnDate(_sy,_sm,_sd);}else{switchTab('log');}`
+    : window._loadFromToday
+    ? `window._loadFromToday=false;window._activeTabHighlight=null;switchTab('log');`
+    : null;
+
+  const _noSpecialMode = !window._replacePlanId && !window._planStrengthKey && !window._loadFromToday;
+  const _selIdx = window._wtabSelectedIdx;
+  const MUSCLE_COLORS = {Chest:'#e8ff47',Back:'#7ec8e3',Legs:'#ff8c42',Shoulders:'#a78bfa',Arms:'#34d399',Core:'#f87171',Compound:'#20d4c8'};
+
+  if (!sorted.length) {
+    el.innerHTML = `<div class="empty-state" style="margin-top:24px;"><span style="color:#fff;">No workouts yet.</span></div>
+      <button onclick="startNewWorkout(true);" style="width:100%;margin-top:12px;background:transparent;border:1px dashed var(--border);border-radius:12px;color:var(--muted);font-family:'DM Sans';font-size:15px;font-weight:700;padding:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Create New Workout
+      </button>`;
+    return;
+  }
+
+  // Build flat list rows
+  let rowsHtml = '';
+  sorted.forEach(w => {
+    const i = workouts.indexOf(w);
+    const _isSelected = _selIdx === i;
+    const _isDimmed = _selIdx !== null && _selIdx !== undefined && !_isSelected && _noSpecialMode;
+
+    // Muscle chips
+    const muscleCounts = {};
+    w.exercises.forEach(e => {
+      const m = e.muscle || getAllExercises().find(x=>x.name===e.name||x.label===e.name)?.muscle || 'Other';
+      muscleCounts[m] = (muscleCounts[m]||0) + 1;
+    });
+    const chipHtml = Object.entries(muscleCounts)
+      .sort((a,b) => b[1]-a[1])
+      .slice(0,3)
+      .map(([m]) => `<span style="font-size:10px;font-weight:700;color:${MUSCLE_COLORS[m]||'#888'};background:${(MUSCLE_COLORS[m]||'#888')}22;border-radius:6px;padding:2px 7px;">${m}</span>`)
+      .join('');
+
+    // Ex count
+    const exCount = w.exercises?.length || 0;
+    const lastDate = w.date ? new Date(w.date).toLocaleDateString('en-GB',{day:'numeric',month:'short'}) : '';
+
+    // Action button
+    const actionBtn = window._replacePlanId
+      ? `<button onclick="const w=workouts[${i}];if(w){const _rpk=window._replacePlanKey;const idx=plannedWorkouts.findIndex(p=>p.planId===window._replacePlanId);if(idx>-1){plannedWorkouts[idx].workoutName=w.name;plannedWorkouts[idx].exercises=w.exercises.map(e=>({...e}));saveData();renderTodayPlanCard();window._replacePlanId=null;window._replacePlanKey=null;}switchTab('log');}" style="background:var(--accent);border:none;border-radius:8px;color:#000;font-family:'DM Sans';font-size:13px;font-weight:700;padding:8px 14px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Select</button>`
+      : window._planStrengthKey
+      ? `<button onclick="const w=workouts[${i}];if(w){const _psk=window._planStrengthKey;if(!_psk){return;}const [_sy,_sm,_sd]=_psk.split('-').map(Number);const _pidx=plannedWorkouts.findIndex(p=>{const pd=new Date(p.date||0);return pd.getFullYear()===_sy&&pd.getMonth()===_sm&&pd.getDate()===_sd;});if(_pidx>-1){plannedWorkouts[_pidx].strengthWorkoutName=w.name;plannedWorkouts[_pidx].strengthExercises=w.exercises.map(e=>({...e}));saveData();renderTodayPlanCard();}window._planStrengthKey=null;switchTab('log');}" style="background:var(--accent);border:none;border-radius:8px;color:#000;font-family:'DM Sans';font-size:13px;font-weight:700;padding:8px 14px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Select</button>`
+      : window._loadFromToday
+      ? `<button onclick="window._activeTabHighlight=null;window._loadFromToday=false;loadWorkout(${i});switchTab('log');" style="background:var(--accent);border:none;border-radius:8px;color:#000;font-family:'DM Sans';font-size:13px;font-weight:700;padding:8px 14px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Load</button>`
+      : `<button onclick="window._activeTabHighlight=null;window._loadFromToday=false;window._wtabSelectedIdx=null;loadWorkout(${i});switchTab('log');" style="background:var(--accent);border:none;border-radius:8px;color:#000;font-family:'DM Sans';font-size:13px;font-weight:700;padding:8px 14px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Load</button>`;
+
+    rowsHtml += `<div style="display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--border);transition:opacity .2s;${_isDimmed?'opacity:0.25;pointer-events:none;':''}" data-idx="${i}">
+      <div style="flex:1;min-width:0;">
+        <div style="font-family:'DM Sans';font-size:15px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${w.name||'Workout'}</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap;">
+          ${chipHtml}
+          <span style="font-size:11px;color:var(--muted);">${exCount} exercise${exCount!==1?'s':''}</span>
+          ${lastDate?`<span style="font-size:11px;color:var(--muted);">· ${lastDate}</span>`:''}
+        </div>
+      </div>
+      ${actionBtn}
+    </div>`;
+  });
+
+  // Bottom buttons
+  const _wtabProActive = !!window._wtabProMode;
+  const _selActionBtns = (_noSpecialMode && _selIdx !== undefined && _selIdx !== null && workouts[_selIdx]) ? `
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <button onclick="window._wtabSelectedIdx=null;openWtabCalendarPlan(${_selIdx});" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans';font-size:14px;font-weight:700;padding:12px;cursor:pointer;">📅 Plan</button>
+      <button onclick="window._activeTabHighlight=null;window._loadFromToday=false;window._wtabSelectedIdx=null;loadWorkout(${_selIdx});switchTab('log');" style="flex:1;background:var(--accent);border:none;border-radius:12px;color:#000;font-family:'DM Sans';font-size:14px;font-weight:900;padding:12px;cursor:pointer;">START</button>
+    </div>
+    <button onclick="_wtabCancelSelection();" style="width:100%;margin-top:8px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--muted);font-family:'DM Sans';font-size:14px;font-weight:600;padding:10px;cursor:pointer;">Cancel</button>` : '';
+
+  const _bottomBtns = _selActionBtns || `<button onclick="startNewWorkout(true);" style="width:100%;margin-top:12px;background:transparent;border:1px dashed var(--border);border-radius:12px;color:var(--muted);font-family:'DM Sans';font-size:15px;font-weight:700;padding:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    Create New Workout
+  </button>`;
+
+  // Render all at once — no async, no reflow
+  el.innerHTML = `<div style="margin-top:4px;">${rowsHtml}</div>${_bottomBtns}`;
 }
 
 // ══════════════════════════════════════════════════════
