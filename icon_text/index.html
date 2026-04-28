@@ -7372,6 +7372,8 @@ function confirmSave() {
   const _startTime = window._sessionStartTime || (_storedStart ? parseInt(_storedStart) : _endTime);
   window._sessionStartTime = null;
   _LS.remove('ironlog_session_start');
+  // Clear session immediately so refresh doesn't restore active workout
+  _LS.remove('ironlog_session');
   const _durMs = _endTime - _startTime;
   const _durMins = Math.round(_durMs / 60000);
   const _durStr = _durMins < 1 ? 'under 1 min' : _durMins === 1 ? '1 min' : `${_durMins} min`;
