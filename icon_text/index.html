@@ -53,21 +53,26 @@ if ('serviceWorker' in navigator) {
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 button{cursor:pointer;touch-action:manipulation;-webkit-appearance:none;}
 .swipe-row-outer,.swipe-row{-webkit-tap-highlight-color:transparent;}
+@keyframes swipePeek{0%{transform:translateX(0)}30%{transform:translateX(40px)}70%{transform:translateX(40px)}100%{transform:translateX(0)}}
+.swipe-peek{animation:swipePeek 800ms cubic-bezier(.4,0,.2,1) forwards;}
 #page-workouts2{scrollbar-width:none;padding-bottom:calc(180px + env(safe-area-inset-bottom)) !important;}
 #page-workouts2::-webkit-scrollbar{display:none;}
 #workouts2TabContent::-webkit-scrollbar{display:none;}
 #workoutMenuDropdown button{display:flex!important;align-items:center;gap:10px;}
+/* Safe area — ensure fixed full-screen overlays respect notch and home indicator */
+.modal-overlay.open{padding-top:max(env(safe-area-inset-top),16px);padding-bottom:max(env(safe-area-inset-bottom),16px);}
+#share-qr-modal,#install-success-modal{padding-top:max(env(safe-area-inset-top),48px) !important;padding-bottom:max(env(safe-area-inset-bottom),40px) !important;}
 input[type="text"],input[type="number"],textarea{font-size:16px;-webkit-appearance:none;}
 input[type="date"]{color-scheme:dark;}
 select{font-size:16px;}
 
 /* ── DESKTOP LAYOUT — centered mobile view ─────────── */
-html{overscroll-behavior:none;}
+html{overscroll-behavior:none;-webkit-tap-highlight-color:transparent;}*{-webkit-tap-highlight-color:transparent;}
 /* Keyboard-aware layout — prevents layout break when keyboard opens */
 @supports (height: 100dvh) {
   html { height: 100dvh; }
   .tabs { bottom: env(keyboard-inset-height, env(safe-area-inset-bottom, 0px)); }
-}body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:430px;margin:0 auto;padding-bottom:calc(90px + env(safe-area-inset-bottom));padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);-webkit-text-size-adjust:100%;overscroll-behavior:none;-webkit-touch-callout:none;}
+}body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:430px;margin:0 auto;padding-top:env(safe-area-inset-top);padding-bottom:calc(90px + env(safe-area-inset-bottom));padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);-webkit-text-size-adjust:100%;overscroll-behavior:none;-webkit-touch-callout:none;}
 button,h1,h2,h3,h4,label,.tab,.tabs,.header,.workout-name-bar,.exercise-card .ex-header,.muscle-chip,.ex-float-bar,.modal-overlay .modal-header{user-select:none;-webkit-user-select:none;}
 img,a,svg{-webkit-touch-callout:none;}
 
@@ -99,7 +104,7 @@ body.desktop-mode .pages-wrap {
 .logo{font-family:'Bebas Neue';font-size:34px;color:var(--accent);display:flex;flex-direction:column;align-items:flex-start;}
 .logo span{color:var(--muted);font-size:9px;font-family:'DM Sans';display:block;margin-top:-4px;letter-spacing:3px;}
 .date-badge{padding:6px 4px;font-size:12px;color:#fff;font-weight:600;}
-.tabs{display:flex;gap:0;padding:0;border-top:1px solid var(--border);border-bottom:none;position:fixed;bottom:0;left:0;right:0;z-index:29;background:var(--bg);max-width:430px;margin:0 auto;padding-bottom:env(safe-area-inset-bottom);}
+.tabs{display:flex;gap:0;padding:0 0 env(safe-area-inset-bottom);border-top:1px solid var(--border);border-bottom:none;position:fixed;bottom:0;left:0;right:0;z-index:29;background:var(--bg);max-width:430px;margin:0 auto;}
 .tab{flex:1;padding:12px 4px 10px;border-radius:0;border:none;background:transparent;color:var(--muted);font-family:'DM Sans';font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;outline:none;-webkit-tap-highlight-color:transparent;text-align:center;}
 .tab:focus,.tab:focus-visible{outline:none;border-color:var(--border);}
 .tab.active{background:transparent;color:var(--accent);border:none;font-weight:700;}.tab#tab-progress-btn.active,.tab#tab-progress-btn2.active{color:#34d399;border:none;}#tab-progress-btn,#tab-progress-btn2{flex:1;}
@@ -664,7 +669,7 @@ body.desktop-mode .pages-wrap {
 .cal-btn-delete svg{width:14px;height:14px;flex-shrink:0;}
 
 /* ── TOAST ─────────────────────────────────────── */
-.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-400px);background:var(--accent);color:#000;font-weight:700;font-size:13px;padding:11px 22px;border-radius:28px;transition:transform .3s cubic-bezier(.34,1.56,.64,1);z-index:999;white-space:normal;text-align:center;max-width:calc(100% - 40px);}
+.toast{position:fixed;top:max(20px, env(safe-area-inset-top));left:50%;transform:translateX(-50%) translateY(-400px);background:var(--accent);color:#000;font-weight:700;font-size:13px;padding:11px 22px;border-radius:28px;transition:transform .3s cubic-bezier(.34,1.56,.64,1);z-index:999;white-space:normal;text-align:center;max-width:calc(100% - 40px);}
 .toast.show{transform:translateX(-50%) translateY(0);}
 .toast u{color:#000;opacity:.7;text-decoration:underline;cursor:pointer;}
 .trash-item:hover{background:rgba(255,255,255,.03);}
@@ -1785,7 +1790,7 @@ function _showOfflineBanner(show) {
   if (show && !b) {
     b = document.createElement('div');
     b.id = '_offlineBanner';
-    b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99998;background:#ff8c42;color:#000;font-family:"DM Sans",sans-serif;font-size:12px;font-weight:700;text-align:center;padding:7px 16px;letter-spacing:.5px;';
+    b.style.cssText = 'position:fixed;top:env(safe-area-inset-top,0px);left:0;right:0;z-index:99998;background:#ff8c42;color:#000;font-family:"DM Sans",sans-serif;font-size:12px;font-weight:700;text-align:center;padding:7px 16px;letter-spacing:.5px;';
     b.textContent = '⚠️ Offline — changes will sync when you reconnect';
     document.body.prepend(b);
   } else if (!show && b) { b.remove(); }
@@ -3363,6 +3368,7 @@ function editExTabName(oldName) {
   input.value = oldName;
   input.style.direction = /[\u0590-\u05FF]/.test(oldName) ? 'rtl' : 'ltr';
   document.getElementById('renameExOverlay').classList.add('open');
+  if (window._historyPush) window._historyPush('rename-ex');
   setTimeout(() => { input.focus(); input.select(); }, 100);
 }
 function closeRenameEx() {
@@ -3525,6 +3531,7 @@ function openNewExModal(muscle) {
   if (input) input.value = '';
   _renderNewExPills(muscle);
   document.getElementById('newExModalOverlay').classList.add('open');
+  if (window._historyPush) window._historyPush('new-ex');
   setTimeout(() => input?.focus(), 100);
 }
 function _renderNewExPills(selected) {
@@ -4234,12 +4241,19 @@ function renderWorkoutsTab2() {
 
     rowsHtml += `<div class="swipe-row-outer" style="position:relative;overflow:hidden;border-bottom:1px solid var(--border);-webkit-tap-highlight-color:transparent;${_isDimmed?'opacity:0.25;pointer-events:none;':''}">
       <!-- Background action layer -->
-      <div class="swipe-bg" style="position:absolute;inset:0;background:var(--accent);display:flex;align-items:center;padding-left:24px;gap:10px;pointer-events:none;">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="#000"><polygon points="5,3 19,12 5,21"/></svg>
-        <span style="font-family:'DM Sans';font-size:14px;font-weight:900;color:#000;">START</span>
+      <div class="swipe-bg" style="position:absolute;inset:0;background:var(--accent);display:flex;align-items:center;padding-left:24px;pointer-events:none;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+            <circle cx="22" cy="22" r="21" stroke="#000" stroke-width="2"/>
+            <polygon points="17,13 34,22 17,31" fill="#000"/>
+          </svg>
+          <span style="font-family:'DM Sans';font-size:11px;font-weight:900;color:#000;letter-spacing:.5px;">START</span>
+        </div>
       </div>
       <!-- Foreground row -->
       <div class="swipe-row" data-idx="${i}" data-wid="${w.id||i}" style="position:relative;background:var(--bg);display:flex;align-items:center;gap:12px;padding:13px 0;touch-action:pan-y;will-change:transform;transition:transform .25s cubic-bezier(.4,0,.2,1);-webkit-tap-highlight-color:transparent;">
+        <!-- Primary muscle color bar -->
+        <div style="width:3px;height:100%;min-height:44px;border-radius:2px;background:${Object.keys(muscleCounts).sort((a,b)=>muscleCounts[b]-muscleCounts[a])[0] ? MUSCLE_COLORS[Object.keys(muscleCounts).sort((a,b)=>muscleCounts[b]-muscleCounts[a])[0]]||'#333' : '#333'};flex-shrink:0;align-self:stretch;"></div>
         <div style="flex:1;min-width:0;">
           <div style="font-family:'DM Sans';font-size:15px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${w.name||'Workout'}</div>
           <div style="display:flex;align-items:center;gap:5px;margin-top:4px;">${chipHtml}</div>
@@ -4343,6 +4357,21 @@ function renderWorkoutsTab2() {
     const bg = row.previousElementSibling;
     if (bg) bg.addEventListener('click', triggerStart);
   });
+
+  // One-time peek animation on first load
+  const _peekKey = 'barzelpro_swipe_peek_done';
+  if (!localStorage.getItem(_peekKey)) {
+    const firstRow = el.querySelector('.swipe-row');
+    if (firstRow) {
+      setTimeout(() => {
+        firstRow.classList.add('swipe-peek');
+        firstRow.addEventListener('animationend', () => {
+          firstRow.classList.remove('swipe-peek');
+          localStorage.setItem(_peekKey, '1');
+        }, { once: true });
+      }, 600);
+    }
+  }
 
   // Close any open row when tapping elsewhere
   document.addEventListener('touchstart', function _closeSwipes(e) {
@@ -4650,6 +4679,7 @@ function openPicker(cardId) {
   renderPickerList();
   updatePickerDoneBtn();
   document.getElementById('pickerOverlay').classList.add('open');
+  if (window._historyPush) window._historyPush('picker');
   localStorage.setItem('ironlog_modal', 'picker');
 }
 
@@ -5733,6 +5763,7 @@ function openExDetail(id) {
   if (!slider || !detail) return;
   // Store which card is open
   window._exDetailCardId = id;
+  if (window._historyPush) window._historyPush('ex-detail');
   // Set back label to exercise name
   const exName = card.querySelector('.ex-name')?.textContent || '';
   if (backLabel) backLabel.textContent = exName || 'Back';
@@ -7067,6 +7098,7 @@ function finishWorkoutFull() {
 
   window._pendingWorkout = {name, date:Date.now(), exercises};
   document.getElementById('summaryOverlay').classList.add('open');
+  if (window._historyPush) window._historyPush('summary');
 }
 function finishWorkout() {
   if (!document.getElementById('finishWorkoutBtn')?.classList.contains('ready')) return;
@@ -10403,6 +10435,7 @@ function selectCalDay(key) {
 }
 
 function openCalendar() {
+  if (window._historyPush) window._historyPush('calendar');
   const now = new Date();
   calYear = now.getFullYear(); calMonth = now.getMonth();
   renderCalendar();
@@ -16681,7 +16714,7 @@ function deleteCoachWorkout(id) {
 
 <!-- DBG_EMERGENCY_START -->
 <!-- Emergency tab nav — shown when stuck -->
-<div id="emergency-nav" style="position:fixed;top:10px;right:10px;z-index:9999;display:flex;gap:6px;">
+<div id="emergency-nav" style="position:fixed;top:max(10px, calc(env(safe-area-inset-top) + 4px));right:10px;z-index:9999;display:flex;gap:6px;">
   <button onclick="switchTab('log')" style="background:#e8ff47;color:#000;border:none;border-radius:8px;font-family:'DM Sans';font-size:12px;font-weight:900;padding:8px 12px;cursor:pointer;-webkit-tap-highlight-color:transparent;">TODAY</button>
   <button onclick="document.getElementById('emergency-nav').style.display='none'" style="background:#333;color:#fff;border:none;border-radius:8px;font-family:'DM Sans';font-size:12px;font-weight:700;padding:8px 10px;cursor:pointer;">✕</button>
 </div>
@@ -17610,6 +17643,7 @@ function _kgEditorFocusLeave() {
 }
 // ─────────────────────────────────────────────────────────────────────────────
 function openInlineKgEditor(inputEl, exId) {
+  if (window._historyPush) window._historyPush('kg-editor');
 /* DBG_START */   const _openStack = new Error().stack.split('\n').slice(1,4).map(s=>s.trim().replace(/.*at /,'')).join(' > '); /* DBG_END */
   const row = inputEl.closest('tr');
   const editorRow = row?.nextElementSibling;
@@ -17856,6 +17890,7 @@ function openShareQR() {
   const modal = document.getElementById('share-qr-modal');
   if (!modal) return;
   modal.style.display = 'flex';
+  if (window._historyPush) window._historyPush('share-qr');
   const url = window.location.origin + window.location.pathname.replace(/[^/]*$/, '') + 'index.html';
   window._shareQRUrl = url;
   if (document.getElementById('share-qr-url')) document.getElementById('share-qr-url').textContent = url;
@@ -18009,5 +18044,51 @@ function _updateKgDisplay(val, isBWMode) {
     <span style="font-size:16px;letter-spacing:1px;">PRO</span>
   </button>
 </div>
+
+<script>
+// ── History API — Back Button Handler ────────────────────────────────────────
+// Tracks open sub-views so hardware back button closes them instead of exiting
+
+(function() {
+  // Push a state when opening a sub-view
+  window._historyPush = function(viewId) {
+    history.pushState({ view: viewId }, '', '');
+  };
+
+  // Map of view IDs to their close functions
+  const _closers = {
+    'picker':           () => { if (typeof closePicker === 'function') closePicker(); },
+    'calendar':         () => { if (typeof closeCalendar === 'function') closeCalendar(); },
+    'ex-detail':        () => { if (typeof closeExDetail === 'function') closeExDetail(); },
+    'share-qr':         () => { if (typeof closeShareQR === 'function') closeShareQR(); },
+    'summary':          () => { const o = document.getElementById('summaryOverlay'); if (o) o.classList.remove('open'); },
+    'workout-name':     () => { const o = document.getElementById('workoutNameModal'); if (o) o.classList.remove('open'); },
+    'rename-ex':        () => { const o = document.getElementById('renameExOverlay'); if (o) o.classList.remove('open'); },
+    'new-ex':           () => { const o = document.getElementById('newExModalOverlay'); if (o) o.classList.remove('open'); },
+    'edit-history':     () => { const o = document.getElementById('editHistoryOverlay'); if (o) o.classList.remove('open'); },
+    'week-summary':     () => { const o = document.getElementById('weekSummaryOverlay'); if (o) o.classList.remove('open'); },
+    'kg-editor':        () => { if (typeof closeInlineKgEditor === 'function') closeInlineKgEditor(); },
+    'user-menu':        () => { const o = document.getElementById('userMenuOverlay'); if (o) o.style.display = 'none'; },
+    'workout-menu':     () => { const o = document.getElementById('workoutMenuDropdown'); if (o) o.style.display = 'none'; },
+  };
+
+  // Handle back button
+  window.addEventListener('popstate', function(e) {
+    const view = e.state?.view;
+    if (view && _closers[view]) {
+      _closers[view]();
+    } else {
+      // No known view — push a neutral state to prevent PWA exit
+      history.pushState(null, '', '');
+    }
+  });
+
+  // Push initial state so first back press doesn't exit PWA
+  if (!history.state) {
+    history.replaceState({ view: null }, '', '');
+  }
+})();
+</script>
+
 </body>
 </html>
