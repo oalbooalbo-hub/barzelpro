@@ -53,7 +53,7 @@ if ('serviceWorker' in navigator) {
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 button{cursor:pointer;touch-action:manipulation;-webkit-appearance:none;}
 .swipe-row-outer,.swipe-row{-webkit-tap-highlight-color:transparent;}
-@keyframes swipePeek{0%{transform:translateX(0)}30%{transform:translateX(40px)}70%{transform:translateX(40px)}100%{transform:translateX(0)}}
+@keyframes swipePeek{0%{transform:translateX(0)}30%{transform:translateX(20px)}70%{transform:translateX(20px)}100%{transform:translateX(0)}}
 .swipe-peek{animation:swipePeek 800ms cubic-bezier(.4,0,.2,1) forwards;}
 #page-workouts2{scrollbar-width:none;padding-bottom:calc(180px + env(safe-area-inset-bottom)) !important;}
 #page-workouts2::-webkit-scrollbar{display:none;}
@@ -4243,8 +4243,8 @@ function renderWorkoutsTab2() {
       <!-- Background action layer -->
       <div class="swipe-bg" style="position:absolute;inset:0;background:var(--accent);display:flex;align-items:center;padding-left:24px;pointer-events:none;">
         <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
-          <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
-            <circle cx="22" cy="22" r="21" stroke="#000" stroke-width="2"/>
+          <svg width="32" height="32" viewBox="0 0 44 44" fill="none">
+            <circle cx="22" cy="22" r="21" stroke="#000" stroke-width="3.5"/>
             <polygon points="17,13 34,22 17,31" fill="#000"/>
           </svg>
           <span style="font-family:'DM Sans';font-size:11px;font-weight:900;color:#000;letter-spacing:.5px;">START</span>
@@ -4253,7 +4253,7 @@ function renderWorkoutsTab2() {
       <!-- Foreground row -->
       <div class="swipe-row" data-idx="${i}" data-wid="${w.id||i}" style="position:relative;background:var(--bg);display:flex;align-items:center;gap:12px;padding:13px 0;touch-action:pan-y;will-change:transform;transition:transform .25s cubic-bezier(.4,0,.2,1);-webkit-tap-highlight-color:transparent;">
         <!-- Primary muscle color bar -->
-        <div style="width:3px;height:100%;min-height:44px;border-radius:2px;background:${Object.keys(muscleCounts).sort((a,b)=>muscleCounts[b]-muscleCounts[a])[0] ? MUSCLE_COLORS[Object.keys(muscleCounts).sort((a,b)=>muscleCounts[b]-muscleCounts[a])[0]]||'#333' : '#333'};flex-shrink:0;align-self:stretch;"></div>
+        <div style="width:3px;height:100%;min-height:44px;border-radius:2px;background:var(--accent);flex-shrink:0;align-self:stretch;"></div>
         <div style="flex:1;min-width:0;">
           <div style="font-family:'DM Sans';font-size:15px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${w.name||'Workout'}</div>
           <div style="display:flex;align-items:center;gap:5px;margin-top:4px;">${chipHtml}</div>
@@ -4283,8 +4283,8 @@ function renderWorkoutsTab2() {
   // ── Swipe-to-Start gesture ────────────────────────────
   el.querySelectorAll('.swipe-row').forEach(row => {
     let startX = 0, startY = 0, curX = 0, isDragging = false, isLocked = false, hapticFired = false;
-    const THRESHOLD = row.offsetWidth * 0.28 || 90;
-    const MAX_SWIPE = row.offsetWidth * 0.55 || 180;
+    const THRESHOLD = row.offsetWidth * 0.14 || 45;
+    const MAX_SWIPE = row.offsetWidth * 0.275 || 90;
 
     function getIdx() { return parseInt(row.dataset.idx); }
 
