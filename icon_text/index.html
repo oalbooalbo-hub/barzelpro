@@ -46,7 +46,7 @@ if ('serviceWorker' in navigator) {
 <title>BARZELPRO</title>
 <!-- localForage: IndexedDB-backed offline storage -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700;900&family=Rubik:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="pwa-styles.css">
 <style>
 :root{--bg:#0a0a0a;--surface:#141414;--surface2:#1e1e1e;--border:#2a2a2a;--accent:#e8ff47;--accent2:#ff4747;--text:#f0f0f0;--muted:#666;--radius:14px;}
@@ -73,6 +73,11 @@ html{overscroll-behavior:none;-webkit-tap-highlight-color:transparent;}*{-webkit
   html { height: 100dvh; }
   .tabs { bottom: env(keyboard-inset-height, env(safe-area-inset-bottom, 0px)); }
 }body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:430px;margin:0 auto;padding-top:env(safe-area-inset-top);padding-bottom:calc(90px + env(safe-area-inset-bottom));padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);-webkit-text-size-adjust:100%;overscroll-behavior:none;-webkit-touch-callout:none;}
+/* Hebrew text: always use Rubik */
+@font-face{font-family:'AppFont';src:local('Rubik');unicode-range:U+0590-05FF,U+FB1D-FB4F;}
+:lang(he),*[dir="rtl"]{font-family:'Rubik',sans-serif;}
+/* Global font stack: DM Sans with Rubik fallback for Hebrew */
+body,button,input,textarea,select{font-family:'DM Sans','Rubik',sans-serif;}
 button,h1,h2,h3,h4,label,.tab,.tabs,.header,.workout-name-bar,.exercise-card .ex-header,.muscle-chip,.ex-float-bar,.modal-overlay .modal-header{user-select:none;-webkit-user-select:none;}
 img,a,svg{-webkit-touch-callout:none;}
 
@@ -108,7 +113,7 @@ body.desktop-mode .pages-wrap {
 .tab{flex:1;padding:12px 4px 10px;border-radius:0;border:none;background:transparent;color:var(--muted);font-family:'DM Sans';font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;outline:none;-webkit-tap-highlight-color:transparent;text-align:center;}
 .tab:focus,.tab:focus-visible{outline:none;border-color:var(--border);}
 .tab.active{background:transparent;color:var(--accent);border:none;font-weight:700;}.tab#tab-progress-btn.active,.tab#tab-progress-btn2.active{color:#34d399;border:none;}#tab-progress-btn,#tab-progress-btn2{flex:1;}
-.page{display:none;padding:14px 16px;padding-bottom:calc(130px + env(safe-area-inset-bottom));min-height:100dvh;box-sizing:border-box;}.page.active.delayed-reveal{animation:pageFadeIn .15s ease .3s both;}@keyframes pageFadeIn{from{opacity:0}to{opacity:1}}
+.page{display:none;padding:14px 16px;padding-bottom:calc(130px + env(safe-area-inset-bottom));box-sizing:border-box;}.page.active.delayed-reveal{animation:pageFadeIn .15s ease .3s both;}@keyframes pageFadeIn{from{opacity:0}to{opacity:1}}
 .page.active{display:block;}
 .section-title{font-family:'DM Sans';font-size:20px;font-weight:700;margin-bottom:14px;color:var(--muted);letter-spacing:0;position:sticky;top:0;z-index:25;background:var(--bg);padding:10px 0 6px;}
 .section-title span{color:var(--text);}
@@ -233,10 +238,11 @@ body.desktop-mode .pages-wrap {
 #kgEditorDisplay{will-change:contents;-webkit-transform:translateZ(0);transform:translateZ(0);display:inline-block;}
 .kg-inline-editor{height:0;overflow:visible;transition:height .3s cubic-bezier(.4,0,.2,1);background:#1a1a2e;border-top:0px solid var(--border);}
 /* Exercise slide nav */
-#ex-nav-slider{display:flex;width:200%;transition:transform .35s cubic-bezier(.4,0,.2,1);will-change:transform;}
-#ex-nav-list{width:50%;flex-shrink:0;}
-#ex-nav-detail{width:50%;flex-shrink:0;overflow-y:auto;}
-#ex-nav-slider.detail-open{transform:translateX(-50%);}
+#ex-nav-slider{display:block;width:100%;position:relative;}
+#ex-nav-list{width:100%;}
+#ex-nav-detail{width:100%;display:none;overflow-y:auto;}
+#ex-nav-slider.detail-open #ex-nav-list{display:none;}
+#ex-nav-slider.detail-open #ex-nav-detail{display:block;}
 #ex-detail-back{display:flex;align-items:center;gap:8px;padding:10px 0 6px;cursor:pointer;color:var(--accent);font-family:"DM Sans";font-size:15px;font-weight:700;}
 #ex-detail-back svg{flex-shrink:0;}
 @keyframes kgFocusHide{from{opacity:1;transform:translateY(0);}to{opacity:0;transform:translateY(-12px);}}
@@ -1139,7 +1145,7 @@ function hidAuthScreen() {
   </div>
 
   <!-- ACTIVE WORKOUT: hidden until user picks an option -->
-  <div id="today-workout-area" style="display:none;overflow:hidden;">
+  <div id="today-workout-area" style="display:none;overflow-x:visible;">
     <div class="today-actions" style="margin:0;padding:0;">
       <button class="btn-clear-workout" onclick="clearSession()" style="display:none;"></button>
       <button class="btn-load-history" onclick="window._loadFromToday=true;switchTab('workouts')" style="display:none;"></button>
@@ -1157,7 +1163,7 @@ function hidAuthScreen() {
           <button class="btn-add-exercise" onclick="enterPickMode(_todayMuscleFilter)">+ ADD EXERCISE</button>
         </div>
       </div>
-      <div id="ex-nav-detail">
+      <div id="ex-nav-detail" style="overflow-y:auto;">
         <div id="ex-detail-back" onclick="closeExDetail()">
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><polyline points="13,4 7,10 13,16" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
           <span id="ex-detail-back-label">Back</span>
@@ -1165,7 +1171,7 @@ function hidAuthScreen() {
         <div id="ex-detail-content"></div>
       </div>
     </div>
-  </div>
+</div>
 </div>
 
 <!-- HISTORY -->
@@ -3169,7 +3175,8 @@ function renderExercisesTab() {
 
     listHtml += `<div data-exname="${ex.name.replace(/"/g,'&quot;')}" data-muscle="${ex.muscle||'Chest'}">
       <!-- Flat row -->
-      <div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border);">
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
+        ${(() => { const _w=ex.name.trim().split(/\s+/); const _in=((_w[0]||'')[0]||'')+((_w[1]||'')[0]||''); const _c=MUSCLE_COLORS[ex.muscle]||'#888'; return `<div style="width:56px;height:56px;border-radius:50%;border:2px solid ${_c};background:#111;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:${_c};font-family:'DM Sans';font-size:${_in.length>1?'18':'22'}px;font-weight:900;letter-spacing:-1px;">${_in.toUpperCase()}</div>`; })()}
         <div ${isExpandable || _pickMode ? `onclick="${_pickMode ? `pickExercise('${ex.name.replace(/'/g,"\\'")}')` : `toggleExTabCard('${safeId}')`}"` : ''} style="flex:1;min-width:0;${isExpandable || _pickMode ? 'cursor:pointer;' : ''}">
           <div style="font-family:'DM Sans';font-size:15px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${ex.name}</div>
         </div>
@@ -3975,6 +3982,12 @@ function switchTab(tab) {
   }
   window._activeTab = tab;
   document.activeElement?.blur();
+  // Reset ex-nav-slider if stuck in detail-open state
+  const _slider = document.getElementById('ex-nav-slider');
+  if (_slider && _slider.classList.contains('detail-open')) {
+    _slider.classList.remove('detail-open');
+    window._exDetailCardId = null;
+  }
   // Hide floating bar when switching away from Today
   if (tab !== 'log') {
     if (window.hideExFloatBar) hideExFloatBar();
@@ -4238,7 +4251,7 @@ function renderWorkoutsTab2() {
       ? `<button onclick="window._activeTabHighlight=null;window._loadFromToday=false;loadWorkout(${i});switchTab('log');" style="background:var(--accent);border:none;border-radius:8px;color:#000;font-family:'DM Sans';font-size:13px;font-weight:700;padding:8px 14px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Load</button>`
       : `<button onclick="window._activeTabHighlight=null;window._loadFromToday=false;window._wtabSelectedIdx=null;loadWorkout(${i});switchTab('log');" style="background:var(--accent);border:none;border-radius:8px;color:#000;font-family:'DM Sans';font-size:13px;font-weight:700;padding:8px 14px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Load</button>`;
 
-    rowsHtml += `<div class="swipe-row-outer" style="position:relative;overflow:hidden;border-bottom:1px solid var(--border);-webkit-tap-highlight-color:transparent;${_isDimmed?'opacity:0.25;pointer-events:none;':''}">
+    rowsHtml += `<div class="swipe-row-outer" style="position:relative;overflow:hidden;border-bottom:1px solid var(--border);-webkit-tap-highlight-color:transparent;min-height:80px;${_isDimmed?'opacity:0.25;pointer-events:none;':''}">
       <!-- Background action layer -->
       <div class="swipe-bg" style="position:absolute;inset:0;background:var(--accent);display:flex;align-items:center;padding-left:24px;pointer-events:none;">
         <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
@@ -4252,10 +4265,10 @@ function renderWorkoutsTab2() {
       <!-- Foreground row -->
       <div class="swipe-row" data-idx="${i}" data-wid="${w.id||i}" style="position:relative;background:var(--bg);display:flex;align-items:center;gap:12px;padding:0 0;min-height:80px;touch-action:pan-y;will-change:transform;transition:transform .25s cubic-bezier(.4,0,.2,1);-webkit-tap-highlight-color:transparent;">
         <!-- Primary muscle color bar -->
-        <div style="width:3px;height:100%;min-height:44px;border-radius:2px;background:var(--accent);flex-shrink:0;align-self:stretch;"></div>
+        <div style="width:3px;height:40px;border-radius:2px;background:var(--accent);flex-shrink:0;align-self:center;"></div>
         <div style="flex:1;min-width:0;cursor:pointer;" onclick="openW2Sheet(${i})">
           <div style="font-family:'DM Sans';font-size:22px;font-weight:900;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${w.name||'Workout'}</div>
-          <div style="display:flex;align-items:center;gap:5px;margin-top:4px;">${chipHtml}</div>
+
         </div>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;opacity:.7;"><polyline points="9 18 15 12 9 6"/></svg>
       </div>
@@ -4992,7 +5005,7 @@ function updateTodayMuscleChips() {
   const _chipsBlock = document.getElementById('today-chips-block');
   const _chipsVisible = !(_anyCardOpen || _detailOpen);
   wrap.style.display = _chipsVisible ? 'flex' : 'none';
-  if (_chipsBlock) _chipsBlock.style.display = _chipsVisible ? 'block' : 'none';
+  if (_chipsBlock) { _chipsBlock.style.display = _chipsVisible ? 'block' : 'none'; }
   const MUSCLE_ABBR = { Chest:'Chest', Back:'Back', Legs:'Legs', Shoulders:'Shldr', Arms:'Arms', Core:'Abs', Compound:'Comp' };
   const allActive = !_todayMuscleFilter;
   const anyDone = true;
@@ -5053,8 +5066,14 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
   nameBlock.className = 'ex-name-block';
   const muscleColors = { Chest: '#e8ff47', Back: '#7ec8e3', Legs: '#ff8c42', Shoulders: '#a78bfa', Arms: '#34d399', Core: '#f87171', Compound: '#20d4c8' };
   const muscleLabel = ex.muscle === 'Shoulders' ? 'Shldr' : ex.muscle || '';
-  const muscleColor = muscleColors[ex.muscle] || 'var(--muted)';
-  nameBlock.innerHTML = `<div style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:${muscleColor};flex-shrink:0;display:inline-block;"></span><div class="ex-name" style="flex:1;min-width:0;">${ex.label}</div></div>`;
+  const _exMuscle = ex.muscle || getAllExercises().find(x=>x.name===ex.label||x.name===ex.name)?.muscle || customExercises.find(x=>x.name===ex.label||x.name===ex.name)?.muscle || 'Other';
+  card.dataset.muscle = _exMuscle;
+  const muscleColor = muscleColors[_exMuscle] || '#888';
+  const _exWords = (ex.label||'').trim().split(/\s+/);
+  const _exInitials = ((_exWords[0]||'')[0]||'') + ((_exWords[1]||'')[0]||'');
+  const _circleSize = 40;
+  const _fontSize = _exInitials.length > 1 ? '14px' : '17px';
+  nameBlock.innerHTML = `<div style="display:flex;align-items:center;gap:8px;"><div style="width:${_circleSize}px;height:${_circleSize}px;border-radius:50%;border:2px solid ${muscleColor};background:#111;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:${muscleColor};font-family:'DM Sans';font-size:${_fontSize};font-weight:900;letter-spacing:-1px;">${_exInitials.toUpperCase()}</div><div class="ex-name" style="flex:1;min-width:0;">${ex.label}</div></div>`;
 
   const titleArea = document.createElement('div');
   titleArea.style.cssText = 'display:flex;align-items:center;gap:10px;flex:1;min-width:0;cursor:pointer;';
@@ -5773,8 +5792,13 @@ function openExDetail(id) {
   card.querySelector('.ex-card-body')?.classList.add('open');
   const body = card.querySelector('.ex-card-body');
   if (body) { body.style.maxHeight = '4000px'; body.style.opacity = '1'; }
-  // Slide
+  // Show detail panel
+  const _slideW = slider.parentElement?.offsetWidth || slider.offsetWidth / 2;
+  slider.style.setProperty('--ex-slide-offset', `-${_slideW}px`);
   slider.classList.add('detail-open');
+  // Hide chips block so it doesn't cover detail panel
+  const _cb = document.getElementById('today-chips-block');
+  if (_cb) _cb.style.display = 'none';
   // Hide top chrome + header
   const _chipsOnOpen = document.getElementById('todayMuscleChipsWrap');
   if (_chipsOnOpen && getComputedStyle(_chipsOnOpen).display !== 'none') {
@@ -5800,12 +5824,12 @@ function closeExDetail() {
   const id = window._exDetailCardId;
   if (!slider || !id) return;
   const card = document.getElementById(id);
-  // Slide back
+  // Hide detail panel
   slider.classList.remove('detail-open');
-  // Restore card to list after transition
+  slider.style.removeProperty('--ex-slide-offset');
+  // Restore card to list immediately (no slide animation)
   setTimeout(() => {
     if (card && list) {
-      // Collapse card body
       const body = card.querySelector('.ex-card-body');
       if (body) { body.style.maxHeight = '0'; body.style.opacity = '0'; body.classList.add('collapsed'); body.classList.remove('open'); }
       card.dataset.open = 'false';
@@ -5814,7 +5838,7 @@ function closeExDetail() {
       detail.innerHTML = '';
     }
     window._exDetailCardId = null;
-  }, 360);
+  }, 0);
   // Restore top chrome + header
   const _chipsOnClose = document.getElementById('todayMuscleChipsWrap');
   if (_chipsOnClose && _chipsOnClose.dataset.preExpandDisplay) {
@@ -7777,7 +7801,7 @@ function loadWorkout(idx) {
     document.getElementById('workoutName').value = isRef ? existingName : w.name;
     w.exercises.forEach(exData => {
       const ex = getAllExercises().find(e=>e.label===exData.name||e.name===exData.name)
-        || {name:exData.name,label:exData.name,muscle:'Chest',custom:true};
+        || {name:exData.name,label:exData.name,muscle:exData.muscle||'Chest',custom:true};
       // For drafts, preserve done/ignored state; for regular workouts load as undone
       const isDraft = !!w._draft;
       const sourceSets = (exData.sets||[]).filter(s=>!s.ignored).map(s=>({kg:s.kg,reps:s.reps,done:isDraft?!!s.done:false}));
@@ -16713,18 +16737,20 @@ function deleteCoachWorkout(id) {
 
 <!-- W2 Workout Preview Bottom Sheet -->
 <div id="w2-sheet-overlay" onclick="closeW2Sheet()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:150;opacity:0;will-change:opacity;"></div>
-<div id="w2-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:#111;border-radius:25px 25px 0 0;z-index:151;will-change:transform;overflow:hidden;display:flex;flex-direction:column;">
-  <!-- Drag handle + X button -->
-  <div style="display:flex;align-items:center;justify-content:center;padding:14px 16px 8px;position:relative;">
+<div id="w2-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:#111;border-radius:25px 25px 0 0;z-index:151;will-change:transform;overflow:hidden;flex-direction:column;">
+  <!-- Drag handle -->
+  <div style="display:flex;justify-content:center;padding:12px 0 0;">
     <div style="width:36px;height:4px;background:#333;border-radius:2px;"></div>
-    <button onclick="closeW2Sheet()" style="position:absolute;right:16px;top:50%;transform:translateY(-50%);background:#2a2a2a;border:none;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#888;-webkit-tap-highlight-color:transparent;">
+  </div>
+  <!-- Workout name + X button on same row -->
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 16px 0 24px;">
+    <div id="w2-sheet-name" style="font-family:'DM Sans';font-size:22px;font-weight:900;color:#fff;flex:1;"></div>
+    <button onclick="closeW2Sheet()" style="background:#2a2a2a;border:none;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#888;flex-shrink:0;-webkit-tap-highlight-color:transparent;">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
     </button>
   </div>
-  <!-- Workout name -->
-  <div id="w2-sheet-name" style="font-family:'DM Sans';font-size:22px;font-weight:900;color:#fff;padding:8px 24px 4px;"></div>
   <!-- Body diagram -->
-  <div class="w2-stagger-item" style="display:block;width:100%;box-sizing:border-box;padding:12px 24px;opacity:0;transform:translateY(20px);transition:opacity .35s ease .15s,transform .35s ease .15s;">
+  <div class="w2-stagger-item" style="display:block;width:100%;box-sizing:border-box;padding:4px 24px 8px;opacity:0;transform:translateY(20px);transition:opacity .35s ease .15s,transform .35s ease .15s;">
 <div style="display:flex;gap:8px;width:100%;box-sizing:border-box;" id="w2-body-container">
       <div style="flex:1;min-width:0;"><svg viewBox="-170 -160 820 1510" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;">
 <path id="bf-neck-l0" d="M354.01 315.07q-3.49-3.65-5.9-8.23c-6.46-12.3-11.03-25.42-16.12-38.77-2.92-7.66-1.98-19.44-1.61-27.6q.03-.58.47-.21c9.06 7.39 11.33 17.46 15.67 27.62 5.4 12.61 15.4 33.31 9.11 46.92a1 .99 35.5 01-1.62.27z" fill="#383838" stroke="#222" stroke-width="2"/>
@@ -17187,7 +17213,7 @@ function _repositionChips(floatBarVisible) {
     const barRect = bar ? bar.getBoundingClientRect() : null;
     const barTop = barRect ? (window.innerHeight - barRect.top) : 88;
     chips.style.bottom = barTop + 'px';
-    if (chipsBlock) chipsBlock.style.height = barTop + 'px';
+    if (chipsBlock) chipsBlock.style.height = Math.min(barTop, 120) + 'px';
   } else {
     chips.style.bottom = 'calc(16px + env(safe-area-inset-bottom))';
     if (chipsBlock) chipsBlock.style.height = 'calc(16px + env(safe-area-inset-bottom))';
@@ -18221,21 +18247,22 @@ function _w2BuildExerciseList(workout) {
     if (el) el.innerHTML = '';
     return;
   }
-  const MUSCLE_ICONS = {
-    Chest:'💪', Back:'🔙', Legs:'🦵', Shoulders:'🏋️', Arms:'💪', Core:'🔥', Compound:'⚡', Other:'🏃'
-  };
+  const W2_EX_COLORS = {Chest:'#e8ff47',Back:'#7ec8e3',Legs:'#ff8c42',Shoulders:'#a78bfa',Arms:'#34d399',Core:'#f87171',Compound:'#20d4c8',Other:'#888'};
   let html = `<div style="font-family:'DM Sans';font-size:12px;font-weight:700;color:#444;letter-spacing:.8px;padding:12px 0 8px;">EXERCISES</div>`;
   workout.exercises.forEach((ex, i) => {
-    const muscle = ex.muscle || 'Other';
-    const icon = MUSCLE_ICONS[muscle] || '🏃';
+    const muscle = ex.muscle || getAllExercises().find(x=>x.name===ex.name||x.label===ex.name)?.muscle || 'Other';
+    const color = W2_EX_COLORS[muscle] || '#888';
+    const words = (ex.name||ex.label||'').trim().split(/\s+/);
+    const initials = ((words[0]||'')[0]||'') + ((words[1]||'')[0]||'');
     const sets = ex.sets?.length || ex.targetSets || '—';
     const reps = ex.sets?.[0]?.reps || ex.targetReps || '—';
     const isLast = i === workout.exercises.length - 1;
-    html += `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;${isLast ? '' : 'border-bottom:1px solid #1e1e1e;'}">
-      <div style="width:36px;height:36px;background:#1e1e1e;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">${icon}</div>
+    html += `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;${isLast ? '' : 'border-bottom:1px solid #1e1e1e;'}">
+      <span style="font-family:'DM Sans';font-size:12px;font-weight:700;color:#444;width:16px;text-align:right;flex-shrink:0;">${i+1}</span>
+      <div style="width:32px;height:32px;border-radius:50%;border:2px solid ${color};background:#111;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:${color};font-family:'DM Sans';font-size:${initials.length>1?'12':'15'}px;font-weight:900;letter-spacing:-0.5px;">${initials.toUpperCase()}</div>
       <div style="flex:1;min-width:0;">
-        <div style="font-family:'DM Sans';font-size:16px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${ex.name || ex.label || 'Exercise'}</div>
-        <div style="font-family:'DM Sans';font-size:14px;color:#555;margin-top:2px;">${sets} sets · ${reps} reps</div>
+        <div style="font-family:'DM Sans';font-size:15px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${ex.name||ex.label||'Exercise'}</div>
+        <div style="font-family:'DM Sans';font-size:13px;color:#555;margin-top:1px;">${sets} sets · ${reps} reps</div>
       </div>
     </div>`;
   });
