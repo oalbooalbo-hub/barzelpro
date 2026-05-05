@@ -17079,20 +17079,37 @@ function deleteCoachWorkout(id) {
 
 <!-- Exercise Photo Picker Sheet -->
 <div id="ex-photo-sheet-overlay" onclick="closeExPhotoSheet()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:300;"></div>
-<div id="ex-photo-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:#1a1a1a;border-radius:20px 20px 0 0;z-index:301;padding:0 0 calc(16px + env(safe-area-inset-bottom));">
-  <div style="width:36px;height:3px;background:#333;border-radius:2px;margin:12px auto 16px;"></div>
-  <button onclick="closeExPhotoSheet();triggerExPhoto('camera')" style="width:100%;background:transparent;border:none;border-bottom:1px solid #222;color:#fff;font-family:'DM Sans';font-size:16px;font-weight:600;padding:16px 20px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+<div id="ex-photo-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:#111;border-radius:20px 20px 0 0;z-index:301;padding:0 0 calc(16px + env(safe-area-inset-bottom));">
+  <div style="width:36px;height:3px;background:#2a2a2a;border-radius:2px;margin:12px auto 4px;"></div>
+  <div style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#444;letter-spacing:.8px;text-align:center;padding:8px 0 12px;">EXERCISE PHOTO</div>
+  <button onclick="closeExPhotoSheet();triggerExPhoto('camera')" style="width:100%;background:transparent;border:none;border-top:1px solid #1e1e1e;color:#fff;font-family:'DM Sans';font-size:16px;font-weight:600;padding:18px 24px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
     Take Photo
   </button>
-  <button onclick="closeExPhotoSheet();triggerExPhoto('gallery')" style="width:100%;background:transparent;border:none;border-bottom:1px solid #222;color:#fff;font-family:'DM Sans';font-size:16px;font-weight:600;padding:16px 20px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+  <button onclick="closeExPhotoSheet();triggerExPhoto('gallery')" style="width:100%;background:transparent;border:none;border-top:1px solid #1e1e1e;color:#fff;font-family:'DM Sans';font-size:16px;font-weight:600;padding:18px 24px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
     Choose from Gallery
   </button>
-  <button onclick="closeExPhotoSheet()" style="width:100%;background:transparent;border:none;color:#555;font-family:'DM Sans';font-size:16px;font-weight:600;padding:16px 20px;cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent;">Cancel</button>
+  <button onclick="closeExPhotoSheet()" style="width:100%;background:transparent;border:none;border-top:1px solid #1e1e1e;color:#444;font-family:'DM Sans';font-size:15px;font-weight:600;padding:18px 24px;cursor:pointer;text-align:center;-webkit-tap-highlight-color:transparent;">Cancel</button>
 </div>
-<input type="file" id="ex-photo-input-camera" accept="image/*" capture="environment" style="display:none;" onchange="handleExPhotoSelected(this)">
-<input type="file" id="ex-photo-input-gallery" accept="image/*" style="display:none;" onchange="handleExPhotoSelected(this)">
+<input type="file" id="ex-photo-input-camera" accept="image/*" capture="environment" style="display:none;" onchange="handleExPhotoRaw(this)">
+<input type="file" id="ex-photo-input-gallery" accept="image/*" style="display:none;" onchange="handleExPhotoRaw(this)">
+
+<!-- Cropper overlay -->
+<div id="ex-photo-cropper-overlay" style="display:none;position:fixed;inset:0;background:#000;z-index:400;flex-direction:column;">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top)+12px) 20px 12px;flex-shrink:0;">
+    <button onclick="closeExPhotoCropper()" style="background:transparent;border:none;color:#555;font-family:'DM Sans';font-size:16px;font-weight:700;cursor:pointer;padding:8px 0;-webkit-tap-highlight-color:transparent;">Cancel</button>
+    <span style="font-family:'DM Sans';font-size:13px;font-weight:700;color:#444;letter-spacing:.6px;">CROP PHOTO</span>
+    <button onclick="saveExPhotoCrop()" style="background:var(--accent);border:none;border-radius:8px;color:#000;font-family:'DM Sans';font-size:15px;font-weight:900;cursor:pointer;padding:8px 18px;-webkit-tap-highlight-color:transparent;">Save</button>
+  </div>
+  <!-- Canvas area -->
+  <div id="ex-photo-cropper-wrap" style="flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;">
+    <canvas id="ex-photo-cropper-canvas" style="touch-action:none;display:block;"></canvas>
+    <!-- Square crop indicator -->
+    <div id="ex-photo-crop-box" style="position:absolute;border:2px solid var(--accent);pointer-events:none;box-shadow:0 0 0 9999px rgba(0,0,0,0.55);"></div>
+    <div style="position:absolute;bottom:20px;left:50%;transform:translateX(-50%);font-family:'DM Sans';font-size:12px;color:#555;letter-spacing:.3px;">Drag to reposition</div>
+  </div>
+</div>
 
 <!-- DBG_EMERGENCY_START -->
 <!-- Emergency tab nav — shown when stuck -->
@@ -18385,6 +18402,10 @@ function closeWorkoutShareQR() {
 window.openShareQR = openShareQR;
 window.openWorkoutShareQR = openWorkoutShareQR;
 
+// ── EXERCISE PHOTO SYSTEM ──────────────────────────────────────────
+let _exPhotoRawImg = null;
+let _exPhotoCropState = { x: 0, y: 0, size: 0, dragging: false, startX: 0, startY: 0, imgX: 0, imgY: 0 };
+
 function openExPhotoSheet() {
   document.getElementById('ex-photo-sheet-overlay').style.display = 'block';
   document.getElementById('ex-photo-sheet').style.display = 'block';
@@ -18397,34 +18418,156 @@ function triggerExPhoto(source) {
   const input = document.getElementById(source === 'camera' ? 'ex-photo-input-camera' : 'ex-photo-input-gallery');
   if (input) input.click();
 }
-function handleExPhotoSelected(input) {
+
+function handleExPhotoRaw(input) {
   const file = input.files?.[0];
   if (!file) return;
+  input.value = '';
   const reader = new FileReader();
   reader.onload = (e) => {
-    const base64 = e.target.result;
-    // Crop to square using canvas
     const img = new Image();
     img.onload = () => {
-      const size = Math.min(img.width, img.height);
-      const canvas = document.createElement('canvas');
-      canvas.width = size; canvas.height = size;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, (img.width-size)/2, (img.height-size)/2, size, size, 0, 0, size, size);
-      const cropped = canvas.toDataURL('image/jpeg', 0.85);
-      // Save by exercise name
-      const exName = document.getElementById('ex-detail-overlay-title')?.textContent || '';
-      if (exName) localStorage.setItem(`ironlog_ex_photo_${exName}`, cropped);
-      // Show photo
-      const wrap = document.getElementById('ex-detail-photo-wrap');
-      const imgEl = document.getElementById('ex-detail-photo-img');
-      if (wrap && imgEl) { imgEl.src = cropped; wrap.style.display = 'block'; }
+      _exPhotoRawImg = img;
+      _openExPhotoCropper(img);
     };
-    img.src = base64;
+    img.src = e.target.result;
   };
   reader.readAsDataURL(file);
-  input.value = '';
 }
+
+function _openExPhotoCropper(img) {
+  const overlay = document.getElementById('ex-photo-cropper-overlay');
+  const wrap = document.getElementById('ex-photo-cropper-wrap');
+  const canvas = document.getElementById('ex-photo-cropper-canvas');
+  const cropBox = document.getElementById('ex-photo-crop-box');
+  if (!overlay || !canvas) return;
+
+  overlay.style.display = 'flex';
+
+  // Size canvas to fit wrap
+  const wrapW = wrap.clientWidth || window.innerWidth;
+  const wrapH = wrap.clientHeight || (window.innerHeight - 120);
+  const scale = Math.min(wrapW / img.width, wrapH / img.height, 1);
+  const dispW = Math.round(img.width * scale);
+  const dispH = Math.round(img.height * scale);
+  canvas.width = dispW;
+  canvas.height = dispH;
+  canvas.style.width = dispW + 'px';
+  canvas.style.height = dispH + 'px';
+
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0, dispW, dispH);
+
+  // Init crop square: centered, size = min(dispW, dispH)
+  const cropSize = Math.min(dispW, dispH);
+  const canvasRect = canvas.getBoundingClientRect();
+  const offsetX = canvasRect.left - wrap.getBoundingClientRect().left;
+  const offsetY = canvasRect.top - wrap.getBoundingClientRect().top;
+  _exPhotoCropState = {
+    x: offsetX + (dispW - cropSize) / 2,
+    y: offsetY + (dispH - cropSize) / 2,
+    size: cropSize,
+    scale, dispW, dispH, offsetX, offsetY,
+    dragging: false, startX: 0, startY: 0, imgX: 0, imgY: 0
+  };
+
+  _updateCropBox();
+
+  // Touch/mouse drag
+  const onStart = (e) => {
+    e.preventDefault();
+    const pt = e.touches ? e.touches[0] : e;
+    const s = _exPhotoCropState;
+    const bx = cropBox.getBoundingClientRect();
+    const wx = wrap.getBoundingClientRect();
+    if (pt.clientX >= bx.left && pt.clientX <= bx.right && pt.clientY >= bx.top && pt.clientY <= bx.bottom) {
+      s.dragging = true;
+      s.startX = pt.clientX;
+      s.startY = pt.clientY;
+      s.imgX = s.x;
+      s.imgY = s.y;
+    }
+  };
+  const onMove = (e) => {
+    e.preventDefault();
+    const s = _exPhotoCropState;
+    if (!s.dragging) return;
+    const pt = e.touches ? e.touches[0] : e;
+    const dx = pt.clientX - s.startX;
+    const dy = pt.clientY - s.startY;
+    const minX = s.offsetX;
+    const minY = s.offsetY;
+    const maxX = s.offsetX + s.dispW - s.size;
+    const maxY = s.offsetY + s.dispH - s.size;
+    s.x = Math.max(minX, Math.min(maxX, s.imgX + dx));
+    s.y = Math.max(minY, Math.min(maxY, s.imgY + dy));
+    _updateCropBox();
+  };
+  const onEnd = () => { _exPhotoCropState.dragging = false; };
+
+  wrap.removeEventListener('touchstart', wrap._cropStart);
+  wrap.removeEventListener('touchmove', wrap._cropMove);
+  wrap.removeEventListener('touchend', wrap._cropEnd);
+  wrap.removeEventListener('mousedown', wrap._cropStart);
+  wrap.removeEventListener('mousemove', wrap._cropMove);
+  wrap.removeEventListener('mouseup', wrap._cropEnd);
+
+  wrap._cropStart = onStart; wrap._cropMove = onMove; wrap._cropEnd = onEnd;
+  wrap.addEventListener('touchstart', onStart, { passive: false });
+  wrap.addEventListener('touchmove', onMove, { passive: false });
+  wrap.addEventListener('touchend', onEnd);
+  wrap.addEventListener('mousedown', onStart);
+  wrap.addEventListener('mousemove', onMove);
+  wrap.addEventListener('mouseup', onEnd);
+}
+
+function _updateCropBox() {
+  const s = _exPhotoCropState;
+  const cropBox = document.getElementById('ex-photo-crop-box');
+  if (!cropBox) return;
+  cropBox.style.left = s.x + 'px';
+  cropBox.style.top = s.y + 'px';
+  cropBox.style.width = s.size + 'px';
+  cropBox.style.height = s.size + 'px';
+}
+
+function closeExPhotoCropper() {
+  document.getElementById('ex-photo-cropper-overlay').style.display = 'none';
+  _exPhotoRawImg = null;
+}
+
+function saveExPhotoCrop() {
+  const s = _exPhotoCropState;
+  const img = _exPhotoRawImg;
+  if (!img || !s.size) return;
+
+  // Map crop box back to original image coords
+  const cropX = (s.x - s.offsetX) / s.scale;
+  const cropY = (s.y - s.offsetY) / s.scale;
+  const cropSize = s.size / s.scale;
+
+  // Render to 200x200 WebP
+  const out = document.createElement('canvas');
+  out.width = 200; out.height = 200;
+  const ctx = out.getContext('2d');
+  ctx.drawImage(img, cropX, cropY, cropSize, cropSize, 0, 0, 200, 200);
+
+  // Try WebP, fallback to JPEG
+  let dataUrl = out.toDataURL('image/webp', 0.88);
+  if (!dataUrl.startsWith('data:image/webp')) dataUrl = out.toDataURL('image/jpeg', 0.88);
+
+  // Save
+  const exName = document.getElementById('ex-detail-overlay-title')?.textContent || '';
+  if (exName) localStorage.setItem(`ironlog_ex_photo_${exName}`, dataUrl);
+
+  // Show in overlay
+  const wrap = document.getElementById('ex-detail-photo-wrap');
+  const imgEl = document.getElementById('ex-detail-photo-img');
+  if (wrap && imgEl) { imgEl.src = dataUrl; wrap.style.display = 'block'; }
+
+  closeExPhotoCropper();
+}
+
 function _loadExDetailPhoto(exName) {
   const wrap = document.getElementById('ex-detail-photo-wrap');
   const imgEl = document.getElementById('ex-detail-photo-img');
@@ -18433,10 +18576,13 @@ function _loadExDetailPhoto(exName) {
   if (saved) { imgEl.src = saved; wrap.style.display = 'block'; }
   else { wrap.style.display = 'none'; imgEl.src = ''; }
 }
+
 window.openExPhotoSheet = openExPhotoSheet;
 window.closeExPhotoSheet = closeExPhotoSheet;
 window.triggerExPhoto = triggerExPhoto;
-window.handleExPhotoSelected = handleExPhotoSelected;
+window.handleExPhotoRaw = handleExPhotoRaw;
+window.closeExPhotoCropper = closeExPhotoCropper;
+window.saveExPhotoCrop = saveExPhotoCrop;
 window.shareWorkoutQRLink = shareWorkoutQRLink;
 window.closeWorkoutShareQR = closeWorkoutShareQR;
 
