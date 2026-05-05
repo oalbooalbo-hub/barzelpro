@@ -49,7 +49,7 @@ if ('serviceWorker' in navigator) {
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700;900&family=Rubik:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="pwa-styles.css">
 <style>
-:root{--bg:#0a0a0a;--surface:#141414;--surface2:#1e1e1e;--border:#2a2a2a;--accent:#e8ff47;--accent2:#ff4747;--text:#f0f0f0;--muted:#666;--radius:14px;}
+:root{--bg:#0a0a0a;--surface:#141414;--surface2:#1e1e1e;--border:#2a2a2a;--accent:#e8ff47;--accent2:#ff4747;--text:#f0f0f0;--muted:#666;--radius:10px;}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 button{cursor:pointer;touch-action:manipulation;-webkit-appearance:none;}
 .swipe-row-outer,.swipe-row{-webkit-tap-highlight-color:transparent;}
@@ -3206,7 +3206,7 @@ function renderExercisesTab() {
     const lastFmt = ex.lastDate ? fmtShort(ex.lastDate) : '—';
     const hasHistory = ex.bestRM > 0 || ex.bestWt > 0;
     const singleRecord = ex.count <= 1;
-    const isExpandable = !!window._exTabProMode;
+    const isExpandable = true; // Always expandable in exercise tab
     const bestRM = ex.bestRM > 0 ? parseFloat(ex.bestRM.toFixed(2)) : null;
     const bestWt = ex.bestWt > 0 ? parseFloat(ex.bestWt.toFixed(2)) : null;
     const rmArrow = ex.prevRM > 0 && ex.lastRM > ex.prevRM ? '<span style="color:#4caf50;font-size:9px;">▲</span>' : ex.prevRM > 0 && ex.lastRM < ex.prevRM ? '<span style="color:#ff4444;font-size:9px;">▼</span>' : '';
@@ -3222,9 +3222,9 @@ function renderExercisesTab() {
 
     listHtml += `<div data-exname="${ex.name.replace(/"/g,'&quot;')}" data-muscle="${ex.muscle||'Chest'}">
       <!-- Flat row -->
-      <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
+      <div ${isExpandable && !_pickMode ? `onclick="toggleExTabCard('${safeId}')"` : ''} style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);${isExpandable && !_pickMode ? 'cursor:pointer;' : ''}">
         ${(() => { const _w=ex.name.trim().split(/\s+/); const _in=((_w[0]||'')[0]||'')+((_w[1]||'')[0]||''); const _c=MUSCLE_COLORS[ex.muscle]||'#888'; return `<div style="width:56px;height:56px;border-radius:50%;border:2px solid ${_c};background:#111;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:${_c};font-family:'DM Sans';font-size:${_in.length>1?'18':'22'}px;font-weight:900;letter-spacing:-1px;">${_in.toUpperCase()}</div>`; })()}
-        <div ${isExpandable || _pickMode ? `onclick="${_pickMode ? `pickExercise('${ex.name.replace(/'/g,"\\'")}')` : `toggleExTabCard('${safeId}')`}"` : ''} style="flex:1;min-width:0;${isExpandable || _pickMode ? 'cursor:pointer;' : ''}">
+        <div ${_pickMode ? `onclick="pickExercise('${ex.name.replace(/'/g,"\\'")}') "` : ''} style="flex:1;min-width:0;${_pickMode ? 'cursor:pointer;' : ''}">
           <div style="font-family:'DM Sans';font-size:15px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${ex.name}</div>
         </div>
         ${_pickMode
@@ -3261,7 +3261,7 @@ function renderExercisesTab() {
           ${['1W','1M','3M','6M','1Y'].map(r=>`<button onclick="setExTabRange('${safeId}','${ex.name.replace(/'/g,"\\'")}','${r}')" id="extab-rpill-${r}-${safeId}" style="flex:1;padding:3px 0;border-radius:6px;border:1px solid ${r===miniChartRange?'var(--accent)':'var(--border)'};background:${r===miniChartRange?'rgba(232,255,71,.12)':'transparent'};color:${r===miniChartRange?'var(--accent)':'var(--muted)'};font-family:'DM Sans';font-size:10px;font-weight:700;cursor:pointer;">${r}</button>`).join('')}
         </div>`}
         <div style="display:flex;gap:8px;margin-top:12px;">
-          <button onclick="toggleExTabCard('${safeId}')" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:11px;font-weight:700;padding:7px;cursor:pointer;">Close</button>
+          <button onclick="closeExTabDetail()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:11px;font-weight:700;padding:7px;cursor:pointer;">Close</button>
         </div>
       </div>
     </div>`;
@@ -3818,58 +3818,76 @@ function closeWeekSummary() {
 }
 
 function toggleExTabCard(safeId) {
+  const card = document.getElementById(safeId + '-body')?.closest('[data-exname]');
+  if (!card) return;
+
+  const exName = card.dataset.exname || '';
+  const overlay = document.getElementById('ex-detail-overlay');
+  const overlayBody = document.getElementById('ex-detail-overlay-body');
+  const overlayTitle = document.getElementById('ex-detail-overlay-title');
+  if (!overlay || !overlayBody) return;
+
+  if (overlayTitle) overlayTitle.textContent = exName;
+  setTimeout(() => _loadExDetailPhoto(exName), 0);
+
+  // Insert placeholder to preserve list layout
+  const placeholder = document.createElement('div');
+  placeholder.id = safeId + '_extab_placeholder';
+  placeholder.style.cssText = `height:${card.offsetHeight}px;margin-bottom:0;visibility:hidden;`;
+  card.parentNode.insertBefore(placeholder, card);
+
+  // Show body before moving
   const body = document.getElementById(safeId + '-body');
-  const chev = document.getElementById(safeId + '-chev');
-  if (!body) return;
-  const isOpen = body.style.display !== 'none';
-  body.style.display = isOpen ? 'none' : 'block';
-  if (chev) chev.style.transform = isOpen ? '' : 'rotate(180deg)';
-  if (!isOpen) {
-    // Hide the list box and show only this card
-    const card = body.closest('[data-exname]');
-    const listBox = card?.parentElement;
-    if (listBox && card) {
-      let slot = document.getElementById('extab-expanded-slot');
-      if (!slot) {
-        slot = document.createElement('div');
-        slot.id = 'extab-expanded-slot';
-        slot.style.cssText = 'border:1px solid var(--border);border-radius:12px;overflow:hidden;';
-        listBox.after(slot);
-      }
-      card.dataset.extabWasInBox = '1';
-      card.dataset.extabBoxIndex = Array.from(listBox.children).indexOf(card);
-      slot.appendChild(card);
-      listBox.style.display = 'none';
-      const addBtn = document.getElementById('extab-add-btn');
-      if (addBtn) addBtn.style.display = 'none';
-    }
-    const actualName = card ? card.dataset.exname : '';
-    setTimeout(() => renderExTabMiniChart(safeId, actualName), 50);
-  } else {
-    // Restore card to list box
-    const card = body.closest('[data-exname]');
-    const slot = document.getElementById('extab-expanded-slot');
-    if (card && card.dataset.extabWasInBox && slot) {
-      const savedIdx = parseInt(card.dataset.extabBoxIndex ?? '-1');
-      delete card.dataset.extabWasInBox;
-      delete card.dataset.extabBoxIndex;
-      // The listBox is the slot's previous sibling (still in DOM, just hidden)
-      const listBox = slot.previousElementSibling;
-      if (listBox) {
-        const children = Array.from(listBox.children);
-        if (savedIdx >= 0 && savedIdx < children.length) {
-          listBox.insertBefore(card, children[savedIdx]);
-        } else {
-          listBox.appendChild(card);
-        }
-        listBox.style.display = '';
-        const addBtn = document.getElementById('extab-add-btn');
-        if (addBtn) addBtn.style.display = '';
-      }
-      slot.remove();
-    }
-  }
+  if (body) body.style.display = 'block';
+
+  // Move card into overlay
+  overlayBody.innerHTML = '';
+  overlayBody.appendChild(card);
+
+  document.body.classList.add('ex-detail-open');
+
+  // Animate in
+  overlay.classList.remove('ex-overlay-out', 'ex-overlay-open');
+  overlay.classList.add('ex-overlay-in');
+  overlay.addEventListener('animationend', () => {
+    overlay.classList.remove('ex-overlay-in');
+    overlay.classList.add('ex-overlay-open');
+  }, { once: true });
+
+  if (window._historyPush) window._historyPush('extab-detail');
+
+  // Render chart after overlay opens
+  setTimeout(() => renderExTabMiniChart(safeId, exName), 100);
 }
+
+function closeExTabDetail() {
+  const overlay = document.getElementById('ex-detail-overlay');
+  const overlayBody = document.getElementById('ex-detail-overlay-body');
+  if (!overlay) return;
+
+  overlay.classList.remove('ex-overlay-open', 'ex-overlay-in');
+  overlay.classList.add('ex-overlay-out');
+  overlay.addEventListener('animationend', () => {
+    overlay.classList.remove('ex-overlay-out');
+
+    // Find placeholder and restore card
+    const card = overlayBody?.querySelector('[data-exname]');
+    if (card) {
+      const safeId = card.querySelector('[id$="-body"]')?.id?.replace('-body','');
+      const placeholder = safeId ? document.getElementById(safeId + '_extab_placeholder') : null;
+      // Hide body again
+      const body = safeId ? document.getElementById(safeId + '-body') : null;
+      if (body) body.style.display = 'none';
+      if (placeholder) {
+        placeholder.parentNode.insertBefore(card, placeholder);
+        placeholder.remove();
+      }
+    }
+    overlayBody.innerHTML = '';
+    document.body.classList.remove('ex-detail-open');
+  }, { once: true });
+}
+window.closeExTabDetail = closeExTabDetail;
 
 function renderExTabMiniChart(safeId, exName) {
   // Key by timestamp for correct chronological sorting
@@ -5846,6 +5864,7 @@ function openExDetail(id) {
 
   const exName = card.querySelector('.ex-name')?.textContent || '';
   if (overlayTitle) overlayTitle.textContent = exName;
+  setTimeout(() => _loadExDetailPhoto(exName), 0);
 
   // Insert placeholder to preserve list layout
   const placeholder = document.createElement('div');
@@ -17018,10 +17037,17 @@ function deleteCoachWorkout(id) {
 <!-- Exercise detail overlay -->
 <div id="ex-detail-overlay">
   <div id="ex-detail-overlay-header">
-    <button onclick="closeExDetailOverlay()" style="background:transparent;border:none;color:var(--accent);cursor:pointer;display:flex;align-items:center;padding:8px 4px;flex-shrink:0;-webkit-tap-highlight-color:transparent;">
+    <button onclick="document.getElementById('page-exercises')?.classList.contains('active') ? closeExTabDetail() : closeExDetailOverlay()" style="background:transparent;border:none;color:var(--accent);cursor:pointer;display:flex;align-items:center;padding:8px 4px;flex-shrink:0;-webkit-tap-highlight-color:transparent;">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><line x1="19" y1="12" x2="5" y2="12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><polyline points="11,6 5,12 11,18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
     <div id="ex-detail-overlay-title" style="font-family:'DM Sans';font-size:18px;font-weight:900;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+    <button onclick="openExPhotoSheet()" style="background:rgba(71,209,250,0.12);border:none;border-radius:8px;padding:7px;color:var(--accent);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;-webkit-tap-highlight-color:transparent;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+    </button>
+  </div>
+  <!-- Exercise photo (square) -->
+  <div id="ex-detail-photo-wrap" style="display:none;width:100%;aspect-ratio:1/1;overflow:hidden;flex-shrink:0;">
+    <img id="ex-detail-photo-img" src="" style="width:100%;height:100%;object-fit:cover;display:block;">
   </div>
   <div id="ex-detail-overlay-body"></div>
   <div style="position:absolute;bottom:0;left:0;right:0;height:calc(100px + env(safe-area-inset-bottom));background:var(--bg);pointer-events:none;z-index:1;"></div>
@@ -17050,6 +17076,23 @@ function deleteCoachWorkout(id) {
     <button onclick="closeWorkoutShareQR()" style="width:100%;padding:14px;background:transparent;color:#555;border:1px solid #333;border-radius:12px;font-family:'DM Sans';font-size:16px;font-weight:700;cursor:pointer;">CLOSE</button>
   </div>
 </div>
+
+<!-- Exercise Photo Picker Sheet -->
+<div id="ex-photo-sheet-overlay" onclick="closeExPhotoSheet()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:300;"></div>
+<div id="ex-photo-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:#1a1a1a;border-radius:20px 20px 0 0;z-index:301;padding:0 0 calc(16px + env(safe-area-inset-bottom));">
+  <div style="width:36px;height:3px;background:#333;border-radius:2px;margin:12px auto 16px;"></div>
+  <button onclick="closeExPhotoSheet();triggerExPhoto('camera')" style="width:100%;background:transparent;border:none;border-bottom:1px solid #222;color:#fff;font-family:'DM Sans';font-size:16px;font-weight:600;padding:16px 20px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+    Take Photo
+  </button>
+  <button onclick="closeExPhotoSheet();triggerExPhoto('gallery')" style="width:100%;background:transparent;border:none;border-bottom:1px solid #222;color:#fff;font-family:'DM Sans';font-size:16px;font-weight:600;padding:16px 20px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+    Choose from Gallery
+  </button>
+  <button onclick="closeExPhotoSheet()" style="width:100%;background:transparent;border:none;color:#555;font-family:'DM Sans';font-size:16px;font-weight:600;padding:16px 20px;cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent;">Cancel</button>
+</div>
+<input type="file" id="ex-photo-input-camera" accept="image/*" capture="environment" style="display:none;" onchange="handleExPhotoSelected(this)">
+<input type="file" id="ex-photo-input-gallery" accept="image/*" style="display:none;" onchange="handleExPhotoSelected(this)">
 
 <!-- DBG_EMERGENCY_START -->
 <!-- Emergency tab nav — shown when stuck -->
@@ -18341,6 +18384,59 @@ function closeWorkoutShareQR() {
 }
 window.openShareQR = openShareQR;
 window.openWorkoutShareQR = openWorkoutShareQR;
+
+function openExPhotoSheet() {
+  document.getElementById('ex-photo-sheet-overlay').style.display = 'block';
+  document.getElementById('ex-photo-sheet').style.display = 'block';
+}
+function closeExPhotoSheet() {
+  document.getElementById('ex-photo-sheet-overlay').style.display = 'none';
+  document.getElementById('ex-photo-sheet').style.display = 'none';
+}
+function triggerExPhoto(source) {
+  const input = document.getElementById(source === 'camera' ? 'ex-photo-input-camera' : 'ex-photo-input-gallery');
+  if (input) input.click();
+}
+function handleExPhotoSelected(input) {
+  const file = input.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const base64 = e.target.result;
+    // Crop to square using canvas
+    const img = new Image();
+    img.onload = () => {
+      const size = Math.min(img.width, img.height);
+      const canvas = document.createElement('canvas');
+      canvas.width = size; canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, (img.width-size)/2, (img.height-size)/2, size, size, 0, 0, size, size);
+      const cropped = canvas.toDataURL('image/jpeg', 0.85);
+      // Save by exercise name
+      const exName = document.getElementById('ex-detail-overlay-title')?.textContent || '';
+      if (exName) localStorage.setItem(`ironlog_ex_photo_${exName}`, cropped);
+      // Show photo
+      const wrap = document.getElementById('ex-detail-photo-wrap');
+      const imgEl = document.getElementById('ex-detail-photo-img');
+      if (wrap && imgEl) { imgEl.src = cropped; wrap.style.display = 'block'; }
+    };
+    img.src = base64;
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+function _loadExDetailPhoto(exName) {
+  const wrap = document.getElementById('ex-detail-photo-wrap');
+  const imgEl = document.getElementById('ex-detail-photo-img');
+  if (!wrap || !imgEl) return;
+  const saved = exName ? localStorage.getItem(`ironlog_ex_photo_${exName}`) : null;
+  if (saved) { imgEl.src = saved; wrap.style.display = 'block'; }
+  else { wrap.style.display = 'none'; imgEl.src = ''; }
+}
+window.openExPhotoSheet = openExPhotoSheet;
+window.closeExPhotoSheet = closeExPhotoSheet;
+window.triggerExPhoto = triggerExPhoto;
+window.handleExPhotoSelected = handleExPhotoSelected;
 window.shareWorkoutQRLink = shareWorkoutQRLink;
 window.closeWorkoutShareQR = closeWorkoutShareQR;
 
@@ -18743,6 +18839,7 @@ function _updateKgDisplay(val, isBWMode) {
     'picker':           () => { if (typeof closePicker === 'function') closePicker(); },
     'calendar':         () => { if (typeof closeCalendar === 'function') closeCalendar(); },
     'ex-detail':        () => { if (typeof closeExDetailOverlay === 'function') closeExDetailOverlay(); },
+    'extab-detail':     () => { if (typeof closeExTabDetail === 'function') closeExTabDetail(); },
     'share-qr':         () => { if (typeof closeShareQR === 'function') closeShareQR(); },
     'summary':          () => { const o = document.getElementById('summaryOverlay'); if (o) o.classList.remove('open'); },
     'workout-name':     () => { const o = document.getElementById('workoutNameModal'); if (o) o.classList.remove('open'); },
