@@ -1559,17 +1559,42 @@ function hidAuthScreen() {
   </div><!-- /progress-graphs-content -->
 </div>
 <!-- NEW EXERCISE MODAL -->
-<div class="modal-overlay" id="newExModalOverlay" style="align-items:center;padding:0 16px;" onclick="if(event.target===this){window._exploreExerciseMode=false;closeNewExModal()}">
-  <div class="modal-sheet" style="padding:24px 20px 32px;border-radius:20px;border:1px solid var(--border);margin-bottom:20vh;">
-    <div class="modal-handle"></div>
-    <div class="modal-title" style="margin-bottom:14px;">NEW EXERCISE</div>
-    <div id="newExMusclePills" style="display:flex;gap:0;margin-bottom:16px;border-bottom:1px solid var(--border);"></div>
-    <input id="newExInput" type="text" style="width:100%;background:#1a1a1a;border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans';font-size:15px;font-weight:600;padding:12px 14px;box-sizing:border-box;outline:none;margin-bottom:8px;" placeholder="Exercise name" oninput="const _hb=/[\u0590-\u05FF]/.test(this.value);this.style.direction=_hb?'rtl':'ltr';this.style.textAlign=_hb?'right':'left';document.getElementById('newExDuplicateNote').style.display='none';this.style.borderColor='var(--border)';" onkeydown="if(event.key==='Enter')confirmNewEx()"/>
-    <div id="newExDuplicateNote" style="display:none;color:#ff8c42;font-family:'DM Sans';font-size:12px;font-weight:600;padding:6px 2px 10px;text-align:center;">⚠ An exercise with this name already exists</div>
-    <div style="display:flex;gap:10px;margin-top:4px;">
-      <button onclick="window._exploreExerciseMode=false;closeNewExModal()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:16px;font-weight:700;padding:14px;cursor:pointer;">Cancel</button>
-      <button onclick="confirmNewEx()" style="flex:1;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:16px;font-weight:700;padding:14px;cursor:pointer;">Add</button>
+<div class="modal-overlay" id="newExModalOverlay" style="align-items:stretch;padding:8px;" onclick="if(event.target===this){window._exploreExerciseMode=false;closeNewExModal()}">
+  <div class="modal-sheet" style="padding:0;border-radius:16px;border:1px solid var(--border);width:100%;max-width:calc(100vw - 16px);box-sizing:border-box;overflow:hidden;">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;gap:10px;padding:18px 16px 14px;">
+      <button onclick="window._exploreExerciseMode=false;closeNewExModal()" style="background:transparent;border:none;color:#fff;cursor:pointer;display:flex;align-items:center;padding:0;flex-shrink:0;-webkit-tap-highlight-color:transparent;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><line x1="19" y1="12" x2="5" y2="12" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><polyline points="11,6 5,12 11,18" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <span style="font-family:'DM Sans';font-size:18px;font-weight:900;color:var(--text);">New Exercise</span>
     </div>
+    <div style="padding:0 16px calc(80px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:16px;">
+      <!-- Photo box -->
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+        <div id="newExPhotoBox" onclick="openNewExPhotoSheet()" style="width:80px;height:80px;border-radius:8px;border:1px solid #2a2a2a;background:#0d0d0d;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;flex-shrink:0;">
+          <svg id="newExPhotoCameraIcon" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          <img id="newExPhotoImg" src="" style="display:none;width:100%;height:100%;object-fit:cover;filter:brightness(0.8);">
+        </div>
+        <span id="newExPhotoLabel" style="font-family:'DM Sans';font-size:12px;color:var(--accent);font-weight:600;cursor:pointer;" onclick="openNewExPhotoSheet()">Add Photo/Image</span>
+      </div>
+      <!-- Name -->
+      <input id="newExInput" type="text" style="width:100%;background:#1a1a1a;border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans';font-size:16px;font-weight:600;padding:14px;box-sizing:border-box;outline:none;" placeholder="Exercise name" oninput="const _hb=/[\u0590-\u05FF]/.test(this.value);this.style.direction=_hb?'rtl':'ltr';this.style.textAlign=_hb?'right':'left';document.getElementById('newExDuplicateNote').style.display='none';this.style.borderColor='var(--border)';" onkeydown="if(event.key==='Enter')confirmNewEx()"/>
+      <div id="newExDuplicateNote" style="display:none;color:#ff8c42;font-family:'DM Sans';font-size:12px;font-weight:600;text-align:center;margin-top:-8px;">⚠ An exercise with this name already exists</div>
+      <!-- Body part -->
+      <div>
+        <div style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#fff;letter-spacing:.5px;margin-bottom:10px;">BODY PART</div>
+        <div id="newExMusclePills" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;"></div>
+      </div>
+      <!-- Compound muscles (hidden by default) -->
+      <div id="newExCompoundRow" style="display:none;background:#0d0d0d;border:1px solid #20d4c833;border-radius:10px;padding:14px;">
+        <div style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#20d4c8;letter-spacing:.5px;margin-bottom:10px;">COMPOUND MUSCLES <span style="color:#666;font-size:10px;">· select one or more</span></div>
+        <div id="newExCompoundPills" style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px;"></div>
+      </div>
+    </div>
+  </div>
+  <!-- Fixed save button -->
+  <div style="position:fixed;bottom:0;left:0;right:0;padding:12px 8px calc(12px + env(safe-area-inset-bottom));background:var(--surface);border-top:1px solid var(--border);z-index:10;max-width:calc(100vw);box-sizing:border-box;">
+    <button onclick="confirmNewEx()" style="width:100%;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:16px;font-weight:900;padding:16px;cursor:pointer;-webkit-tap-highlight-color:transparent;">SAVE EXERCISE</button>
   </div>
 </div>
 
@@ -3602,38 +3627,94 @@ function _renderExercisesTabKeepScroll() {
 
 function openNewExModal(muscle) {
   document.getElementById('wtab-menu-fade')?.remove();
-  window._newExMuscle = muscle;
+  window._newExMuscle = muscle || 'Chest';
+  window._newExCompoundMuscles = [];
+  window._newExPhoto = null;
   const input = document.getElementById('newExInput');
   if (input) input.value = '';
-  _renderNewExPills(muscle);
+  // Reset photo
+  document.getElementById('newExPhotoCameraIcon').style.display = 'flex';
+  document.getElementById('newExPhotoImg').style.display = 'none';
+  document.getElementById('newExPhotoImg').src = '';
+  document.getElementById('newExPhotoLabel').textContent = 'Add Photo/Image';
+  document.getElementById('newExPhotoLabel').style.color = '#555';
+  _renderNewExPills(window._newExMuscle);
   document.getElementById('newExModalOverlay').classList.add('open');
   if (window._historyPush) window._historyPush('new-ex');
   setTimeout(() => input?.focus(), 100);
 }
+
 function _renderNewExPills(selected) {
   const pillsEl = document.getElementById('newExMusclePills');
   if (!pillsEl) return;
   const muscles = ['Chest','Back','Legs','Shoulders','Arms','Core','Compound'];
-  const colors = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171',Compound:'#20d4c8' };
-  const labels = { Chest:'Chest', Back:'Back', Legs:'Legs', Shoulders:'Shldr', Arms:'Arms', Core:'Abs',Compound:'Comp' };
-  pillsEl.innerHTML = muscles.map(m => `<div onclick="_selectNewExMuscle('${m}')" id="newExPill-${m}" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${m===selected?colors[m]:'#444'};border-bottom:2px solid ${m===selected?colors[m]:'transparent'};transition:all .15s;">${labels[m]}</div>`).join('');
+  const colors = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171', Compound:'#20d4c8' };
+  const labels = { Chest:'Chst', Back:'Back', Legs:'Legs', Shoulders:'Shld', Arms:'Arms', Core:'Core', Compound:'Comp' };
+  pillsEl.innerHTML = muscles.map(m => {
+    const isSelected = m === selected;
+    const c = colors[m];
+    return `<div onclick="_selectNewExMuscle('${m}')" style="padding:15px 0;border-radius:10px;background:${isSelected ? c+'22' : '#1a1a1a'};border:1px solid ${isSelected ? c : '#2a2a2a'};color:${isSelected ? c : '#555'};font-family:'DM Sans';font-size:13px;font-weight:700;text-align:center;cursor:pointer;transition:all .15s;">${labels[m]}</div>`;
+  }).join('');
+  // Show/hide compound row
+  const compRow = document.getElementById('newExCompoundRow');
+  if (compRow) compRow.style.display = selected === 'Compound' ? 'block' : 'none';
+  if (selected === 'Compound') _renderCompoundPills();
 }
+
+function _renderCompoundPills() {
+  const el = document.getElementById('newExCompoundPills');
+  if (!el) return;
+  const muscles = ['Chest','Back','Legs','Shoulders','Arms','Core'];
+  const colors = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171' };
+  const labels = { Chest:'Chst', Back:'Back', Legs:'Legs', Shoulders:'Shld', Arms:'Arms', Core:'Core' };
+  const sel = window._newExCompoundMuscles || [];
+  el.innerHTML = muscles.map(m => {
+    const isSelected = sel.includes(m);
+    const c = colors[m];
+    return `<div onclick="_toggleCompoundMuscle('${m}')" style="padding:15px 0;border-radius:10px;background:${isSelected ? c+'22' : '#1a1a1a'};border:1px solid ${isSelected ? c : '#2a2a2a'};color:${isSelected ? c : '#555'};font-family:'DM Sans';font-size:13px;font-weight:700;text-align:center;cursor:pointer;transition:all .15s;">${labels[m]}</div>`;
+  }).join('');
+}
+
+function _toggleCompoundMuscle(m) {
+  window._newExCompoundMuscles = window._newExCompoundMuscles || [];
+  const idx = window._newExCompoundMuscles.indexOf(m);
+  if (idx >= 0) window._newExCompoundMuscles.splice(idx, 1);
+  else window._newExCompoundMuscles.push(m);
+  _renderCompoundPills();
+}
+
 function _selectNewExMuscle(muscle) {
   window._newExMuscle = muscle;
+  window._newExCompoundMuscles = [];
   _renderNewExPills(muscle);
 }
+
+function openNewExPhotoSheet() {
+  window._newExPhotoMode = true;
+  openExPhotoSheet();
+}
+
 function closeNewExModal() {
   document.getElementById('newExModalOverlay').classList.remove('open');
   const note = document.getElementById('newExDuplicateNote');
   const inp = document.getElementById('newExInput');
   if (note) note.style.display = 'none';
   if (inp) inp.style.borderColor = 'var(--border)';
+  window._newExPhotoMode = false;
+  window._newExPhoto = null;
+  window._newExCompoundMuscles = [];
 }
 function confirmNewEx() {
   const name = document.getElementById('newExInput').value.trim();
   if (!name) { showToast('Enter an exercise name'); return; }
   const muscle = window._newExMuscle || 'Chest';
+  const compoundMuscles = window._newExCompoundMuscles || [];
   const _wasExploreMode = !!window._exploreExerciseMode;
+
+  // Save photo if one was selected
+  if (window._newExPhoto && name) {
+    localStorage.setItem(`ironlog_ex_photo_${name}`, window._newExPhoto);
+  }
 
   // Explore exercise mode: save locally to library, highlight sync button
   if (_wasExploreMode) {
@@ -5145,37 +5226,65 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
   // HEADER
   const header = document.createElement('div');
   header.className = 'ex-header';
+  header.style.cssText = 'display:flex;align-items:stretch;padding:0;overflow:hidden;';
 
-  const orderNum = document.createElement('span');
-  orderNum.className = 'ex-order-num';
-  orderNum.textContent = document.querySelectorAll('#exerciseList .exercise-card').length + 1;
-
-  const thumb = makeThumb(ex);
-  // thumb is now display-only; swap button handles exercise change
-
-  const nameBlock = document.createElement('div');
-  nameBlock.className = 'ex-name-block';
   const muscleColors = { Chest: '#e8ff47', Back: '#7ec8e3', Legs: '#ff8c42', Shoulders: '#a78bfa', Arms: '#34d399', Core: '#f87171', Compound: '#20d4c8' };
-  const muscleLabel = ex.muscle === 'Shoulders' ? 'Shldr' : ex.muscle || '';
   const _exMuscle = ex.muscle || getAllExercises().find(x=>x.name===ex.label||x.name===ex.name)?.muscle || customExercises.find(x=>x.name===ex.label||x.name===ex.name)?.muscle || 'Other';
   card.dataset.muscle = _exMuscle;
   const muscleColor = muscleColors[_exMuscle] || '#888';
-  const _exWords = (ex.label||'').trim().split(/\s+/);
-  const _exInitials = ((_exWords[0]||'')[0]||'') + ((_exWords[1]||'')[0]||'');
-  const _circleSize = 56;
-  const _fontSize = _exInitials.length > 1 ? '18px' : '22px';
-  nameBlock.innerHTML = `<div style="display:flex;align-items:center;gap:8px;"><div style="width:${_circleSize}px;height:${_circleSize}px;border-radius:50%;border:2px solid ${muscleColor};background:#111;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:${muscleColor};font-family:'DM Sans';font-size:${_fontSize};font-weight:900;letter-spacing:-1px;">${_exInitials.toUpperCase()}</div><div class="ex-name" style="flex:1;min-width:0;">${ex.label}</div></div>`;
+  card.style.setProperty('--muscle-color', muscleColor);
 
-  const titleArea = document.createElement('div');
-  titleArea.style.cssText = 'display:flex;align-items:center;gap:10px;flex:1;min-width:0;cursor:pointer;';
-  titleArea.onclick = () => openExDetail(id);
+  // SVG fallbacks per muscle
+  const _svgFallbacks = {
+    Chest: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><path d="M4 8c2-2 5-3 8-3s6 1 8 3v8c-2 2-5 3-8 3s-6-1-8-3V8z"/><path d="M12 5v14M4 12h16"/></svg>',
+    Back: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><path d="M12 3v18M7 6l5-3 5 3M7 18l5 3 5-3M4 10l8 2 8-2M4 14l8 2 8-2"/></svg>',
+    Legs: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><path d="M9 3v10l-3 8M15 3v10l3 8M9 10h6"/></svg>',
+    Shoulders: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><path d="M12 8a4 4 0 0 0-4 4v4h8v-4a4 4 0 0 0-4-4z"/><path d="M4 12c0-3 2-5 4-6M20 12c0-3-2-5-4-6"/></svg>',
+    Arms: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><path d="M7 20c1-4 2-8 5-10 2-1 4 0 5 2l1 3-3 1-2-3c-1 3-2 6-2 7"/><path d="M8 8a4 4 0 1 1 8 0"/></svg>',
+    Core: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><ellipse cx="12" cy="12" rx="6" ry="9"/><line x1="6" y1="9" x2="18" y2="9"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="6" y1="15" x2="18" y2="15"/></svg>',
+    Compound: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><path d="M12 3L4 9v12h16V9L12 3z"/><path d="M9 21V12h6v9"/></svg>',
+  };
+  const _svgIcon = _svgFallbacks[_exMuscle] || '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/></svg>';
+  const _savedPhoto = localStorage.getItem(`ironlog_ex_photo_${ex.label || ex.name}`);
+
+  // 1. Muscle color bar
+  const muscleBar = document.createElement('div');
+  muscleBar.style.cssText = `width:3px;background:var(--muscle-color);flex-shrink:0;`;
+
+  // 2. Photo box
+  const photoBox = document.createElement('div');
+  photoBox.style.cssText = 'width:80px;height:80px;flex-shrink:0;border:1px solid #1e1e1e;border-radius:8px;overflow:hidden;margin:8px 0 8px 10px;background:#0d0d0d;display:flex;align-items:center;justify-content:center;cursor:pointer;';
+  photoBox.onclick = () => openExDetail(id);
+  if (_savedPhoto) {
+    photoBox.innerHTML = `<img src="${_savedPhoto}" style="width:100%;height:100%;object-fit:cover;filter:brightness(0.8);display:block;">`;
+  } else {
+    photoBox.innerHTML = `<div style="color:${muscleColor};opacity:0.4;">${_svgIcon}</div>`;
+  }
+
+  // 3. Right content: name + sets
+  const contentArea = document.createElement('div');
+  contentArea.style.cssText = 'flex:1;display:flex;flex-direction:column;justify-content:center;padding:10px 12px;gap:6px;cursor:pointer;min-width:0;';
+  contentArea.onclick = () => openExDetail(id);
+
+  const exNameEl = document.createElement('div');
+  exNameEl.className = 'ex-name';
+  exNameEl.style.textAlign = 'right';
+  exNameEl.textContent = ex.label;
+
+  const setsRow = document.createElement('div');
+  setsRow.style.cssText = 'display:flex;align-items:center;justify-content:flex-end;gap:5px;';
+  const setCount = (ex.sets?.length || ex.targetSets || 0);
+  setsRow.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg><span style="font-family:'DM Sans';font-size:13px;font-weight:700;color:#aaa;">${setCount}</span>`;
+
+  contentArea.append(exNameEl, setsRow);
+
+  // 4. Done check
   const doneCheck = document.createElement('div');
   doneCheck.id = `done-check-${id}`;
-  doneCheck.style.cssText = 'display:none;width:28px;height:28px;border-radius:50%;background:var(--accent);flex-shrink:0;align-items:center;justify-content:center;';
+  doneCheck.style.cssText = 'display:none;width:28px;height:28px;border-radius:50%;background:var(--accent);flex-shrink:0;align-items:center;justify-content:center;align-self:center;margin-right:10px;';
   doneCheck.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
 
-  titleArea.append(orderNum, nameBlock);
-  header.append(titleArea, doneCheck);
+  header.append(muscleBar, photoBox, contentArea, doneCheck);
 
   // BODY
   const isOpen = card.dataset.open === 'true';
@@ -18582,7 +18691,22 @@ function saveExPhotoCrop() {
   let dataUrl = out.toDataURL('image/webp', 0.88);
   if (!dataUrl.startsWith('data:image/webp')) dataUrl = out.toDataURL('image/jpeg', 0.88);
 
-  // Save
+  if (window._newExPhotoMode) {
+    // Photo for new exercise modal
+    window._newExPhoto = dataUrl;
+    const box = document.getElementById('newExPhotoBox');
+    const img = document.getElementById('newExPhotoImg');
+    const icon = document.getElementById('newExPhotoCameraIcon');
+    const label = document.getElementById('newExPhotoLabel');
+    if (img) { img.src = dataUrl; img.style.display = 'block'; }
+    if (icon) icon.style.display = 'none';
+    if (label) { label.textContent = 'Replace Photo/Image'; label.style.color = 'var(--accent)'; }
+    window._newExPhotoMode = false;
+    closeExPhotoCropper();
+    return;
+  }
+
+  // Save for existing exercise
   const exName = document.getElementById('ex-detail-overlay-title')?.textContent || '';
   if (exName) localStorage.setItem(`ironlog_ex_photo_${exName}`, dataUrl);
 
@@ -18590,6 +18714,9 @@ function saveExPhotoCrop() {
   const wrap = document.getElementById('ex-detail-photo-wrap');
   const imgEl = document.getElementById('ex-detail-photo-img');
   if (wrap && imgEl) { imgEl.src = dataUrl; wrap.style.display = 'block'; }
+
+  // Refresh the exercise list in background so photo appears when closing
+  setTimeout(() => { if (typeof renderExercisesTab === 'function') renderExercisesTab(); }, 100);
 
   closeExPhotoCropper();
 }
@@ -18609,6 +18736,8 @@ window.triggerExPhoto = triggerExPhoto;
 window.handleExPhotoRaw = handleExPhotoRaw;
 window.closeExPhotoCropper = closeExPhotoCropper;
 window.saveExPhotoCrop = saveExPhotoCrop;
+window.openNewExPhotoSheet = openNewExPhotoSheet;
+window._toggleCompoundMuscle = _toggleCompoundMuscle;
 window.shareWorkoutQRLink = shareWorkoutQRLink;
 window.closeWorkoutShareQR = closeWorkoutShareQR;
 
