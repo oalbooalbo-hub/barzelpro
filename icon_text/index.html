@@ -3924,10 +3924,8 @@ function toggleExTabCard(safeId) {
   const exName = card.dataset.exname || '';
   const overlay = document.getElementById('ex-detail-overlay');
   const overlayBody = document.getElementById('ex-detail-overlay-body');
-  const overlayTitle = document.getElementById('ex-detail-overlay-title');
   if (!overlay || !overlayBody) return;
 
-  if (overlayTitle) overlayTitle.textContent = exName;
   setTimeout(() => _loadExDetailPhoto(exName), 0);
 
   // Store safeId for close
@@ -5990,11 +5988,9 @@ function openExDetail(id) {
 
   const overlay = document.getElementById('ex-detail-overlay');
   const overlayBody = document.getElementById('ex-detail-overlay-body');
-  const overlayTitle = document.getElementById('ex-detail-overlay-title');
   if (!overlay || !overlayBody) return;
 
   const exName = card.querySelector('.ex-name')?.textContent || '';
-  if (overlayTitle) overlayTitle.textContent = exName;
   setTimeout(() => _loadExDetailPhoto(exName), 0);
 
   // Insert invisible placeholder to preserve list layout (no shift)
@@ -17194,21 +17190,27 @@ function deleteCoachWorkout(id) {
 
 <!-- Exercise detail overlay -->
 <div id="ex-detail-overlay">
-  <div id="ex-detail-overlay-header">
-    <button onclick="document.getElementById('page-exercises')?.classList.contains('active') ? closeExTabDetail() : closeExDetailOverlay()" style="background:transparent;border:none;color:var(--accent);cursor:pointer;display:flex;align-items:center;padding:8px 4px;flex-shrink:0;-webkit-tap-highlight-color:transparent;">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><line x1="19" y1="12" x2="5" y2="12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><polyline points="11,6 5,12 11,18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <!-- Photo (4:2) with back arrow + name overlaid -->
+  <div id="ex-detail-photo-wrap" style="display:none;flex-shrink:0;position:relative;">
+    <img id="ex-detail-photo-img" src="" style="width:100%;aspect-ratio:2/1;object-fit:cover;display:block;filter:brightness(0.9);cursor:pointer;" onclick="openExPhotoSheet()">
+    <!-- Back arrow top left -->
+    <button onclick="document.getElementById('page-exercises')?.classList.contains('active') ? closeExTabDetail() : closeExDetailOverlay()" style="position:absolute;top:calc(env(safe-area-inset-top)+10px);left:12px;background:rgba(0,0,0,0.3);border:none;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><line x1="19" y1="12" x2="5" y2="12" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/><polyline points="11,6 5,12 11,18" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
-    <div id="ex-detail-overlay-title" style="font-family:'DM Sans';font-size:18px;font-weight:900;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+    <!-- Gradient fade bottom -->
+    <div style="position:absolute;bottom:0;left:0;right:0;height:80px;background:linear-gradient(to bottom, transparent, var(--bg));pointer-events:none;"></div>
+    <!-- Exercise name bottom right -->
+    <div id="ex-detail-overlay-title" style="position:absolute;bottom:12px;right:16px;font-family:'DM Sans';font-size:20px;font-weight:900;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,0.6);pointer-events:none;"></div>
   </div>
-  <!-- Exercise photo (square, centered below title) -->
-  <div id="ex-detail-photo-wrap" style="display:none;justify-content:center;padding:14px 0 4px;flex-shrink:0;">
-    <img id="ex-detail-photo-img" src="" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid #2a2a2a;display:block;filter:brightness(0.8);cursor:pointer;" onclick="openExPhotoSheet()">
-  </div>
-  <!-- Photo placeholder when no photo -->
-  <div id="ex-detail-no-photo-wrap" style="display:flex;justify-content:center;padding:14px 0 4px;flex-shrink:0;">
-    <div onclick="openExPhotoSheet()" style="width:80px;height:80px;border-radius:8px;border:1px solid #2a2a2a;background:#0d0d0d;display:flex;align-items:center;justify-content:center;cursor:pointer;">
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-    </div>
+  <!-- No photo: simple header with back arrow + title -->
+  <div id="ex-detail-no-photo-wrap" style="display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top)+12px) 16px 10px;flex-shrink:0;">
+    <button onclick="document.getElementById('page-exercises')?.classList.contains('active') ? closeExTabDetail() : closeExDetailOverlay()" style="background:transparent;border:none;color:var(--accent);cursor:pointer;display:flex;align-items:center;padding:0;flex-shrink:0;-webkit-tap-highlight-color:transparent;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><line x1="19" y1="12" x2="5" y2="12" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/><polyline points="11,6 5,12 11,18" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <div id="ex-detail-overlay-title-nophoto" style="font-family:'DM Sans';font-size:18px;font-weight:900;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+    <button onclick="openExPhotoSheet()" style="background:#0d0d0d;border:1px solid #2a2a2a;border-radius:8px;padding:6px;cursor:pointer;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+    </button>
   </div>
   <div id="ex-detail-overlay-body"></div>
   <div style="position:absolute;bottom:0;left:0;right:0;height:calc(100px + env(safe-area-inset-bottom));background:var(--bg);pointer-events:none;z-index:1;"></div>
@@ -17287,7 +17289,7 @@ function deleteCoachWorkout(id) {
   <!-- Previews -->
   <div id="ex-photo-previews" style="display:flex;gap:12px;padding:12px 20px;flex-shrink:0;">
     <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
-      <canvas id="ex-photo-preview-32" style="width:100%;aspect-ratio:3/2;border-radius:6px;border:1px solid #2a2a2a;display:block;"></canvas>
+      <canvas id="ex-photo-preview-32" style="width:100%;aspect-ratio:2/1;border-radius:6px;border:1px solid #2a2a2a;display:block;"></canvas>
     </div>
     <div style="width:64px;height:64px;flex-shrink:0;align-self:center;">
       <canvas id="ex-photo-preview-11" style="width:64px;height:64px;border-radius:6px;border:1px solid #2a2a2a;display:block;"></canvas>
@@ -18731,7 +18733,7 @@ function _openExPhotoCropper(img) {
   // Canvas fills full width, height = width * 2/3 (3:2 ratio)
   const wrapW = window.innerWidth;
   const cropW = wrapW;
-  const cropH = Math.round(cropW * 2 / 3); // 3:2
+  const cropH = Math.round(cropW * 1 / 2); // 4:2 (2:1)
 
   // Scale image to fill the 3:2 area (cover)
   const scaleX = cropW / img.width;
@@ -18851,8 +18853,8 @@ function _updatePreviews() {
   const srcW = s.cropW / s.scale;
   const srcH = s.cropH / s.scale;
   // 3:2 preview
-  p32.width = 180; p32.height = 120;
-  p32.getContext('2d').drawImage(s.img, srcX, srcY, srcW, srcH, 0, 0, 180, 120);
+  p32.width = 180; p32.height = 90;
+  p32.getContext('2d').drawImage(s.img, srcX, srcY, srcW, srcH, 0, 0, 180, 90);
   // 1:1 preview — center square of 3:2
   const sqSrcW = srcH; // square side in source
   const sqSrcX = srcX + (srcW - sqSrcW) / 2;
@@ -18878,8 +18880,8 @@ function saveExPhotoCrop() {
 
   // 3:2 image at 300x200
   const out32 = document.createElement('canvas');
-  out32.width = 300; out32.height = 200;
-  out32.getContext('2d').drawImage(img, srcX, srcY, srcW, srcH, 0, 0, 300, 200);
+  out32.width = 400; out32.height = 200;
+  out32.getContext('2d').drawImage(img, srcX, srcY, srcW, srcH, 0, 0, 400, 200);
   let url32 = out32.toDataURL('image/webp', 0.88);
   if (!url32.startsWith('data:image/webp')) url32 = out32.toDataURL('image/jpeg', 0.88);
 
@@ -18927,11 +18929,15 @@ function _loadExDetailPhoto(exName) {
   const wrap = document.getElementById('ex-detail-photo-wrap');
   const imgEl = document.getElementById('ex-detail-photo-img');
   const noPhotoWrap = document.getElementById('ex-detail-no-photo-wrap');
+  const titleEl = document.getElementById('ex-detail-overlay-title');
+  const titleNoPhotoEl = document.getElementById('ex-detail-overlay-title-nophoto');
+  if (titleEl) titleEl.textContent = exName;
+  if (titleNoPhotoEl) titleNoPhotoEl.textContent = exName;
   if (!wrap || !imgEl) return;
-  const saved = exName ? localStorage.getItem(`ironlog_ex_photo_${exName}`) : null;
+  const saved = exName ? (localStorage.getItem(`ironlog_ex_photo_${exName}`) || null) : null;
   if (saved) {
     imgEl.src = saved;
-    wrap.style.display = 'flex';
+    wrap.style.display = 'block';
     if (noPhotoWrap) noPhotoWrap.style.display = 'none';
   } else {
     wrap.style.display = 'none';
