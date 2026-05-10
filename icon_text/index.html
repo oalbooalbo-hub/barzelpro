@@ -20,7 +20,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="BARZELPRO">
@@ -72,7 +72,7 @@ html{overscroll-behavior:none;-webkit-tap-highlight-color:transparent;}*{-webkit
 @supports (height: 100dvh) {
   html { height: 100dvh; }
   .tabs { bottom: env(keyboard-inset-height, env(safe-area-inset-bottom, 0px)); }
-}body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:430px;margin:0 auto;padding-top:env(safe-area-inset-top);padding-bottom:calc(90px + env(safe-area-inset-bottom));padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);-webkit-text-size-adjust:100%;overscroll-behavior:none;-webkit-touch-callout:none;}
+}body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:430px;margin:0 auto;padding-top:env(safe-area-inset-top);padding-bottom:calc(90px + env(safe-area-inset-bottom));padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);-webkit-text-size-adjust:100%;overscroll-behavior:none;-webkit-touch-callout:none;touch-action:pan-x pan-y;}
 /* Hebrew text: always use Rubik */
 @font-face{font-family:'AppFont';src:local('Rubik');unicode-range:U+0590-05FF,U+FB1D-FB4F;}
 :lang(he),*[dir="rtl"]{font-family:'Rubik',sans-serif;}
@@ -143,6 +143,7 @@ body.desktop-mode .pages-wrap {
 @keyframes pickNoticeBgFade{0%{background:rgba(255,140,66,.08);border-color:rgba(255,140,66,.2);}50%{background:rgba(255,140,66,.08);border-color:rgba(255,140,66,.2);}100%{background:rgba(255,140,66,0);border-color:rgba(255,140,66,0);}}
 .exercise-card.completed{border-color:rgba(var(--accent-rgb),.15);border-color:color-mix(in srgb, var(--accent) 15%, transparent);}
 .exercise-card.completed .ex-header{background:color-mix(in srgb, var(--accent) 6%, transparent);}
+.exercise-card.completed .ex-photo-box img{filter:grayscale(1) brightness(0.7) !important;}
 .ex-header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid transparent;}
 .exercise-card[data-open="true"] .ex-header{border-bottom-color:var(--border);}
 .ex-card-body.collapsed ~ .ex-header, .exercise-card:not([data-open="true"]) .ex-header{border-bottom-color:transparent;}
@@ -220,7 +221,7 @@ body.desktop-mode .pages-wrap {
 .set-row td:first-child{padding-left:8px;padding-right:8px;width:40px;text-align:center;}
 .reps-spinner{display:inline-flex;align-items:center;justify-content:center;gap:2px;}
 .set-row td{padding:6px 4px;text-align:center;border-top:1px solid var(--border);}
-.set-num{font-size:12px;color:#aaa !important;font-weight:700;}
+.set-num{font-size:12px;color:#aaa;font-weight:700;}
 .kg-pad-btn{background:#141414;border:1px solid #2a2a2a;border-radius:10px;color:var(--text);font-family:'DM Sans';font-size:22px;font-weight:700;padding:14px 0;cursor:pointer;transition:background .1s;}
 .kg-pad-btn:active{background:var(--accent);color:#000;}
 .set-row.ignored .set-num { text-decoration: line-through; }
@@ -236,7 +237,7 @@ body.desktop-mode .pages-wrap {
 .kg-bw-btn-active{border-color:var(--accent) !important;color:var(--accent) !important;}
 #kgBWBtnInline{will-change:color,border-color;-webkit-transform:translateZ(0);transform:translateZ(0);}
 #kgEditorDisplay{will-change:contents;-webkit-transform:translateZ(0);transform:translateZ(0);display:inline-block;}
-.kg-inline-editor{height:0;overflow:visible;transition:height .3s cubic-bezier(.4,0,.2,1);background:#0a0a0a;border:1px solid #1e1e1e;border-radius:14px;margin:4px 8px;}
+.kg-inline-editor{height:0;overflow:visible;transition:height .3s cubic-bezier(.4,0,.2,1);background:#0a0a0a;border:none;border-radius:14px;margin:4px 8px;}
 /* Exercise slide nav */
 #ex-nav-slider{display:block;width:100%;position:relative;}
 #ex-nav-list{width:100%;}
@@ -251,7 +252,7 @@ body.desktop-mode .pages-wrap {
 .kg-focus-showing{animation:kgFocusShow 300ms cubic-bezier(.4,0,.2,1) forwards;}
 
 .kg-inline-editor .kg-inline-editor-inner{opacity:0;transition:opacity .25s ease;pointer-events:none;}
-.kg-inline-editor.open{height:auto;border-top:1px solid var(--border);}
+.kg-inline-editor.open{height:auto;border:1px solid #1e1e1e;}
 .kg-inline-editor.open .kg-inline-editor-inner{opacity:1;pointer-events:auto;overflow-y:auto;max-height:520px;}
 .kg-inline-editor-inner{padding:12px 12px 10px;}
 #reps-popup{position:fixed;z-index:9000;background:#1a1a2e;border:1px solid rgba(255,255,255,0.1);border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.7);padding:12px;display:none;flex-direction:column;align-items:center;gap:10px;min-width:140px;}
@@ -2257,8 +2258,12 @@ function toggleMiniChart(cardId) {
 function setMiniChartRange(cardId, range) {
   miniChartRange = range;
   localStorage.setItem('ironlog_mini_range', range);
-  // Update pill styles on ALL exercise cards
-  document.querySelectorAll('#exerciseList .exercise-card').forEach(card => {
+  // Update pill styles on ALL exercise cards (list + overlay)
+  const allCards = [
+    ...document.querySelectorAll('#exerciseList .exercise-card'),
+    ...document.querySelectorAll('#ex-detail-overlay-body .exercise-card')
+  ];
+  allCards.forEach(card => {
     ['1W','1M','3M','6M','1Y'].forEach(r => {
       const pill = document.getElementById(`mini-rpill-${r}-${card.id}`);
       if (!pill) return;
@@ -2335,31 +2340,35 @@ function updateVolProgressBar(exId) {
 
   // Highlight the set row with the best 1RM (last one if tied)
   let bestRM = 0, bestRow = null;
+  // First clear ALL rows (including W/ignored)
   card.querySelectorAll('.set-row').forEach(row => {
-    if (row.dataset.ignored === '1') return;
+    const kgBox = row.querySelector('.kg-box-wrap');
+    const repBox = row.querySelector('.rep-box-wrap');
+    const setNum = row.querySelector('.set-num');
+    if (kgBox) kgBox.style.border = 'none';
+    if (repBox) repBox.style.border = 'none';
+    if (setNum) { setNum.style.color = ''; setNum.style.fontWeight = ''; }
+    // Skip W/ignored for 1RM calculation
+    if (row.dataset.ignored === '1' || row.dataset.setType === 'warmup') return;
     const inp = row.querySelectorAll('.set-input');
     const kg = parseFloat(inp[0]?.value) || 0;
     const repsSpan = row.querySelector('.reps-spin-val');
     const reps = repsSpan ? (parseInt(repsSpan.dataset.reps) || 0) : (parseInt(inp[1]?.value) || 0);
     const rm = kg * (1 + reps / 30);
-    const hl = row.querySelector('.rm-highlight');
-    if (hl) hl.remove();
-    row.style.position = '';
-    row.style.overflow = '';
-    const lbl = row.querySelector('.set-rm-label');
-    if (lbl) lbl.innerHTML = '';
     if (rm >= bestRM) { bestRM = rm; bestRow = row; }
   });
-  // Only show 1RM label and orange highlight when PRO (Analyze Session) is open
+  // Only show orange border when PRO (Analyze Session) is open
   const _proOpen = document.getElementById(`vol-target-bar-${exId}`)?.dataset?.proOpen === 'true';
   if (bestRow && _proOpen) {
-    // No box — just show 1RM label next to set number
-    const lbl = bestRow.querySelector('.set-rm-label');
-    if (lbl) lbl.innerHTML = '<span style="font-size:10px;font-weight:700;color:#ff8c42;letter-spacing:.5px;">1RM</span>';
+    const kgBox = bestRow.querySelector('.kg-box-wrap');
+    const repBox = bestRow.querySelector('.rep-box-wrap');
+    const setNum = bestRow.querySelector('.set-num');
+    if (kgBox) kgBox.style.border = '1px solid #ff8c42';
+    if (repBox) repBox.style.border = '1px solid #ff8c42';
+    if (setNum) { setNum.style.color = '#ff8c42'; setNum.style.fontWeight = '700'; }
   } else if (!_proOpen) {
-    // Clear any existing highlight and label
-    card.querySelectorAll('.rm-highlight').forEach(el => el.remove());
-    card.querySelectorAll('.set-rm-label').forEach(el => el.innerHTML = '');
+    card.querySelectorAll('.kg-box-wrap, .rep-box-wrap').forEach(el => el.style.border = 'none');
+    card.querySelectorAll('.set-num').forEach(el => { el.style.color = ''; el.style.fontWeight = ''; });
   }
 
   if (!anyDefined && prevVol === 0) {
@@ -5241,6 +5250,7 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
 
   // 2. Photo box
   const photoBox = document.createElement('div');
+  photoBox.className = 'ex-photo-box';
   photoBox.style.cssText = 'width:80px;height:80px;flex-shrink:0;border:1px solid #1e1e1e;border-radius:8px;overflow:hidden;margin:8px 0 8px 10px;background:#0d0d0d;display:flex;align-items:center;justify-content:center;cursor:pointer;';
   photoBox.onclick = () => openExDetail(id);
   if (_savedPhoto) {
@@ -5753,7 +5763,7 @@ function renderMiniChart(cardId, exName) {
           type:'line',
           data:{labels:volPts.map(p=>p.date),datasets:[{data:volPts.map(p=>p.val),borderColor:'#ff8c42',backgroundColor:'rgba(255,140,66,.08)',pointBackgroundColor:'#ff8c42',pointRadius:2,tension:0,fill:true,borderWidth:1.5}]},
           options: volChartOpts2,
-          plugins:[{id:'volPointLabel',afterDraw(chart){const ctx=chart.ctx;const ds=chart.data.datasets[0];const meta=chart.getDatasetMeta(0);meta.data.forEach((pt,idx)=>{const r=ds.pointRadius?.[idx]??ds.pointRadius;if(r<5)return;ctx.save();const chevSize=7;ctx.strokeStyle='#ff8c42';ctx.lineWidth=1.5;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(pt.x-chevSize/2,pt.y-r-8);ctx.lineTo(pt.x,pt.y-r-4);ctx.lineTo(pt.x+chevSize/2,pt.y-r-8);ctx.stroke();ctx.restore();});}}]
+          plugins:[]
         });
       }
     }
@@ -5762,8 +5772,8 @@ function renderMiniChart(cardId, exName) {
       if (c3._chartInst) { c3._chartInst.destroy(); c3._chartInst = null; }
       if (volumePts.length >= 2) {
         c3._chartInst = new Chart(c3.getContext('2d'), {
-          type:'bar',
-          data:{labels:volumePts.map(p=>p.date),datasets:[{data:volumePts.map(p=>p.val),backgroundColor:'rgba(167,139,250,.5)',borderColor:'#a78bfa',borderWidth:1.5,borderRadius:4}]},
+          type:'line',
+          data:{labels:volumePts.map(p=>p.date),datasets:[{data:volumePts.map(p=>p.val),borderColor:'#a78bfa',backgroundColor:'rgba(167,139,250,.08)',pointBackgroundColor:'#a78bfa',tension:0,fill:true,borderWidth:1.5,pointRadius:2}]},
           options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:28}},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{ticks:{color:'#555',font:{size:9}},grid:{display:false}},y:{ticks:{color:'#555',font:{size:9}},grid:{color:'#1e1e1e'}}}},
           plugins:[{id:'volProgBarLabels',afterDraw(chart){const ctx=chart.ctx;const sel=chart._selectedIdx;chart.data.datasets.forEach((ds,i)=>{chart.getDatasetMeta(i).data.forEach((bar,idx)=>{if(idx!==sel)return;const val=ds.data[idx];if(!val)return;ctx.save();const chevSize=7;ctx.strokeStyle='#a78bfa';ctx.lineWidth=1.5;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(bar.x-chevSize/2,bar.y-8);ctx.lineTo(bar.x,bar.y-4);ctx.lineTo(bar.x+chevSize/2,bar.y-8);ctx.stroke();ctx.restore();});});}}]
         });
@@ -5934,10 +5944,10 @@ function refreshCardMiniCharts(cardId) {
       c3._chartInst.destroy(); c3._chartInst = null;
     } else if (!c3._chartInst && vpPts.length >= 1) {
       c3._chartInst = new Chart(c3.getContext('2d'), {
-        type:'bar',
-        data:{labels:vpPts.map(p=>p.date),datasets:[{data:vpPts.map(p=>p.val),backgroundColor:'rgba(167,139,250,.5)',borderColor:'#a78bfa',borderWidth:1.5,borderRadius:4}]},
+        type:'line',
+        data:{labels:vpPts.map(p=>p.date),datasets:[{data:vpPts.map(p=>p.val),borderColor:'#a78bfa',backgroundColor:'rgba(167,139,250,.08)',pointBackgroundColor:'#a78bfa',tension:0,fill:true,borderWidth:1.5,pointRadius:2}]},
         options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:28}},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{ticks:{color:'#555',font:{size:9}},grid:{display:false}},y:{ticks:{color:'#555',font:{size:9}},grid:{color:'#1e1e1e'}}}},
-        plugins:[{id:'volProgBarLabels2',afterDraw(chart){const ctx=chart.ctx;const sel=chart._selectedIdx;chart.data.datasets.forEach((ds,i)=>{chart.getDatasetMeta(i).data.forEach((bar,idx)=>{if(idx!==sel)return;const val=ds.data[idx];if(!val)return;ctx.save();const chevSize=7;ctx.strokeStyle='#a78bfa';ctx.lineWidth=1.5;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(bar.x-chevSize/2,bar.y-8);ctx.lineTo(bar.x,bar.y-4);ctx.lineTo(bar.x+chevSize/2,bar.y-8);ctx.stroke();ctx.restore();});});}}]
+        plugins:[]
       });
     }
   }
@@ -6636,18 +6646,14 @@ function closeKgEditor() {
 let _kgSignMode = 1; // 1 = plus, -1 = minus
 
 function kgPadReset() {
-  // Restore to the original prefilled value (from defaultSets — frozen at card load)
   const prev = window._kgEditorPrevKg;
   if (!prev || prev <= 0) return;
-  // Original BW state comes from the input's data-orig-bw attribute (set at addSet time)
-  // defaultSets never have BW mode, so original state is always plain kg
   const input = window._kgEditorInput;
   const wasBW = input?.dataset.origBw === '1';
   _kgBWMode = wasBW;
   window._kgEditorBWMode = wasBW;
   _refreshBWCell();
-  window._kgEditorVal = String(prev);
-  _updateKgDisplay(window._kgEditorVal, window._kgEditorBWMode);
+  _setKgVal(prev);
 }
 
 function kgPadToggleSign() {
@@ -6670,25 +6676,33 @@ function kgPadToggleSign() {
   });
 }
 
+function _setKgVal(val) {
+  window._kgEditorVal = String(val);
+  const input = window._kgEditorInput;
+  if (input && !window._kgEditorBWMode) {
+    const num = parseFloat(val);
+    if (!isNaN(num) && !String(val).endsWith('.')) input.value = num;
+  }
+  _updateKgDisplay(String(val), window._kgEditorBWMode);
+}
 function kgPadAdd(amount) {
-/* DBG_START */   window._dbgLog('kgPadAdd ' + amount + ' | editorInput=' + !!window._kgEditorInput + ' val=' + window._kgEditorVal, '#a78bfa'); /* DBG_END */
   const cur = parseFloat(window._kgEditorVal) || 0;
   const newVal = parseFloat((cur + _kgSignMode * amount).toFixed(2));
   if (newVal < 0) return;
-  window._kgEditorVal = String(newVal);
-  _updateKgDisplay(window._kgEditorVal, window._kgEditorBWMode);
+  _setKgVal(newVal);
 }
 function kgPadPress(char) {
   let val = window._kgEditorVal || '';
   if (char === '.' && val.includes('.')) return;
   if (char === '.' && val === '') val = '0';
-  if (val.length >= 6) return;
+  if (val.length >= 8) return;
   val += char;
   window._kgEditorVal = val;
-  // Live update the input value so it's visible
+  // Only update input.value when it's a valid complete number
   const input = window._kgEditorInput;
   if (input && !window._kgEditorBWMode) {
-    input.value = val;
+    const num = parseFloat(val);
+    if (!isNaN(num) && !val.endsWith('.')) input.value = num;
   }
   _updateKgDisplay(val, window._kgEditorBWMode);
 }
@@ -6698,7 +6712,9 @@ function kgPadBack() {
   window._kgEditorVal = val;
   const input = window._kgEditorInput;
   if (input && !window._kgEditorBWMode) {
-    input.value = val || '';
+    const num = parseFloat(val);
+    if (val === '' || val === '0') input.value = '';
+    else if (!isNaN(num) && !val.endsWith('.')) input.value = num;
   }
   _updateKgDisplay(val, window._kgEditorBWMode);
 }
@@ -6824,11 +6840,10 @@ function addSet(exId, defaultKg=null, defaultReps=null, defaultDone=false) {
   const repsValClass = defaultReps!==null ? 'reps-spin-val prefilled' : 'reps-spin-val';
   const repsHidden = defaultReps!==null ? defaultReps : '';
   tr.innerHTML = `
-    <td style="padding:10px 8px 10px 12px;"><div style="display:flex;align-items:center;gap:6px;"><button class="btn-set-options" onclick="openSetOptions(this,'${exId}')" style="background:transparent;border:none;cursor:pointer;padding:0;color:#666;display:flex;align-items:center;flex-shrink:0;-webkit-tap-highlight-color:transparent;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button><span class="set-num" style="font-size:18px;font-weight:300;color:#aaa;">${n}</span><span class="set-type-tag" style="font-size:16px;font-weight:300;margin-left:2px;"></span></div></td>
-    <td class="set-rm-label" style="width:32px;padding:0 2px;text-align:center;"></td>
-    <td style="padding:6px 8px;text-align:center;"><div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 6px 8px 10px;width:130px;box-sizing:border-box;display:inline-flex;align-items:baseline;justify-content:space-between;gap:4px;cursor:pointer;" onclick="openInlineKgEditor(this.querySelector('input'),'${exId}')"><input class="${kgClass}" type="number" placeholder="—" min="0" step="0.5" ${kg} data-orig-bw="0" readonly onclick="event.stopPropagation();openInlineKgEditor(this,'${exId}')" oninput="this.classList.remove('prefilled');dismissBanner(this);saveSession();updateVolProgressBar(this.closest('.exercise-card')?.id)" style="background:transparent;border:none;outline:none;font-size:18px;font-weight:700;color:var(--text);width:100%;min-width:0;font-family:'DM Sans';"/><span class="kg-unit-label" style="color:#fff;font-size:14px;font-weight:300;flex-shrink:0;">Kg</span></div></td>
+    <td style="padding:10px 8px 10px 12px;"><div style="display:flex;align-items:center;gap:3px;"><button class="btn-set-options" onclick="openSetOptions(this,'${exId}')" style="background:transparent;border:none;cursor:pointer;padding:0;color:#666;display:flex;align-items:center;flex-shrink:0;-webkit-tap-highlight-color:transparent;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button><span class="set-num" style="font-size:18px;font-weight:300;color:#aaa;width:20px;text-align:center;display:inline-block;">${n}</span><span class="set-type-tag" style="font-size:16px;font-weight:300;"></span></div></td>
+    <td style="padding:6px 8px;text-align:center;"><div class="kg-box-wrap" style="background:var(--surface2);border:none;border-radius:8px;padding:0 6px 0 10px;width:130px;height:44px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:space-between;gap:4px;cursor:pointer;transition:border-color .2s;" onclick="openInlineKgEditor(this.querySelector('input'),'${exId}')"><input class="${kgClass}" type="number" placeholder="—" min="0" step="0.5" ${kg} data-orig-bw="0" readonly onclick="event.stopPropagation();openInlineKgEditor(this,'${exId}')" oninput="this.classList.remove('prefilled');dismissBanner(this);saveSession();updateVolProgressBar(this.closest('.exercise-card')?.id)" style="background:transparent;border:none;outline:none;font-size:18px;font-weight:700;color:var(--text);width:100%;min-width:0;font-family:'DM Sans';height:100%;box-sizing:border-box;"/><span class="kg-unit-label" style="color:#fff;font-size:14px;font-weight:300;flex-shrink:0;">Kg</span></div></td>
     <td>
-      <div class="reps-spinner" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 6px 8px 10px;display:inline-flex;align-items:baseline;justify-content:space-between;gap:4px;min-width:80px;cursor:pointer;" onclick="openRepsPopup(this.querySelector('span'),'${exId}')">
+      <div class="reps-spinner rep-box-wrap" style="background:var(--surface2);border:none;border-radius:8px;padding:0 4px 0 8px;width:70px;height:44px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:space-between;gap:2px;cursor:pointer;transition:border-color .2s;" onclick="openRepsPopup(this.querySelector('span'),'${exId}')">
         <span class="${repsValClass}" data-reps="${repsHidden}" onclick="event.stopPropagation();openRepsPopup(this,'${exId}')" style="cursor:pointer;font-size:18px;font-weight:700;color:var(--text);">${repsDisplay}</span>
         <span style="color:#fff;font-size:14px;font-weight:300;flex-shrink:0;">Rep</span>
       </div>
@@ -15989,6 +16004,18 @@ function toggleDesktopOverride() {
 }
 
 // Apply on load and on resize
+// Prevent all zoom gestures for native app feel
+document.addEventListener('gesturestart', e => e.preventDefault(), {passive:false});
+document.addEventListener('gesturechange', e => e.preventDefault(), {passive:false});
+document.addEventListener('gestureend', e => e.preventDefault(), {passive:false});
+document.addEventListener('wheel', e => { if (e.ctrlKey) e.preventDefault(); }, {passive:false});
+let _lastTap = 0;
+document.addEventListener('touchend', e => {
+  const now = Date.now();
+  if (now - _lastTap < 300) e.preventDefault();
+  _lastTap = now;
+}, {passive:false});
+
 document.addEventListener('DOMContentLoaded', () => {
   applyDeviceLayout();
   // Update label text after DOM is ready
@@ -17194,13 +17221,13 @@ function deleteCoachWorkout(id) {
   <div id="ex-detail-photo-wrap" style="display:none;flex-shrink:0;position:relative;">
     <img id="ex-detail-photo-img" src="" style="width:100%;aspect-ratio:2/1;object-fit:cover;display:block;filter:brightness(0.9);cursor:pointer;" onclick="openExPhotoSheet()">
     <!-- Back arrow top left -->
-    <button onclick="document.getElementById('page-exercises')?.classList.contains('active') ? closeExTabDetail() : closeExDetailOverlay()" style="position:absolute;top:calc(env(safe-area-inset-top)+10px);left:12px;background:rgba(0,0,0,0.3);border:none;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;">
+    <button onclick="document.getElementById('page-exercises')?.classList.contains('active') ? closeExTabDetail() : closeExDetailOverlay()" style="position:absolute;top:10px;left:12px;background:rgba(0,0,0,0.3);border:none;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;z-index:2;">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><line x1="19" y1="12" x2="5" y2="12" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/><polyline points="11,6 5,12 11,18" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
     <!-- Gradient fade bottom -->
     <div style="position:absolute;bottom:0;left:0;right:0;height:80px;background:linear-gradient(to bottom, transparent, var(--bg));pointer-events:none;"></div>
     <!-- Exercise name bottom right -->
-    <div id="ex-detail-overlay-title" style="position:absolute;bottom:12px;right:16px;font-family:'DM Sans';font-size:20px;font-weight:900;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,0.6);pointer-events:none;"></div>
+    <div id="ex-detail-overlay-title" style="position:absolute;bottom:4px;right:16px;font-family:'DM Sans';font-size:24px;font-weight:900;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,0.6);pointer-events:none;"></div>
   </div>
   <!-- No photo: simple header with back arrow + title -->
   <div id="ex-detail-no-photo-wrap" style="display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top)+12px) 16px 10px;flex-shrink:0;">
@@ -17402,7 +17429,10 @@ function toggleSessionProgress(cardId) {
   const isVisible = bar.dataset.proOpen === 'true';
   const newState = !isVisible;
   window._proBarOpen = newState;
-  document.querySelectorAll('.exercise-card').forEach(card => {
+  const _allCards = new Map();
+  document.querySelectorAll('.exercise-card').forEach(c => _allCards.set(c.id, c));
+  document.querySelectorAll('#ex-detail-overlay-body .exercise-card').forEach(c => _allCards.set(c.id, c));
+  _allCards.forEach(card => {
     const b = document.getElementById(`vol-target-bar-${card.id}`);
     if (!b) return;
     b.dataset.proOpen = newState ? 'true' : 'false';
@@ -17610,6 +17640,7 @@ function _repositionChips(floatBarVisible) {
 }
 function showExFloatBar(cardId) {
   _exFloatCardId = cardId;
+  window._exFloatCardId = cardId; // expose for cross-scope access
   const bar = document.getElementById('ex-float-bar');
   const block = document.getElementById('ex-float-bar-block');
   if (!bar) return;
@@ -17635,6 +17666,7 @@ function showExFloatBar(cardId) {
 
 function hideExFloatBar() {
   _exFloatCardId = null;
+  window._exFloatCardId = null;
   const bar = document.getElementById('ex-float-bar');
   const block = document.getElementById('ex-float-bar-block');
   if (bar) bar.style.display = 'none';
@@ -17677,20 +17709,33 @@ function _updateExFloatBar(cardId) {
 }
 
 function exFloatAction(action) {
-  const id = _exFloatCardId;
+  const id = _exFloatCardId || window._exFloatCardId;
   if (!id) return;
+  const _scrollToBottom = () => {
+    const card = document.getElementById(id);
+    if (!card) return;
+    const overlay = document.getElementById('ex-detail-overlay');
+    if (overlay) {
+      overlay.scrollTo({ top: overlay.scrollHeight, behavior: 'smooth' });
+    } else {
+      card.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+  };
   if (action === 'note') {
     toggleComment(id);
-    setTimeout(() => { const card = document.getElementById(id); if (card) card.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, 120);
+    setTimeout(_scrollToBottom, 120);
   } else if (action === 'timer') {
     toggleTimer(id);
-    setTimeout(() => { const card = document.getElementById(id); if (card) card.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, 120);
+    setTimeout(_scrollToBottom, 120);
   } else if (action === 'graph') {
     toggleMiniChart(id);
-    setTimeout(() => { const card = document.getElementById(id); if (card) card.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, 120);
+    setTimeout(_scrollToBottom, 120);
   } else if (action === 'pro') {
     toggleSessionProgress(id);
-    setTimeout(() => { const card = document.getElementById(id); if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 120);
+    setTimeout(() => {
+      const card = document.getElementById(id);
+      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 120);
   }
   setTimeout(() => _updateExFloatBar(id), 100);
 }
@@ -18103,8 +18148,17 @@ function _kgFocusAnimHide(el, done) {
   if (!el || getComputedStyle(el).display === 'none') { if (done) done(); return; }
   el.classList.remove('kg-focus-showing');
   el.classList.add('kg-focus-hiding');
-  const _onEnd = () => { el.removeEventListener('animationend', _onEnd); el.style.display = 'none'; el.classList.remove('kg-focus-hiding'); if (done) done(); };
+  const _onEnd = () => { el.removeEventListener('animationend', _onEnd); if (el.classList.contains('kg-focus-hiding')) { el.style.display = 'none'; el.classList.remove('kg-focus-hiding'); } if (done) done(); };
+  el._kgFocusHideEnd = _onEnd;
   el.addEventListener('animationend', _onEnd);
+}
+function _kgFocusAnimCancel(el) {
+  if (!el) return;
+  if (el._kgFocusHideEnd) {
+    el.removeEventListener('animationend', el._kgFocusHideEnd);
+    delete el._kgFocusHideEnd;
+  }
+  el.classList.remove('kg-focus-hiding', 'kg-focus-showing');
 }
 function _kgEditorFocusEnter(exId) {
   const _chips0 = document.getElementById('todayMuscleChipsWrap');
@@ -18159,9 +18213,13 @@ function _kgEditorFocusEnter(exId) {
     addExRow.dataset.kgHide = addExRow.dataset.kgOrigDisplay;
     _kgFocusAnimHide(addExRow);
   }
-  // Hide float bar
+  // Hide float bar — save _exFloatCardId so we can restore it
   const floatBar = document.getElementById('ex-float-bar');
-  if (floatBar) { floatBar.dataset.kgHide = floatBar.style.display || 'none'; floatBar.style.display = 'none'; }
+  if (floatBar) {
+    floatBar.dataset.kgHide = floatBar.style.display || 'none';
+    floatBar.dataset.kgFloatCardId = window._exFloatCardId || '';
+    floatBar.style.display = 'none';
+  }
   // todayMuscleChipsWrap already handled above in the forEach
   // Dim all other exercise cards, hide other sets within the active card
   document.querySelectorAll('#exerciseList .exercise-card').forEach(card => {
@@ -18215,6 +18273,7 @@ function _kgEditorFocusLeave() {
   }
   // finishWorkoutBtn restored via todayActions — no separate restore needed
   const _chipsR = document.getElementById('todayMuscleChipsWrap');
+  _kgFocusAnimCancel(_chipsR);
   if (_chipsR && _chipsR.dataset.kgHide !== undefined) {
     // Always restore as flex (it's a flex container)
     const _chipsRestore = _chipsR.dataset.kgHide === 'none' ? 'none' : 'flex';
@@ -18226,6 +18285,7 @@ function _kgEditorFocusLeave() {
     /* DBG_START */ window._dbgLog('LEAVE: todayMuscleChipsWrap restored=' + _chipsRestore, '#34d399'); /* DBG_END */
   }
   const todayActions = document.querySelector('.today-actions');
+  _kgFocusAnimCancel(todayActions);
   if (todayActions && todayActions.dataset.kgHide !== undefined) {
     const _taRestore = todayActions.dataset.kgHide === 'none' ? 'none' : 'flex';
     todayActions.style.display = _taRestore;
@@ -18234,21 +18294,36 @@ function _kgEditorFocusLeave() {
     /* DBG_START */ window._dbgLog('LEAVE: todayActions restored=' + _taRestore, '#34d399'); /* DBG_END */
   }
   const addExRow = document.querySelector('.add-ex-row');
+  _kgFocusAnimCancel(addExRow);
   if (addExRow && addExRow.dataset.kgHide !== undefined) {
     addExRow.style.display = addExRow.dataset.kgHide;
     delete addExRow.dataset.kgHide;
   }
   const floatBar = document.getElementById('ex-float-bar');
   if (floatBar && floatBar.dataset.kgHide !== undefined) {
-    const _wActive = document.getElementById('today-workout-area')?.style.display !== 'none';
-    floatBar.style.display = _wActive ? floatBar.dataset.kgHide : 'none';
+    floatBar.style.display = floatBar.dataset.kgHide || 'flex';
+    if (floatBar.dataset.kgFloatCardId) {
+      _exFloatCardId = floatBar.dataset.kgFloatCardId;
+      window._exFloatCardId = floatBar.dataset.kgFloatCardId;
+      delete floatBar.dataset.kgFloatCardId;
+    }
     delete floatBar.dataset.kgHide;
   }
 
   // Restore all exercise cards and set rows
   // Keep completed cards hidden — they sit above the active card creating a gap
   // They will reappear naturally when user scrolls or interacts
+  // Also restore the active card inside the overlay
+  const _overlayCard = document.querySelector('#ex-detail-overlay-body .exercise-card');
+  if (_overlayCard) {
+    _kgFocusAnimCancel(_overlayCard);
+    _overlayCard.querySelectorAll('.set-row, .kg-inline-editor-row').forEach(row => { _kgFocusAnimCancel(row); row.style.display = ''; delete row.dataset.kgHide; });
+    const _overlayFooter = _overlayCard.querySelector('.ex-footer');
+    _kgFocusAnimCancel(_overlayFooter);
+    if (_overlayFooter) { _overlayFooter.style.display = ''; delete _overlayFooter.dataset.kgHide; }
+  }
   document.querySelectorAll('#exerciseList .exercise-card').forEach(card => {
+    _kgFocusAnimCancel(card);
     if (card.dataset.kgHide !== undefined) {
       // Only restore non-completed cards; completed ones stay hidden
       if (!card.classList.contains('completed')) {
@@ -18257,6 +18332,7 @@ function _kgEditorFocusLeave() {
       delete card.dataset.kgHide;
     }
     card.querySelectorAll('.set-row, .kg-inline-editor-row').forEach(row => {
+      _kgFocusAnimCancel(row);
       if (row.dataset.kgHide) {
         row.style.display = '';
         delete row.dataset.kgHide;
