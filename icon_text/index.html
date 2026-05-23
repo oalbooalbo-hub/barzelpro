@@ -1599,28 +1599,26 @@ function hidAuthScreen() {
         <div id="nex-body-container" style="display:flex;gap:18px;width:100%;box-sizing:border-box;margin-top:-26px;transform:scale(0.95) translateZ(0);transform-origin:top center;pointer-events:none;backface-visibility:hidden;"></div>
         <!-- Muscle slider -->
         <div id="nex-slider-wrap" style="display:none;margin-top:-4px;">
-          <div style="width:60%;margin:0 auto;">
-            <div style="display:flex;align-items:center;margin-bottom:6px;">
-              <div style="width:18px;flex-shrink:0;"></div>
-              <div id="nex-muscle-label" style="flex:1;text-align:center;font-family:'DM Sans';font-size:17px;font-weight:700;letter-spacing:.3px;"></div>
-              <input type="checkbox" id="nex-muscle-checkbox" onchange="_nExCheckboxChange(this.checked)" style="width:18px;height:18px;cursor:pointer;flex-shrink:0;">
+          <div id="nex-slider-label-row" style="width:60%;margin:0 auto;">
+            <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:6px;gap:1px;">
+              <div id="nex-bodypart-label" style="min-height:15px;font-family:'DM Sans';font-size:12px;font-weight:700;letter-spacing:.2px;white-space:nowrap;text-align:center;"></div>
+              <div style="display:flex;align-items:center;width:100%;">
+                <div style="width:18px;flex-shrink:0;"></div>
+                <div id="nex-muscle-label" style="flex:1;text-align:center;font-family:'DM Sans';font-size:17px;font-weight:700;letter-spacing:.3px;"></div>
+                <input type="checkbox" id="nex-muscle-checkbox" onchange="_nExCheckboxChange(this.checked)" style="width:18px;height:18px;cursor:pointer;flex-shrink:0;">
+              </div>
             </div>
           </div>
           <div style="position:relative;">
-            <div style="width:60%;margin:0 auto;position:relative;">
+            <div id="nex-slider-bar-row" style="width:60%;margin:0 auto;position:relative;">
               <input type="range" id="nex-muscle-slider" min="0" max="0" step="1" value="0" oninput="_nExSliderChange(this.value)" style="width:100%;accent-color:var(--accent);cursor:pointer;">
               <div id="nex-slider-dots" style="position:absolute;left:10px;right:10px;top:50%;transform:translateY(-50%);display:flex;justify-content:space-between;pointer-events:none;"></div>
             </div>
           </div>
         </div>
       </div>
-      <!-- Compound muscles (hidden by default) -->
-      <div id="newExCompoundRow" style="display:none;background:#0d0d0d;border:1px solid #20d4c833;border-radius:10px;padding:14px;">
-        <div style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#20d4c8;letter-spacing:.5px;margin-bottom:10px;">COMPOUND MUSCLES <span style="color:#666;font-size:10px;">Â· select one or more</span></div>
-        <div id="newExCompoundPills" style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px;"></div>
       </div>
     </div>
-  </div>
   <!-- Fixed save button -->
   <div style="position:fixed;bottom:0;left:0;right:0;padding:12px 8px calc(12px + env(safe-area-inset-bottom));background:var(--surface);border-top:1px solid var(--border);z-index:10;max-width:calc(100vw);box-sizing:border-box;display:flex;gap:10px;">
     <button onclick="closeNewExModal()" style="flex:0 0 auto;padding:16px 22px;background:transparent;color:var(--muted);border:1px solid #333;border-radius:10px;font-family:'DM Sans';font-size:16px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;">Cancel</button>
@@ -3813,23 +3811,19 @@ function _renderNewExPills(selected) {
     const c = colors[m];
     return `<div onclick="_selectNewExMuscle('${m}')" style="padding:15px 0;border-radius:10px;background:${isSelected ? c+'22' : '#1a1a1a'};border:1px solid ${isSelected ? c : '#2a2a2a'};color:${isSelected ? c : '#555'};font-family:'DM Sans';font-size:13px;font-weight:700;text-align:center;cursor:pointer;transition:all .15s;">${labels[m]}</div>`;
   }).join('');
-  // Show/hide compound row
-  const compRow = document.getElementById('newExCompoundRow');
-  if (compRow) compRow.style.display = selected === 'Compound' ? 'block' : 'none';
-  if (selected === 'Compound') _renderCompoundPills();
 }
 
 const NEX_SUB_MUSCLE_IDS = {
   'Upper Chest': ['bf-chest-upper-l0','bf-chest-upper-r0'],
   'Lower Chest': ['bf-chest-lower-l0','bf-chest-lower-r0'],
   'Upper Traps': ['bb-neck-l0','bb-neck-r0','bf-trapezius-l0','bf-trapezius-r0'],
-  'Trapezius':  ['bb-trapezius-l0','bb-trapezius-r0','bf-trapezius-l0','bf-trapezius-r0'],
-  'Upper Back': ['bb-upper-back-l0','bb-upper-back-l1','bb-upper-back-l2','bb-upper-back-r0','bb-upper-back-r1','bb-upper-back-r2'],
+  'Traps':          ['bb-trapezius-l0','bb-trapezius-r0','bf-trapezius-l0','bf-trapezius-r0'],
+  'Upper Back/Lats':['bb-upper-back-l0','bb-upper-back-l1','bb-upper-back-l2','bb-upper-back-r0','bb-upper-back-r1','bb-upper-back-r2'],
   'Lower Back': ['bb-lower-back-l0','bb-lower-back-l1','bb-lower-back-r0','bb-lower-back-r1'],
-  'Quadriceps': ['bf-quadriceps-l0','bf-quadriceps-l1','bf-quadriceps-l2','bf-quadriceps-r0','bf-quadriceps-r1','bf-quadriceps-r2'],
+  'Quads':      ['bf-quadriceps-l0','bf-quadriceps-l1','bf-quadriceps-l2','bf-quadriceps-r0','bf-quadriceps-r1','bf-quadriceps-r2'],
   'Hamstrings': ['bb-hamstring-l0','bb-hamstring-l1','bb-hamstring-l2','bb-hamstring-l3','bb-hamstring-r0','bb-hamstring-r1','bb-hamstring-r2','bb-hamstring-r3'],
   'Glutes':     ['bb-gluteal-l0','bb-gluteal-l1','bb-gluteal-r0','bb-gluteal-r1'],
-  'Adductors':  ['bf-adductors-l0','bf-adductors-l1','bf-adductors-l2','bf-adductors-r0','bf-adductors-r1','bf-adductors-r2','bb-adductors-l0','bb-adductors-r0'],
+  'Inner Thigh':['bf-adductors-l0','bf-adductors-l1','bf-adductors-l2','bf-adductors-r0','bf-adductors-r1','bf-adductors-r2','bb-adductors-l0','bb-adductors-r0'],
   'Calves':     ['bf-calves-l0','bf-calves-l1','bf-calves-r0','bf-calves-r1','bb-calves-l0','bb-calves-l1','bb-calves-l2','bb-calves-l3','bb-calves-r0','bb-calves-r1','bb-calves-r2','bb-calves-r3'],
   'Deltoids':   ['bf-deltoids-l0','bf-deltoids-r0','bb-deltoids-l0','bb-deltoids-r0'],
   'Biceps':     ['bf-biceps-l0','bf-biceps-r0'],
@@ -3841,8 +3835,8 @@ const NEX_SUB_MUSCLE_IDS = {
 
 const NEX_BODY_SUBMUSCLES = {
   Chest:     ['Upper Chest','Lower Chest'],
-  Back:      ['Trapezius','Upper Back','Lower Back'],
-  Legs:      ['Quadriceps','Hamstrings','Glutes','Adductors','Calves'],
+  Back:      ['Traps','Upper Back/Lats','Lower Back'],
+  Legs:      ['Quads','Hamstrings','Glutes','Inner Thigh','Calves'],
   Shoulders: ['Deltoids','Upper Traps'],
   Arms:      ['Biceps','Triceps','Forearms'],
   Core:      ['Abs','Obliques'],
@@ -3864,39 +3858,73 @@ function _nExSetupBodySVG() {
   container.dataset.initialized = '1';
 }
 
+const _COMP_SUBS = [
+  {n:'Upper Chest',bp:'Chest'},{n:'Lower Chest',bp:'Chest'},
+  {n:'Traps',bp:'Back'},{n:'Upper Back/Lats',bp:'Back'},{n:'Lower Back',bp:'Back'},
+  {n:'Quads',bp:'Legs'},{n:'Hamstrings',bp:'Legs'},{n:'Glutes',bp:'Legs'},{n:'Inner Thigh',bp:'Legs'},{n:'Calves',bp:'Legs'},
+  {n:'Deltoids',bp:'Shoulders'},{n:'Upper Traps',bp:'Shoulders'},
+  {n:'Biceps',bp:'Arms'},{n:'Triceps',bp:'Arms'},{n:'Forearms',bp:'Arms'},
+  {n:'Abs',bp:'Core'},{n:'Obliques',bp:'Core'},
+];
+const _COMP_COLORS = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171' };
+
 function _nExHighlightMuscle(bodyPart) {
   W2_ALL_MUSCLE_IDS.forEach(id => {
     const el = document.getElementById('nex-' + id);
     if (el) { el.setAttribute('fill','#2a2a2a'); el.setAttribute('opacity','1'); }
   });
+  const wrap = document.getElementById('nex-slider-wrap');
+  const slider = document.getElementById('nex-muscle-slider');
+  const label = document.getElementById('nex-muscle-label');
+  if (!wrap || !slider || !label) return;
+  const cb = document.getElementById('nex-muscle-checkbox');
+  const dotsEl = document.getElementById('nex-slider-dots');
+  if (bodyPart === 'Compound') {
+    window._newExSelectedSubMuscles = [];
+    slider.min = 0; slider.max = _COMP_SUBS.length; slider.value = 0;
+    wrap.style.display = 'block';
+    label.textContent = 'All'; label.style.color = '#aaa';
+    slider.style.accentColor = 'var(--accent)';
+    if (cb) { cb.checked = false; cb.style.accentColor = '#aaa'; cb.style.visibility = 'hidden'; }
+    const bpLbl = document.getElementById('nex-bodypart-label');
+    if (bpLbl) { bpLbl.textContent = ''; bpLbl.style.color = '#aaa'; }
+    const lRow = document.getElementById('nex-slider-label-row');
+    const bRow = document.getElementById('nex-slider-bar-row');
+    if (lRow) lRow.style.width = '90%';
+    if (bRow) bRow.style.width = '90%';
+    if (dotsEl) {
+      dotsEl.innerHTML = Array.from({length: _COMP_SUBS.length + 1}, (_, i) => {
+        const c = i === 0 ? '#666' : (_COMP_COLORS[_COMP_SUBS[i - 1].bp] || '#666');
+        return `<div style="width:5px;height:5px;border-radius:50%;background:${c};flex-shrink:0;"></div>`;
+      }).join('');
+      _nExUpdateDots(0);
+    }
+    _nExSliderHighlight('All', 'Compound');
+    return;
+  }
   const color = W2_MUSCLE_COLORS[bodyPart];
   const ids = W2_BODY_IDS[bodyPart] || [];
   if (color) ids.forEach(id => {
     const el = document.getElementById('nex-' + id);
     if (el) { el.setAttribute('fill', color); el.setAttribute('opacity','0.9'); }
   });
-  // Set up slider
   const subList = NEX_BODY_SUBMUSCLES[bodyPart] || [];
-  const wrap = document.getElementById('nex-slider-wrap');
-  const slider = document.getElementById('nex-muscle-slider');
-  const label = document.getElementById('nex-muscle-label');
-  if (!wrap || !slider || !label) return;
+  const lRow = document.getElementById('nex-slider-label-row');
+  const bRow = document.getElementById('nex-slider-bar-row');
+  if (lRow) lRow.style.width = '60%';
+  if (bRow) bRow.style.width = '60%';
+  const bpLbl2 = document.getElementById('nex-bodypart-label');
+  if (bpLbl2) { bpLbl2.textContent = ''; }
   if (subList.length === 0) { wrap.style.display = 'none'; return; }
   window._newExSelectedSubMuscles = [];
-  slider.min = 0;
-  slider.max = subList.length; // 0 = All, 1..N = individual
-  slider.value = 0;
+  slider.min = 0; slider.max = subList.length; slider.value = 0;
   wrap.style.display = 'block';
   const c = color || '#aaa';
-  label.style.color = c;
+  label.style.color = c; label.textContent = 'All';
   slider.style.accentColor = c;
-  const cb = document.getElementById('nex-muscle-checkbox');
   if (cb) { cb.checked = false; cb.style.accentColor = c; cb.style.visibility = 'hidden'; }
-  label.textContent = 'All';
-  const dotsEl = document.getElementById('nex-slider-dots');
   if (dotsEl) {
-    const count = subList.length + 1;
-    dotsEl.innerHTML = Array.from({length: count}, () =>
+    dotsEl.innerHTML = Array.from({length: subList.length + 1}, () =>
       '<div style="width:5px;height:5px;border-radius:50%;background:#666;flex-shrink:0;"></div>'
     ).join('');
     _nExUpdateDots(0);
@@ -3911,11 +3939,32 @@ function _nExUpdateDots(activeIdx) {
 
 function _nExSliderChange(val) {
   const bodyPart = window._newExMuscle;
-  const subList = NEX_BODY_SUBMUSCLES[bodyPart] || [];
   const idx = parseInt(val);
   const label = document.getElementById('nex-muscle-label');
   const cb = document.getElementById('nex-muscle-checkbox');
+  const slider = document.getElementById('nex-muscle-slider');
   _nExUpdateDots(idx);
+  if (bodyPart === 'Compound') {
+    const bpLbl = document.getElementById('nex-bodypart-label');
+    if (idx === 0) {
+      if (label) { label.textContent = 'All'; label.style.color = '#aaa'; }
+      if (slider) slider.style.accentColor = 'var(--accent)';
+      if (cb) { cb.style.visibility = 'hidden'; cb.checked = false; }
+      if (bpLbl) { bpLbl.textContent = ''; }
+      _nExSliderHighlight('All', 'Compound');
+    } else {
+      const s = _COMP_SUBS[idx - 1];
+      if (!s) return;
+      const c = _COMP_COLORS[s.bp] || '#aaa';
+      if (label) { label.textContent = s.n; label.style.color = c; }
+      if (slider) slider.style.accentColor = c;
+      if (cb) { cb.style.visibility = 'visible'; cb.style.accentColor = c; cb.checked = (window._newExSelectedSubMuscles || []).includes(s.n); }
+      if (bpLbl) { bpLbl.textContent = s.bp; bpLbl.style.color = c; }
+      _nExSliderHighlight(s.n, 'Compound');
+    }
+    return;
+  }
+  const subList = NEX_BODY_SUBMUSCLES[bodyPart] || [];
   if (idx === 0) {
     if (label) label.textContent = 'All';
     if (cb) { cb.style.visibility = 'hidden'; cb.checked = false; }
@@ -3931,11 +3980,10 @@ function _nExSliderChange(val) {
 
 function _nExCheckboxChange(checked) {
   const bodyPart = window._newExMuscle;
-  const subList = NEX_BODY_SUBMUSCLES[bodyPart] || [];
   const slider = document.getElementById('nex-muscle-slider');
   const idx = parseInt(slider?.value || 0);
   if (idx === 0) return;
-  const name = subList[idx - 1];
+  const name = bodyPart === 'Compound' ? (_COMP_SUBS[idx - 1] || {}).n : (NEX_BODY_SUBMUSCLES[bodyPart] || [])[idx - 1];
   if (!name) return;
   window._newExSelectedSubMuscles = window._newExSelectedSubMuscles || [];
   const i = window._newExSelectedSubMuscles.indexOf(name);
@@ -3949,6 +3997,36 @@ function _nExSliderHighlight(subMuscle, bodyPart) {
     const el = document.getElementById('nex-' + id);
     if (el) { el.setAttribute('fill','#2a2a2a'); el.setAttribute('opacity','1'); }
   });
+  if (bodyPart === 'Compound') {
+    if (subMuscle === 'All') {
+      _COMP_SUBS.forEach(s => {
+        const c = _COMP_COLORS[s.bp];
+        (NEX_SUB_MUSCLE_IDS[s.n] || []).forEach(id => {
+          const el = document.getElementById('nex-' + id);
+          if (el) { el.setAttribute('fill', c); el.setAttribute('opacity','0.9'); }
+        });
+      });
+      return;
+    }
+    const sel = window._newExSelectedSubMuscles || [];
+    sel.forEach(name => {
+      const sv = _COMP_SUBS.find(x => x.n === name);
+      const c = sv ? (_COMP_COLORS[sv.bp] || '#aaa') : '#aaa';
+      (NEX_SUB_MUSCLE_IDS[name] || []).forEach(id => {
+        const el = document.getElementById('nex-' + id);
+        if (el) { el.setAttribute('fill', c); el.setAttribute('opacity','0.9'); }
+      });
+    });
+    if (!sel.includes(subMuscle)) {
+      const sv = _COMP_SUBS.find(x => x.n === subMuscle);
+      const c = sv ? (_COMP_COLORS[sv.bp] || '#aaa') : '#aaa';
+      (NEX_SUB_MUSCLE_IDS[subMuscle] || []).forEach(id => {
+        const el = document.getElementById('nex-' + id);
+        if (el) { el.setAttribute('fill', c); el.setAttribute('opacity','0.9'); }
+      });
+    }
+    return;
+  }
   const color = W2_MUSCLE_COLORS[bodyPart] || '#aaa';
   if (subMuscle === 'All') {
     const allIds = new Set();
@@ -3977,27 +4055,6 @@ function _nExSliderHighlight(subMuscle, bodyPart) {
   }
 }
 
-function _renderCompoundPills() {
-  const el = document.getElementById('newExCompoundPills');
-  if (!el) return;
-  const muscles = ['Chest','Back','Legs','Shoulders','Arms','Core'];
-  const colors = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171' };
-  const labels = { Chest:'Chst', Back:'Back', Legs:'Legs', Shoulders:'Shld', Arms:'Arms', Core:'Core' };
-  const sel = window._newExCompoundMuscles || [];
-  el.innerHTML = muscles.map(m => {
-    const isSelected = sel.includes(m);
-    const c = colors[m];
-    return `<div onclick="_toggleCompoundMuscle('${m}')" style="padding:15px 0;border-radius:10px;background:${isSelected ? c+'22' : '#1a1a1a'};border:1px solid ${isSelected ? c : '#2a2a2a'};color:${isSelected ? c : '#555'};font-family:'DM Sans';font-size:13px;font-weight:700;text-align:center;cursor:pointer;transition:all .15s;">${labels[m]}</div>`;
-  }).join('');
-}
-
-function _toggleCompoundMuscle(m) {
-  window._newExCompoundMuscles = window._newExCompoundMuscles || [];
-  const idx = window._newExCompoundMuscles.indexOf(m);
-  if (idx >= 0) window._newExCompoundMuscles.splice(idx, 1);
-  else window._newExCompoundMuscles.push(m);
-  _renderCompoundPills();
-}
 
 function _selectNewExMuscle(muscle) {
   window._newExMuscle = muscle;
@@ -20272,7 +20329,6 @@ window.handleExPhotoRaw = handleExPhotoRaw;
 window.closeExPhotoCropper = closeExPhotoCropper;
 window.saveExPhotoCrop = saveExPhotoCrop;
 window.openNewExPhotoSheet = openNewExPhotoSheet;
-window._toggleCompoundMuscle = _toggleCompoundMuscle;
 window.shareWorkoutQRLink = shareWorkoutQRLink;
 window.closeWorkoutShareQR = closeWorkoutShareQR;
 
@@ -20411,7 +20467,13 @@ function openW2Sheet(idx) {
     const subs = exDef.subMuscles || e.subMuscles || [];
     if (subs.length > 0) {
       subs.forEach(sm => {
-        (NEX_SUB_MUSCLE_IDS[sm] || []).forEach(id => { highlightMap[id] = color; });
+        if (NEX_SUB_MUSCLE_IDS[sm]) {
+          NEX_SUB_MUSCLE_IDS[sm].forEach(id => { highlightMap[id] = color; });
+        } else {
+          // Body-part name (Compound exercise) — use that body part's own color
+          const bpColor = W2_MUSCLE_COLORS[sm] || color;
+          (W2_BODY_IDS[sm] || []).forEach(id => { highlightMap[id] = bpColor; });
+        }
       });
     } else {
       (W2_BODY_IDS[m] || []).forEach(id => { highlightMap[id] = color; });
@@ -20810,5 +20872,10 @@ function _updateKgDisplay(val, isBWMode) {
 
 </body>
 </html>
+
+
+
+
+
 
 
