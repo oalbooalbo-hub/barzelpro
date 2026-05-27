@@ -112,7 +112,7 @@ body.desktop-mode .pages-wrap {
 .tab{flex:1;padding:12px 4px 10px;border-radius:0;border:none;background:transparent;color:var(--muted);font-family:'DM Sans';font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;outline:none;-webkit-tap-highlight-color:transparent;text-align:center;}
 .tab:focus,.tab:focus-visible{outline:none;border-color:var(--border);}
 .tab.active{background:transparent;color:var(--accent);border:none;font-weight:700;}.tab#tab-progress-btn.active,.tab#tab-progress-btn2.active{color:#34d399;border:none;}#tab-progress-btn,#tab-progress-btn2{flex:1;}
-.page{display:none;padding:14px 8px;padding-bottom:calc(130px + env(safe-area-inset-bottom));box-sizing:border-box;}.page.active.delayed-reveal{animation:pageFadeIn .15s ease .3s both;}@keyframes pageFadeIn{from{opacity:0}to{opacity:1}}
+.page{display:none;padding:14px 10px;padding-bottom:calc(130px + env(safe-area-inset-bottom));box-sizing:border-box;}.page.active.delayed-reveal{animation:pageFadeIn .15s ease .3s both;}@keyframes pageFadeIn{from{opacity:0}to{opacity:1}}
 .page.active{display:block;}
 .section-title{font-family:'DM Sans';font-size:20px;font-weight:700;margin-bottom:14px;color:var(--muted);letter-spacing:0;position:sticky;top:0;z-index:25;background:var(--bg);padding:10px 0 6px;}
 .section-title span{color:var(--text);}
@@ -1183,7 +1183,7 @@ function hidAuthScreen() {
     <!-- Middle: QR box with URL inside -->
     <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
       <div id="share-qr-wrap" style="background:var(--accent);border-radius:16px;padding:10px;display:inline-flex;flex-direction:column;align-items:center;gap:8px;">
-        <div id="share-qr-canvas" style="width:220px;height:220px;"></div>
+        <div id="share-qr-canvas" style="width:198px;height:198px;"></div>
 
       </div>
       <div id="share-qr-title" style="font-family:'DM Sans';font-size:18px;font-weight:700;color:#fff;letter-spacing:.5px;text-align:center;margin-top:12px;"></div>
@@ -1229,7 +1229,7 @@ function hidAuthScreen() {
     </div>
     <div id="ex-nav-slider">
       <div id="ex-nav-list">
-        <div id="exerciseList"></div>
+        <div id="exerciseList" style="padding:0 10px;box-sizing:border-box;"></div>
         <div class="add-ex-row">
           <button class="btn-add-exercise" onclick="enterPickMode(_todayMuscleFilter)">+ ADD EXERCISE</button>
         </div>
@@ -4706,7 +4706,7 @@ function openExtabExOverlay(exName) {
 
     // Muscle list pinned to left edge of diagWrap (window-aligned)
     const muscleList = document.createElement('div');
-    muscleList.style.cssText = 'position:absolute;left:16px;top:100px;display:flex;flex-direction:column;gap:5px;align-items:flex-start;z-index:1;pointer-events:none;';
+    muscleList.style.cssText = 'position:absolute;left:16px;top:90px;display:flex;flex-direction:column;gap:5px;align-items:flex-start;z-index:1;pointer-events:none;';
     const listItems = muscle === 'Mix'
       ? (subs.length > 0 ? subs : _COMP_SUBS.map(s => s.n))
       : (subs.length > 0 ? subs : (NEX_BODY_SUBMUSCLES[muscle] || []));
@@ -4781,8 +4781,8 @@ function openExtabExOverlay(exName) {
     slideWrap.style.cssText = 'overflow:hidden;width:100%;';
     const slideInner = document.createElement('div');
     slideInner.style.cssText = 'display:flex;flex-direction:column;align-items:center;will-change:transform;';
-    slideInner.appendChild(valEl);
     slideInner.appendChild(prefixEl);
+    slideInner.appendChild(valEl);
     slideInner.appendChild(lblEl);
     slideWrap.appendChild(slideInner);
 
@@ -18601,11 +18601,24 @@ function toggleSessionProgress(cardId) {
   });
   // Update floating bar PRO button state
   setTimeout(() => _updateExFloatBar(_exFloatCardId), 100);
-  // Scroll the analyze box into view when opening
+  // Scroll the analyze box fully into view, clearing the fixed float bar
   if (newState) {
     setTimeout(() => {
       const _b = document.getElementById(`vol-target-bar-${cardId}`);
-      if (_b) _b.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      const _scrollEl = document.getElementById('ex-detail-overlay-body') || document.documentElement;
+      const _floatBar = document.getElementById('ex-float-bar');
+      if (_b && _scrollEl) {
+        const _bRect = _b.getBoundingClientRect();
+        const _fbTop = (_floatBar && getComputedStyle(_floatBar).display !== 'none')
+          ? _floatBar.getBoundingClientRect().top
+          : window.innerHeight;
+        const _overlap = _bRect.bottom - _fbTop + 16;
+        if (_overlap > 0) {
+          _scrollEl.scrollBy({ top: _overlap, behavior: 'smooth' });
+        } else if (_bRect.bottom > window.innerHeight) {
+          _b.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }
     }, 380);
   }
 }
@@ -19175,6 +19188,20 @@ function openRepsPopup(span, exId) {
   _repsEditorRow = span.closest('tr');
   _repsEditorVal = String(parseInt(span.dataset.reps) || 0);
 
+  // Hide float bar while reps editor is open (mirrors KG editor behavior)
+  const _repsFloatBar = document.getElementById('ex-float-bar');
+  if (_repsFloatBar) {
+    if (_repsFloatBar.dataset.kgHide === undefined) {
+      _repsFloatBar.dataset.kgHide = _repsFloatBar.style.display || 'none';
+      _repsFloatBar.dataset.kgFloatCardId = window._exFloatCardId || '';
+    }
+    _repsFloatBar.style.display = 'none';
+    const _repsFloatBarBlock = document.getElementById('ex-float-bar-block');
+    if (_repsFloatBarBlock) _repsFloatBarBlock.style.display = 'none';
+    const _repsBottomBlocker = document.querySelector('#ex-detail-overlay .ex-detail-bottom-blocker');
+    if (_repsBottomBlocker) _repsBottomBlocker.style.display = 'none';
+  }
+
   // Highlight set number yellow
   const setNum = _repsEditorRow?.querySelector('.set-num');
   if (setNum) { setNum.style.color = 'var(--accent)'; setNum.dataset.repsHighlighted = '1'; }
@@ -19602,9 +19629,17 @@ _kgFocusAnimHide(_chips);
   // Hide float bar — save _exFloatCardId so we can restore it
   const floatBar = document.getElementById('ex-float-bar');
   if (floatBar) {
-    floatBar.dataset.kgHide = floatBar.style.display || 'none';
-    floatBar.dataset.kgFloatCardId = window._exFloatCardId || '';
+    // Only save kgHide once — a second _kgEditorFocusEnter call (switching between
+    // set editors) must not overwrite the original 'flex' with 'none'.
+    if (floatBar.dataset.kgHide === undefined) {
+      floatBar.dataset.kgHide = floatBar.style.display || 'none';
+      floatBar.dataset.kgFloatCardId = window._exFloatCardId || '';
+    }
     floatBar.style.display = 'none';
+    const floatBarBlock = document.getElementById('ex-float-bar-block');
+    if (floatBarBlock) floatBarBlock.style.display = 'none';
+    const bottomBlocker = document.querySelector('#ex-detail-overlay .ex-detail-bottom-blocker');
+    if (bottomBlocker) bottomBlocker.style.display = 'none';
   }
   // todayMuscleChipsWrap already handled above in the forEach
   // Dim all other exercise cards, hide other sets within the active card
@@ -19687,6 +19722,10 @@ function _kgEditorFocusLeave() {
   const floatBar = document.getElementById('ex-float-bar');
   if (floatBar && floatBar.dataset.kgHide !== undefined) {
     floatBar.style.display = floatBar.dataset.kgHide || 'flex';
+    const floatBarBlock = document.getElementById('ex-float-bar-block');
+    if (floatBarBlock) floatBarBlock.style.display = floatBar.style.display !== 'none' ? 'block' : 'none';
+    const bottomBlocker = document.querySelector('#ex-detail-overlay .ex-detail-bottom-blocker');
+    if (bottomBlocker) bottomBlocker.style.display = '';
     if (floatBar.dataset.kgFloatCardId) {
       _exFloatCardId = floatBar.dataset.kgFloatCardId;
       window._exFloatCardId = floatBar.dataset.kgFloatCardId;
@@ -20090,8 +20129,8 @@ function _renderQR(el, url) {
   try {
     new QRCode(el, {
       text: url,
-      width: 220,
-      height: 220,
+      width: 198,
+      height: 198,
       colorDark: '#000000',
       colorLight: '#ffffff',
       correctLevel: QRCode.CorrectLevel.M
