@@ -50,8 +50,9 @@ if ('serviceWorker' in navigator) {
 <link rel="stylesheet" href="pwa-styles.css">
 <style>
 :root{--bg:#0a0a0a;--surface:#141414;--surface2:#1e1e1e;--border:#2a2a2a;--accent:#e8ff47;--accent2:#ff4747;--text:#f0f0f0;--muted:#666;--radius:10px;}
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-button{cursor:pointer;touch-action:manipulation;-webkit-appearance:none;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;}
+button{cursor:pointer;touch-action:manipulation;-webkit-appearance:none;outline:none;}
+*:focus{outline:none;}
 .swipe-row-outer,.swipe-row{-webkit-tap-highlight-color:transparent;}
 @keyframes swipePeek{0%{transform:translateX(0)}30%{transform:translateX(20px)}70%{transform:translateX(20px)}100%{transform:translateX(0)}}
 .swipe-peek{animation:swipePeek 800ms cubic-bezier(.4,0,.2,1) forwards;}
@@ -403,7 +404,7 @@ body.ex-tab-detail-open #ex-float-bar{display:none !important;}
 
 /* ── COMMENT ───────────────────────────────────── */
 .comment-area{padding:0;max-height:0;overflow:hidden;transition:max-height .35s ease;margin:0;display:flex;justify-content:center;}
-#today-chips-block{display:none;position:fixed;bottom:0;left:0;right:0;height:calc(140px + env(safe-area-inset-bottom));background:var(--bg);z-index:47;}
+#today-chips-block{display:none;}
 
 .comment-area.open{max-height:600px;}
 .comment-area > .comment-area-inner{opacity:0;transition:opacity .25s ease;}
@@ -782,6 +783,7 @@ body.ex-tab-detail-open #ex-float-bar{display:none !important;}
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, sendPasswordResetEmail } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getFirestore, doc, getDoc, setDoc, deleteDoc, getDocs, collection, query, where, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getStorage, ref as storageRef, uploadString, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
 
 // ── BRAND CONFIG ──────────────────────────────────────
 // Read from config.js (window.BRAND_CONFIG) — fallback to defaults
@@ -811,6 +813,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const storage = getStorage(app);
 const googleProvider = new GoogleAuthProvider();
 
 window._fbAuth = auth;
@@ -827,6 +830,35 @@ window._fbSetDoc = setDoc;
 window._fbDeleteDoc = deleteDoc;
 window._fbServerTimestamp = serverTimestamp;
 window._fbFirestoreExtra = { getDocs, collection, query, where };
+
+// ── Exercise photo: upload to Firebase Storage ────────────────────────────
+async function _uploadExPhoto(name, url32, url11) {
+  if (!window._currentUser || !storage) return;
+  const uid = window._currentUser.uid;
+  const brandId = window.BRAND_ID || 'default';
+  const base = `userData/${brandId}/users/${uid}/ex_photos/${encodeURIComponent(name)}`;
+  try {
+    if (url32) await uploadString(storageRef(storage, base + '/photo'), url32, 'data_url');
+    if (url11) await uploadString(storageRef(storage, base + '/thumb'), url11, 'data_url');
+  } catch(e) { console.warn('[ExPhoto] Upload failed:', e.message); }
+}
+
+// ── Exercise photo: load from Firebase Storage, cache locally ─────────────
+async function _loadExPhotoFromCloud(name, isThumb) {
+  if (!window._currentUser || !storage) return null;
+  const uid = window._currentUser.uid;
+  const brandId = window.BRAND_ID || 'default';
+  const path = `userData/${brandId}/users/${uid}/ex_photos/${encodeURIComponent(name)}/${isThumb ? 'thumb' : 'photo'}`;
+  try {
+    const url = await getDownloadURL(storageRef(storage, path));
+    // Cache in localStorage for next time
+    const lsKey = isThumb ? `ironlog_ex_photo_thumb_${name}` : `ironlog_ex_photo_${name}`;
+    try { localStorage.setItem(lsKey, url); } catch(_) {}
+    return url;
+  } catch(e) { return null; }
+}
+window._uploadExPhoto = _uploadExPhoto;
+window._loadExPhotoFromCloud = _loadExPhotoFromCloud;
 
 // Load brand config from Firestore and apply to UI
 async function loadBrandConfig() {
@@ -1211,21 +1243,25 @@ function hidAuthScreen() {
   </div>
 
   <!-- ACTIVE WORKOUT: hidden until user picks an option -->
+  <!-- Top-edge workout progress bar — outside sticky header to avoid stacking context -->
+  <div id="workout-top-progress-wrap" style="display:none;position:fixed;top:0;left:0;right:0;max-width:430px;margin:0 auto;height:3px;background:#222;overflow:hidden;z-index:500;">
+    <div id="workout-progress-fill" style="height:100%;background:#39FF14;width:0%;transition:width .4s cubic-bezier(.4,0,.2,1);"></div>
+  </div>
   <div id="today-workout-area" style="display:none;overflow-x:visible;">
     <div id="workout-sticky-header" style="position:fixed;top:0;left:0;right:0;max-width:430px;margin-left:auto;margin-right:auto;z-index:15;background:#0a0a0a;padding-top:10px;">
       <div id="workout-hero-photo" style="display:none;width:100%;overflow:hidden;"></div>
-      <div id="workout-progress-section" style="display:none;padding:12px 16px 8px;">
-        <div style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#888;letter-spacing:.8px;margin-bottom:8px;">WORKOUT PROGRESS</div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <div id="workout-progress-section" style="display:none;padding:12px 16px 4px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
           <div style="display:flex;align-items:baseline;gap:6px;">
             <span id="workout-progress-fraction" style="font-family:'DM Sans';font-size:22px;font-weight:900;color:#fff;">0 / 0</span>
             <span style="font-family:'DM Sans';font-size:12px;font-weight:600;color:#888;">exercises</span>
           </div>
           <div id="workout-pr-stars" style="display:flex;gap:5px;align-items:center;"></div>
         </div>
-        <div style="background:#222;border-radius:4px;height:6px;overflow:hidden;">
-          <div id="workout-progress-fill" style="height:100%;background:var(--accent);border-radius:4px;width:0%;transition:width .4s cubic-bezier(.4,0,.2,1);"></div>
-        </div>
+      </div>
+      <div id="todayMuscleChipsWrap" style="display:none;align-items:center;gap:0;flex-wrap:nowrap;padding:4px 16px 10px;width:100%;box-sizing:border-box;overflow:hidden;border-bottom:1px solid #2a2a2a;">
+        <div id="todayMuscleChipsFixed" style="display:flex;gap:6px;flex-shrink:0;padding-right:6px;"></div>
+        <div id="todayMuscleChips" style="display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;scrollbar-width:none;flex:1;"></div>
       </div>
     </div>
     <div id="workout-header-spacer" style="height:0;flex-shrink:0;"></div>
@@ -1234,10 +1270,6 @@ function hidAuthScreen() {
       <button class="btn-load-history" onclick="window._loadFromToday=true;switchTab('workouts2')" style="display:none;"></button>
     </div>
     <div id="today-chips-block"></div>
-    <div id="todayMuscleChipsWrap" style="display:none;align-items:center;gap:0;flex-wrap:nowrap;position:fixed;bottom:calc(16px + env(safe-area-inset-bottom));left:0;right:0;width:100%;max-width:430px;margin-left:auto;margin-right:auto;background:var(--bg);z-index:48;padding:8px 16px;box-sizing:border-box;border-top:1px solid var(--border);overflow:hidden;">
-      <div id="todayMuscleChipsFixed" style="display:flex;gap:6px;flex-shrink:0;background:var(--bg);z-index:3;padding-right:6px;"></div>
-      <div id="todayMuscleChips" style="display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;scrollbar-width:none;flex:1;"></div>
-    </div>
     <div id="ex-nav-slider">
       <div id="ex-nav-list">
         <div id="exerciseList"></div>
@@ -1601,7 +1633,7 @@ function hidAuthScreen() {
       <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
         <div id="newExPhotoBox" onclick="openNewExPhotoSheet()" style="width:80px;height:80px;border-radius:8px;border:1px solid #555;background:#0d0d0d;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;flex-shrink:0;">
           <svg id="newExPhotoCameraIcon" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-          <img id="newExPhotoImg" src="" style="display:none;width:100%;height:100%;object-fit:cover;filter:brightness(0.8);">
+          <img id="newExPhotoImg" src="" style="display:none;width:100%;height:100%;object-fit:cover;">
         </div>
         <span id="newExPhotoLabel" style="font-family:'DM Sans';font-size:12px;color:#fff;font-weight:700;letter-spacing:.5px;cursor:pointer;" onclick="openNewExPhotoSheet()">Add Photo/Image</span>
       </div>
@@ -2924,7 +2956,7 @@ function _setWorkoutHeroPhoto(name) {
   if (photo) {
     el.style.display = 'block';
     const ps = document.getElementById('workout-progress-section');
-    if (ps && !window._isNewWorkoutFlow) { ps.style.display = 'block'; _updateWorkoutProgress(); }
+    if (ps && !window._isNewWorkoutFlow) { ps.style.display = 'block'; const _tw=document.getElementById('workout-top-progress-wrap');if(_tw)_tw.style.display='block'; _updateWorkoutProgress(); }
     el.innerHTML = `<div id="workout-above-elapsed" style="display:none;align-items:center;gap:5px;padding:0 16px 8px;justify-content:center;position:relative;">
       <button onclick="openWorkoutMenu(event)" style="position:absolute;left:16px;background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="#888"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
@@ -2967,6 +2999,8 @@ function _setWorkoutHeroPhoto(name) {
     el.innerHTML = '';
     const ps = document.getElementById('workout-progress-section');
     if (ps) ps.style.display = 'none';
+    const _tw = document.getElementById('workout-top-progress-wrap');
+    if (_tw) _tw.style.display = 'none';
   }
   requestAnimationFrame(_syncWorkoutHeaderSpacer);
 }
@@ -2975,11 +3009,13 @@ function _updateWorkoutProgress() {
   const fill     = document.getElementById('workout-progress-fill');
   const fraction = document.getElementById('workout-progress-fraction');
   const prStars  = document.getElementById('workout-pr-stars');
+  const topWrap  = document.getElementById('workout-top-progress-wrap');
   if (!section || !fill || !fraction) return;
   const total = document.querySelectorAll('#exerciseList .exercise-card').length;
   const done  = document.querySelectorAll('#exerciseList .exercise-card.completed').length;
-  fraction.textContent = `${done} / ${total}`;
+  fraction.textContent = done > 0 ? `${done} / ${total}` : `${total}`;
   fill.style.width = total > 0 ? (done / total * 100) + '%' : '0%';
+  if (topWrap) topWrap.style.display = section.style.display !== 'none' ? 'block' : 'none';
   if (prStars) {
     let weightPRs = 0, volPRs = 0, volumePRs = 0;
     document.querySelectorAll('#exerciseList .exercise-card').forEach(c => {
@@ -3392,7 +3428,6 @@ function renderExercisesTab() {
       : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:${mc};opacity:0.5;">${icon}</div>`;
     return `<div style="position:relative;width:80px;height:80px;flex-shrink:0;margin:8px 12px 8px 10px;">
       <div style="width:100%;height:100%;border:1px solid #1e1e1e;border-radius:8px;overflow:hidden;background:#0d0d0d;">${inner}</div>
-      <div style="position:absolute;top:0;left:0;width:0;height:0;border-style:solid;border-width:10px 10px 0 0;border-color:${mc} transparent transparent transparent;pointer-events:none;"></div>
     </div>`;
   }
 
@@ -4179,8 +4214,11 @@ function confirmNewEx() {
   if (window._editExName) {
     const oldName = window._editExName;
     window._editExName = null;
-    // Save photo
-    if (window._newExPhoto) localStorage.setItem(`ironlog_ex_photo_${name}`, window._newExPhoto);
+    // Save photo: 21:9 wide as main key (detail view), 1:1 thumb for card header
+    try {
+      if (window._newExPhoto)   localStorage.setItem(`ironlog_ex_photo_thumb_${name}`, window._newExPhoto);
+      if (window._newExPhoto32) localStorage.setItem(`ironlog_ex_photo_${name}`, window._newExPhoto32);
+    } catch(e) { showToast('Storage full — photo not saved'); }
     // Update customExercises
     const idx = customExercises.findIndex(e => e.name === oldName);
     if (idx > -1) {
@@ -4213,10 +4251,6 @@ function confirmNewEx() {
         const photoImg = card.querySelector('.ex-photo-box img');
         const newPhoto = localStorage.getItem(`ironlog_ex_photo_${name}`);
         if (photoImg && newPhoto) photoImg.src = newPhoto;
-        // Update muscle color triangle
-        const colors = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171', Mix:'#20d4c8' };
-        const triangle = card.querySelector('[style*="border-color"]');
-        if (triangle) triangle.style.borderColor = `${colors[muscle] || '#e8ff47'} transparent transparent transparent`;
       }
     });
     // Update exercise detail overlay title and photo using the proper loader
@@ -4234,10 +4268,11 @@ function confirmNewEx() {
     return;
   }
 
-  // Save photo if one was selected
-  if (window._newExPhoto && name) {
-    localStorage.setItem(`ironlog_ex_photo_${name}`, window._newExPhoto);
-  }
+  // Save photo if one was selected: 21:9 wide as main key (detail view), 1:1 thumb for card header
+  try {
+    if (window._newExPhoto && name)   localStorage.setItem(`ironlog_ex_photo_thumb_${name}`, window._newExPhoto);
+    if (window._newExPhoto32 && name) localStorage.setItem(`ironlog_ex_photo_${name}`, window._newExPhoto32);
+  } catch(e) { showToast('Storage full — photo not saved'); }
 
   // Explore exercise mode: save locally to library, highlight sync button
   if (_wasExploreMode) {
@@ -5901,15 +5936,13 @@ function updateTodayMuscleChips() {
     if (_hasEx) {
       const _mc = {Chest:'#e8ff47',Back:'#7ec8e3',Legs:'#ff8c42',Shoulders:'#a78bfa',Arms:'#34d399',Core:'#f87171',Mix:'#20d4c8'};
       const _ma = {Chest:'Chest',Back:'Back',Legs:'Legs',Shoulders:'Shldr',Arms:'Arms',Core:'Core',Mix:'Mix'};
-      const _bb = `display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:10px;padding:10px 4px;width:72px;flex-shrink:0;font-family:'DM Sans';cursor:pointer;transition:all .15s;`;
+      const _bb = `display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:10px;padding:0 4px;width:72px;height:50px;flex-shrink:0;font-family:'DM Sans';cursor:pointer;transition:all .15s;`;
       const _allActive = !_todayMuscleFilter;
       const _total = _entries.reduce((s,[,c])=>s+c,0);
-      const _allBtn = _entries.length > 1
-        ? `<button onclick="filterTodayByMuscle(null)" style="${_bb}background:${_allActive?'rgba(255,255,255,.2)':'rgba(255,255,255,.08)'};border:1px solid ${_allActive?'#fff':'rgba(255,255,255,.3)'};"><span style="font-size:20px;font-weight:700;color:#fff;line-height:1;">${_total}</span><span style="font-size:13px;font-weight:600;color:${_allActive?'#fff':'rgba(255,255,255,.7)'};letter-spacing:.2px;line-height:1;">All</span></button>`
-        : '';
+      const _allBtn = '';
       const _muscBtns = _entries.map(([m,c])=>{
         const col=_mc[m]||'#888', abbr=_ma[m]||m.slice(0,4), act=_todayMuscleFilter===m;
-        return `<button onclick="filterTodayByMuscle('${m}')" style="${_bb}position:relative;background:${act?col+'33':col+'18'};border:1px solid ${act?col:col+'55'};"><div style="position:absolute;top:0;left:0;width:0;height:0;border-style:solid;border-width:14px 14px 0 0;border-color:${col} transparent transparent transparent;pointer-events:none;"></div><span style="font-size:20px;font-weight:700;color:${col};line-height:1;">${c}</span><span style="font-size:13px;font-weight:600;color:${act?col:col+'cc'};letter-spacing:.2px;line-height:1;white-space:nowrap;">${abbr}</span></button>`;
+        return `<button onclick="filterTodayByMuscle('${m}')" style="${_bb}position:relative;background:${act?col+'33':'rgba(255,255,255,.05)'};border:1px solid ${act?col:'#333'};"><span style="font-size:18px;font-weight:700;color:${act?col:'#555'};line-height:1;">${c}</span><span style="font-size:13px;font-weight:600;color:${act?col:'#444'};letter-spacing:.2px;line-height:1;white-space:nowrap;">${abbr}</span></button>`;
       }).join('');
       _chipsRowHtml = `<div style="display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding-bottom:8px;">${_allBtn}${_muscBtns}</div>`;
     }
@@ -5953,25 +5986,23 @@ function updateTodayMuscleChips() {
 
   // Fixed chips — Hide  only shown when not in new workout creation flow
   const showHideChip = !window._isNewWorkoutFlow;
-  const _btnBase = `display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:10px;padding:16px 4px;width:80px;flex-shrink:0;font-family:'DM Sans';cursor:pointer;transition:all .15s;`;
+  const _btnBase = `display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:10px;padding:0 4px;width:80px;height:50px;flex-shrink:0;font-family:'DM Sans';cursor:pointer;transition:all .15s;`;
 
   // Only Hide button stays fixed/sticky
-  const _hideBtnBase = `display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:10px;padding:16px 10px;width:auto;flex-shrink:0;font-family:'DM Sans';cursor:pointer;transition:all .15s;`;
-  const hideDoneHtml = showHideChip ? `<button onclick="toggleTodayHideDone()" ${!anyDone ? 'disabled' : ''} style="${_hideBtnBase}background:${_todayHideDone ? 'rgba(var(--accent-rgb),.15)' : 'var(--surface2)'};border:1px solid ${_todayHideDone ? 'var(--accent)' : 'var(--border)'};cursor:${anyDone ? 'pointer' : 'default'};"><span style="font-size:14px;font-weight:600;color:${_todayHideDone ? 'var(--accent)' : anyDone ? '#fff' : '#555'};letter-spacing:.2px;line-height:1;white-space:nowrap;">Hide</span><span style="font-size:14px;font-weight:600;color:${_todayHideDone ? 'var(--accent)' : anyDone ? '#fff' : '#555'};letter-spacing:.2px;line-height:1;white-space:nowrap;">Done</span></button>` : '';
+  const _hideBtnBase = `display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:10px;padding:0;width:60px;height:50px;flex-shrink:0;font-family:'DM Sans';cursor:pointer;transition:all .15s;`;
+  const hideDoneHtml = showHideChip ? `<button onclick="toggleTodayHideDone()" ${!anyDone ? 'disabled' : ''} style="${_hideBtnBase}background:${_todayHideDone ? 'rgba(var(--accent-rgb),.15)' : 'var(--surface2)'};border:1px solid ${_todayHideDone ? 'var(--accent)' : 'var(--border)'};cursor:${anyDone ? 'pointer' : 'default'};"><span style="font-size:14px;font-weight:600;color:${_todayHideDone ? 'var(--accent)' : anyDone ? '#fff' : '#555'};letter-spacing:.2px;line-height:1;white-space:nowrap;">${_todayHideDone ? 'Show' : 'Hide'}</span><span style="font-size:14px;font-weight:600;color:${_todayHideDone ? 'var(--accent)' : anyDone ? '#fff' : '#555'};letter-spacing:.2px;line-height:1;white-space:nowrap;">Done</span></button>` : '';
   fixedEl.innerHTML = hideDoneHtml;
 
   // Scrollable: All button + muscle chips
   const _totalDisplay = _todayHideDone
     ? Object.values(remainCounts).reduce((a,b)=>a+b,0)
     : Object.values(counts).reduce((a,b)=>a+b,0);
-  const allChipHtml = entries.length > 1 ? `<button onclick="filterTodayByMuscle(null)" style="${_btnBase}background:${allActive ? 'rgba(255,255,255,.2)' : 'rgba(255,255,255,.08)'};border:1px solid ${allActive ? '#fff' : 'rgba(255,255,255,.3)'};"><span style="font-size:22px;font-weight:700;color:#fff;line-height:1;">${_totalDisplay}</span><span style="font-size:14px;font-weight:600;color:${allActive ? '#fff' : 'rgba(255,255,255,.7)'};letter-spacing:.2px;line-height:1;">All</span></button>` : '';
-
-  scrollEl.innerHTML = allChipHtml + entries.map(([m, c]) => {
+  scrollEl.innerHTML = entries.map(([m, c]) => {
     const color = muscleColors[m] || '#888';
     const _muscleAbbr = MUSCLE_ABBR[m] || m.slice(0,4);
     const active = _todayMuscleFilter === m;
     const displayCount = _todayHideDone ? (remainCounts[m] || 0) : c;
-    return `<button onclick="filterTodayByMuscle('${m}')" style="${_btnBase}position:relative;background:${active ? color+'33' : color+'18'};border:1px solid ${active ? color : color+'55'};"><div style="position:absolute;top:0;left:0;width:0;height:0;border-style:solid;border-width:16px 16px 0 0;border-color:${color} transparent transparent transparent;pointer-events:none;"></div><span style="font-size:22px;font-weight:700;color:${color};line-height:1;">${displayCount}</span><span style="font-size:14px;font-weight:600;color:${active ? color : color+'cc'};letter-spacing:.2px;line-height:1;white-space:nowrap;">${_muscleAbbr}</span></button>`;
+    return `<button onclick="filterTodayByMuscle('${m}')" style="${_btnBase}position:relative;background:${active ? color+'33' : 'rgba(255,255,255,.05)'};border:1px solid ${active ? color : '#333'};"><span style="font-size:18px;font-weight:700;color:${active ? color : '#555'};line-height:1;">${displayCount}</span><span style="font-size:14px;font-weight:600;color:${active ? color : '#444'};letter-spacing:.2px;line-height:1;white-space:nowrap;">${_muscleAbbr}</span></button>`;
   }).join('');
 }
 
@@ -6017,9 +6048,6 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
   const _svgIcon = _svgFallbacks[_exMuscle] || '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/></svg>';
   const _savedPhoto = localStorage.getItem(`ironlog_ex_photo_thumb_${ex.label || ex.name}`) || localStorage.getItem(`ironlog_ex_photo_${ex.label || ex.name}`);
 
-  // 1. Muscle color triangle (top-left corner) — remove bar, add triangle via pseudo or absolute div
-  const muscleBar = document.createElement('div');
-  muscleBar.style.cssText = `position:absolute;top:0;left:0;width:0;height:0;border-style:solid;border-width:10px 10px 0 0;border-color:${muscleColor} transparent transparent transparent;z-index:1;pointer-events:none;`;
   card.style.position = 'relative';
 
   // 2. Photo box
@@ -6029,9 +6057,17 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
   photoBox.style.cssText = 'width:80px;height:80px;flex-shrink:0;margin:8px 0 8px 10px;border:1px solid #1e1e1e;border-radius:8px;overflow:hidden;background:#0d0d0d;display:flex;align-items:center;justify-content:center;cursor:pointer;';
   photoBox.onclick = () => openExDetail(id);
   if (_savedPhoto) {
-    photoBox.innerHTML = `<img src="${_savedPhoto}" style="width:100%;height:100%;object-fit:cover;filter:brightness(0.8);display:block;">`;
+    photoBox.innerHTML = `<img src="${_savedPhoto}" style="width:100%;height:100%;object-fit:cover;display:block;">`;
   } else {
     photoBox.innerHTML = `<div style="color:${muscleColor};opacity:0.4;">${_svgIcon}</div>`;
+    // Fallback: try Firebase Storage
+    if (window._currentUser) {
+      const _exKey = ex.label || ex.name;
+      _loadExPhotoFromCloud(_exKey, true).then(url => {
+        if (!url) return;
+        photoBox.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;display:block;">`;
+      });
+    }
   }
 
   // 3. Right content: name + sets
@@ -6093,7 +6129,6 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
   } else {
     header.append(photoBox, contentArea, noDoneCheck, partialCheck, doneCheck);
   }
-  card.appendChild(muscleBar); // triangle goes on card, not in header flex
 
   // BODY
   const isOpen = card.dataset.open === 'true';
@@ -6258,7 +6293,7 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
   addSetOuter.className = 'add-set-outer' + (isOpen ? ' open' : '');
   addSetOuter.id = `add-set-outer-${id}`;
   addSetOuter.innerHTML = `<button class="btn-add-set" onclick="addSet('${id}');updateVolProgressBar('${id}')" title="Add set">+</button>`;
-  card.append(header, body, completeBar, addSetOuter);
+  card.append(header, body, completeBar, addSetOuter); // muscleBar removed
   document.getElementById('exerciseList').appendChild(card);
   if (window._updateWorkoutProgress) _updateWorkoutProgress();
 
@@ -13276,6 +13311,8 @@ function editWorkoutFromTab(idx) {
   _setWorkoutHeroPhoto(w.name);
   const _ps = document.getElementById('workout-progress-section');
   if (_ps) _ps.style.display = 'none';
+  const _ptw = document.getElementById('workout-top-progress-wrap');
+  if (_ptw) _ptw.style.display = 'none';
   checkFinishReady();
   switchTab('log');
 }
@@ -16174,7 +16211,6 @@ function buildExerciseLibraryHtml(selectedMuscle) {
       : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:${color};opacity:0.5;">${_svgIcon}</div>`;
     const thumbHtml = `<div style="position:relative;width:80px;height:80px;flex-shrink:0;margin:8px 12px 8px 10px;">
       <div style="width:100%;height:100%;border:1px solid #1e1e1e;border-radius:8px;overflow:hidden;background:#0d0d0d;">${_thumbInner}</div>
-      <div class="muscle-triangle" style="position:absolute;top:0;left:0;width:0;height:0;border-style:solid;border-width:10px 10px 0 0;border-color:${color} transparent transparent transparent;pointer-events:none;"></div>
     </div>`;
     const pickerCheck = _pickMode
       ? `<div style="display:flex;align-items:center;padding-right:12px;"><div class="picker-check" style="width:22px;height:22px;border-radius:50%;border:2px solid ${isPickSelected ? pColor : '#333'};background:${isPickSelected ? pColor : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:all .15s;">${isPickSelected ? '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</div></div>`
@@ -18499,7 +18535,7 @@ function deleteCoachWorkout(id) {
       </button>
     </div>
     <div style="position:relative;margin:0 10px;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;">
-      <img id="ex-detail-photo-img" src="" style="width:100%;height:100%;object-fit:cover;display:block;filter:brightness(0.9);">
+      <img id="ex-detail-photo-img" src="" style="width:100%;height:100%;object-fit:cover;display:block;">
     </div>
     <!-- FINISH + elapsed left, exercise name right — below image -->
     <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 10px 4px;gap:8px;">
@@ -18547,6 +18583,10 @@ function deleteCoachWorkout(id) {
   <button id="workout-menu-change-image-btn" onclick="closeWorkoutMenu();_openChangeWorkoutImage()" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
     <span style="width:24px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></span>
     <span style="flex:1;text-align:left;">Change Image</span>
+  </button>
+  <button id="workout-menu-schedule-btn" onclick="closeWorkoutMenu(); const _n=(document.getElementById('workoutName')?.value||document.getElementById('workout-hero-name')?.textContent||'').trim(); const _i=workouts.findIndex(function(w){return w.name===_n;}); if(_i>=0)openWtabCalendarPlan(_i);" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
+    <span style="width:24px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
+    <span style="flex:1;text-align:left;">Schedule in Calendar</span>
   </button>
   <button id="workout-menu-delete-btn" onclick="closeWorkoutMenu();clearSession()" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#ff4747;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
     <span style="width:24px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff4747" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></span>
@@ -18646,7 +18686,16 @@ function deleteCoachWorkout(id) {
   <div style="text-align:center;padding:calc(env(safe-area-inset-top)+12px) 20px 8px;flex-shrink:0;">
     <span style="font-family:'DM Sans';font-size:14px;font-weight:700;color:var(--accent);">Crop Photo</span>
   </div>
-  <!-- Crop area — 3:2 container -->
+  <!-- Previews -->
+  <div id="ex-photo-previews" style="display:flex;gap:12px;padding:12px 20px;flex-shrink:0;">
+    <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
+      <canvas id="ex-photo-preview-32" style="width:100%;aspect-ratio:21/9;border-radius:6px;border:1px solid #2a2a2a;display:block;"></canvas>
+    </div>
+    <div style="width:64px;height:64px;flex-shrink:0;align-self:center;">
+      <canvas id="ex-photo-preview-11" style="width:64px;height:64px;border-radius:6px;border:1px solid #2a2a2a;display:block;"></canvas>
+    </div>
+  </div>
+  <!-- Crop area — 21:9 container -->
   <div id="ex-photo-cropper-wrap" style="position:relative;width:100%;flex-shrink:0;overflow:hidden;background:#111;">
     <canvas id="ex-photo-cropper-canvas" style="touch-action:none;display:block;width:100%;"></canvas>
     <!-- 3:2 crop box outline -->
@@ -18654,26 +18703,17 @@ function deleteCoachWorkout(id) {
     <!-- 1:1 guide inside 3:2 — dashed white, dimmed sides -->
     <div id="ex-photo-crop-dim-left" style="position:absolute;background:rgba(0,0,0,0.45);pointer-events:none;"></div>
     <div id="ex-photo-crop-dim-right" style="position:absolute;background:rgba(0,0,0,0.45);pointer-events:none;"></div>
-    <div id="ex-photo-crop-box-11" style="position:absolute;border:2px dashed rgba(255,255,255,0.75);pointer-events:none;box-sizing:border-box;">
+    <div id="ex-photo-crop-box-11" style="position:absolute;border:2px dashed rgba(255,255,255,0.75);pointer-events:none;box-sizing:border-box;display:none;">
       <!-- Corner marks -->
       <div style="position:absolute;top:-2px;left:-2px;width:14px;height:14px;border-top:3px solid #fff;border-left:3px solid #fff;"></div>
       <div style="position:absolute;top:-2px;right:-2px;width:14px;height:14px;border-top:3px solid #fff;border-right:3px solid #fff;"></div>
       <div style="position:absolute;bottom:-2px;left:-2px;width:14px;height:14px;border-bottom:3px solid #fff;border-left:3px solid #fff;"></div>
       <div style="position:absolute;bottom:-2px;right:-2px;width:14px;height:14px;border-bottom:3px solid #fff;border-right:3px solid #fff;"></div>
     </div>
-    <div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);font-family:'DM Sans';font-size:10px;color:rgba(255,255,255,0.3);white-space:nowrap;pointer-events:none;">Drag to reposition</div>
-  </div>
-  <!-- Previews -->
-  <div id="ex-photo-previews" style="display:flex;gap:12px;padding:12px 20px;flex-shrink:0;">
-    <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
-      <canvas id="ex-photo-preview-32" style="width:100%;aspect-ratio:2/1;border-radius:6px;border:1px solid #2a2a2a;display:block;"></canvas>
-    </div>
-    <div style="width:64px;height:64px;flex-shrink:0;align-self:center;">
-      <canvas id="ex-photo-preview-11" style="width:64px;height:64px;border-radius:6px;border:1px solid #2a2a2a;display:block;"></canvas>
-    </div>
+    <div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);font-family:'DM Sans';font-size:10px;color:rgba(255,255,255,0.3);white-space:nowrap;pointer-events:none;">Slide to position</div>
   </div>
   <!-- Cancel / Save -->
-  <div style="display:flex;gap:8px;padding:0 16px calc(16px + env(safe-area-inset-bottom));flex-shrink:0;">
+  <div style="display:flex;gap:8px;padding:12px 16px calc(12px + env(safe-area-inset-bottom));flex-shrink:0;margin-top:auto;background:#000;border-top:1px solid #1a1a1a;">
     <button onclick="closeExPhotoCropper()" style="flex:1;background:transparent;border:1px solid #333;border-radius:10px;color:#555;font-family:'DM Sans';font-size:18px;font-weight:700;padding:12px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Cancel</button>
     <button onclick="saveExPhotoCrop()" style="flex:2;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:18px;font-weight:900;padding:12px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Save</button>
   </div>
@@ -18762,12 +18802,14 @@ function openWorkoutMenu(e) {
   if (e) e.stopPropagation();
   const isEditMode = window._isNewWorkoutFlow && window._editingWorkoutIdx !== undefined;
   const isNew = !!window._isNewWorkoutFlow;
-  const shareBtn  = document.getElementById('workout-menu-share-btn');
-  const changeBtn = document.getElementById('workout-menu-change-btn');
-  const deleteBtn = document.getElementById('workout-menu-delete-btn');
-  if (shareBtn)  shareBtn.style.display  = isNew ? 'none' : 'flex';
-  if (changeBtn) changeBtn.style.display = (isNew || isEditMode) ? 'none' : 'flex';
-  if (deleteBtn) deleteBtn.style.display = isNew ? 'none' : 'flex';
+  const shareBtn    = document.getElementById('workout-menu-share-btn');
+  const changeBtn   = document.getElementById('workout-menu-change-btn');
+  const scheduleBtn = document.getElementById('workout-menu-schedule-btn');
+  const deleteBtn   = document.getElementById('workout-menu-delete-btn');
+  if (shareBtn)    shareBtn.style.display    = isNew ? 'none' : 'flex';
+  if (changeBtn)   changeBtn.style.display   = (isNew || isEditMode) ? 'none' : 'flex';
+  if (scheduleBtn) scheduleBtn.style.display = isNew ? 'none' : 'flex';
+  if (deleteBtn)   deleteBtn.style.display   = isNew ? 'none' : 'flex';
   document.getElementById('workout-menu-overlay').style.display = 'block';
   document.getElementById('workout-menu-sheet').style.display = 'block';
 }
@@ -19062,7 +19104,7 @@ function _repositionChips(floatBarVisible) {
     if (chipsBlock) chipsBlock.style.height = Math.min(barTop, 120) + 'px';
   } else {
     chips.style.bottom = 'calc(16px + env(safe-area-inset-bottom))';
-    if (chipsBlock) chipsBlock.style.height = 'calc(16px + env(safe-area-inset-bottom))';
+    if (chipsBlock) chipsBlock.style.height = '0';
   }
 }
 function showExFloatBar(cardId) {
@@ -20264,8 +20306,8 @@ function cancelInlineKgEditor() {
   const origDisplay      = window._kgEditorOrigDisplay;
   const origColor        = window._kgEditorOrigColor;
 
-  // Restore BW state from before editor opened, then close
-  if (!window._kgEditorBWMode) _removeBWCell();
+  // Always remove BW cell to reset input visibility before restoring original state
+  _removeBWCell();
   _kgBWMode = false;
   window._kgEditorBWMode = false;
   closeInlineKgEditor();
@@ -20512,63 +20554,72 @@ function _openExPhotoCropper(img) {
 
   overlay.style.display = 'flex';
 
-  // Canvas fills full width, height = width * 2/3 (3:2 ratio)
-  const wrapW = window.innerWidth;
-  const cropW = wrapW;
-  const cropH = Math.round(cropW * 1 / 2); // 4:2 (2:1)
+  // Hide old absolutely-positioned overlay divs — canvas draws everything now
+  ['ex-photo-crop-box-32','ex-photo-crop-box-11','ex-photo-crop-dim-left','ex-photo-crop-dim-right']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
 
-  // Scale image to fill the 3:2 area (cover)
-  const scaleX = cropW / img.width;
-  const scaleY = cropH / img.height;
-  const scale = Math.max(scaleX, scaleY);
-  const dispW = Math.round(img.width * scale);
-  const dispH = Math.round(img.height * scale);
+  const screenW = Math.min(window.innerWidth, 430);
+  // Available height: screen minus title + previews + buttons + padding
+  const availH = window.innerHeight - 260;
+
+  // Scale to fit screen width; cap height at availH
+  let scale = screenW / img.naturalWidth;
+  let dispW = screenW;
+  let dispH = Math.round(img.naturalHeight * scale);
+  if (dispH > availH) {
+    scale = availH / img.naturalHeight;
+    dispH = availH;
+    dispW = Math.round(img.naturalWidth * scale);
+  }
+
+  // Crop frame spans the full displayed image width — cropX is always 0
+  const cropFrameW = dispW;
+  const cropFrameH = Math.round(cropFrameW * 9 / 21);
+
+  // Ensure image is tall enough for at least one crop frame
+  if (dispH < cropFrameH) {
+    scale = cropFrameH / img.naturalHeight;
+    dispH = cropFrameH;
+    dispW = Math.round(img.naturalWidth * scale);
+  }
 
   canvas.width = dispW;
   canvas.height = dispH;
-  canvas.style.width = dispW + 'px';
-  canvas.style.height = dispH + 'px';
-  canvas.style.position = 'absolute';
-  wrap.style.height = cropH + 'px';
+  canvas.style.cssText = `display:block;touch-action:none;width:${dispW}px;height:${dispH}px;position:relative;left:0;top:0;`;
+  wrap.style.height = dispH + 'px';
+  wrap.style.display = 'flex';
+  wrap.style.justifyContent = 'center';
 
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(img, 0, 0, dispW, dispH);
-
-  // Initial pan: center image in 3:2 crop area
-  const initPanX = Math.round((cropW - dispW) / 2);
-  const initPanY = Math.round((cropH - dispH) / 2);
+  // Crop frame starts centered vertically; cropX is always 0
+  const initCropX = 0;
+  const initCropY = Math.round((dispH - cropFrameH) / 2);
 
   _exPhotoCropState = {
-    panX: initPanX, panY: initPanY,
-    cropW, cropH,
+    cropX: initCropX, cropY: initCropY,
+    cropW: cropFrameW, cropH: cropFrameH,
     dispW, dispH, scale, img,
-    dragging: false, startX: 0, startY: 0, startPanX: 0, startPanY: 0
+    dragging: false, startX: 0, startY: 0, startCropX: 0, startCropY: 0
   };
 
-  _applyCropPan();
-  _updateDualCropUI();
+  _renderCropFrame();
   _updatePreviews();
 
-  // Drag handlers
   const onStart = (e) => {
     e.preventDefault();
     const pt = e.touches ? e.touches[0] : e;
     const s = _exPhotoCropState;
     s.dragging = true;
     s.startX = pt.clientX; s.startY = pt.clientY;
-    s.startPanX = s.panX; s.startPanY = s.panY;
+    s.startCropX = s.cropX; s.startCropY = s.cropY;
   };
   const onMove = (e) => {
     e.preventDefault();
     const s = _exPhotoCropState;
     if (!s.dragging) return;
     const pt = e.touches ? e.touches[0] : e;
-    const dx = pt.clientX - s.startX;
     const dy = pt.clientY - s.startY;
-    // Clamp so image always covers crop area
-    s.panX = Math.min(0, Math.max(s.cropW - s.dispW, s.startPanX + dx));
-    s.panY = Math.min(0, Math.max(s.cropH - s.dispH, s.startPanY + dy));
-    _applyCropPan();
+    s.cropY = Math.min(s.dispH - s.cropH, Math.max(0, s.startCropY + dy));
+    _renderCropFrame();
     _updatePreviews();
   };
   const onEnd = () => { _exPhotoCropState.dragging = false; };
@@ -20588,57 +20639,45 @@ function _openExPhotoCropper(img) {
   wrap.addEventListener('mouseup', onEnd);
 }
 
-function _applyCropPan() {
+function _renderCropFrame() {
   const s = _exPhotoCropState;
   const canvas = document.getElementById('ex-photo-cropper-canvas');
-  if (canvas) {
-    canvas.style.left = s.panX + 'px';
-    canvas.style.top = s.panY + 'px';
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(s.img, 0, 0, s.dispW, s.dispH);
+  // Dim areas above and below crop frame
+  ctx.fillStyle = 'rgba(0,0,0,0.62)';
+  if (s.cropY > 0) ctx.fillRect(0, 0, s.dispW, s.cropY);
+  if (s.cropY + s.cropH < s.dispH) ctx.fillRect(0, s.cropY + s.cropH, s.dispW, s.dispH - s.cropY - s.cropH);
+  // Crop frame border
+  ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(s.cropX + 1, s.cropY + 1, s.cropW - 2, s.cropH - 2);
+  // Rule-of-thirds horizontal lines inside frame
+  ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+  ctx.lineWidth = 1;
+  for (let i = 1; i <= 2; i++) {
+    const y = s.cropY + Math.round(s.cropH * i / 3);
+    ctx.beginPath(); ctx.moveTo(s.cropX, y); ctx.lineTo(s.cropX + s.cropW, y); ctx.stroke();
   }
-}
-
-function _updateDualCropUI() {
-  const s = _exPhotoCropState;
-  // 3:2 box covers entire wrap
-  const box32 = document.getElementById('ex-photo-crop-box-32');
-  if (box32) {
-    box32.style.left = '0'; box32.style.top = '0';
-    box32.style.width = s.cropW + 'px';
-    box32.style.height = s.cropH + 'px';
-  }
-  // 1:1 box centered in 3:2 — square with side = cropH
-  const sq = s.cropH; // 1:1 size
-  const sqX = Math.round((s.cropW - sq) / 2);
-  const sqY = 0;
-  const box11 = document.getElementById('ex-photo-crop-box-11');
-  if (box11) {
-    box11.style.left = sqX + 'px'; box11.style.top = sqY + 'px';
-    box11.style.width = sq + 'px'; box11.style.height = sq + 'px';
-  }
-  // Dim strips left and right of 1:1 box
-  const dimL = document.getElementById('ex-photo-crop-dim-left');
-  const dimR = document.getElementById('ex-photo-crop-dim-right');
-  if (dimL) { dimL.style.left = '0'; dimL.style.top = '0'; dimL.style.width = sqX + 'px'; dimL.style.height = s.cropH + 'px'; }
-  if (dimR) { dimR.style.left = (sqX + sq) + 'px'; dimR.style.top = '0'; dimR.style.width = (s.cropW - sqX - sq) + 'px'; dimR.style.height = s.cropH + 'px'; }
 }
 
 function _updatePreviews() {
   const s = _exPhotoCropState;
   if (!s.img) return;
-  // 3:2 preview
   const p32 = document.getElementById('ex-photo-preview-32');
   const p11 = document.getElementById('ex-photo-preview-11');
   if (!p32 || !p11) return;
-  // Source coords in original image
-  const srcX = -s.panX / s.scale;
-  const srcY = -s.panY / s.scale;
+  const srcX = s.cropX / s.scale;
+  const srcY = s.cropY / s.scale;
   const srcW = s.cropW / s.scale;
   const srcH = s.cropH / s.scale;
-  // 3:2 preview
-  p32.width = 180; p32.height = 90;
-  p32.getContext('2d').drawImage(s.img, srcX, srcY, srcW, srcH, 0, 0, 180, 90);
-  // 1:1 preview — center square of 3:2
-  const sqSrcW = srcH; // square side in source
+  // 21:9 preview
+  p32.width = 180; p32.height = Math.round(180 * 9 / 21);
+  p32.getContext('2d').drawImage(s.img, srcX, srcY, srcW, srcH, 0, 0, p32.width, p32.height);
+  // 1:1 preview — center square of crop
+  const sqSrcW = srcH;
   const sqSrcX = srcX + (srcW - sqSrcW) / 2;
   p11.width = 64; p11.height = 64;
   p11.getContext('2d').drawImage(s.img, sqSrcX, srcY, sqSrcW, srcH, 0, 0, 64, 64);
@@ -20654,27 +20693,27 @@ function saveExPhotoCrop() {
   const img = s.img || _exPhotoRawImg;
   if (!img) return;
 
-  // Source coords in original image for 3:2
-  const srcX = -s.panX / s.scale;
-  const srcY = -s.panY / s.scale;
+  // Source coords in original image for 21:9
+  const srcX = s.cropX / s.scale;
+  const srcY = s.cropY / s.scale;
   const srcW = s.cropW / s.scale;
   const srcH = s.cropH / s.scale;
 
   // 3:2 image at 300x200
   const out32 = document.createElement('canvas');
-  out32.width = 400; out32.height = 200;
+  out32.width = 420; out32.height = 180;
   out32.getContext('2d').drawImage(img, srcX, srcY, srcW, srcH, 0, 0, 400, 200);
-  let url32 = out32.toDataURL('image/webp', 0.88);
-  if (!url32.startsWith('data:image/webp')) url32 = out32.toDataURL('image/jpeg', 0.88);
+  let url32 = out32.toDataURL('image/webp', 0.85);
+  if (!url32.startsWith('data:image/webp')) url32 = out32.toDataURL('image/jpeg', 0.85);
 
-  // 1:1 image at 200x200 (center square of 3:2)
+  // 1:1 image at 200x200 (center square of crop)
   const sqSrcW = srcH;
   const sqSrcX = srcX + (srcW - sqSrcW) / 2;
   const out11 = document.createElement('canvas');
   out11.width = 200; out11.height = 200;
   out11.getContext('2d').drawImage(img, sqSrcX, srcY, sqSrcW, srcH, 0, 0, 200, 200);
-  let url11 = out11.toDataURL('image/webp', 0.88);
-  if (!url11.startsWith('data:image/webp')) url11 = out11.toDataURL('image/jpeg', 0.88);
+  let url11 = out11.toDataURL('image/webp', 0.85);
+  if (!url11.startsWith('data:image/webp')) url11 = out11.toDataURL('image/jpeg', 0.85);
 
   if (window._newExPhotoMode) {
     window._newExPhoto = url11;
@@ -20692,8 +20731,10 @@ function saveExPhotoCrop() {
 
   const exName = document.getElementById('ex-detail-overlay-title')?.textContent || '';
   if (exName) {
-    localStorage.setItem(`ironlog_ex_photo_${exName}`, url32);       // 3:2 for detail view
-    localStorage.setItem(`ironlog_ex_photo_thumb_${exName}`, url11); // 1:1 for list thumb
+    try {
+      localStorage.setItem(`ironlog_ex_photo_${exName}`, url32);
+      localStorage.setItem(`ironlog_ex_photo_thumb_${exName}`, url11);
+    } catch(e) { showToast('Storage full — photo not saved'); }
   }
 
   // Show 3:2 in overlay header — remove placeholder if present
@@ -20748,11 +20789,10 @@ function _loadExDetailPhoto(exName) {
     wrap.style.display = 'block';
     if (noPhotoWrap) noPhotoWrap.style.display = 'none';
   } else {
-    // Show black background with camera icon instead of no-photo header
+    // Show black background with camera icon — then try Firebase Storage as fallback
     imgEl.src = '';
     wrap.style.display = 'block';
     if (noPhotoWrap) noPhotoWrap.style.display = 'none';
-    // Replace img with black bg + camera icon
     const existingBg = wrap.querySelector('.ex-detail-no-img-bg');
     if (!existingBg) {
       const bg = document.createElement('div');
@@ -20762,6 +20802,15 @@ function _loadExDetailPhoto(exName) {
       bg.innerHTML = `<div style="width:80px;height:80px;border-radius:50%;border:1.5px solid #aaa;display:flex;align-items:center;justify-content:center;"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>`;
       imgEl.style.display = 'none';
       wrap.insertBefore(bg, imgEl);
+    }
+    // Fallback: try Firebase Storage
+    if (exName && window._currentUser) {
+      _loadExPhotoFromCloud(exName, false).then(url => {
+        if (!url) return;
+        wrap.querySelector('.ex-detail-no-img-bg')?.remove();
+        imgEl.style.display = 'block';
+        imgEl.src = url;
+      });
     }
   }
 }
