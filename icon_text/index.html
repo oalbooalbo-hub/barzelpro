@@ -120,6 +120,8 @@ body.desktop-mode .pages-wrap {
 .empty-state{text-align:center;padding:60px 20px;color:var(--muted);}
 .workouts-flow-card .set-rm-label,.workouts-flow-card th[data-col=stat]{color:transparent!important;}
 .workouts-flow-card .set-done-btn{opacity:0!important;pointer-events:none!important;}
+.kg-editor-active .set-done-btn{opacity:0!important;pointer-events:none!important;}
+.kg-editor-active .set-num{pointer-events:none!important;cursor:default!important;}
 .workouts-flow-card .btn-done,.workouts-flow-card .cancel-done-btn,.workouts-flow-card .btn-timer,.workouts-flow-card .timer-panel{display:none!important;}
 .workouts-flow-card .workouts-flow-only{display:inline-flex!important;}
 .empty-state .big{font-family:'Bebas Neue';font-size:48px;color:var(--surface2);display:block;}
@@ -437,7 +439,7 @@ body.ex-tab-detail-open #ex-float-bar{display:none !important;}
 
 /* ── ADD EXERCISE BUTTONS ──────────────────────── */
 .add-ex-row{display:flex;gap:8px;margin-bottom:10px;}
-.btn-add-exercise{flex:1;background:var(--surface);border:1px dashed var(--border);border-radius:var(--radius);color:var(--muted);font-family:'DM Sans';font-size:14px;font-weight:600;padding:14px;cursor:pointer;transition:color .2s,border-color .2s;text-align:center;}
+.btn-add-exercise{flex:1;background:var(--surface);border:1px dashed var(--border);border-radius:var(--radius);color:var(--muted);font-family:'DM Sans';font-size:14px;font-weight:600;padding:19px 14px;cursor:pointer;transition:color .2s,border-color .2s;text-align:center;}
 .btn-add-exercise:hover{border-color:var(--accent);color:var(--accent);}
 .btn-add-exercise.new-workout{color:#ff9500;}
 #exerciseList:empty + .add-ex-row{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:calc(min(430px,100vw) - 32px);margin-bottom:0;z-index:10;}
@@ -974,7 +976,16 @@ onAuthStateChanged(auth, async (user) => {
     }
 
     hidAuthScreen();
-    if (typeof window._onAuthReady === 'function') window._onAuthReady(window._currentUser);
+    if (typeof window._onAuthReady === 'function' && window._LS) {
+      window._onAuthReady(window._currentUser);
+    } else {
+      const _authRetry = setInterval(() => {
+        if (typeof window._onAuthReady === 'function' && window._LS) {
+          clearInterval(_authRetry);
+          window._onAuthReady(window._currentUser);
+        }
+      }, 50);
+    }
   } else {
     // ── Offline check — allow entry with cached session ──
     // Do NOT depend on BarzelpNet here (ES module loads async).
@@ -993,7 +1004,16 @@ onAuthStateChanged(auth, async (user) => {
           };
           window._currentUserData = session.userData || {};
           hidAuthScreen();
-          if (typeof window._onAuthReady === 'function') window._onAuthReady(window._currentUser);
+          if (typeof window._onAuthReady === 'function' && window._LS) {
+            window._onAuthReady(window._currentUser);
+          } else {
+            const _authRetry2 = setInterval(() => {
+              if (typeof window._onAuthReady === 'function' && window._LS) {
+                clearInterval(_authRetry2);
+                window._onAuthReady(window._currentUser);
+              }
+            }, 50);
+          }
           return;
         }
       } catch (e) {
@@ -1270,6 +1290,7 @@ function hidAuthScreen() {
       <button class="btn-load-history" onclick="window._loadFromToday=true;switchTab('workouts2')" style="display:none;"></button>
     </div>
     <div id="today-chips-block"></div>
+    <div id="nwf-bottom-bar" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:var(--bg,#0a0a0a);border-top:1px solid var(--border,#1e1e1e);z-index:20;box-sizing:border-box;"></div>
     <div id="ex-nav-slider">
       <div id="ex-nav-list">
         <div id="exerciseList"></div>
@@ -1622,11 +1643,11 @@ function hidAuthScreen() {
 <div class="modal-overlay" id="newExModalOverlay" style="align-items:stretch;padding:8px;" onclick="if(event.target===this){window._exploreExerciseMode=false;closeNewExModal()}">
   <div class="modal-sheet" style="padding:0;border-radius:16px;border:1px solid var(--border);width:100%;max-width:calc(100vw - 16px);box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column;max-height:calc(100vh - 16px);">
     <!-- Header -->
-    <div style="display:flex;align-items:center;gap:10px;padding:18px 16px 14px;">
-      <button onclick="window._exploreExerciseMode=false;if(window._editExName){window._editExName=null;const t=document.getElementById('newExModalTitle');const s=document.getElementById('newExSaveBtn');if(t)t.textContent='New Exercise';if(s)s.textContent='SAVE EXERCISE';document.getElementById('newExModalOverlay').classList.remove('open');}else{closeNewExModal();}" style="background:transparent;border:none;color:#fff;cursor:pointer;display:flex;align-items:center;padding:0;flex-shrink:0;-webkit-tap-highlight-color:transparent;">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><line x1="19" y1="12" x2="5" y2="12" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><polyline points="11,6 5,12 11,18" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 16px 14px;">
       <span id="newExModalTitle" style="font-family:'DM Sans';font-size:18px;font-weight:900;color:var(--text);">New Exercise</span>
+      <button onclick="window._exploreExerciseMode=false;if(window._editExName){window._editExName=null;const t=document.getElementById('newExModalTitle');const s=document.getElementById('newExSaveBtn');if(t)t.textContent='New Exercise';if(s)s.textContent='SAVE EXERCISE';document.getElementById('newExModalOverlay').classList.remove('open');}else{closeNewExModal();}" style="background:transparent;border:none;cursor:pointer;display:flex;align-items:center;padding:0;flex-shrink:0;-webkit-tap-highlight-color:transparent;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><line x1="5" y1="12" x2="19" y2="12" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><polyline points="13,6 19,12 13,18" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
     </div>
     <div style="padding:0 16px calc(80px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:16px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;">
       <!-- Photo box -->
@@ -1645,8 +1666,8 @@ function hidAuthScreen() {
         <div style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#fff;letter-spacing:.5px;margin-bottom:10px;">PRIMARY BODY PART</div>
         <div id="newExMusclePills" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;"></div>
         <!-- Body SVG diagram -->
-        <div id="nex-body-container" style="display:flex;gap:18px;width:100%;box-sizing:border-box;margin-top:-26px;transform:scale(0.95) translateZ(0);transform-origin:top center;pointer-events:none;backface-visibility:hidden;"></div>
-        <div style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#fff;letter-spacing:.5px;margin-top:-14px;margin-bottom:6px;">MUSCLES</div>
+        <div id="nex-body-container" style="display:flex;gap:18px;width:100%;box-sizing:border-box;margin-top:-26px;transform:scale(0.770) translateZ(0);transform-origin:top center;pointer-events:none;backface-visibility:hidden;"></div>
+        <div style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#fff;letter-spacing:.5px;margin-top:-77px;margin-bottom:6px;">MUSCLES</div>
         <!-- Muscle slider -->
         <div id="nex-slider-wrap" style="display:none;margin-top:-4px;">
           <div id="nex-slider-label-row" style="width:60%;margin:0 auto;">
@@ -1664,6 +1685,14 @@ function hidAuthScreen() {
               <input type="range" id="nex-muscle-slider" min="0" max="0" step="1" value="0" oninput="_nExSliderChange(this.value)" style="width:100%;accent-color:var(--accent);cursor:pointer;">
               <div id="nex-slider-dots" style="position:absolute;left:10px;right:10px;top:50%;transform:translateY(-50%);display:flex;justify-content:space-between;pointer-events:none;"></div>
             </div>
+          </div>
+        </div>
+        <!-- Video URL -->
+        <div style="margin-top:16px;">
+          <div style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#fff;letter-spacing:.5px;margin-bottom:8px;">VIDIO (optional)</div>
+          <div style="position:relative;display:flex;align-items:center;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:12px;pointer-events:none;flex-shrink:0;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            <input id="newExVideoUrl" type="url" autocomplete="off" inputmode="url" style="width:100%;background:#1a1a1a;border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans';font-size:14px;font-weight:500;padding:12px 12px 12px 34px;box-sizing:border-box;outline:none;" placeholder="Paste YouTube or video URL" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"/>
           </div>
         </div>
       </div>
@@ -1990,6 +2019,29 @@ window.BarzelpNet = {
   },
   isOnline: () => navigator.onLine
 };
+
+// ── Migrate photo keys from localStorage → localForage and free space ────
+function _migratePhotosToIDB() {
+  if (!window.localforage) return;
+  const photoKeys = Object.keys(localStorage).filter(k =>
+    k.startsWith('ironlog_ex_photo_') || k.startsWith('ironlog_workout_photo_')
+  );
+  photoKeys.forEach(k => {
+    const val = localStorage.getItem(k);
+    if (!val) return;
+    window.localforage.setItem(k, val).then(() => {
+      localStorage.removeItem(k);
+    }).catch(() => {
+      // localForage failed — just remove from localStorage to free space
+      localStorage.removeItem(k);
+    });
+  });
+}
+// Run once on load; flag so it only runs once per session
+if (!sessionStorage.getItem('_photosIDBMigrated')) {
+  sessionStorage.setItem('_photosIDBMigrated', '1');
+  setTimeout(_migratePhotosToIDB, 1000);
+}
 
 // ── Migration: copy localStorage → IndexedDB once ─────
 async function _migrateToIDB() {
@@ -2957,7 +3009,7 @@ function _setWorkoutHeroPhoto(name) {
     el.style.display = 'block';
     const ps = document.getElementById('workout-progress-section');
     if (ps && !window._isNewWorkoutFlow) { ps.style.display = 'block'; const _tw=document.getElementById('workout-top-progress-wrap');if(_tw)_tw.style.display='block'; _updateWorkoutProgress(); }
-    el.innerHTML = `<div id="workout-above-elapsed" style="display:none;align-items:center;gap:5px;padding:0 16px 8px;justify-content:center;position:relative;">
+    el.innerHTML = `${!window._isNewWorkoutFlow ? `<div id="workout-above-elapsed" style="display:none;align-items:center;gap:5px;padding:0 16px 8px;justify-content:center;position:relative;">
       <button onclick="openWorkoutMenu(event)" style="position:absolute;left:16px;background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="#888"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
       </button>
@@ -2967,7 +3019,7 @@ function _setWorkoutHeroPhoto(name) {
       <button id="workout-hero-close-btn" onclick="if(typeof clearSession==='function')clearSession()" style="position:absolute;right:16px;background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
-    </div>
+    </div>` : ''}
     <div style="position:relative;margin:0 10px;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;">
       <img src="${photo}" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;filter:brightness(0.85);">
     </div>
@@ -2981,15 +3033,7 @@ function _setWorkoutHeroPhoto(name) {
   } else if (window._isNewWorkoutFlow && name) {
     // New workout with no photo — black placeholder matching hero geometry
     el.style.display = 'block';
-    el.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;padding:0 16px 8px;">
-      <button onclick="openWorkoutMenu(event)" style="background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="#888"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
-      </button>
-      <button id="workout-hero-close-btn" onclick="if(typeof clearSession==='function')clearSession()" style="background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-    </div>
-    <div style="position:relative;margin:0 10px;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;background:#000;">
+    el.innerHTML = `<div style="position:relative;margin:0 10px;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;background:#000;">
     </div>
     <div style="display:flex;align-items:center;justify-content:flex-end;padding:10px 10px 4px;">
       <div id="workout-hero-name" style="font-family:'DM Sans';font-size:22px;font-weight:900;color:var(--text);text-align:right;word-break:break-word;">${name}</div>
@@ -3028,9 +3072,11 @@ function _updateWorkoutProgress() {
     const prevVol = parseInt(prevSpans[1]?.dataset.count || '0');
     const prevVl  = parseInt(prevSpans[2]?.dataset.count || '0');
     const star = (color, n, idx) => {
-      const f = n > 0 ? color : '#333';
+      const f   = n > 0 ? color : '#333';
+      const lc  = n > 0 ? color : '#444';
       const num = n > 0 ? `<span style="position:absolute;font-size:14px;font-weight:900;color:#000;line-height:1;">${n}</span>` : '';
-      return `<span data-pr="${idx}" data-count="${n}" style="position:relative;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;"><svg width="32" height="32" viewBox="0 0 24 24" fill="${f}"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>${num}</span>`;
+      const lbl = ['MAX','1RM','VOL'][idx] || '';
+      return `<span data-pr="${idx}" data-count="${n}" style="display:inline-flex;flex-direction:column;align-items:center;gap:2px;"><span style="position:relative;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;"><svg width="32" height="32" viewBox="0 0 24 24" fill="${f}"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>${num}</span><span style="font-size:8px;font-weight:700;color:${lc};letter-spacing:.5px;line-height:1;">${lbl}</span></span>`;
     };
     prStars.innerHTML = star('#e8ff47', weightPRs, 0) + star('#ff8c42', volPRs, 1) + star('#a78bfa', volumePRs, 2);
     const newSpans = prStars.querySelectorAll('span[data-pr]');
@@ -3272,7 +3318,11 @@ function clearSession() {
 
 function save() { _LS.set('ironlog_workouts', JSON.stringify(workouts)); _invalidateExCache(); }
 function saveDeleted() { _LS.set('ironlog_deleted_workouts', JSON.stringify(deletedWorkouts)); }
-function saveCustom() { _LS.set('ironlog_custom_ex', JSON.stringify(customExercises)); if(window._currentUser) if(window.syncToFirestore) window.syncToFirestore(); }
+function saveCustom() {
+  try { _LS.set('ironlog_custom_ex', JSON.stringify(customExercises)); }
+  catch(e) { _migratePhotosToIDB(); try { _LS.set('ironlog_custom_ex', JSON.stringify(customExercises)); } catch(_) {} }
+  if(window._currentUser) if(window.syncToFirestore) window.syncToFirestore();
+}
 function showToast(msg, opts) { /* toasts disabled */ }
 function fmt(ts) { return new Date(ts).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}); }
 function fmtShort(ts) { return new Date(ts).toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
@@ -3311,6 +3361,11 @@ function makeThumb(ex) {
 // ══════════════════════════════════════════════════════
 let _exTabView = 'all'; // 'all' | 'custom' | 'coach'
 let _wTabView = 'created'; // 'created' or 'library'
+
+// ── Exercise dumbbell icon — used as placeholder when no photo is set ───────
+function _exSvgIcon(muscle, size) {
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="6.5" y1="6" x2="6.5" y2="18"/><line x1="17.5" y1="6" x2="17.5" y2="18"/><line x1="3.5" y1="9" x2="3.5" y2="15"/><line x1="20.5" y1="9" x2="20.5" y2="15"/><line x1="6.5" y1="12" x2="17.5" y2="12"/></svg>`;
+}
 
 function renderExercisesTab() {
   const el = document.getElementById('exercisesTabContent');
@@ -3422,13 +3477,33 @@ function renderExercisesTab() {
   function _makeExThumbHtml(name, muscle) {
     const mc = MUSCLE_COLORS[muscle] || '#888';
     const photo = localStorage.getItem(`ironlog_ex_photo_thumb_${name}`) || localStorage.getItem(`ironlog_ex_photo_${name}`);
-    const icon = _svgFallbacks[muscle] || _defaultSvgIcon;
     const inner = photo
-      ? `<img src="${photo}" style="width:100%;height:100%;object-fit:cover;filter:brightness(0.8);display:block;">`
-      : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:${mc};opacity:0.5;">${icon}</div>`;
+      ? `<img src="${photo}" style="width:100%;height:100%;object-fit:cover;display:block;">`
+      : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:${mc};">${_exSvgIcon(muscle, 36)}</div>`;
+    const safeKey = name.replace(/"/g, '&quot;');
+    const noPhotoAttr = photo ? '' : ` data-photo-key="ironlog_ex_photo_${safeKey}"`;
+    const _vUrl = customExercises.find(e => e.name === name)?.videoUrl || '';
+    const _playBadge = _vUrl
+      ? `<div onclick="event.stopPropagation();window.open(${JSON.stringify(_vUrl)},'_blank')" style="position:absolute;bottom:4px;left:4px;display:flex;align-items:center;gap:3px;background:rgba(0,0,0,.72);border-radius:4px;padding:2px 6px;cursor:pointer;z-index:2;-webkit-tap-highlight-color:transparent;"><svg width="7" height="7" viewBox="0 0 24 24" fill="#e8ff47"><polygon points="5 3 19 12 5 21 5 3"/></svg><span style="font-family:'DM Sans';font-size:8px;font-weight:700;color:#e8ff47;letter-spacing:.3px;">PLAY</span></div>`
+      : '';
     return `<div style="position:relative;width:80px;height:80px;flex-shrink:0;margin:8px 12px 8px 10px;">
-      <div style="width:100%;height:100%;border:1px solid #1e1e1e;border-radius:8px;overflow:hidden;background:#0d0d0d;">${inner}</div>
+      <div${noPhotoAttr} style="width:100%;height:100%;border:1px solid #1e1e1e;border-radius:8px;overflow:hidden;background:#0d0d0d;">${inner}</div>
+      ${_playBadge}
     </div>`;
+  }
+
+  function _updateExTabThumbs() {
+    if (!window.localforage) return;
+    document.querySelectorAll('#exercisesTabContent [data-photo-key]').forEach(el => {
+      const key = el.getAttribute('data-photo-key');
+      if (!key) return;
+      window.localforage.getItem(key).then(p => {
+        if (p) {
+          el.removeAttribute('data-photo-key');
+          el.innerHTML = `<img src="${p}" style="width:100%;height:100%;object-fit:cover;display:block;">`;
+        }
+      });
+    });
   }
 
   // Build exercise list for selected muscle (Favorites view)
@@ -3459,7 +3534,7 @@ function renderExercisesTab() {
         ${_makeExThumbHtml(ex.name, ex.muscle)}
         <!-- Name + stats -->
         <div ${_pickMode ? `onclick="pickExercise('${ex.name.replace(/'/g,"\\'")}') "` : ''} style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;align-items:flex-end;padding:8px 15px 8px 0;${_pickMode ? 'cursor:pointer;' : ''}">
-          <div style="font-family:'DM Sans';font-size:15px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;">${ex.name}</div>
+          <div style="font-family:'DM Sans';font-size:17px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;">${ex.name}</div>
           ${ex.lastDate ? `<div style="font-family:'DM Sans';font-size:11px;font-weight:600;color:var(--muted);margin-top:2px;text-align:right;">${fmtShort(ex.lastDate)}</div>` : ''}
         </div>
         <!-- Stats + menu -->
@@ -3511,7 +3586,7 @@ function renderExercisesTab() {
           <div onclick="${_pickMode ? '' : `openExtabExOverlay('${ex.name.replace(/'/g,"\\'")}') `}" style="display:flex;align-items:stretch;border-bottom:1px solid var(--border);${_pickMode ? '' : 'cursor:pointer;'}">
             ${_makeExThumbHtml(ex.name, ex.muscle)}
             <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;align-items:flex-end;padding:8px 15px 8px 0;">
-              <div style="font-family:'DM Sans';font-size:15px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;">${ex.name}</div>
+              <div style="font-family:'DM Sans';font-size:17px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;">${ex.name}</div>
               ${_lcd ? `<div style="font-family:'DM Sans';font-size:11px;font-weight:600;color:var(--muted);margin-top:2px;text-align:right;">${fmtShort(_lcd)}</div>` : ''}
             </div>
             ${_pickMode ? `<div style="display:flex;align-items:center;padding-right:10px;"><div class="picker-check" style="width:22px;height:22px;border-radius:50%;border:2px solid ${_isPickSel ? _pc : '#333'};background:${_isPickSel ? _pc : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;">${_isPickSel ? '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</div></div>` : ''}
@@ -3535,7 +3610,7 @@ function renderExercisesTab() {
       <div onclick="${_pickMode ? '' : `openExtabExOverlay('${ex.name.replace(/'/g,"\\'")}') `}" style="display:flex;align-items:stretch;border-bottom:1px solid var(--border);${_pickMode ? '' : 'cursor:pointer;'}">
         ${_makeExThumbHtml(ex.name, ex.muscle)}
         <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;align-items:flex-end;padding:8px 15px 8px 0;">
-          <div style="font-family:'DM Sans';font-size:15px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;">${ex.name}</div>
+          <div style="font-family:'DM Sans';font-size:17px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;">${ex.name}</div>
           ${ex.lastDate ? `<div style="font-family:'DM Sans';font-size:11px;font-weight:600;color:var(--muted);margin-top:2px;text-align:right;">${fmtShort(ex.lastDate)}</div>` : ''}
         </div>
         ${_pickMode ? `<div style="display:flex;align-items:center;padding-right:10px;"><div class="picker-check" style="width:22px;height:22px;border-radius:50%;border:2px solid ${_isPickSel ? _pc : '#333'};background:${_isPickSel ? _pc : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;">${_isPickSel ? '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</div></div>` : ''}
@@ -3654,6 +3729,7 @@ function renderExercisesTab() {
       <button onclick="openAddExploreExercise('${selected}')" style="flex:1;background:transparent;border:1px dashed #34d399;border-radius:10px;color:#34d399;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;">+ Add to Explore</button>
     </div>` : '';
     el.innerHTML = (_exTabView === 'all' ? _pc + _exAllListHtml : _exTabView === 'created' ? searchHtml + _pc + listBox + (_pickMode ? '' : addBtnHtml) : _exTabView === 'custom' ? _pc + _exCustomListHtml : _exTabView === 'coach' ? buildCoachExercisesHtml() : _pc + (_pickMode ? `<div id="pickModeListBox" style="border:1px solid var(--border);border-radius:12px;padding:6px 0;">` + _exLibListHtml.replace(/<button[^>]*Add to Library[^<]*<\/button>/g,'') + `</div>` : _exLibListHtml + _exLibAddBtns));
+    _updateExTabThumbs();
   }
 
   // Cards always start collapsed (minimized view by default)
@@ -3737,6 +3813,7 @@ function deleteExTabExercise(name) {
     if (ci >= 0) { customExercises.splice(ci, 1); localStorage.setItem('ironlog_custom_ex', JSON.stringify(customExercises)); }
     const hidden = JSON.parse(_LS.get('ironlog_hidden_ex') || '[]');
     if (!hidden.includes(name)) { hidden.push(name); _LS.set('ironlog_hidden_ex', JSON.stringify(hidden)); }
+    _invalidateExCache();
     renderExercisesTab();
   };
 }
@@ -4199,11 +4276,14 @@ function closeNewExModal() {
   window._newExPhotoMode = false;
   window._newExPhoto = null;
   window._newExCompoundMuscles = [];
+  const _vInp = document.getElementById('newExVideoUrl');
+  if (_vInp) _vInp.value = '';
 }
 function confirmNewEx() {
   const name = document.getElementById('newExInput').value.trim();
   if (!name) { showToast('Enter an exercise name'); return; }
   const muscle = window._newExMuscle || 'Chest';
+  const videoUrl = (document.getElementById('newExVideoUrl')?.value || '').trim();
   const compoundMuscles = window._newExCompoundMuscles || [];
   const subMuscles = (window._newExSelectedSubMuscles && window._newExSelectedSubMuscles.length > 0)
     ? window._newExSelectedSubMuscles
@@ -4214,11 +4294,11 @@ function confirmNewEx() {
   if (window._editExName) {
     const oldName = window._editExName;
     window._editExName = null;
-    // Save photo: 21:9 wide as main key (detail view), 1:1 thumb for card header
-    try {
-      if (window._newExPhoto)   localStorage.setItem(`ironlog_ex_photo_thumb_${name}`, window._newExPhoto);
-      if (window._newExPhoto32) localStorage.setItem(`ironlog_ex_photo_${name}`, window._newExPhoto32);
-    } catch(e) { showToast('Storage full — photo not saved'); }
+    // Save 21:9 to IndexedDB; tiny thumb to localStorage for instant card display
+    const _editPhotoToSave = window._newExPhoto32 || window._newExPhoto;
+    if (_editPhotoToSave && window.localforage)
+      window.localforage.setItem(`ironlog_ex_photo_${name}`, _editPhotoToSave).catch(e => showToast('Photo save failed'));
+    if (window._newExPhotoThumb) try { localStorage.setItem(`ironlog_ex_photo_thumb_${name}`, window._newExPhotoThumb); } catch(_) {}
     // Update customExercises
     const idx = customExercises.findIndex(e => e.name === oldName);
     if (idx > -1) {
@@ -4226,8 +4306,9 @@ function confirmNewEx() {
       customExercises[idx].muscle = muscle;
       customExercises[idx].compoundMuscles = compoundMuscles;
       customExercises[idx].subMuscles = subMuscles;
+      if (videoUrl) customExercises[idx].videoUrl = videoUrl; else delete customExercises[idx].videoUrl;
     } else {
-      customExercises.push({ name, muscle, compoundMuscles, subMuscles });
+      customExercises.push({ name, muscle, compoundMuscles, subMuscles, ...(videoUrl ? { videoUrl } : {}) });
     }
     // Update workouts that reference the old name
     workouts.forEach(w => w.exercises?.forEach(e => { if (e.name === oldName) e.name = name; }));
@@ -4268,11 +4349,11 @@ function confirmNewEx() {
     return;
   }
 
-  // Save photo if one was selected: 21:9 wide as main key (detail view), 1:1 thumb for card header
-  try {
-    if (window._newExPhoto && name)   localStorage.setItem(`ironlog_ex_photo_thumb_${name}`, window._newExPhoto);
-    if (window._newExPhoto32 && name) localStorage.setItem(`ironlog_ex_photo_${name}`, window._newExPhoto32);
-  } catch(e) { showToast('Storage full — photo not saved'); }
+  // Save 21:9 to IndexedDB; tiny thumb to localStorage for instant card display
+  const _newPhotoToSave = window._newExPhoto32 || window._newExPhoto;
+  if (_newPhotoToSave && name && window.localforage)
+    window.localforage.setItem(`ironlog_ex_photo_${name}`, _newPhotoToSave).catch(e => showToast('Photo save failed'));
+  if (window._newExPhotoThumb && name) try { localStorage.setItem(`ironlog_ex_photo_thumb_${name}`, window._newExPhotoThumb); } catch(_) {}
 
   // Explore exercise mode: save locally to library, highlight sync button
   if (_wasExploreMode) {
@@ -4355,14 +4436,19 @@ function confirmNewEx() {
     hidden.splice(hiddenIdx, 1);
     _LS.set('ironlog_hidden_ex', JSON.stringify(hidden));
     const ci = customExercises.findIndex(e => e.name === name);
-    if (ci >= 0) { customExercises[ci].muscle = muscle; localStorage.setItem('ironlog_custom_ex', JSON.stringify(customExercises)); }
-    else { customExercises.push({ name, label: name, muscle, custom: true }); localStorage.setItem('ironlog_custom_ex', JSON.stringify(customExercises)); }
+    if (ci >= 0) { customExercises[ci].muscle = muscle; if (videoUrl) customExercises[ci].videoUrl = videoUrl; else delete customExercises[ci].videoUrl; localStorage.setItem('ironlog_custom_ex', JSON.stringify(customExercises)); }
+    else { customExercises.push({ name, label: name, muscle, custom: true, ...(videoUrl ? { videoUrl } : {}) }); localStorage.setItem('ironlog_custom_ex', JSON.stringify(customExercises)); }
   } else {
   // Disable button to prevent double-tap
   const addBtn = [...document.querySelectorAll('#newExModalOverlay button')].find(b => b.textContent.trim() === 'Add');
   if (addBtn) { addBtn.disabled = true; addBtn.textContent = ''; addBtn.style.opacity = '0.5'; }
-  customExercises.push({ name, label: name, muscle, subMuscles, custom: true });
-  localStorage.setItem('ironlog_custom_ex', JSON.stringify(customExercises));
+  customExercises.push({ name, label: name, muscle, subMuscles, custom: true, ...(videoUrl ? { videoUrl } : {}) });
+  try {
+    localStorage.setItem('ironlog_custom_ex', JSON.stringify(customExercises));
+  } catch(e) {
+    _migratePhotosToIDB();
+    try { localStorage.setItem('ironlog_custom_ex', JSON.stringify(customExercises)); } catch(_) {}
+  }
   setTimeout(() => {
     closeNewExModal();
     _exTabView = 'custom';
@@ -4658,20 +4744,49 @@ function openExtabExOverlay(exName) {
   const mainColor = W2_MUSCLE_COLORS[muscle];
   const muscleLabel = muscle !== 'Other' ? muscle : '';
   const muscleColor = mainColor || '#aaa';
+  const _exVideoUrl = exDef?.videoUrl || customExercises.find(e => e.name === exName)?.videoUrl || '';
 
-  // Photo / no-photo header (mirrors workout exercise detail)
-  const _etPhoto = localStorage.getItem(`ironlog_ex_photo_${exName}`);
+  // Photo / no-photo header — load from IndexedDB (fallback: localStorage)
   const photoWrap = document.getElementById('extab-ex-photo-wrap');
   const noPhotoWrap = document.getElementById('extab-ex-no-photo-wrap');
   const photoImg = document.getElementById('extab-ex-photo-img');
-  if (_etPhoto && photoImg) {
-    photoImg.src = _etPhoto;
+  const _applyExtabPhoto = (src) => {
+    document.getElementById('extab-play-badge')?.remove();
+    document.getElementById('extab-icon-placeholder')?.remove();
+    if (photoImg) photoImg.style.display = '';
     if (photoWrap) photoWrap.style.display = 'block';
     if (noPhotoWrap) noPhotoWrap.style.display = 'none';
-  } else {
-    if (photoWrap) photoWrap.style.display = 'none';
-    if (noPhotoWrap) noPhotoWrap.style.display = 'flex';
-  }
+    if (src && photoImg) {
+      photoImg.src = src;
+    } else {
+      if (photoImg) photoImg.style.display = 'none';
+      const _photoContainer = photoImg?.parentElement;
+      if (_photoContainer) {
+        const _ph = document.createElement('div');
+        _ph.id = 'extab-icon-placeholder';
+        _ph.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#0d0d0d;';
+        _ph.innerHTML = `<span style="color:${muscleColor};">${_exSvgIcon(muscle, 64)}</span>`;
+        _photoContainer.appendChild(_ph);
+      }
+    }
+    // Play badge — show whenever photoWrap is visible and a video URL exists
+    if (_exVideoUrl) {
+      const _anchorEl = src ? photoImg?.parentElement : document.getElementById('extab-icon-placeholder');
+      if (_anchorEl) {
+        const _pb = document.createElement('div');
+        _pb.id = 'extab-play-badge';
+        _pb.style.cssText = 'position:absolute;bottom:8px;left:8px;display:flex;align-items:center;gap:4px;background:rgba(0,0,0,.72);border-radius:6px;padding:4px 10px;cursor:pointer;z-index:2;-webkit-tap-highlight-color:transparent;';
+        _pb.onclick = () => window.open(_exVideoUrl, '_blank');
+        _pb.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="#e8ff47"><polygon points="5 3 19 12 5 21 5 3"/></svg><span style="font-family:\'DM Sans\';font-size:10px;font-weight:700;color:#e8ff47;letter-spacing:.5px;">PLAY</span>';
+        _anchorEl.appendChild(_pb);
+      }
+    }
+  };
+  const _lsPhoto = localStorage.getItem(`ironlog_ex_photo_${exName}`);
+  if (_lsPhoto) { _applyExtabPhoto(_lsPhoto); }
+  else if (window.localforage) {
+    window.localforage.getItem(`ironlog_ex_photo_${exName}`).then(_applyExtabPhoto).catch(() => _applyExtabPhoto(null));
+  } else { _applyExtabPhoto(null); }
   // Set names and muscle labels
   const nameEl = document.getElementById('extab-ex-overlay-name');
   const nameNoPhotoEl = document.getElementById('extab-ex-overlay-name-nophoto');
@@ -4760,6 +4875,7 @@ function openExtabExOverlay(exName) {
     // Match new-exercise body size:
     // — both sides visible → full width; one side → 50% width (same as one side in new exercise)
     // — same scale(0.95) as nex-body-container
+    diagWrap.id = 'extab-diag-wrap';
     diagWrap.style.cssText = 'padding:10px 16px 0;margin-top:-45px;display:flex;justify-content:center;position:relative;overflow:visible;';
     const scaleWrap = document.createElement('div');
     const _backOnly = !hasFront && hasBack;
@@ -4795,34 +4911,48 @@ function openExtabExOverlay(exName) {
     body.appendChild(diagWrap);
   }
 
-  // MAX and 1RM stats carousel
-  let _maxKg = 0, _max1RM = 0, _best1RMSet = null;
+  // MAX · 1RM · B.Set · VOL · PROGRESS carousel
+  let _maxKg = 0, _max1RM = 0, _best1RMSet = null, _maxVol = 0;
+  const _chartWtMap = new Map(), _chartRmMap = new Map(), _chartVolMap = new Map();
   workouts.filter(w => !w._draft).forEach(w => {
     w.exercises.filter(e => e.name === exName).forEach(e => {
-      doneSets(e.sets).forEach(s => {
+      const ds = doneSets(e.sets);
+      ds.forEach(s => {
         if (s.kg > _maxKg) _maxKg = s.kg;
         const rm = Math.round(s.kg * (1 + s.reps / 30) * 10) / 10;
         if (rm > _max1RM) { _max1RM = rm; _best1RMSet = { kg: s.kg, reps: s.reps }; }
       });
+      const sessionVol = ds.reduce((a, s) => a + s.kg * s.reps, 0);
+      if (sessionVol > _maxVol) _maxVol = sessionVol;
+      const dayKey = new Date(w.date).setHours(0, 0, 0, 0);
+      const wt  = ds.length ? Math.max(0, ...ds.map(s => s.kg)) : 0;
+      const rm1 = ds.length ? Math.max(...ds.map(s => Math.round(s.kg * (1 + s.reps / 30) * 10) / 10)) : 0;
+      if (wt  > (_chartWtMap.get(dayKey)  || 0)) _chartWtMap.set(dayKey, wt);
+      if (rm1 > (_chartRmMap.get(dayKey) || 0)) _chartRmMap.set(dayKey, rm1);
+      if (sessionVol > (_chartVolMap.get(dayKey) || 0)) _chartVolMap.set(dayKey, sessionVol);
     });
   });
   if (_maxKg > 0) {
     const _bsKg = _best1RMSet ? (_best1RMSet.kg % 1 === 0 ? String(_best1RMSet.kg) : _best1RMSet.kg.toFixed(1)) : '';
     const _su = `<span style="font-family:'Bebas Neue';font-size:26px;color:${muscleColor};letter-spacing:1px;opacity:0.75;margin-left:5px;vertical-align:baseline;">`;
+    const _volStr = _maxVol >= 1000 ? (_maxVol / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : String(Math.round(_maxVol));
     const slides = [
       { val: _maxKg % 1 === 0 ? String(_maxKg) : _maxKg.toFixed(1), unit: 'kg', prefix: 'MAX', label: 'Heaviest weight lifted' },
       { val: _max1RM % 1 === 0 ? String(_max1RM) : _max1RM.toFixed(1), unit: 'kg', prefix: '1RM', label: 'Maximum weight you can lift for single repetition' },
       { val: `${_bsKg}${_su}kg</span> × ${_best1RMSet?.reps ?? ''}`, unit: 'reps', prefix: 'B.Set', label: 'Your best set' },
+      { val: _volStr, unit: 'kg', prefix: 'VOL', label: 'Best session volume' },
+      { val: '', unit: '', prefix: 'PROGRESS', label: 'Select MAX / 1RM / VOL and time period' },
     ];
+    const PROG_IDX = slides.length - 1;
     let _cur = 0;
     const carousel = document.createElement('div');
-    carousel.style.cssText = 'padding:18px 0 8px;margin-top:-45px;text-align:center;width:100%;user-select:none;';
+    carousel.style.cssText = 'padding:18px 0 8px;margin-top:12px;text-align:center;width:100%;user-select:none;';
 
     function _renderSlideVal(slide) {
       valEl.innerHTML = slide.val + (slide.unit ? `<span style="font-family:'Bebas Neue';font-size:26px;color:${muscleColor};letter-spacing:1px;opacity:0.75;margin-left:5px;vertical-align:baseline;">${slide.unit}</span>` : '');
     }
     const valEl = document.createElement('div');
-    valEl.style.cssText = `font-family:'Bebas Neue';font-size:64px;line-height:1;color:${muscleColor};letter-spacing:1px;`;
+    valEl.style.cssText = `font-family:'Bebas Neue';font-size:64px;line-height:1;color:${muscleColor};letter-spacing:1px;min-height:64px;`;
     _renderSlideVal(slides[0]);
 
     const prefixEl = document.createElement('div');
@@ -4830,7 +4960,7 @@ function openExtabExOverlay(exName) {
     prefixEl.textContent = slides[0].prefix;
 
     const lblEl = document.createElement('div');
-    lblEl.style.cssText = "font-family:'DM Sans';font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.5px;margin-top:2px;padding:0 20px;";
+    lblEl.style.cssText = "font-family:'DM Sans';font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.5px;margin-top:2px;padding:0 20px;min-height:32px;";
     lblEl.textContent = slides[0].label;
 
     const dots = document.createElement('div');
@@ -4852,8 +4982,158 @@ function openExtabExOverlay(exName) {
     slideInner.appendChild(lblEl);
     slideWrap.appendChild(slideInner);
 
+    // ── Progress chart pane ──────────────────────────────────────────────────
+    let _progMetric = 'wt', _progRange = '3M';
+    const _PC = { wt:{line:'#e8ff47',fill:'rgba(232,255,71,.08)'}, rm:{line:'#ff8c42',fill:'rgba(255,140,66,.08)'}, vol:{line:'#a78bfa',fill:'rgba(167,139,250,.08)'} };
+    const _mKeys = ['wt','rm','vol'], _mLabels = ['MAX','1RM','VOL'], _mColors = ['#e8ff47','#ff8c42','#a78bfa'];
+    const progPane = document.createElement('div');
+    progPane.id = 'extab-prog-pane';
+    progPane.style.cssText = 'display:none;padding:8px 16px 0;';
+    const metricBtns = [];
+    const metricBar = document.createElement('div');
+    metricBar.style.cssText = 'display:flex;gap:0;margin-bottom:10px;border-bottom:1px solid var(--border);';
+    _mLabels.forEach((lbl, i) => {
+      const btn = document.createElement('button');
+      btn.style.cssText = `flex:1;border:none;background:transparent;font-family:'DM Sans';font-size:11px;font-weight:700;padding:8px 0;cursor:pointer;color:${i===0?_mColors[0]:'#555'};border-bottom:2px solid ${i===0?_mColors[0]:'transparent'};margin-bottom:-1px;transition:all .15s;`;
+      btn.textContent = lbl;
+      btn.onclick = () => {
+        _progMetric = _mKeys[i];
+        metricBtns.forEach((b, j) => { b.style.color = j===i ? _mColors[j] : '#555'; b.style.borderBottomColor = j===i ? _mColors[j] : 'transparent'; });
+        _renderProgChart();
+      };
+      metricBar.appendChild(btn);
+      metricBtns.push(btn);
+    });
+    const rangeBtns = [];
+    const rangeBar = document.createElement('div');
+    rangeBar.style.cssText = 'display:flex;gap:4px;margin-bottom:6px;';
+    ['1W','1M','3M','1Y'].forEach(r => {
+      const active = r === _progRange;
+      const btn = document.createElement('button');
+      btn.style.cssText = `flex:1;border:1px solid ${active?'var(--accent)':'var(--border)'};border-radius:6px;background:${active?'rgba(232,255,71,.12)':'transparent'};color:${active?'var(--accent)':'var(--muted)'};font-family:'DM Sans';font-size:10px;font-weight:700;padding:4px;cursor:pointer;transition:all .15s;`;
+      btn.textContent = r;
+      btn.onclick = () => {
+        _progRange = r;
+        rangeBtns.forEach(b => { const a = b.textContent===r; b.style.border=`1px solid ${a?'var(--accent)':'var(--border)'}`; b.style.background=a?'rgba(232,255,71,.12)':'transparent'; b.style.color=a?'var(--accent)':'var(--muted)'; });
+        _renderProgChart();
+      };
+      rangeBar.appendChild(btn);
+      rangeBtns.push(btn);
+    });
+    // Value display (shows selected day's value + diff)
+    const progBigVal = document.createElement('div');
+    progBigVal.id = 'extab-prog-bigval';
+    progBigVal.style.cssText = "font-family:'DM Sans';font-size:13px;font-weight:700;min-height:18px;padding:2px 0 4px;display:none;";
+    const progNoData = document.createElement('div');
+    progNoData.style.cssText = "display:none;text-align:center;padding:30px 0;font-family:'DM Sans';font-size:12px;color:var(--muted);";
+    progNoData.textContent = 'Not enough data for this range';
+    const progCanvasWrap = document.createElement('div');
+    progCanvasWrap.style.cssText = 'position:relative;height:150px;';
+    const progCanvas = document.createElement('canvas');
+    progCanvas.id = 'extab-prog-canvas';
+    progCanvasWrap.appendChild(progCanvas);
+    // Scrubber
+    const progScrubWrap = document.createElement('div');
+    progScrubWrap.style.cssText = 'display:none;padding:8px 0 4px;';
+    const progScrubInfo = document.createElement('div');
+    progScrubInfo.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;';
+    const progScrubDate = document.createElement('span');
+    progScrubDate.id = 'extab-prog-scrub-date';
+    progScrubDate.style.cssText = "font-family:'DM Sans';font-size:11px;font-weight:700;color:var(--text);";
+    const progScrubLbl = document.createElement('span');
+    progScrubLbl.style.cssText = "font-family:'DM Sans';font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;";
+    progScrubLbl.textContent = 'Select Day';
+    progScrubInfo.appendChild(progScrubDate);
+    progScrubInfo.appendChild(progScrubLbl);
+    const progScrub = document.createElement('input');
+    progScrub.type = 'range'; progScrub.min = '0'; progScrub.max = '0'; progScrub.value = '0'; progScrub.step = '1';
+    progScrub.style.cssText = 'width:100%;accent-color:#555;cursor:pointer;height:3px;';
+    progScrub.oninput = () => _onProgScrub(parseInt(progScrub.value));
+    progScrubWrap.appendChild(progScrubInfo);
+    progScrubWrap.appendChild(progScrub);
+    progPane.appendChild(metricBar);
+    progPane.appendChild(rangeBar);
+    progPane.appendChild(progBigVal);
+    progPane.appendChild(progNoData);
+    progPane.appendChild(progCanvasWrap);
+    progPane.appendChild(progScrubWrap);
+
+    function _onProgScrub(idx) {
+      const canvas = document.getElementById('extab-prog-canvas');
+      if (!canvas?._chartInst?._pts) return;
+      const chart = canvas._chartInst;
+      const pts = chart._pts;
+      const {line} = _PC[_progMetric];
+      const maxVal = Math.max(...pts.map(p => p.val));
+      const maxIdx = pts.map(p => p.val).lastIndexOf(maxVal);
+      chart.data.datasets[0].pointRadius = pts.map((_, j) => j === idx ? 6 : j === maxIdx ? 4 : 2);
+      chart.data.datasets[0].pointBackgroundColor = pts.map((_, j) => j === idx ? '#fff' : j === maxIdx ? '#ff4444' : line);
+      chart.update('none');
+      const dateEl = document.getElementById('extab-prog-scrub-date');
+      if (dateEl) dateEl.textContent = pts[idx]?.date || '';
+      const bigValEl = document.getElementById('extab-prog-bigval');
+      if (bigValEl && pts[idx]) {
+        const pt = pts[idx];
+        const prev = idx > 0 ? pts[idx - 1].val : null;
+        const diff = prev != null ? parseFloat((pt.val - prev).toFixed(2)) : null;
+        const diffStr = diff != null ? ` <span style="color:${diff>0?'#4caf50':diff<0?'#ff4444':'#888'};font-size:11px;">(${diff>=0?'+':''}${diff}kg)</span>` : '';
+        bigValEl.style.color = line;
+        bigValEl.innerHTML = `${parseFloat(pt.val.toFixed(2))}kg${diffStr}`;
+        bigValEl.style.display = 'block';
+      }
+    }
+
+    function _renderProgChart() {
+      const canvas = document.getElementById('extab-prog-canvas');
+      if (!canvas) return;
+      const cutoff = Date.now() - ({'1W':7,'1M':30,'3M':91,'1Y':365}[_progRange]||91) * 86400000;
+      const srcMap = {wt:_chartWtMap, rm:_chartRmMap, vol:_chartVolMap}[_progMetric];
+      const pts = [...srcMap.entries()].filter(([k])=>k>=cutoff).sort((a,b)=>a[0]-b[0]).map(([k,v])=>({date:fmtShort(k),val:v}));
+      if (canvas._chartInst) { canvas._chartInst.destroy(); canvas._chartInst = null; }
+      const hasData = pts.length >= 2;
+      progNoData.style.display = hasData ? 'none' : 'block';
+      progCanvasWrap.style.display = hasData ? '' : 'none';
+      progScrubWrap.style.display = hasData ? 'block' : 'none';
+      const bigValEl = document.getElementById('extab-prog-bigval');
+      if (!hasData) { if (bigValEl) bigValEl.style.display = 'none'; return; }
+      const {line, fill} = _PC[_progMetric];
+      canvas._chartInst = new Chart(canvas.getContext('2d'), {
+        type:'line',
+        data:{labels:pts.map(p=>p.date),datasets:[{data:pts.map(p=>p.val),borderColor:line,backgroundColor:fill,pointBackgroundColor:line,tension:0,fill:true,borderWidth:1.5,pointRadius:2}]},
+        options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:20}},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{ticks:{color:'#555',font:{size:9}},grid:{display:false}},y:{ticks:{color:'#555',font:{size:9}},grid:{color:'#1e1e1e'}}}},
+      });
+      canvas._chartInst._pts = pts;
+      progScrub.max = String(pts.length - 1);
+      progScrub.value = String(pts.length - 1);
+      _onProgScrub(pts.length - 1);
+    }
+
+    // ── Compute aligned carousel margin dynamically ──────────────────────────
+    // Formula: non-prog margin = progH + 8 - diagMarginTop - diagH
+    // (diagWrap has its own margin-top that affects layout positioning)
+    let _alignedMargin = '12px'; // fallback; overwritten after layout is ready
+    function _computeAlignedMargin() {
+      const _diagEl = document.getElementById('extab-diag-wrap');
+      const _diagH  = _diagEl?.offsetHeight || 0;
+      const _diagMT = _diagEl ? (parseFloat(getComputedStyle(_diagEl).marginTop) || 0) : 0;
+      // Temporarily show progPane to read its real height
+      const _wasHidden = progPane.style.display === 'none';
+      if (_wasHidden) { progPane.style.visibility = 'hidden'; progPane.style.display = 'block'; }
+      const _progH = progPane.offsetHeight;
+      if (_wasHidden) { progPane.style.display = 'none'; progPane.style.visibility = ''; }
+      return (_progH + 8 - _diagMT - _diagH + 85) + 'px';
+    }
+    // Compute once the DOM has settled (after this rAF the heights are stable)
+    requestAnimationFrame(() => {
+      _alignedMargin = _computeAlignedMargin();
+      carousel.style.marginTop = _alignedMargin;
+    });
+
+    // ── goTo with Progress show/hide ─────────────────────────────────────────
+    let _progPreDiag = null;
     function goTo(idx) {
-      const dir = idx > _cur ? 1 : -1;
+      const _prevIdx = _cur;
+      const dir = idx > _prevIdx ? 1 : -1;
       _cur = idx;
       slideInner.style.transition = 'none';
       slideInner.style.transform = `translateX(${dir * 100}%)`;
@@ -4865,6 +5145,22 @@ function openExtabExOverlay(exName) {
         slideInner.style.transform = 'translateX(0%)';
       }));
       dotEls.forEach((d, i) => d.style.background = i === idx ? muscleColor : 'rgba(255,255,255,0.25)');
+      // Only touch layout when actually crossing the PROGRESS boundary
+      const _entering = idx === PROG_IDX && _prevIdx !== PROG_IDX;
+      const _leaving  = idx !== PROG_IDX && _prevIdx === PROG_IDX;
+      if (_entering) {
+        const _diagEl = document.getElementById('extab-diag-wrap');
+        _progPreDiag = _diagEl?.style.display ?? '';
+        if (_diagEl) _diagEl.style.display = 'none';
+        carousel.style.marginTop = '18px';
+        progPane.style.display = 'block';
+        setTimeout(_renderProgChart, 50);
+      } else if (_leaving) {
+        const _diagEl = document.getElementById('extab-diag-wrap');
+        if (_diagEl) _diagEl.style.display = _progPreDiag ?? '';
+        carousel.style.marginTop = _alignedMargin;
+        progPane.style.display = 'none';
+      }
     }
     function _bounceEdge(direction) {
       const nudge = direction * 12;
@@ -4887,6 +5183,7 @@ function openExtabExOverlay(exName) {
 
     carousel.appendChild(slideWrap);
     carousel.appendChild(dots);
+    body.appendChild(progPane);
     body.appendChild(carousel);
   }
 
@@ -4924,7 +5221,9 @@ function closeExtabExOverlay() {
   const body = document.getElementById('extab-ex-overlay-body');
   if (body) body.innerHTML = '';
   const photoImg = document.getElementById('extab-ex-photo-img');
-  if (photoImg) photoImg.src = '';
+  if (photoImg) { photoImg.src = ''; photoImg.style.display = ''; }
+  document.getElementById('extab-play-badge')?.remove();
+  document.getElementById('extab-icon-placeholder')?.remove();
 }
 window.closeExtabExOverlay = closeExtabExOverlay;
 
@@ -5376,7 +5675,7 @@ function renderWorkoutsTab2() {
         Edit
       </button>
       <button onclick="event.stopPropagation();document.getElementById('wtab-card-menu-${i}').style.display='none';deleteWorkoutFromTab(${i})" style="width:100%;background:transparent;border:none;color:#ff4747;font-family:'DM Sans';font-size:14px;font-weight:600;padding:14px 16px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:10px;" onmouseover="this.style.background='rgba(255,71,71,.08)'" onmouseout="this.style.background='transparent'">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
         Delete
       </button>
     </div>`;
@@ -5854,23 +6153,23 @@ function applyTodayFilters() {
     }
   });
 
-  // Show/hide empty state message
+  // Show "X exercises done!" at the bottom of the filtered list when all visible are completed
   let emptyMsg = document.getElementById('today-filter-empty-msg');
-  if (_todayHideDone && visibleCount === 0) {
+  const _mcolors = {Chest:'#e8ff47',Back:'#7ec8e3',Legs:'#ff8c42',Shoulders:'#a78bfa',Arms:'#34d399',Core:'#f87171',Mix:'#20d4c8'};
+  const _allFilteredDone = _todayMuscleFilter && (() => {
+    const filtered = [...document.querySelectorAll('#exerciseList .exercise-card')]
+      .filter(c => (c.dataset.exmuscle || 'Chest') === _todayMuscleFilter);
+    return filtered.length > 0 && filtered.every(c => c.classList.contains('completed'));
+  })();
+  if (_allFilteredDone) {
     if (!emptyMsg) {
       emptyMsg = document.createElement('div');
       emptyMsg.id = 'today-filter-empty-msg';
-      emptyMsg.style.cssText = 'text-align:center;padding:24px 16px;font-family:"DM Sans";font-size:22px;font-weight:700;color:#4caf50;';
+      emptyMsg.style.cssText = 'text-align:center;padding:24px 16px;font-family:"DM Sans";font-size:22px;font-weight:700;';
       document.getElementById('exerciseList').after(emptyMsg);
     }
-    const muscle = _todayMuscleFilter ? `${_todayMuscleFilter}` : 'All';
-    const _mcolors = {Chest:'#e8ff47',Back:'#7ec8e3',Legs:'#ff8c42',Shoulders:'#a78bfa',Arms:'#34d399',Core:'#f87171',Mix:'#20d4c8'};
-    const muscleColor = _mcolors[muscle] || '#4caf50';
-    if (muscle === 'All') {
-      emptyMsg.innerHTML = '<span style="color:#fff">All</span> exercises done !';
-    } else {
-      emptyMsg.innerHTML = `<span style="color:${muscleColor}">${muscle}</span> exercises done !`;
-    }
+    const muscleColor = _mcolors[_todayMuscleFilter] || '#4caf50';
+    emptyMsg.innerHTML = `<span style="color:${muscleColor}">${_todayMuscleFilter}</span> exercises done !`;
     emptyMsg.style.display = '';
   } else if (emptyMsg) {
     emptyMsg.style.display = 'none';
@@ -5879,12 +6178,12 @@ function applyTodayFilters() {
 
 function filterTodayByMuscle(muscle) {
   _todayMuscleFilter = (muscle === null || _todayMuscleFilter === muscle) ? null : muscle;
-  // Collapse all expanded exercise cards first
   document.querySelectorAll('#exerciseList .exercise-card[data-open="true"]').forEach(c => {
     toggleCardCollapse(c.id);
   });
   applyTodayFilters();
   updateTodayMuscleChips();
+  _scrollToNextExercise();
 }
 
 function toggleTodayHideDone() {
@@ -5947,30 +6246,43 @@ function updateTodayMuscleChips() {
       _chipsRowHtml = `<div style="display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding-bottom:8px;">${_allBtn}${_muscBtns}</div>`;
     }
 
-    // Buttons row
-    const _saveStyle = _hasEx
-      ? `flex:1;background:var(--accent,#e8ff47);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:16px;font-weight:700;padding:12px 0;cursor:pointer;-webkit-tap-highlight-color:transparent;`
-      : `flex:1;background:var(--accent,#e8ff47);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:16px;font-weight:700;padding:12px 0;cursor:not-allowed;opacity:0.35;-webkit-tap-highlight-color:transparent;`;
-    const _btnsHtml = `<div style="display:flex;gap:10px;"><button onclick="clearSession()" style="flex:1;background:transparent;border:1px solid var(--border,#2a2a2a);border-radius:10px;color:var(--muted,#888);font-family:'DM Sans';font-size:16px;font-weight:700;padding:12px 0;cursor:pointer;-webkit-tap-highlight-color:transparent;">Cancel</button><button onclick="finishWorkout()" style="${_saveStyle}">Save</button></div>`;
+    // Chips only in header scroll area
+    scrollEl.innerHTML = _chipsRowHtml;
 
-    scrollEl.innerHTML = _chipsRowHtml + _btnsHtml;
-    // Ensure the ADD EXERCISE button scrolls clear of the taller fixed bar
+    // Cancel / Save fixed at bottom
+    const _nwfBar = document.getElementById('nwf-bottom-bar');
+    if (_nwfBar) {
+      const _saveStyle = _hasEx
+        ? `flex:1;background:var(--accent,#e8ff47);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:16px;font-weight:700;padding:14px 0;cursor:pointer;-webkit-tap-highlight-color:transparent;`
+        : `flex:1;background:var(--accent,#e8ff47);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:16px;font-weight:700;padding:14px 0;cursor:not-allowed;opacity:0.35;-webkit-tap-highlight-color:transparent;`;
+      _nwfBar.innerHTML = `<div style="display:flex;gap:10px;"><button onclick="clearSession()" style="flex:1;background:transparent;border:1px solid var(--border,#2a2a2a);border-radius:10px;color:var(--muted,#888);font-family:'DM Sans';font-size:16px;font-weight:700;padding:14px 0;cursor:pointer;-webkit-tap-highlight-color:transparent;">Cancel</button><button onclick="finishWorkout()" ${_hasEx?'':'disabled'} style="${_saveStyle}">Save</button></div>`;
+      _nwfBar.style.display = 'block';
+    }
+    // Ensure the ADD EXERCISE button scrolls clear of the bottom bar
     const _nl = document.getElementById('ex-nav-list');
-    if (_nl) _nl.style.paddingBottom = _hasEx ? '180px' : '120px';
+    if (_nl) _nl.style.paddingBottom = '120px';
     return;
   }
+  // Not in new-workout flow — hide the bottom bar if visible
+  const _nwfBarHide = document.getElementById('nwf-bottom-bar');
+  if (_nwfBarHide) _nwfBarHide.style.display = 'none';
+
   const muscleColors = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171',Mix:'#20d4c8' };
   const counts = {};
   const remainCounts = {};
+  const doneCounts = {};
   // Count all cards regardless of location (list or detail panel)
   document.querySelectorAll('.exercise-card').forEach(card => {
     const m = card.dataset.exmuscle || 'Chest';
     counts[m] = (counts[m]||0) + 1;
-    if (!card.classList.contains('completed')) {
+    if (card.classList.contains('completed')) {
+      doneCounts[m] = (doneCounts[m]||0) + 1;
+    } else {
       remainCounts[m] = (remainCounts[m]||0) + 1;
     }
   });
-  const entries = Object.entries(counts);
+  const _MUSCLE_ORDER = ['Chest','Back','Legs','Shoulders','Arms','Core','Mix'];
+  const entries = _MUSCLE_ORDER.filter(m => counts[m]).map(m => [m, counts[m]]);
   if (!entries.length) { wrap.style.display = 'none'; fixedEl.innerHTML = ''; scrollEl.innerHTML = ''; _todayMuscleFilter = null; _todayHideDone = false; return; }
   if (_todayMuscleFilter && !counts[_todayMuscleFilter]) _todayMuscleFilter = null;
   // Only show chips if no card is open in detail panel
@@ -5985,7 +6297,7 @@ function updateTodayMuscleChips() {
   const anyDone = true;
 
   // Fixed chips — Hide  only shown when not in new workout creation flow
-  const showHideChip = !window._isNewWorkoutFlow;
+  const showHideChip = false;
   const _btnBase = `display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:10px;padding:0 4px;width:80px;height:50px;flex-shrink:0;font-family:'DM Sans';cursor:pointer;transition:all .15s;`;
 
   // Only Hide button stays fixed/sticky
@@ -5997,13 +6309,19 @@ function updateTodayMuscleChips() {
   const _totalDisplay = _todayHideDone
     ? Object.values(remainCounts).reduce((a,b)=>a+b,0)
     : Object.values(counts).reduce((a,b)=>a+b,0);
+  const _savedScrollLeft = scrollEl.scrollLeft;
   scrollEl.innerHTML = entries.map(([m, c]) => {
     const color = muscleColors[m] || '#888';
     const _muscleAbbr = MUSCLE_ABBR[m] || m.slice(0,4);
     const active = _todayMuscleFilter === m;
-    const displayCount = _todayHideDone ? (remainCounts[m] || 0) : c;
-    return `<button onclick="filterTodayByMuscle('${m}')" style="${_btnBase}position:relative;background:${active ? color+'33' : 'rgba(255,255,255,.05)'};border:1px solid ${active ? color : '#333'};"><span style="font-size:18px;font-weight:700;color:${active ? color : '#555'};line-height:1;">${displayCount}</span><span style="font-size:14px;font-weight:600;color:${active ? color : '#444'};letter-spacing:.2px;line-height:1;white-space:nowrap;">${_muscleAbbr}</span></button>`;
+    const done = doneCounts[m] || 0;
+    const total = c;
+    const countHtml = done > 0
+      ? `<span style="font-size:15px;font-weight:700;color:${active ? color : '#aaa'};line-height:1;white-space:nowrap;">${done}<span style="font-size:11px;font-weight:600;opacity:0.6;">/${total}</span></span>`
+      : `<span style="font-size:18px;font-weight:700;color:${active ? color : '#555'};line-height:1;">${total}</span>`;
+    return `<button onclick="filterTodayByMuscle('${m}')" style="${_btnBase}position:relative;background:${active ? color+'33' : 'rgba(255,255,255,.05)'};border:1px solid ${active ? color : '#333'};">${countHtml}<span style="font-size:14px;font-weight:600;color:${active ? color : '#444'};letter-spacing:.2px;line-height:1;white-space:nowrap;">${_muscleAbbr}</span></button>`;
   }).join('');
+  scrollEl.scrollLeft = _savedScrollLeft;
 }
 
 function refreshOrderNums() {
@@ -6046,7 +6364,8 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
     Mix: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><path d="M12 3L4 9v12h16V9L12 3z"/><path d="M9 21V12h6v9"/></svg>',
   };
   const _svgIcon = _svgFallbacks[_exMuscle] || '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/></svg>';
-  const _savedPhoto = localStorage.getItem(`ironlog_ex_photo_thumb_${ex.label || ex.name}`) || localStorage.getItem(`ironlog_ex_photo_${ex.label || ex.name}`);
+  const _exPhotoKey = `ironlog_ex_photo_${ex.label || ex.name}`;
+  const _savedPhoto = localStorage.getItem(`ironlog_ex_photo_thumb_${ex.label || ex.name}`) || localStorage.getItem(_exPhotoKey);
 
   card.style.position = 'relative';
 
@@ -6060,12 +6379,9 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
     photoBox.innerHTML = `<img src="${_savedPhoto}" style="width:100%;height:100%;object-fit:cover;display:block;">`;
   } else {
     photoBox.innerHTML = `<div style="color:${muscleColor};opacity:0.4;">${_svgIcon}</div>`;
-    // Fallback: try Firebase Storage
-    if (window._currentUser) {
-      const _exKey = ex.label || ex.name;
-      _loadExPhotoFromCloud(_exKey, true).then(url => {
-        if (!url) return;
-        photoBox.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;display:block;">`;
+    if (window.localforage) {
+      window.localforage.getItem(_exPhotoKey).then(p => {
+        if (p) photoBox.innerHTML = `<img src="${p}" style="width:100%;height:100%;object-fit:cover;display:block;">`;
       });
     }
   }
@@ -7091,11 +7407,13 @@ function closeExDetailOverlay() {
     } // end else (non-snapshot-restore path)
   }
 
+  const _wasCompleted = card?.classList.contains('completed');
   window._exDetailCardId = null;
   document.body.classList.remove('ex-detail-open');
   const _cw = document.getElementById('todayMuscleChipsWrap');
   if (_cw) _cw.style.display = 'flex';
   if (window.hideExFloatBar) hideExFloatBar();
+  if (_wasCompleted) setTimeout(_scrollToNextExercise, 380);
 
   overlayBody.innerHTML = '';
   overlay.classList.remove('ex-overlay-open', 'ex-overlay-in');
@@ -7490,6 +7808,22 @@ function _refreshExPRSlots(id) {
 }
 window._refreshExPRSlots = _refreshExPRSlots;
 
+function _scrollToNextExercise() {
+  setTimeout(() => {
+    const all = [...document.querySelectorAll('.exercise-card:not(.completed)')];
+    const visible = all.filter(c => c.offsetParent !== null);
+    const nextCard = _todayMuscleFilter
+      ? visible.find(c => c.dataset.exmuscle === _todayMuscleFilter || c.dataset.muscle === _todayMuscleFilter)
+      : visible[0];
+    if (!nextCard) return;
+    const hdr = document.getElementById('workout-sticky-header');
+    const margin = hdr ? hdr.offsetHeight + 8 : 78;
+    nextCard.style.scrollMarginTop = margin + 'px';
+    nextCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 80);
+}
+window._scrollToNextExercise = _scrollToNextExercise;
+
 function toggleDone(id) {
   const card = document.getElementById(id);
   const btn  = document.getElementById(`done-btn-${id}`);
@@ -7565,21 +7899,7 @@ function toggleDone(id) {
       refreshCardMiniCharts(id);
       if (_todayHideDone) applyTodayFilters();
       if (window._updateWorkoutProgress) _updateWorkoutProgress();
-      // Scroll next uncompleted exercise into view below sticky elements
-      requestAnimationFrame(() => {
-        const _list2 = document.getElementById('exerciseList');
-        const nextCard = _list2?.querySelector('.exercise-card:not(.completed)');
-        if (nextCard) {
-          const _chips = document.getElementById('todayMuscleChipsWrap');
-          const _finishBar = document.querySelector('.today-actions');
-          const _chipsBottom = (_chips && getComputedStyle(_chips).display !== 'none') ? _chips.getBoundingClientRect().bottom : 0;
-          const _finishBottom = (_finishBar && getComputedStyle(_finishBar).display !== 'none') ? _finishBar.getBoundingClientRect().bottom : 0;
-          const _anchorBottom = Math.max(_chipsBottom, _finishBottom);
-          const _cardTop = nextCard.getBoundingClientRect().top;
-          const _diff = _cardTop - (_anchorBottom + 8);
-          if (Math.abs(_diff) > 4) window.scrollBy({ top: _diff, behavior: 'smooth' });
-        }
-      });
+      _scrollToNextExercise();
     }
   } else {
     if (btn) { btn.innerHTML = 'MARK AS DONE'; btn.classList.remove('is-done'); }
@@ -8928,7 +9248,16 @@ function _removeWorkoutPhotoStep() {
 function _skipWorkoutPhotoStep() {
   window._pendingWorkoutPhoto = null;
   document.getElementById('workoutPhotoModalOverlay').classList.remove('open');
-  _finalizeNewWorkoutArea();
+  // Cancel — discard new workout and return to W2
+  window._isNewWorkoutFlow = false;
+  window._editingWorkoutIdx = undefined;
+  window._activeTabHighlight = null;
+  window._createNewMode = false;
+  resetWorkoutState();
+  document.getElementById('workoutName').value = '';
+  _LS.remove('ironlog_session');
+  showTodayStartScreen();
+  switchTab('workouts2');
 }
 function _confirmWorkoutPhotoStep() {
   document.getElementById('workoutPhotoModalOverlay').classList.remove('open');
@@ -9819,6 +10148,7 @@ function clearAllHistory() {
       // Hide all exercises from exercises tab
       const hiddenEx = [...allExNames];
       _LS.set('ironlog_hidden_ex', JSON.stringify(hiddenEx));
+      _invalidateExCache();
       renderExercisesTab();
       msgs.push(`Exercises tab cleared`);
     }
@@ -11933,6 +12263,7 @@ function openCalendar() {
 }
 function closeCalendar() {
   document.getElementById('calendarOverlay').classList.remove('open');
+  document.getElementById('wtab-plan-bar')?.remove();
   selectedCalDay = null;
   localStorage.removeItem('ironlog_modal');
   // Refresh today plan card in case a workout was planned for today
@@ -13245,18 +13576,17 @@ function _renderWtabPlanBar() {
 
   const bar = document.createElement('div');
   bar.id = 'wtab-plan-bar';
-  bar.style.cssText = 'position:sticky;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;z-index:50;';
+  bar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:var(--surface);border-top:1px solid var(--border);padding:16px 16px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:0;z-index:400;box-sizing:border-box;';
   bar.innerHTML = `
-    <div>
-      <div style="font-family:'DM Sans';font-size:12px;font-weight:700;color:var(--text);">${count} day${count!==1?'s':''} selected</div>
+    <div style="text-align:center;width:100%;margin-bottom:12px;">
+      <span style="font-family:'DM Sans';font-size:18px;font-weight:700;color:var(--text);">${count} day${count!==1?'s':''} selected</span>
     </div>
-    <div style="display:flex;gap:8px;">
-      <button onclick="_cancelWtabPlan()" style="background:transparent;border:1px solid var(--border);border-radius:9px;color:var(--muted);font-family:'DM Sans';font-size:12px;font-weight:700;padding:8px 14px;cursor:pointer;">Cancel</button>
-      <button onclick="_confirmWtabPlan()" ${count===0?'disabled':''} style="background:${count>0?'var(--accent)':'#333'};border:none;border-radius:9px;color:${count>0?'#000':'#555'};font-family:'DM Sans';font-size:12px;font-weight:700;padding:8px 14px;cursor:${count>0?'pointer':'default'};">Done</button>
+    <div style="display:flex;gap:10px;width:100%;">
+      <button onclick="_cancelWtabPlan()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--muted);font-family:'DM Sans';font-size:16px;font-weight:700;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Cancel</button>
+      <button onclick="_confirmWtabPlan()" ${count===0?'disabled':''} style="flex:1;background:${count>0?'var(--accent)':'#333'};border:none;border-radius:12px;color:${count>0?'#000':'#555'};font-family:'DM Sans';font-size:16px;font-weight:700;padding:14px;cursor:${count>0?'pointer':'default'};-webkit-tap-highlight-color:transparent;">Done</button>
     </div>`;
 
-  const calBody = document.getElementById('calBody');
-  if (calBody) calBody.appendChild(bar);
+  document.body.appendChild(bar);
 }
 
 function _cancelWtabPlan() {
@@ -13688,8 +14018,8 @@ window.addEventListener('load', function() {
     <input id="workoutPhotoInput" type="file" accept="image/*" style="display:none" onchange="_handleWorkoutPhotoStep(this)"/>
     <div style="padding:16px 20px 0;">
       <div style="display:flex;gap:10px;">
-        <button id="workoutPhotoSkipBtn" onclick="_skipWorkoutPhotoStep()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted,#888);font-family:'DM Sans';font-size:16px;font-weight:700;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Skip</button>
-        <button id="workoutPhotoDoneBtn" onclick="_confirmWorkoutPhotoStep()" style="flex:1;background:var(--accent,#e8ff47);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:16px;font-weight:700;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Done</button>
+        <button id="workoutPhotoSkipBtn" onclick="_skipWorkoutPhotoStep()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted,#888);font-family:'DM Sans';font-size:16px;font-weight:700;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Cancel</button>
+        <button id="workoutPhotoDoneBtn" onclick="_confirmWorkoutPhotoStep()" style="flex:1;background:var(--accent,#e8ff47);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:16px;font-weight:700;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Next</button>
       </div>
     </div>
   </div>
@@ -14290,6 +14620,7 @@ document.addEventListener('click', e => {
 });
 
 window._onAuthReady = (user) => {
+  const _LS = window._LS || { get: (k) => localStorage.getItem(k), set: (k,v) => { try { localStorage.setItem(k,v); } catch(_){} }, remove: (k) => localStorage.removeItem(k) };
   const roleColors = { super_admin: '#ff4747', ops_admin: '#ff8c42', brand_admin: '#f472b6', site_manager: '#a78bfa', coach: '#7ec8e3', client: '#e8ff47' };
   const roleLabels = { super_admin: 'Super Admin', ops_admin: 'Ops Admin', brand_admin: 'Brand Admin', site_manager: 'Site Manager', coach: 'Coach', client: 'Client' };
   const role = window._currentUserData?.role || 'client';
@@ -18494,12 +18825,17 @@ function deleteCoachWorkout(id) {
 <!-- Exercises-tab exercise detail (separate clean overlay) -->
 <div id="extab-ex-overlay" style="display:none;position:fixed;top:0;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;z-index:250;background:var(--bg);flex-direction:column;overflow:hidden;">
   <!-- Photo header (same layout as workout exercise detail) -->
-  <div id="extab-ex-photo-wrap" style="display:none;flex-shrink:0;padding-top:calc(env(safe-area-inset-top) + 14px);">
-    <div style="position:relative;margin:0 10px;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;">
-      <img id="extab-ex-photo-img" src="" style="width:100%;height:100%;object-fit:cover;display:block;filter:brightness(0.9);">
-      <button onclick="closeExtabExOverlay()" style="position:absolute;top:10px;right:12px;background:rgba(0,0,0,0.45);border:none;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;z-index:2;padding:0;">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  <div id="extab-ex-photo-wrap" style="display:none;flex-shrink:0;padding-top:calc(env(safe-area-inset-top) + 10px);">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:0 14px 6px;">
+      <button onclick="openExtabExMenu()" style="background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="#888"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
       </button>
+      <button onclick="closeExtabExOverlay()" style="background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><line x1="5" y1="12" x2="19" y2="12" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><polyline points="13,6 19,12 13,18" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+    <div style="position:relative;margin:0 10px;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;">
+      <img id="extab-ex-photo-img" src="" style="width:100%;height:100%;object-fit:cover;display:block;">
     </div>
     <!-- Muscle name left, exercise name right (mirrors FINISH + title layout) -->
     <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 10px 4px;gap:8px;">
@@ -18606,12 +18942,12 @@ function deleteCoachWorkout(id) {
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
     Edit exercise
   </button>
-  <button onclick="closeExDetailMenu();changeExerciseDetail()" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
+  <button id="ex-detail-menu-change-btn" onclick="closeExDetailMenu();changeExerciseDetail()" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
     Change exercise
   </button>
   <button onclick="closeExDetailMenu();deleteExerciseDetail()" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#ff4747;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff4747" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff4747" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
     Delete
   </button>
   <div style="height:8px;"></div>
@@ -18630,6 +18966,21 @@ function deleteCoachWorkout(id) {
   <div style="display:flex;gap:10px;">
     <button onclick="cancelChangeExercise()" style="flex:1;padding:14px;background:transparent;border:1px solid #444;border-radius:12px;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;">Cancel</button>
     <button onclick="confirmChangeExercise()" style="flex:1;padding:14px;background:var(--accent);border:none;border-radius:12px;color:#000;font-family:'DM Sans';font-size:15px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;">Change</button>
+  </div>
+</div>
+
+<!-- Delete Exercise confirmation sheet (workout context) -->
+<div id="delete-ex-confirm-overlay" onclick="cancelDeleteExercise()" style="display:none;position:fixed;inset:0;z-index:302;background:rgba(0,0,0,.6);"></div>
+<div id="delete-ex-confirm-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:#1a1a1a;border-radius:20px 20px 0 0;z-index:303;padding:0 16px calc(20px + env(safe-area-inset-bottom));">
+  <div style="width:36px;height:3px;background:#555;border-radius:2px;margin:12px auto 20px;"></div>
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ff4747" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <span style="font-family:'DM Sans';font-size:17px;font-weight:700;color:#fff;">Delete Exercise?</span>
+  </div>
+  <div style="font-family:'DM Sans';font-size:14px;color:#aaa;line-height:1.6;margin-bottom:24px;">All recorded sets for <span id="delete-ex-confirm-name" style="color:#fff;font-weight:600;"></span> will be removed. This cannot be undone.</div>
+  <div style="display:flex;gap:10px;">
+    <button onclick="cancelDeleteExercise()" style="flex:1;padding:14px;background:transparent;border:1px solid #444;border-radius:12px;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;">Cancel</button>
+    <button onclick="confirmDeleteExercise()" style="flex:1;padding:14px;background:#ff4747;border:none;border-radius:12px;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;">Delete</button>
   </div>
 </div>
 
@@ -18671,7 +19022,7 @@ function deleteCoachWorkout(id) {
     Choose from Gallery
   </button>
   <button id="ex-photo-remove-btn" onclick="closeExPhotoSheet();removeExPhoto()" style="display:none;width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#ff4747;font-family:'DM Sans';font-size:16px;font-weight:600;padding:18px 8px;cursor:pointer;text-align:left;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff4747" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff4747" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
     Remove Photo
   </button>
   <div style="height:10px;"></div>
@@ -18734,7 +19085,7 @@ function deleteCoachWorkout(id) {
     <span style="font-size:16px;font-weight:300;color:#60a5fa;width:20px;text-align:center;flex-shrink:0;">D</span>Drop set<span id="set-opt-check-drop" style="display:none;margin-left:auto;flex-shrink:0;color:#e8ff47;font-size:20px;line-height:1;">&#10003;</span>
   </button>
   <button onclick="setSetType('delete')" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#ff4747;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:16px;-webkit-tap-highlight-color:transparent;">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff4747" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Delete set
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff4747" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>Delete set
   </button>
   <div style="height:8px;"></div>
   <button onclick="closeSetOptions()" style="width:100%;background:#111;border:1px solid #444;border-radius:12px;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:600;padding:14px;cursor:pointer;text-align:center;-webkit-tap-highlight-color:transparent;">Cancel</button>
@@ -19023,7 +19374,7 @@ function toggleWtabCardMenu(idx) {
       Schedule in Calendar
     </button>
     <button onclick="closeWtabMenu();deleteWorkoutFromTab(${idx})" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#ff4747;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff4747" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff4747" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
       Delete
     </button>
     <div style="height:8px;"></div>
@@ -19481,6 +19832,7 @@ function openRepsPopup(span, exId) {
     const _repsBottomBlocker = document.querySelector('#ex-detail-overlay .ex-detail-bottom-blocker');
     if (_repsBottomBlocker) _repsBottomBlocker.style.display = 'none';
   }
+  document.getElementById(exId)?.classList.add('kg-editor-active');
 
   // Highlight set number yellow
   const setNum = _repsEditorRow?.querySelector('.set-num');
@@ -19651,6 +20003,7 @@ function _closeRepsEditor(silent = false) {
   const setNum = _repsEditorRow?.querySelector('.set-num');
   if (setNum && setNum.dataset.repsHighlighted) { setNum.style.color = ''; setNum.style.borderColor = ''; delete setNum.dataset.repsHighlighted; }
   _repsEditorSpan?.closest('.rep-box-wrap')?.classList.remove('editing');
+  document.getElementById(_repsEditorExId)?.classList.remove('kg-editor-active');
   // Restore focus — skip if silent (switching to KG editor)
   if (!silent && _repsEditorExId) _kgEditorFocusLeave(_repsEditorExId);
   _repsEditorSpan = null; _repsEditorRow = null; _repsEditorExId = null;
@@ -20118,6 +20471,7 @@ closeInlineKgEditor(false);
   // Highlight set number with accent color and border
   const _setNumEl = row?.querySelector('.set-num');
   if (_setNumEl) { _setNumEl.style.color = 'var(--accent)'; _setNumEl.style.borderColor = 'var(--accent)'; _setNumEl.dataset.highlighted = '1'; }
+  document.getElementById(exId)?.classList.add('kg-editor-active');
 
   // Position editor visually below the tapped row using margin-top
   // We'll set this after opening
@@ -20377,6 +20731,7 @@ if (restoreFocus) _kgEditorFocusLeave();
   const _closingCard = _closingInput?.closest('.exercise-card');
   const _footer = _closingCard?.querySelector('.ex-footer');
   if (_footer) _footer.style.display = '';
+  _closingCard?.classList.remove('kg-editor-active');
   window._activeInlineEditorDiv = null;
 }
 // Expose functions defined in this script block globally
@@ -20702,7 +21057,7 @@ function saveExPhotoCrop() {
   // 3:2 image at 300x200
   const out32 = document.createElement('canvas');
   out32.width = 420; out32.height = 180;
-  out32.getContext('2d').drawImage(img, srcX, srcY, srcW, srcH, 0, 0, 400, 200);
+  out32.getContext('2d').drawImage(img, srcX, srcY, srcW, srcH, 0, 0, 420, 180);
   let url32 = out32.toDataURL('image/webp', 0.85);
   if (!url32.startsWith('data:image/webp')) url32 = out32.toDataURL('image/jpeg', 0.85);
 
@@ -20715,9 +21070,17 @@ function saveExPhotoCrop() {
   let url11 = out11.toDataURL('image/webp', 0.85);
   if (!url11.startsWith('data:image/webp')) url11 = out11.toDataURL('image/jpeg', 0.85);
 
+  // Tiny 80×80 thumbnail for localStorage (sync card display, ~3 KB)
+  const outThumb = document.createElement('canvas');
+  outThumb.width = 80; outThumb.height = 80;
+  outThumb.getContext('2d').drawImage(img, sqSrcX, srcY, sqSrcW, srcH, 0, 0, 80, 80);
+  let urlThumb = outThumb.toDataURL('image/webp', 0.7);
+  if (!urlThumb.startsWith('data:image/webp')) urlThumb = outThumb.toDataURL('image/jpeg', 0.7);
+
   if (window._newExPhotoMode) {
     window._newExPhoto = url11;
     window._newExPhoto32 = url32;
+    window._newExPhotoThumb = urlThumb;
     const imgEl = document.getElementById('newExPhotoImg');
     const icon = document.getElementById('newExPhotoCameraIcon');
     const label = document.getElementById('newExPhotoLabel');
@@ -20731,10 +21094,10 @@ function saveExPhotoCrop() {
 
   const exName = document.getElementById('ex-detail-overlay-title')?.textContent || '';
   if (exName) {
-    try {
-      localStorage.setItem(`ironlog_ex_photo_${exName}`, url32);
-      localStorage.setItem(`ironlog_ex_photo_thumb_${exName}`, url11);
-    } catch(e) { showToast('Storage full — photo not saved'); }
+    if (window.localforage)
+      window.localforage.setItem(`ironlog_ex_photo_${exName}`, url32).catch(e => showToast('Photo save failed'));
+    else { try { localStorage.setItem(`ironlog_ex_photo_${exName}`, url32); } catch(e) { showToast('Storage full — photo not saved'); } }
+    try { localStorage.setItem(`ironlog_ex_photo_thumb_${exName}`, urlThumb); } catch(_) {}
   }
 
   // Show 3:2 in overlay header — remove placeholder if present
@@ -20780,16 +21143,23 @@ function _loadExDetailPhoto(exName) {
   if (titleEl) titleEl.textContent = exName;
   if (titleNoPhotoEl) titleNoPhotoEl.textContent = exName;
   if (!wrap || !imgEl) return;
+  const _applyDetailPhoto = (src) => {
+    if (src) {
+      wrap.querySelector('.ex-detail-no-img-bg')?.remove();
+      imgEl.style.display = 'block';
+      imgEl.src = src;
+      wrap.style.display = 'block';
+      if (noPhotoWrap) noPhotoWrap.style.display = 'none';
+    }
+  };
   const saved = exName ? (localStorage.getItem(`ironlog_ex_photo_${exName}`) || null) : null;
   if (saved) {
-    // Remove black bg placeholder if present
-    wrap.querySelector('.ex-detail-no-img-bg')?.remove();
-    imgEl.style.display = 'block';
-    imgEl.src = saved;
-    wrap.style.display = 'block';
-    if (noPhotoWrap) noPhotoWrap.style.display = 'none';
-  } else {
-    // Show black background with camera icon — then try Firebase Storage as fallback
+    _applyDetailPhoto(saved);
+  } else if (exName && window.localforage) {
+    window.localforage.getItem(`ironlog_ex_photo_${exName}`).then(p => { if (p) _applyDetailPhoto(p); });
+  }
+  if (!saved) {
+    // Show black background with camera icon (photo may load async above)
     imgEl.src = '';
     wrap.style.display = 'block';
     if (noPhotoWrap) noPhotoWrap.style.display = 'none';
@@ -20801,16 +21171,7 @@ function _loadExDetailPhoto(exName) {
       bg.style.cssText = 'width:100%;aspect-ratio:2/1;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;';
       bg.innerHTML = `<div style="width:80px;height:80px;border-radius:50%;border:1.5px solid #aaa;display:flex;align-items:center;justify-content:center;"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>`;
       imgEl.style.display = 'none';
-      wrap.insertBefore(bg, imgEl);
-    }
-    // Fallback: try Firebase Storage
-    if (exName && window._currentUser) {
-      _loadExPhotoFromCloud(exName, false).then(url => {
-        if (!url) return;
-        wrap.querySelector('.ex-detail-no-img-bg')?.remove();
-        imgEl.style.display = 'block';
-        imgEl.src = url;
-      });
+      imgEl.parentElement.insertBefore(bg, imgEl);
     }
   }
 }
@@ -20902,9 +21263,27 @@ window.setSetType = setSetType;
 
 // ── EXERCISE DETAIL MENU ──────────────────────────────
 function openExDetailMenu() {
+  window._exMenuFromExtab = false;
+  const changeBtn = document.getElementById('ex-detail-menu-change-btn');
+  if (changeBtn) changeBtn.style.display = 'flex';
   document.getElementById('ex-detail-menu-overlay').style.display = 'block';
   document.getElementById('ex-detail-menu-sheet').style.display = 'block';
 }
+function openExtabExMenu() {
+  const name = (document.getElementById('extab-ex-overlay-name')?.textContent ||
+                document.getElementById('extab-ex-overlay-name-nophoto')?.textContent || '').trim();
+  if (!name) return;
+  const t = document.getElementById('ex-detail-overlay-title');
+  const tn = document.getElementById('ex-detail-overlay-title-nophoto');
+  if (t) t.textContent = name;
+  if (tn) tn.textContent = name;
+  window._exMenuFromExtab = true;
+  const changeBtn = document.getElementById('ex-detail-menu-change-btn');
+  if (changeBtn) changeBtn.style.display = 'none';
+  document.getElementById('ex-detail-menu-overlay').style.display = 'block';
+  document.getElementById('ex-detail-menu-sheet').style.display = 'block';
+}
+window.openExtabExMenu = openExtabExMenu;
 function closeExDetailMenu() {
   document.getElementById('ex-detail-menu-overlay').style.display = 'none';
   document.getElementById('ex-detail-menu-sheet').style.display = 'none';
@@ -20919,31 +21298,45 @@ function editExerciseDetail() {
   window._newExMuscle = exData.muscle || 'Chest';
   window._newExCompoundMuscles = exData.compoundMuscles || [];
   window._newExSelectedSubMuscles = exData.subMuscles || [];
-  window._newExPhoto = localStorage.getItem(`ironlog_ex_photo_${name}`) || null;
   const input = document.getElementById('newExInput');
   if (input) input.value = name;
-  // Set photo
-  const photoImg = document.getElementById('newExPhotoImg');
-  const cameraIcon = document.getElementById('newExPhotoCameraIcon');
-  const photoLabel = document.getElementById('newExPhotoLabel');
-  if (window._newExPhoto) {
-    if (photoImg) { photoImg.src = window._newExPhoto; photoImg.style.display = 'block'; }
-    if (cameraIcon) cameraIcon.style.display = 'none';
-    if (photoLabel) { photoLabel.textContent = 'Change Photo'; photoLabel.style.color = 'var(--accent)'; }
-  } else {
-    if (photoImg) { photoImg.src = ''; photoImg.style.display = 'none'; }
-    if (cameraIcon) cameraIcon.style.display = 'flex';
-    if (photoLabel) { photoLabel.textContent = 'Add Photo/Image'; photoLabel.style.color = '#555'; }
-  }
+  const videoInput = document.getElementById('newExVideoUrl');
+  if (videoInput) videoInput.value = exData.videoUrl || '';
   // Update title and button
   const title = document.getElementById('newExModalTitle');
   const saveBtn = document.getElementById('newExSaveBtn');
   if (title) title.textContent = 'Edit Exercise';
   if (saveBtn) saveBtn.textContent = 'SAVE CHANGES';
   _renderNewExPills(window._newExMuscle);
-  // Open modal FIRST — then close overlay (no flash)
+  _nExSetupBodySVG();
+  _nExHighlightMuscle(window._newExMuscle);
+  // Close extab overlay if open (it sits above the modal at z-index:250)
+  if (document.getElementById('extab-ex-overlay')?.style.display !== 'none')
+    closeExtabExOverlay();
+  // Open modal
   document.getElementById('newExModalOverlay').classList.add('open');
   if (window._historyPush) window._historyPush('new-ex');
+  // Load photo — check localForage (primary) then localStorage (fallback)
+  const photoImg = document.getElementById('newExPhotoImg');
+  const cameraIcon = document.getElementById('newExPhotoCameraIcon');
+  const photoLabel = document.getElementById('newExPhotoLabel');
+  const _applyEditPhoto = (src) => {
+    window._newExPhoto = src || null;
+    if (src) {
+      if (photoImg) { photoImg.src = src; photoImg.style.display = 'block'; }
+      if (cameraIcon) cameraIcon.style.display = 'none';
+      if (photoLabel) { photoLabel.textContent = 'Replace Photo/Image'; photoLabel.style.color = 'var(--accent)'; }
+    } else {
+      if (photoImg) { photoImg.src = ''; photoImg.style.display = 'none'; }
+      if (cameraIcon) cameraIcon.style.display = 'flex';
+      if (photoLabel) { photoLabel.textContent = 'Add Photo/Image'; photoLabel.style.color = '#555'; }
+    }
+  };
+  const _lsSrc = localStorage.getItem(`ironlog_ex_photo_${name}`);
+  if (_lsSrc) { _applyEditPhoto(_lsSrc); }
+  else if (window.localforage) {
+    window.localforage.getItem(`ironlog_ex_photo_${name}`).then(_applyEditPhoto).catch(() => _applyEditPhoto(null));
+  } else { _applyEditPhoto(null); }
 }
 function changeExerciseDetail() {
   const id = window._exDetailCardId;
@@ -20976,6 +21369,54 @@ function confirmChangeExercise() {
   }, 320);
 }
 function deleteExerciseDetail() {
+  if (window._exMenuFromExtab) {
+    // ── Exercises tab: confirm then remove from custom exercises list ──────
+    const name = (document.getElementById('ex-detail-overlay-title')?.textContent ||
+                  document.getElementById('ex-detail-overlay-title-nophoto')?.textContent || '').trim();
+    if (!name) return;
+    closeExDetailMenu();
+    closeExtabExOverlay();
+    const overlay = document.createElement('div');
+    overlay.className = 'delete-confirm-overlay';
+    overlay.innerHTML = `
+      <div class="delete-confirm-sheet">
+        <div class="delete-confirm-title">Delete Exercise ?</div>
+        <div class="delete-confirm-sub">"${name}" will be permanently removed from your exercise list.</div>
+        <div class="delete-confirm-btns">
+          <button class="btn-del-cancel" id="_delExCancel">Cancel</button>
+          <button class="btn-del-yes" id="_delExConfirm">Delete</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.querySelector('#_delExCancel').onclick = () => overlay.remove();
+    overlay.querySelector('#_delExConfirm').onclick = () => {
+      overlay.remove();
+      customExercises = customExercises.filter(e => e.name !== name);
+      saveCustom();
+      const _delHidden = JSON.parse(_LS.get('ironlog_hidden_ex') || '[]');
+      if (!_delHidden.includes(name)) { _delHidden.push(name); _LS.set('ironlog_hidden_ex', JSON.stringify(_delHidden)); }
+      _invalidateExCache();
+      closeExtabExOverlay();
+      renderExercisesTab();
+    };
+  } else {
+    // ── Workout context: show confirmation then remove card from session ────
+    const id = window._exDetailCardId;
+    if (!id) return;
+    const card = document.getElementById(id);
+    const exName = card?.querySelector('.ex-name')?.textContent || card?.dataset?.exname || '';
+    closeExDetailMenu();
+    document.getElementById('delete-ex-confirm-name').textContent = exName;
+    document.getElementById('delete-ex-confirm-overlay').style.display = 'block';
+    document.getElementById('delete-ex-confirm-sheet').style.display  = 'block';
+  }
+}
+function cancelDeleteExercise() {
+  document.getElementById('delete-ex-confirm-overlay').style.display = 'none';
+  document.getElementById('delete-ex-confirm-sheet').style.display   = 'none';
+}
+function confirmDeleteExercise() {
+  cancelDeleteExercise();
   const id = window._exDetailCardId;
   if (!id) return;
   closeExDetailOverlay();
@@ -20984,6 +21425,8 @@ function deleteExerciseDetail() {
     if (card) { card.remove(); saveSession(); }
   }, 300);
 }
+window.cancelDeleteExercise  = cancelDeleteExercise;
+window.confirmDeleteExercise = confirmDeleteExercise;
 function markExDetailDone() {
   const id = window._exDetailCardId;
   if (!id) return;
@@ -21044,7 +21487,7 @@ function openWorkoutPhotoFlow(idx) {
         Choose from Gallery
       </button>
       ${hasPhoto ? `<button onclick="document.getElementById('workout-photo-sheet-tmp').remove();_removeWorkoutPhoto()" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#ff4747;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff4747" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff4747" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
         Remove Photo
       </button>` : ''}
       <div style="height:8px;"></div>
