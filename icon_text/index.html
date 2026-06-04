@@ -53,10 +53,7 @@ if ('serviceWorker' in navigator) {
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;}
 button{cursor:pointer;touch-action:manipulation;-webkit-appearance:none;outline:none;}
 *:focus{outline:none;}
-.swipe-row-outer,.swipe-row{-webkit-tap-highlight-color:transparent;}
-@keyframes swipePeek{0%{transform:translateX(0)}30%{transform:translateX(20px)}70%{transform:translateX(20px)}100%{transform:translateX(0)}}
-.swipe-peek{animation:swipePeek 800ms cubic-bezier(.4,0,.2,1) forwards;}
-#page-workouts2{scrollbar-width:none;padding-top:calc(60px + env(safe-area-inset-top));padding-bottom:calc(180px + env(safe-area-inset-bottom)) !important;}
+#page-workouts2{scrollbar-width:none;padding-top:calc(96px + env(safe-area-inset-top));padding-bottom:calc(180px + env(safe-area-inset-bottom)) !important;}
 #page-workouts2::-webkit-scrollbar{display:none;}
 #workouts2TabContent::-webkit-scrollbar{display:none;}
 /* Safe area — ensure fixed full-screen overlays respect notch and home indicator */
@@ -131,7 +128,7 @@ body.desktop-mode .pages-wrap {
 .workout-name-bar.visible{display:block;}
 .workout-name-bar input{width:100%;background:transparent;border:none;color:#34d399;font-family:'Bebas Neue';font-size:22px;padding:0;letter-spacing:1px;outline:none;text-align:left;direction:ltr;}
 .workout-name-bar input::placeholder{color:var(--muted);}
-#workoutNameModalInput::placeholder{font-family:'DM Sans';letter-spacing:0;}
+#workoutNameModalInput::placeholder{color:var(--muted);}
 #nex-muscle-slider{-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:#333;outline:none;}
 #nex-muscle-slider::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:#333;}
 #nex-muscle-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;border-radius:50%;background:var(--accent);cursor:pointer;margin-top:-8px;}
@@ -1474,7 +1471,7 @@ function hidAuthScreen() {
     </div>
     <div class="prog-acc-body" style="display:none;">
       <div id="bestprog-info" style="display:none;margin-bottom:8px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;font-family:'DM Sans';font-size:12px;color:var(--muted);line-height:1.8;font-weight:500;">
-        <div style="color:var(--text);font-size:12px;">Total number of new records (<svg width="11" height="11" viewBox="0 0 24 24" fill="#e8ff47" style="vertical-align:middle;"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg><svg width="11" height="11" viewBox="0 0 24 24" fill="#ff8c42" style="vertical-align:middle;"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg><svg width="11" height="11" viewBox="0 0 24 24" fill="#a78bfa" style="vertical-align:middle;"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>) for each body part</div>
+        <div style="color:var(--text);font-size:12px;">Total number of new records (<svg width="16" height="16" viewBox="0 0 24 24" fill="#e8ff47" style="vertical-align:middle;"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg><svg width="16" height="16" viewBox="0 0 24 24" fill="#ff8c42" style="vertical-align:middle;"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg><svg width="16" height="16" viewBox="0 0 24 24" fill="#a78bfa" style="vertical-align:middle;"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>) for each body part</div>
         <div style="border-top:1px solid var(--border);margin-top:6px;padding-top:6px;">
           <div style="display:flex;gap:8px;align-items:baseline;"><span style="color:#e8ff47;font-weight:700;min-width:28px;">MAX</span><span style="color:#aaa;">— Heaviest weight lifted</span></div>
           <div style="display:flex;gap:8px;align-items:baseline;"><span style="color:#ff8c42;font-weight:700;min-width:28px;">1RM</span><span style="color:#aaa;">— Estimated 1 Rep Max: kg × (1 + reps/30)</span></div>
@@ -2806,7 +2803,7 @@ function renderTodayPlanCard() {
           ? `<button onclick="showWipToast()" style="background:transparent;border:1px solid #34d399;border-radius:7px;color:#34d399;font-size:16px;font-weight:700;padding:7px 14px;cursor:pointer;white-space:nowrap;font-family:'DM Sans';">WIP</button>`
           : `<button onclick="loadOrSwitchWorkouts()" style="background:transparent;border:1px solid rgba(255,140,66,.4);border-radius:7px;color:#ff8c42;font-size:16px;font-weight:700;padding:7px 14px;cursor:pointer;white-space:nowrap;font-family:'DM Sans';">Go</button>`
         }
-        ${(()=>{ const durations=workouts.filter(x=>!x._draft&&!x._template&&x.name===plan.name&&x.durationMins>0).slice(0,3).map(x=>x.durationMins); if(!durations.length) return '<div style="height:4px;"></div>'; const avg=durations.reduce((a,b)=>a+b,0)/durations.length; const rounded=Math.ceil(avg/5)*5; return `<div style="display:flex;align-items:center;justify-content:center;gap:3px;padding:2px 0;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#7ec8e3" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg><span style="font-size:11px;color:#7ec8e3;font-weight:700;">~${rounded}m</span></div>`; })()}
+        ${(()=>{ const durations=workouts.filter(x=>!x._draft&&!x._template&&x.name===plan.name&&x.durationMins>0).slice(0,3).map(x=>x.durationMins); if(!durations.length) return '<div style="height:4px;"></div>'; const avg=durations.reduce((a,b)=>a+b,0)/durations.length; const rounded=Math.ceil(avg/5)*5; return `<div style="display:flex;align-items:center;justify-content:center;gap:3px;padding:2px 0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7ec8e3" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg><span style="font-size:11px;color:#7ec8e3;font-weight:700;">~${rounded}m</span></div>`; })()}
         <table style="border-collapse:collapse;border:1px solid var(--border);border-radius:6px;overflow:hidden;width:100%;">
           <tr><td style="font-size:14px;font-family:'Bebas Neue';color:var(--muted);letter-spacing:.5px;padding:4px 8px;border-bottom:1px solid var(--border);white-space:nowrap;">EX</td><td style="font-family:'Bebas Neue';font-size:14px;color:var(--text);text-align:right;padding:4px 8px;border-bottom:1px solid var(--border);">${totalEx}</td></tr>
           <tr><td style="font-size:14px;font-family:'Bebas Neue';color:var(--muted);letter-spacing:.5px;padding:4px 8px;white-space:nowrap;">SETS</td><td style="font-family:'Bebas Neue';font-size:14px;color:var(--text);text-align:right;padding:4px 8px;">${totalSets}</td></tr>
@@ -3022,6 +3019,7 @@ function _setWorkoutHeroPhoto(name) {
     </div>` : ''}
     <div style="position:relative;margin:0 10px;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;">
       <img src="${photo}" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;filter:brightness(0.85);">
+      ${localStorage.getItem(`ironlog_workout_video_${name}`) ? `<button onclick="event.stopPropagation();const _v=localStorage.getItem('ironlog_workout_video_${name}');if(_v)window.open(_v,'_blank');" style="position:absolute;bottom:8px;left:10px;z-index:4;display:flex;align-items:center;gap:5px;background:transparent;border:none;padding:4px 6px;border-radius:4px;cursor:pointer;-webkit-tap-highlight-color:transparent;"><svg width="13" height="13" viewBox="0 0 24 24" fill="var(--accent)" stroke="none"><polygon points="5,3 19,12 5,21"/></svg><span style="color:var(--accent);font-family:'DM Sans';font-size:11px;font-weight:700;letter-spacing:.5px;">PLAY</span></button>` : ''}
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 10px 4px;gap:8px;">
       ${window._isNewWorkoutFlow ? '' : `<button onclick="finishWorkout()" style="background:var(--accent);border:none;border-radius:8px;padding:7px 16px;cursor:pointer;-webkit-tap-highlight-color:transparent;flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:2px;">
@@ -3217,6 +3215,8 @@ function restoreSession() {
 }
 
 function clearSession() {
+  document.getElementById('_nwf-back-wrapper')?.remove();
+  _nwfResetHeaderPadding();
   // Edit mode (from W2 "Edit") — cancel returns to expanded workout sheet, no confirmation needed
   if (window._editingWorkoutIdx != null) {
     const _returnIdx = window._editingWorkoutIdx;
@@ -4936,15 +4936,17 @@ function openExtabExOverlay(exName) {
     const _bsKg = _best1RMSet ? (_best1RMSet.kg % 1 === 0 ? String(_best1RMSet.kg) : _best1RMSet.kg.toFixed(1)) : '';
     const _su = `<span style="font-family:'Bebas Neue';font-size:26px;color:${muscleColor};letter-spacing:1px;opacity:0.75;margin-left:5px;vertical-align:baseline;">`;
     const _volStr = _maxVol >= 1000 ? (_maxVol / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : String(Math.round(_maxVol));
+    // PROGRESS is dot 0; carousel opens on MAX (index 1)
     const slides = [
+      { val: '', unit: '', prefix: 'PROGRESS', label: 'Select MAX / 1RM / VOL and time period' },
       { val: _maxKg % 1 === 0 ? String(_maxKg) : _maxKg.toFixed(1), unit: 'kg', prefix: 'MAX', label: 'Heaviest weight lifted' },
       { val: _max1RM % 1 === 0 ? String(_max1RM) : _max1RM.toFixed(1), unit: 'kg', prefix: '1RM', label: 'Maximum weight you can lift for single repetition' },
       { val: `${_bsKg}${_su}kg</span> × ${_best1RMSet?.reps ?? ''}`, unit: 'reps', prefix: 'B.Set', label: 'Your best set' },
       { val: _volStr, unit: 'kg', prefix: 'VOL', label: 'Best session volume' },
-      { val: '', unit: '', prefix: 'PROGRESS', label: 'Select MAX / 1RM / VOL and time period' },
     ];
-    const PROG_IDX = slides.length - 1;
-    let _cur = 0;
+    const PROG_IDX = 0;
+    const _startIdx = 1; // open on MAX
+    let _cur = _startIdx;
     const carousel = document.createElement('div');
     carousel.style.cssText = 'padding:18px 0 8px;margin-top:12px;text-align:center;width:100%;user-select:none;';
 
@@ -4953,21 +4955,21 @@ function openExtabExOverlay(exName) {
     }
     const valEl = document.createElement('div');
     valEl.style.cssText = `font-family:'Bebas Neue';font-size:64px;line-height:1;color:${muscleColor};letter-spacing:1px;min-height:64px;`;
-    _renderSlideVal(slides[0]);
+    _renderSlideVal(slides[_startIdx]);
 
     const prefixEl = document.createElement('div');
     prefixEl.style.cssText = "font-family:'DM Sans';font-size:11px;font-weight:700;color:#FFD600;letter-spacing:.8px;margin-top:6px;";
-    prefixEl.textContent = slides[0].prefix;
+    prefixEl.textContent = slides[_startIdx].prefix;
 
     const lblEl = document.createElement('div');
     lblEl.style.cssText = "font-family:'DM Sans';font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.5px;margin-top:2px;padding:0 20px;min-height:32px;";
-    lblEl.textContent = slides[0].label;
+    lblEl.textContent = slides[_startIdx].label;
 
     const dots = document.createElement('div');
     dots.style.cssText = 'display:flex;gap:6px;margin-top:10px;justify-content:center;';
     const dotEls = slides.map((_, i) => {
       const d = document.createElement('div');
-      d.style.cssText = `width:6px;height:6px;border-radius:50%;background:${i===0 ? muscleColor : 'rgba(255,255,255,0.25)'};transition:background .2s;cursor:pointer;display:inline-block;`;
+      d.style.cssText = `width:6px;height:6px;border-radius:50%;background:${i===_startIdx ? muscleColor : 'rgba(255,255,255,0.25)'};transition:background .2s;cursor:pointer;display:inline-block;`;
       d.onclick = () => goTo(i);
       dots.appendChild(d);
       return d;
@@ -5680,36 +5682,19 @@ function renderWorkoutsTab2() {
       </button>
     </div>`;
 
-    const cardInner = workoutPhoto ? `
-      <div onclick="openW2Sheet(${i})" style="cursor:pointer;">
-        <div style="position:relative;width:100%;aspect-ratio:21/9;overflow:hidden;">
-          <img src="${workoutPhoto}" style="width:100%;height:100%;object-fit:cover;display:block;filter:brightness(0.85);">
-        </div>
-        <div style="padding:10px 14px 12px;text-align:right;pointer-events:none;">
-          <div style="font-family:'DM Sans';font-size:28px;font-weight:900;color:var(--text);">${w.name||'Workout'}</div>
-          ${lastDate ? `<div class="workout-last-date" style="font-family:'DM Sans';font-size:12px;font-weight:600;color:var(--muted);margin-top:2px;">${lastDate}</div>` : ''}
-        </div>
-      </div>` : `
-      <div style="position:relative;display:flex;align-items:center;gap:12px;padding:14px;">
-        ${lastDate ? `<div class="workout-last-date" style="font-family:'DM Sans';font-size:12px;font-weight:600;color:var(--muted);flex-shrink:0;">${lastDate}</div>` : ''}
-        <div style="flex:1;min-width:0;text-align:right;cursor:pointer;" onclick="openW2Sheet(${i})">
-          <div style="font-family:'DM Sans';font-size:28px;font-weight:900;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${w.name||'Workout'}</div>
+    const cardInner = `
+      <div style="position:relative;border-radius:14px;overflow:hidden;aspect-ratio:16/7;background:#1a1a1a;cursor:pointer;" onclick="window._activeTabHighlight=null;window._loadFromToday=false;window._wtabSelectedIdx=null;loadWorkout(${i});switchTab('log')">
+        ${workoutPhoto ? `<img src="${workoutPhoto}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.72);">` : ''}
+        <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.88) 0%,rgba(0,0,0,0.12) 55%,transparent 100%);pointer-events:none;"></div>
+        <button onclick="event.stopPropagation();openW2Sheet(${i})" style="position:absolute;top:8px;right:8px;z-index:2;background:rgba(0,0,0,0.38);border:1px solid rgba(255,255,255,0.3);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;-webkit-tap-highlight-color:transparent;padding:0;font-family:Georgia,serif;font-style:italic;font-size:15px;font-weight:700;line-height:1;">i</button>
+        <div style="position:absolute;bottom:0;left:0;right:0;padding:10px 14px 12px;pointer-events:none;text-align:right;">
+          ${lastDate ? `<div style="font-family:'DM Sans';font-size:11px;font-weight:600;color:rgba(255,255,255,0.55);margin-bottom:2px;">${lastDate}</div>` : ''}
+          <div style="font-family:'DM Sans';font-size:20px;font-weight:900;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${w.name||'Workout'}</div>
         </div>
       </div>`;
 
-    rowsHtml += `<div class="swipe-row-outer" style="position:relative;overflow:hidden;border-bottom:1px solid var(--border);-webkit-tap-highlight-color:transparent;${_isDimmed?'opacity:0.25;pointer-events:none;':''}">
-      <div class="swipe-bg" id="swipe-bg-${i}" style="position:absolute;top:5px;bottom:5px;left:5px;right:0;border-radius:8px;background:var(--bg);display:flex;align-items:center;padding-left:20px;pointer-events:none;">
-        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;opacity:0;transition:opacity .15s;" id="swipe-bg-content-${i}">
-          <svg width="32" height="32" viewBox="0 0 44 44" fill="none">
-            <circle id="swipe-circle-${i}" cx="22" cy="22" r="21" stroke="#000" stroke-width="3.5"/>
-            <polygon id="swipe-arrow-${i}" points="17,13 34,22 17,31" fill="#000"/>
-          </svg>
-          <span id="swipe-label-${i}" style="font-family:'DM Sans';font-size:11px;font-weight:900;color:#000;letter-spacing:.5px;">START</span>
-        </div>
-      </div>
-      <div class="swipe-row" data-idx="${i}" data-wid="${w.id||i}" style="position:relative;display:flex;flex-direction:column;touch-action:pan-y;will-change:transform;transition:transform .25s cubic-bezier(.4,0,.2,1);-webkit-tap-highlight-color:transparent;width:100%;">
-        ${cardInner}
-      </div>
+    rowsHtml += `<div style="padding:5px 12px;${_isDimmed?'opacity:0.25;pointer-events:none;':''}">
+      ${cardInner}
     </div>`;
   });
 
@@ -5731,7 +5716,7 @@ function renderWorkoutsTab2() {
   let _libRowsHtml = '';
   if (_wTabView === 'all') {
     const _userNames = new Set(sorted.map(w => (w.name||'').trim().toLowerCase()));
-    const _libWs = _libraryWorkouts.filter(w => !_userNames.has((w.name||'').trim().toLowerCase()));
+    const _libWs = (_libraryWorkouts||[]).filter(w => !_userNames.has((w.name||'').trim().toLowerCase()));
     if (!_libraryLoaded) {
       _libRowsHtml = '<div style="text-align:center;padding:16px;color:#555;font-size:13px;">Loading library&</div>';
       loadLibrary().then(() => { if (_wTabView === 'all') renderWorkoutsTab2(); });
@@ -5752,119 +5737,6 @@ function renderWorkoutsTab2() {
   // Render all at once — no async, no reflow
   el.innerHTML = `<div style="margin-top:4px;">${rowsHtml}${_libRowsHtml}</div>${_bottomBtns}`;
 
-  // ── Swipe-to-Start gesture ────────────────────────────
-  el.querySelectorAll('.swipe-row-outer').forEach(outer => {
-    const row = outer.querySelector('.swipe-row');
-    const bg  = outer.querySelector('.swipe-bg');
-    if (!row) return;
-    let startX = 0, startY = 0, curX = 0, isDragging = false, hapticFired = false;
-    const CARD_W    = () => outer.offsetWidth;
-    const THRESHOLD = () => CARD_W() * 0.5;
-
-    function getIdx() { return parseInt(row.dataset.idx); }
-
-    function _setBgColors(activated) {
-      const bgContent = bg?.querySelector('[id^="swipe-bg-content-"]');
-      const circle    = bg?.querySelector('[id^="swipe-circle-"]');
-      const arrow     = bg?.querySelector('[id^="swipe-arrow-"]');
-      const label     = bg?.querySelector('[id^="swipe-label-"]');
-      if (bg)      bg.style.background = activated ? '#000' : 'var(--accent)';
-      if (circle)  circle.setAttribute('stroke', activated ? 'var(--accent)' : '#000');
-      if (arrow)   arrow.setAttribute('fill',   activated ? 'var(--accent)' : '#000');
-      if (label)   label.style.color =           activated ? 'var(--accent)' : '#000';
-    }
-
-    function snapClose() {
-      row.style.transition = 'transform .25s cubic-bezier(.4,0,.2,1)';
-      row.style.transform  = 'translateX(0)';
-      curX = 0;
-      if (bg) bg.style.background = 'var(--bg)';
-      const bgContent = bg?.querySelector('[id^="swipe-bg-content-"]');
-      if (bgContent) bgContent.style.opacity = '0';
-      _setBgColors(false);
-    }
-
-    function triggerStart() {
-      snapClose();
-      const idx = getIdx();
-      if (workouts[idx]) {
-        window._activeTabHighlight = null;
-        window._loadFromToday      = false;
-        window._wtabSelectedIdx    = null;
-        loadWorkout(idx);
-        switchTab('log');
-      }
-    }
-
-    outer.addEventListener('touchstart', e => {
-      startX = e.touches[0].clientX;
-      startY = e.touches[0].clientY;
-      curX = 0; isDragging = false; hapticFired = false;
-      row.style.transition = 'none';
-    }, { passive: true });
-
-    outer.addEventListener('touchmove', e => {
-      const dx = e.touches[0].clientX - startX;
-      const dy = e.touches[0].clientY - startY;
-      if (!isDragging && Math.abs(dy) > Math.abs(dx) + 4) return;
-      if (!isDragging && Math.abs(dx) > 6) isDragging = true;
-      if (!isDragging) return;
-
-      curX = Math.max(0, Math.min(dx, CARD_W()));
-      row.style.transform = `translateX(${curX}px)`;
-
-      const activated = curX >= THRESHOLD();
-      // Show accent bg + fade in content as user starts dragging
-      if (curX > 5) {
-        if (bg) _setBgColors(activated);
-        const bgContent = bg?.querySelector('[id^="swipe-bg-content-"]');
-        if (bgContent) bgContent.style.opacity = String(Math.min(1, curX / (THRESHOLD() * 0.4)));
-      } else {
-        if (bg) bg.style.background = 'var(--bg)';
-      }
-
-      if (!hapticFired && activated) {
-        hapticFired = true;
-        if (navigator.vibrate) navigator.vibrate(12);
-      }
-    }, { passive: true });
-
-    outer.addEventListener('touchend', () => {
-      if (!isDragging) { isDragging = false; return; }
-      isDragging = false;
-      if (curX >= THRESHOLD()) {
-        triggerStart();
-      } else {
-        snapClose();
-      }
-    });
-  });
-
-  // One-time peek animation on first load
-  const _peekKey = 'barzelpro_swipe_peek_done';
-  if (!localStorage.getItem(_peekKey)) {
-    const firstRow = el.querySelector('.swipe-row');
-    if (firstRow) {
-      setTimeout(() => {
-        firstRow.classList.add('swipe-peek');
-        firstRow.addEventListener('animationend', () => {
-          firstRow.classList.remove('swipe-peek');
-          localStorage.setItem(_peekKey, '1');
-        }, { once: true });
-      }, 600);
-    }
-  }
-
-  // Close any open row when tapping elsewhere
-  document.addEventListener('touchstart', function _closeSwipes(e) {
-    if (!e.target.closest('.swipe-row-outer')) {
-      el.querySelectorAll('.swipe-row').forEach(r => {
-        r.style.transition = 'transform .3s cubic-bezier(.4,0,.2,1)';
-        r.style.transform = 'translateX(0)';
-      });
-      el.querySelectorAll('.swipe-bg').forEach(b => { b.style.opacity = '0'; });
-    }
-  }, { passive: true, once: false });
 
 }
 
@@ -6013,7 +5885,7 @@ function renderWorkoutsTab() {
             }
           </div>
             <div class="wtab-pro-content ${window._wtabProMode ? 'visible' : ''}">
-              ${(()=>{ const durations=workouts.filter(x=>!x._draft&&!x._template&&x.name===w.name&&x.durationMins>0).slice(0,3).map(x=>x.durationMins); if(!durations.length) return ''; const avg=durations.reduce((a,b)=>a+b,0)/durations.length; const rounded=Math.ceil(avg/5)*5; return `<div style="display:flex;align-items:center;justify-content:center;gap:3px;padding:4px 0 0;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#7ec8e3" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg><span style="font-size:11px;color:#7ec8e3;font-weight:700;">~${rounded}m</span></div>`; })()}
+              ${(()=>{ const durations=workouts.filter(x=>!x._draft&&!x._template&&x.name===w.name&&x.durationMins>0).slice(0,3).map(x=>x.durationMins); if(!durations.length) return ''; const avg=durations.reduce((a,b)=>a+b,0)/durations.length; const rounded=Math.ceil(avg/5)*5; return `<div style="display:flex;align-items:center;justify-content:center;gap:3px;padding:4px 0 0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7ec8e3" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg><span style="font-size:11px;color:#7ec8e3;font-weight:700;">~${rounded}m</span></div>`; })()}
               <div style="border-top:1px solid rgba(255,255,255,0.2);margin-top:4px;padding-top:4px;"><table style="border-collapse:collapse;width:100%;"><tr><td style="font-size:14px;font-family:'Bebas Neue';color:var(--muted);letter-spacing:.5px;padding:1px 4px 1px 0;white-space:nowrap;">EX</td><td style="font-family:'Bebas Neue';font-size:14px;color:var(--text);text-align:right;padding:1px 0;">${w.exercises.length}</td></tr><tr><td style="font-size:14px;font-family:'Bebas Neue';color:var(--muted);letter-spacing:.5px;padding:1px 4px 1px 0;white-space:nowrap;">SETS</td><td style="font-family:'Bebas Neue';font-size:14px;color:var(--text);text-align:right;padding:1px 0;">${w.exercises.reduce((a,e)=>a+(e.sets||[]).filter(s=>!s.ignored).length,0)}</td></tr></table></div>
             </div>
           </div>
@@ -7236,6 +7108,8 @@ function _enterExUpdateMode(id) {
   if (!btn) return;
   btn.style.background = '#1a1a1a';
   btn.style.border = '1px solid #555';
+  btn.style.pointerEvents = 'none';
+  btn.style.cursor = 'default';
   const spans = btn.querySelectorAll('span');
   if (spans[0]) { spans[0].style.color = '#555'; spans[0].textContent = 'UPDATE'; }
   if (spans[1]) { spans[1].style.color = '#555'; spans[1].textContent = 'EXERCISE'; }
@@ -7249,6 +7123,8 @@ function _exitExUpdateMode() {
   if (!btn) return;
   btn.style.background = 'var(--accent)';
   btn.style.border = 'none';
+  btn.style.pointerEvents = '';
+  btn.style.cursor = 'pointer';
   const spans = btn.querySelectorAll('span');
   if (spans[0]) { spans[0].style.color = '#000'; spans[0].textContent = 'FINISH'; }
   if (spans[1]) { spans[1].style.color = '#000'; spans[1].textContent = 'EXERCISE'; }
@@ -7260,6 +7136,8 @@ function _markExDetailModified() {
   const btn = document.getElementById('ex-detail-finish-btn');
   if (!btn) return;
   btn.style.border = '1px solid var(--accent)';
+  btn.style.pointerEvents = '';
+  btn.style.cursor = 'pointer';
   const spans = btn.querySelectorAll('span');
   if (spans[0]) spans[0].style.color = 'var(--accent)';
   if (spans[1]) spans[1].style.color = 'var(--accent)';
@@ -8997,7 +8875,7 @@ function saveWorkoutToList() {
           ? `document.getElementById('postSaveOptions').remove();document.getElementById('_saveBlackScreen')?.remove();document.querySelectorAll('.tab').forEach(t=>{t.style.opacity='';t.style.pointerEvents=''});const _db=document.getElementById('dateBadge');if(_db){_db.style.opacity='';_db.style.cursor='';}actionsRowRestore();resetWorkoutState();document.getElementById('workoutName').value='';showTodayStartScreen();checkFinishReady();switchTab('workouts2');`
           : `document.getElementById('postSaveOptions').remove();document.getElementById('_saveBlackScreen')?.remove();document.querySelectorAll('.tab').forEach(t=>{t.style.opacity='';t.style.pointerEvents=''});const _db=document.getElementById('dateBadge');if(_db){_db.style.opacity='';_db.style.cursor='';}actionsRowRestore();resetWorkoutState();document.getElementById('workoutName').value='';showTodayStartScreen();checkFinishReady();`;
         optDiv.innerHTML = `
-            <button onclick="document.getElementById('postSaveOptions').remove();document.getElementById('_saveBlackScreen')?.remove();document.querySelectorAll('.tab').forEach(t=>{t.style.opacity='';t.style.pointerEvents=''});const _db=document.getElementById('dateBadge');if(_db){_db.style.opacity='';_db.style.cursor='';}actionsRowRestore();loadWorkout(0);switchTab('log');" style="width:100%;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:20px;font-weight:900;-webkit-text-stroke:0.4px currentColor;padding:16px;cursor:pointer;text-align:center;">Start the workout now</button>
+            <button onclick="document.getElementById('postSaveOptions').remove();document.getElementById('_saveBlackScreen')?.remove();document.getElementById('_nwf-back-wrapper')?.remove();_nwfResetHeaderPadding();document.querySelectorAll('.tab').forEach(t=>{t.style.opacity='';t.style.pointerEvents=''});const _db=document.getElementById('dateBadge');if(_db){_db.style.opacity='';_db.style.cursor='';}actionsRowRestore();loadWorkout(0);switchTab('log');" style="width:100%;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:20px;font-weight:900;-webkit-text-stroke:0.4px currentColor;padding:16px;cursor:pointer;text-align:center;">Start the workout now</button>
             <button onclick="${exitOnclick}" style="width:100%;background:transparent;border:1px solid var(--border);border-radius:10px;color:#fff;font-family:'DM Sans';font-size:16px;font-weight:700;padding:16px;cursor:pointer;text-align:center;">Exit</button>
           `;
         if (actionsRow.parentNode) actionsRow.parentNode.insertBefore(optDiv, actionsRow);
@@ -9198,7 +9076,7 @@ function openWorkoutNameModal() {
     _sb.disabled = !enabled;
     _sb.style.opacity = enabled ? '1' : '0.4';
     _sb.style.cursor = enabled ? 'pointer' : 'not-allowed';
-    _sb.textContent = (window._isNewWorkoutFlow && !current.trim()) ? 'Next' : 'Save';
+    _sb.textContent = window._isNewWorkoutFlow ? 'Next' : 'Save';
   }
   const _cb = document.getElementById('workoutNameCancelBtn');
   if (_cb) _cb.textContent = window._newFromToday ? 'Exit' : 'Cancel';
@@ -9208,13 +9086,30 @@ function openWorkoutNameModal() {
   setTimeout(() => inp?.focus(), 100);
 }
 function openWorkoutPhotoModal() {
-  window._pendingWorkoutPhoto = null;
-  const prev = document.getElementById('workoutPhotoPreview');
-  const cam  = document.getElementById('workoutPhotoCameraIcon');
-  const rem  = document.getElementById('workoutPhotoRemoveBtn');
-  if (prev) { prev.src = ''; prev.style.display = 'none'; }
-  if (cam)  cam.style.display = 'flex';
-  if (rem)  rem.style.display = 'none';
+  const saved  = window._pendingWorkoutPhoto;
+  const prev   = document.getElementById('workoutPhotoPreview');
+  const cam    = document.getElementById('workoutPhotoCameraIcon');
+  const rem    = document.getElementById('workoutPhotoRemoveBtn');
+  const vidSec = document.getElementById('workoutVideoSection');
+  const vidInp = document.getElementById('workoutVideoInput');
+  if (saved) {
+    // Returning to this step — restore previously picked photo
+    if (prev)   { prev.src = saved; prev.style.display = 'block'; }
+    if (cam)    cam.style.display = 'none';
+    if (rem)    rem.style.display = 'flex';
+    if (vidSec) vidSec.style.display = 'block';
+  } else {
+    // Fresh open — reset everything
+    if (prev)   { prev.src = ''; prev.style.display = 'none'; }
+    if (cam)    cam.style.display = 'flex';
+    if (rem)    rem.style.display = 'none';
+    if (vidSec) vidSec.style.display = 'none';
+    if (vidInp) vidInp.value = '';
+    const _playBadge = document.getElementById('workoutVideoPlayBadge');
+    if (_playBadge) _playBadge.style.display = 'none';
+  }
+  const _doneBtn3 = document.getElementById('workoutPhotoDoneBtn');
+  if (_doneBtn3) _doneBtn3.textContent = saved ? 'Next' : 'Skip';
   const nameLabel = document.getElementById('workoutPhotoWorkoutName');
   if (nameLabel) nameLabel.textContent = document.getElementById('workoutName')?.value || '';
   document.getElementById('workoutPhotoModalOverlay').classList.add('open');
@@ -9237,16 +9132,107 @@ function _handleWorkoutPhotoStep(input) {
   input.value = '';
 }
 function _removeWorkoutPhotoStep() {
-  const prev = document.getElementById('workoutPhotoPreview');
-  const cam  = document.getElementById('workoutPhotoCameraIcon');
-  const rem  = document.getElementById('workoutPhotoRemoveBtn');
-  if (prev) { prev.src = ''; prev.style.display = 'none'; }
-  if (cam)  cam.style.display = 'flex';
-  if (rem)  rem.style.display = 'none';
+  const prev   = document.getElementById('workoutPhotoPreview');
+  const cam    = document.getElementById('workoutPhotoCameraIcon');
+  const rem    = document.getElementById('workoutPhotoRemoveBtn');
+  const vidSec = document.getElementById('workoutVideoSection');
+  const vidInp = document.getElementById('workoutVideoInput');
+  if (prev)   { prev.src = ''; prev.style.display = 'none'; }
+  if (cam)    cam.style.display = 'flex';
+  if (rem)    rem.style.display = 'none';
+  if (vidSec) vidSec.style.display = 'none';
+  if (vidInp) vidInp.value = '';
+  const _playBadge2 = document.getElementById('workoutVideoPlayBadge');
+  if (_playBadge2) _playBadge2.style.display = 'none';
+  const _doneBtn2 = document.getElementById('workoutPhotoDoneBtn');
+  if (_doneBtn2) _doneBtn2.textContent = 'Skip';
   window._pendingWorkoutPhoto = null;
+}
+function _openWorkoutPhotoStepSheet() {
+  document.getElementById('workout-photo-step-sheet')?.remove();
+  const hasPhoto = !!window._pendingWorkoutPhoto;
+  const sheet = document.createElement('div');
+  sheet.id = 'workout-photo-step-sheet';
+  sheet.style.cssText = 'position:fixed;inset:0;z-index:500;';
+  sheet.innerHTML = `
+    <div onclick="document.getElementById('workout-photo-step-sheet').remove()" style="position:absolute;inset:0;background:rgba(0,0,0,0.6);"></div>
+    <div style="position:absolute;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:#1a1a1a;border-radius:20px 20px 0 0;padding:0 16px calc(16px + env(safe-area-inset-bottom));">
+      <div style="width:36px;height:3px;background:#555;border-radius:2px;margin:12px auto 4px;"></div>
+      <div style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#888;letter-spacing:.8px;text-align:center;padding:6px 0 12px;">WORKOUT PHOTO</div>
+      <button onclick="document.getElementById('workout-photo-step-sheet').remove();_triggerWorkoutPhotoStep('camera')" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        Take Photo
+      </button>
+      <button onclick="document.getElementById('workout-photo-step-sheet').remove();_triggerWorkoutPhotoStep('gallery')" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        Choose from Gallery
+      </button>
+      ${hasPhoto ? `<button onclick="document.getElementById('workout-photo-step-sheet').remove();_removeWorkoutPhotoStep()" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#ff4747;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff4747" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        Remove Photo
+      </button>` : ''}
+      <div style="height:8px;"></div>
+      <button onclick="document.getElementById('workout-photo-step-sheet').remove()" style="width:100%;background:#111;border:1px solid #444;border-radius:12px;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:600;padding:14px;cursor:pointer;text-align:center;-webkit-tap-highlight-color:transparent;">Cancel</button>
+    </div>`;
+  document.body.appendChild(sheet);
+}
+function _triggerWorkoutPhotoStep(mode) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.style.display = 'none';
+  if (mode === 'camera') input.setAttribute('capture', 'environment');
+  input.onchange = e => {
+    const file = e.target.files[0];
+    input.remove();
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        _exPhotoRawImg = img;
+        window._newWorkoutPhotoStepMode = true;
+        setTimeout(() => _openExPhotoCropper(img), 80);
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+  document.body.appendChild(input);
+  input.click();
+}
+function _backToWorkoutNameStep() {
+  document.getElementById('workoutPhotoModalOverlay').classList.remove('open');
+  window._nwfBackFromPhoto = true;
+  openWorkoutNameModal();
+}
+function _backToWorkoutPhotoStep() {
+  document.getElementById('_nwf-back-wrapper')?.remove();
+  _nwfResetHeaderPadding();
+  document.getElementById('newWorkoutActionOverlay').classList.remove('open');
+  document.getElementById('workoutPhotoModalOverlay').classList.add('open');
+  // _pendingWorkoutPhoto is null by this point (already saved) — check localStorage instead
+  const _name = (document.getElementById('workoutName')?.value || '').trim();
+  const _storedPhoto = _name ? localStorage.getItem(`ironlog_workout_photo_${_name}`) : null;
+  if (_storedPhoto) {
+    window._pendingWorkoutPhoto = _storedPhoto;
+    const prev    = document.getElementById('workoutPhotoPreview');
+    const cam     = document.getElementById('workoutPhotoCameraIcon');
+    const rem     = document.getElementById('workoutPhotoRemoveBtn');
+    const vidSec  = document.getElementById('workoutVideoSection');
+    const doneBtn = document.getElementById('workoutPhotoDoneBtn');
+    if (prev)    { prev.src = _storedPhoto; prev.style.display = 'block'; }
+    if (cam)     cam.style.display = 'none';
+    if (rem)     rem.style.display = 'flex';
+    if (vidSec)  vidSec.style.display = 'block';
+    if (doneBtn) doneBtn.textContent = 'Next';
+  }
 }
 function _skipWorkoutPhotoStep() {
   window._pendingWorkoutPhoto = null;
+  const _vidInp = document.getElementById('workoutVideoInput');
+  if (_vidInp) _vidInp.value = '';
+  document.getElementById('workoutVideoSection')?.style && (document.getElementById('workoutVideoSection').style.display = 'none');
   document.getElementById('workoutPhotoModalOverlay').classList.remove('open');
   // Cancel — discard new workout and return to W2
   window._isNewWorkoutFlow = false;
@@ -9261,15 +9247,22 @@ function _skipWorkoutPhotoStep() {
 }
 function _confirmWorkoutPhotoStep() {
   document.getElementById('workoutPhotoModalOverlay').classList.remove('open');
-  if (window._pendingWorkoutPhoto) {
-    const name = (document.getElementById('workoutName')?.value || '').trim();
-    if (name) {
-      localStorage.setItem(`ironlog_workout_photo_${name}`, window._pendingWorkoutPhoto);
-      _setWorkoutHeroPhoto(name);
-    }
+  const name = (document.getElementById('workoutName')?.value || '').trim();
+  if (window._pendingWorkoutPhoto && name) {
+    localStorage.setItem(`ironlog_workout_photo_${name}`, window._pendingWorkoutPhoto);
+    _setWorkoutHeroPhoto(name);
     window._pendingWorkoutPhoto = null;
   }
+  const videoUrl = (document.getElementById('workoutVideoInput')?.value || '').trim();
+  if (videoUrl && name) {
+    localStorage.setItem(`ironlog_workout_video_${name}`, videoUrl);
+  }
+  document.getElementById('workoutVideoSection')?.style && (document.getElementById('workoutVideoSection').style.display = 'none');
   _finalizeNewWorkoutArea();
+}
+function _nwfResetHeaderPadding() {
+  const h = document.getElementById('workout-sticky-header');
+  if (h) h.style.paddingTop = '';
 }
 function _finalizeNewWorkoutArea() {
   document.getElementById('today-start-screen').style.display = 'none';
@@ -9281,6 +9274,24 @@ function _finalizeNewWorkoutArea() {
   if (_wName) _setWorkoutHeroPhoto(_wName);
   updateTodayMuscleChips();
   checkFinishReady();
+  // Push the hero photo below the back icon
+  const _hdr = document.getElementById('workout-sticky-header');
+  if (_hdr) _hdr.style.paddingTop = 'calc(env(safe-area-inset-top) + 52px)';
+  document.getElementById('_nwf-back-wrapper')?.remove();
+  const _nwfWrap = document.createElement('div');
+  _nwfWrap.id = '_nwf-back-wrapper';
+  _nwfWrap.style.cssText = 'position:fixed;inset:0;max-width:430px;margin:0 auto;pointer-events:none;z-index:500;';
+  const _backBtn = document.createElement('button');
+  _backBtn.id = '_nwf-back-btn';
+  _backBtn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><line x1="5" y1="12" x2="19" y2="12" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><polyline points="13,6 19,12 13,18" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  _backBtn.style.cssText = 'position:absolute;top:calc(env(safe-area-inset-top) + 16px);right:20px;pointer-events:auto;background:transparent;border:none;cursor:pointer;padding:4px;-webkit-tap-highlight-color:transparent;';
+  _backBtn.onclick = () => { _nwfWrap.remove(); _backToWorkoutPhotoStep(); };
+  const _editTitle = document.createElement('div');
+  _editTitle.style.cssText = 'position:absolute;top:calc(env(safe-area-inset-top) + 20px);left:20px;font-family:\'DM Sans\',sans-serif;font-size:14px;font-weight:700;color:#fff;letter-spacing:.6px;pointer-events:none;';
+  _editTitle.textContent = 'EDIT MODE';
+  _nwfWrap.appendChild(_editTitle);
+  _nwfWrap.appendChild(_backBtn);
+  document.body.appendChild(_nwfWrap);
 }
 function cancelWorkoutNameModal() {
   closeWorkoutNameModal();
@@ -9349,11 +9360,12 @@ function confirmWorkoutNameModal() {
   closeWorkoutNameModal();
   if (window._isNewWorkoutFlow) {
     const workoutAreaVisible = document.getElementById('today-workout-area')?.style.display !== 'none';
-    if (workoutAreaVisible) {
+    if (workoutAreaVisible && !window._nwfBackFromPhoto) {
       // Editing name mid-workout — stay on current page
       return;
     }
-    // First time creating — go to photo step before showing workout area
+    window._nwfBackFromPhoto = false;
+    // First time creating OR returning from photo step — go to photo step
     openWorkoutPhotoModal();
     return;
   }
@@ -12621,7 +12633,7 @@ function renderCalDayContent(key, ws, cs) {
           <div class="cal-cardio-name">${c.type}</div>
           <div class="cal-cardio-meta">${c.mins} min</div>
         </div>
-        <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:rgba(126,200,227,.15);border:1px solid rgba(126,200,227,.4);flex-shrink:0;margin-top:2px;"><svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#7ec8e3" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:rgba(126,200,227,.15);border:1px solid rgba(126,200,227,.4);flex-shrink:0;margin-top:2px;"><svg width="16" height="16" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#7ec8e3" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
       </div>
       ${!isFutureDay ? `<div id="${cardioActionsId}" style="display:none;padding:0 12px 10px;">
         <div style="display:flex;gap:8px;padding-top:4px;">
@@ -12756,7 +12768,7 @@ function renderCalDayContent(key, ws, cs) {
               ${isWip ? '' : `<div style="display:flex;flex-direction:row;gap:6px;align-items:center;">
               <button onclick="replacePlannedWorkout('${p.planId}','${key}')" style="background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--muted);font-size:12px;font-weight:700;padding:6px 8px;cursor:pointer;width:100%;">Replace</button>
               </div>`}
-            ${(()=>{ const durations=workouts.filter(x=>!x._draft&&!x._template&&x.name===p.name&&x.durationMins>0).slice(0,3).map(x=>x.durationMins); if(!durations.length) return '<div style="height:4px;"></div>'; const avg=durations.reduce((a,b)=>a+b,0)/durations.length; const rounded=Math.ceil(avg/5)*5; return `<div style="display:flex;align-items:center;justify-content:center;gap:3px;padding:2px 0;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#7ec8e3" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg><span style="font-size:11px;color:#7ec8e3;font-weight:700;">~${rounded}m</span></div>`; })()}
+            ${(()=>{ const durations=workouts.filter(x=>!x._draft&&!x._template&&x.name===p.name&&x.durationMins>0).slice(0,3).map(x=>x.durationMins); if(!durations.length) return '<div style="height:4px;"></div>'; const avg=durations.reduce((a,b)=>a+b,0)/durations.length; const rounded=Math.ceil(avg/5)*5; return `<div style="display:flex;align-items:center;justify-content:center;gap:3px;padding:2px 0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7ec8e3" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg><span style="font-size:11px;color:#7ec8e3;font-weight:700;">~${rounded}m</span></div>`; })()}
             </div>
             <table style="border-collapse:collapse;margin-top:auto;padding-top:4px;width:100%;border:1px solid var(--border);border-radius:6px;overflow:hidden;">
               <tr><td style="font-size:14px;font-family:'Bebas Neue';color:var(--muted);letter-spacing:.5px;padding:4px 8px 4px 8px;white-space:nowrap;border-bottom:1px solid var(--border);">EX</td><td style="font-family:'Bebas Neue';font-size:14px;color:var(--text);text-align:right;padding:4px 8px;border-bottom:1px solid var(--border);">${totalEx}</td></tr>
@@ -13089,7 +13101,7 @@ function renderCalDayWorkouts(ws) {
       </div>` : '';
 
     const isFinished = !w._draft && !w._template;
-    const completedBadge = isFinished ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:rgba(232,255,71,.12);border:1px solid rgba(232,255,71,.35);flex-shrink:0;margin-left:6px;"><svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#e8ff47" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>` : '';
+    const completedBadge = isFinished ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:rgba(232,255,71,.12);border:1px solid rgba(232,255,71,.35);flex-shrink:0;margin-left:6px;"><svg width="16" height="16" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#e8ff47" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>` : '';
 
     return `<div class="history-card" id="cal-hcard-${wi}" style="margin-bottom:8px;">
       <div class="hcard-header" onclick="toggleCalHistCard('cal-hbody-${wi}','cal-hchev-${wi}',${wi})">
@@ -13977,12 +13989,15 @@ window.addEventListener('load', function() {
 });
 </script>
 <!-- WORKOUT NAME EDIT MODAL -->
-<div class="modal-overlay" id="workoutNameModalOverlay" style="align-items:center;padding:0 16px;background:#0a0a0a;backdrop-filter:none;-webkit-backdrop-filter:none;" onclick="if(event.target===this)closeWorkoutNameModal()">
+<div class="modal-overlay" id="workoutNameModalOverlay" style="align-items:center;padding:0 16px;background:#0a0a0a;backdrop-filter:none;-webkit-backdrop-filter:none;">
+  <button onclick="confirmWorkoutNameModal()" style="position:absolute;top:calc(env(safe-area-inset-top) + 16px);right:20px;background:transparent;border:none;cursor:pointer;padding:4px;z-index:1;-webkit-tap-highlight-color:transparent;">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><line x1="5" y1="12" x2="19" y2="12" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><polyline points="13,6 19,12 13,18" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
   <div class="modal-sheet" style="padding:24px 20px 32px;border-radius:20px;border:1px solid var(--border);margin-bottom:20vh;animation:modalFadeIn 1s ease both;">
-    <div class="modal-title" style="margin-bottom:4px;">WORKOUT NAME</div>
+    <div class="modal-title" style="margin-bottom:4px;color:#34d399;">WORKOUT NAME</div>
     <div id="workoutNameDuplicateMsg" style="display:none;color:#ff4747;font-family:'DM Sans';font-size:12px;font-weight:600;margin-bottom:10px;">Name already exists</div>
     <input id="workoutNameModalInput" type="text" placeholder="Name..."
-      style="width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);border-radius:0;color:#34d399;font-family:'Bebas Neue';font-size:22px;letter-spacing:1px;padding:12px 14px;box-sizing:border-box;outline:none;margin-bottom:20px;-webkit-text-fill-color:#34d399;caret-color:#34d399;"
+      style="width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);border-radius:0;color:#fff;font-family:'DM Sans';font-size:20px;font-weight:700;letter-spacing:0;padding:12px 14px;box-sizing:border-box;outline:none;margin-bottom:20px;-webkit-text-fill-color:#fff;caret-color:#fff;"
       oninput="document.getElementById('workoutNameDuplicateMsg').style.display='none';const _hb=/[֐-׿]/.test(this.value);this.style.direction=_hb?'rtl':'ltr';this.style.textAlign=_hb?'right':'left';const _sb=document.getElementById('workoutNameSaveBtn');if(_sb){const _v=this.value.trim();const _changed=window._isNewWorkoutFlow?!!_v:(_v&&_v!==(window._workoutNameOriginal||'').trim());_sb.disabled=!_changed;_sb.style.opacity=_changed?'1':'0.4';_sb.style.cursor=_changed?'pointer':'not-allowed';}"
       onkeydown="if(event.key==='Enter'&&this.value.trim())confirmWorkoutNameModal()"/>
     <div style="display:flex;gap:10px;">
@@ -13994,21 +14009,28 @@ window.addEventListener('load', function() {
 
 <!-- WORKOUT PHOTO STEP — shown after naming a new workout -->
 <!-- WORKOUT PHOTO STEP — shown after naming a new workout -->
-<div class="modal-overlay" id="workoutPhotoModalOverlay" style="align-items:flex-end;padding:0;background:#0a0a0a;backdrop-filter:none;-webkit-backdrop-filter:none;">
-  <div class="modal-sheet" style="padding-bottom:32px;border-radius:20px 20px 0 0;border:1px solid var(--border);border-bottom:none;animation:sheetUp .3s cubic-bezier(.34,1.56,.64,1);">
+<div class="modal-overlay" id="workoutPhotoModalOverlay" style="align-items:center;padding:0 16px;background:#0a0a0a;backdrop-filter:none;-webkit-backdrop-filter:none;">
+  <button onclick="_backToWorkoutNameStep()" style="position:absolute;top:calc(env(safe-area-inset-top) + 16px);right:20px;background:transparent;border:none;cursor:pointer;padding:4px;z-index:1;-webkit-tap-highlight-color:transparent;">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><line x1="5" y1="12" x2="19" y2="12" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><polyline points="13,6 19,12 13,18" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+  <div class="modal-sheet" style="padding-bottom:32px;border-radius:20px;border:1px solid var(--border);margin-bottom:20vh;animation:modalFadeIn 1s ease both;">
     <div class="modal-handle"></div>
+    <div class="modal-title" style="margin:8px 20px 4px;color:#34d399;">WORKOUT IMAGE</div>
     <!-- Photo area — identical structure/style to the hero photo on Today -->
-    <div style="margin:10px 10px 0;">
-      <div id="workoutPhotoPh" onclick="document.getElementById('workoutPhotoInput').click()" style="position:relative;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;background:#111;cursor:pointer;display:flex;align-items:center;justify-content:center;">
-        <div id="workoutPhotoCameraIcon" style="display:flex;flex-direction:column;align-items:center;gap:10px;pointer-events:none;">
-          <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-          <span style="color:#555;font-family:'DM Sans';font-size:12px;font-weight:700;letter-spacing:.8px;">TAP TO ADD PHOTO</span>
+    <div style="margin:4px 10px 0;">
+      <div id="workoutPhotoPh" onclick="_openWorkoutPhotoStepSheet()" style="position:relative;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;background:#111;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+        <div id="workoutPhotoCameraIcon" style="display:flex;align-items:center;justify-content:center;pointer-events:none;">
+          <div style="width:80px;height:80px;border-radius:50%;border:1.5px solid #555;display:flex;align-items:center;justify-content:center;">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </div>
         </div>
         <!-- Preview image — same style as hero: object-fit cover, brightness 0.85 -->
         <img id="workoutPhotoPreview" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:none;filter:brightness(0.85);" />
-        <button id="workoutPhotoRemoveBtn" onclick="event.stopPropagation();_removeWorkoutPhotoStep()" style="display:none;position:absolute;top:10px;right:12px;z-index:3;background:rgba(0,0,0,0.45);border:none;border-radius:50%;width:28px;height:28px;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;padding:0;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
+        <button id="workoutPhotoRemoveBtn" onclick="event.stopPropagation();_removeWorkoutPhotoStep()" style="display:none;"></button>
+        <div id="workoutVideoPlayBadge" style="display:none;position:absolute;bottom:8px;left:10px;z-index:4;align-items:center;gap:5px;pointer-events:none;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="var(--accent)" stroke="none"><polygon points="5,3 19,12 5,21"/></svg>
+          <span style="color:var(--accent);font-family:'DM Sans';font-size:11px;font-weight:700;letter-spacing:.5px;">PLAY</span>
+        </div>
       </div>
       <!-- Name bar — identical to hero name row -->
       <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 10px 4px;">
@@ -14016,10 +14038,19 @@ window.addEventListener('load', function() {
       </div>
     </div>
     <input id="workoutPhotoInput" type="file" accept="image/*" style="display:none" onchange="_handleWorkoutPhotoStep(this)"/>
+    <div id="workoutVideoSection" style="display:none;padding:16px 20px 4px;">
+      <div style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#34d399;letter-spacing:.8px;margin-bottom:8px;">VIDEO <span style="text-transform:none;font-weight:400;color:#888;">(optional)</span></div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <input id="workoutVideoInput" type="url" placeholder="Paste video link..." style="flex:1;min-width:0;box-sizing:border-box;background:#1a1a1a;border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans';font-size:14px;font-weight:600;padding:11px 14px;outline:none;-webkit-tap-highlight-color:transparent;" oninput="const _b=document.getElementById('workoutVideoPlayBadge');if(_b)_b.style.display=this.value.trim()?'flex':'none';"/>
+        <button onclick="const _i=document.getElementById('workoutVideoInput');if(_i){_i.value='';_i.dispatchEvent(new Event('input'));}" style="background:transparent;border:none;padding:8px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#555;-webkit-tap-highlight-color:transparent;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        </button>
+      </div>
+    </div>
     <div style="padding:16px 20px 0;">
       <div style="display:flex;gap:10px;">
         <button id="workoutPhotoSkipBtn" onclick="_skipWorkoutPhotoStep()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted,#888);font-family:'DM Sans';font-size:16px;font-weight:700;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Cancel</button>
-        <button id="workoutPhotoDoneBtn" onclick="_confirmWorkoutPhotoStep()" style="flex:1;background:var(--accent,#e8ff47);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:16px;font-weight:700;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Next</button>
+        <button id="workoutPhotoDoneBtn" onclick="_confirmWorkoutPhotoStep()" style="flex:1;background:var(--accent,#e8ff47);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:16px;font-weight:700;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Skip</button>
       </div>
     </div>
   </div>
@@ -16462,7 +16493,7 @@ function requestCoach(coachUid, coachName) {
 //  LIBRARY SYSTEM
 // ══════════════════════════════════════════════════════
 let _libraryExercises = [];
-let _libraryWorkouts = [];
+var _libraryWorkouts = [];
 let _libraryLoaded = false;
 // _defaultExercises declared at top of main script
 
@@ -18604,18 +18635,25 @@ function deleteCoachWorkout(id) {
 <div id="w2-sheet-overlay" onclick="closeW2Sheet()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:150;opacity:0;will-change:opacity;"></div>
 <div id="w2-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:#111;border-radius:25px 25px 0 0;z-index:151;will-change:transform;overflow:hidden;flex-direction:column;">
   <!-- Drag handle -->
-  <div style="display:flex;justify-content:center;padding:12px 0 0;">
+  <div style="display:flex;justify-content:center;padding:12px 0 0;flex-shrink:0;">
     <div style="width:36px;height:4px;background:#333;border-radius:2px;"></div>
   </div>
-  <!-- Workout name + X button on same row -->
-  <div style="display:flex;align-items:center;padding:8px 16px 0 16px;position:relative;z-index:1;">
-    <div style="position:relative;flex-shrink:0;">
-      <button onclick="event.stopPropagation();toggleWtabCardMenu(window._w2SheetIdx)" style="background:transparent;border:none;color:#fff;cursor:pointer;padding:4px 6px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
-      </button>
-    </div>
-    <div id="w2-sheet-name" style="font-family:'DM Sans';font-size:22px;font-weight:900;color:#fff;flex:1;text-align:right;"></div>
+  <!-- "..." menu row — always above the photo -->
+  <div style="display:flex;align-items:center;padding:4px 10px 0;position:relative;z-index:1;flex-shrink:0;">
+    <button onclick="event.stopPropagation();toggleWtabCardMenu(window._w2SheetIdx)" style="background:transparent;border:none;color:#fff;cursor:pointer;padding:4px 6px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+    </button>
   </div>
+  <!-- Workout photo (shown only when a photo exists) -->
+  <div id="w2-sheet-photo-wrap" style="display:none;position:relative;margin:0 10px;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;flex-shrink:0;">
+    <img id="w2-sheet-photo" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;filter:brightness(0.85);" />
+  </div>
+  <!-- Workout name — below the photo -->
+  <div style="padding:8px 16px 0;position:relative;z-index:1;flex-shrink:0;">
+    <div id="w2-sheet-name" style="font-family:'DM Sans';font-size:22px;font-weight:900;color:#fff;text-align:right;"></div>
+  </div>
+  <!-- Scrollable content area — body diagram scrolls with exercise list -->
+  <div id="w2-scroll-area" style="overflow-y:auto;overflow-x:hidden;flex:1;-webkit-overflow-scrolling:touch;scrollbar-width:none;position:relative;overscroll-behavior:contain;">
   <!-- Body diagram -->
   <div class="w2-stagger-item" style="display:block;width:100%;box-sizing:border-box;padding:4px 16px 0;margin-top:-30px;opacity:0;transform:translateY(20px);transition:opacity .35s ease .15s,transform .35s ease .15s;">
 <div style="display:flex;gap:18px;width:100%;box-sizing:border-box;transform:translateZ(0);backface-visibility:hidden;" id="w2-body-container">
@@ -18790,22 +18828,14 @@ function deleteCoachWorkout(id) {
     </div>
   </div>
   <!-- Divider -->
-  <div style="height:1px;background:#444;margin:-30px 20px 0;"></div>
-  <!-- Inline START button — shown when collapsed, hidden when expanded -->
-  <div id="w2-start-inline-wrap" style="padding:10px 20px 12px;background:#111;flex-shrink:0;">
-    <button onclick="w2SheetStart()" style="width:100%;padding:16px;background:var(--accent);color:#000;border:none;border-radius:100px;font-family:'DM Sans';font-size:18px;font-weight:900;cursor:pointer;letter-spacing:.3px;-webkit-tap-highlight-color:transparent;transition:transform .15s;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">
-      START WORKOUT
-    </button>
-  </div>
-  <!-- Exercises label — fixed, not scrollable -->
-  <div style="padding:10px 20px 4px;flex-shrink:0;display:flex;align-items:center;gap:6px;">
-    <span id="w2-exercise-count" style="font-family:'DM Sans';font-size:12px;font-weight:700;color:#888;"></span>
+  <div style="height:1px;background:#444;margin:-50px 20px 0;"></div>
+  <!-- Exercises label -->
+  <div style="padding:10px 20px 4px;display:flex;align-items:flex-end;gap:6px;">
+    <span id="w2-exercise-count" style="font-family:'DM Sans';font-size:18px;font-weight:700;color:#fff;"></span>
     <span style="font-family:'DM Sans';font-size:12px;font-weight:700;color:#888;letter-spacing:.8px;">EXERCISES</span>
   </div>
-  <!-- Muscle tags (body parts) — below EXERCISES label -->
+  <!-- Muscle tags (body parts) -->
   <div id="w2-sheet-tags" class="w2-stagger-item" style="display:flex;flex-wrap:wrap;gap:6px;padding:4px 20px 10px;opacity:0;transform:translateY(20px);transition:opacity .3s ease .1s,transform .3s ease .1s;"></div>
-  <!-- Scrollable content area (exercise list) -->
-  <div id="w2-scroll-area" style="overflow-y:auto;overflow-x:hidden;flex:1;-webkit-overflow-scrolling:touch;scrollbar-width:none;position:relative;overscroll-behavior:contain;">
     <!-- Exercise list (populated by JS) -->
     <div id="w2-exercise-list" style="padding:0 20px calc(140px + env(safe-area-inset-bottom));"></div>
     <!-- Gradient fade at bottom of list -->
@@ -19012,7 +19042,7 @@ function deleteCoachWorkout(id) {
 <div id="ex-photo-sheet-overlay" onclick="closeExPhotoSheet()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:300;"></div>
 <div id="ex-photo-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:#1a1a1a;border-radius:20px 20px 0 0;z-index:301;padding:0 16px calc(16px + env(safe-area-inset-bottom));">
   <div style="width:36px;height:3px;background:#555;border-radius:2px;margin:12px auto 4px;"></div>
-  <div style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#888;letter-spacing:.8px;text-align:center;padding:8px 0 12px;">EXERCISE PHOTO</div>
+  <div id="ex-photo-sheet-title" style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#888;letter-spacing:.8px;text-align:center;padding:8px 0 12px;">EXERCISE PHOTO</div>
   <button onclick="closeExPhotoSheet();triggerExPhoto('camera')" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#fff;font-family:'DM Sans';font-size:16px;font-weight:600;padding:18px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
     Take Photo
@@ -19021,7 +19051,7 @@ function deleteCoachWorkout(id) {
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
     Choose from Gallery
   </button>
-  <button id="ex-photo-remove-btn" onclick="closeExPhotoSheet();removeExPhoto()" style="display:none;width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#ff4747;font-family:'DM Sans';font-size:16px;font-weight:600;padding:18px 8px;cursor:pointer;text-align:left;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
+  <button id="ex-photo-remove-btn" onclick="closeExPhotoSheet();_removeCurrentPhoto()" style="display:none;width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#ff4747;font-family:'DM Sans';font-size:16px;font-weight:600;padding:18px 8px;cursor:pointer;text-align:left;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff4747" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
     Remove Photo
   </button>
@@ -19034,15 +19064,19 @@ function deleteCoachWorkout(id) {
 <!-- Cropper overlay -->
 <div id="ex-photo-cropper-overlay" style="display:none;position:fixed;inset:0;background:#000;z-index:400;flex-direction:column;">
   <!-- Title -->
-  <div style="text-align:center;padding:calc(env(safe-area-inset-top)+12px) 20px 8px;flex-shrink:0;">
-    <span style="font-family:'DM Sans';font-size:14px;font-weight:700;color:var(--accent);">Crop Photo</span>
+  <div style="text-align:left;padding:calc(env(safe-area-inset-top) + 24px) 20px 14px;flex-shrink:0;">
+    <span style="font-family:'DM Sans';font-size:20px;font-weight:700;color:#34d399;">CROP PHOTO</span>
   </div>
   <!-- Previews -->
   <div id="ex-photo-previews" style="display:flex;gap:12px;padding:12px 20px;flex-shrink:0;">
-    <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
+    <div style="flex:1;display:flex;flex-direction:column;gap:4px;position:relative;">
       <canvas id="ex-photo-preview-32" style="width:100%;aspect-ratio:21/9;border-radius:6px;border:1px solid #2a2a2a;display:block;"></canvas>
+      <span style="position:absolute;bottom:5px;left:7px;display:flex;align-items:baseline;gap:5px;pointer-events:none;">
+        <span style="font-family:'DM Sans';font-size:20px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:.8px;">PREVIEW</span>
+        <span style="font-family:'DM Sans';font-size:12px;font-weight:600;color:rgba(255,255,255,0.35);">21:9</span>
+      </span>
     </div>
-    <div style="width:64px;height:64px;flex-shrink:0;align-self:center;">
+    <div id="ex-photo-preview-11-wrap" style="width:64px;height:64px;flex-shrink:0;align-self:center;">
       <canvas id="ex-photo-preview-11" style="width:64px;height:64px;border-radius:6px;border:1px solid #2a2a2a;display:block;"></canvas>
     </div>
   </div>
@@ -19061,8 +19095,8 @@ function deleteCoachWorkout(id) {
       <div style="position:absolute;bottom:-2px;left:-2px;width:14px;height:14px;border-bottom:3px solid #fff;border-left:3px solid #fff;"></div>
       <div style="position:absolute;bottom:-2px;right:-2px;width:14px;height:14px;border-bottom:3px solid #fff;border-right:3px solid #fff;"></div>
     </div>
-    <div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);font-family:'DM Sans';font-size:10px;color:rgba(255,255,255,0.3);white-space:nowrap;pointer-events:none;">Slide to position</div>
   </div>
+  <div style="text-align:center;padding:10px 0 4px;font-family:'DM Sans';font-size:15px;color:rgba(255,255,255,0.3);white-space:nowrap;flex-shrink:0;">Slide to position</div>
   <!-- Cancel / Save -->
   <div style="display:flex;gap:8px;padding:12px 16px calc(12px + env(safe-area-inset-bottom));flex-shrink:0;margin-top:auto;background:#000;border-top:1px solid #1a1a1a;">
     <button onclick="closeExPhotoCropper()" style="flex:1;background:transparent;border:1px solid #333;border-radius:10px;color:#555;font-family:'DM Sans';font-size:18px;font-weight:700;padding:12px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Cancel</button>
@@ -19076,13 +19110,13 @@ function deleteCoachWorkout(id) {
   <div style="width:36px;height:3px;background:#555;border-radius:2px;margin:12px auto 4px;"></div>
   <div style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#888;letter-spacing:.8px;text-align:center;padding:6px 0 12px;">SET OPTIONS</div>
   <button onclick="setSetType('regular')" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:16px;-webkit-tap-highlight-color:transparent;">
-    <span style="font-size:16px;font-weight:300;color:#aaa;width:20px;text-align:center;flex-shrink:0;">1</span>Regular set<span id="set-opt-check-regular" style="display:none;margin-left:auto;flex-shrink:0;color:#e8ff47;font-size:20px;line-height:1;">&#10003;</span>
+    <span style="font-size:16px;font-weight:300;color:#aaa;width:20px;text-align:center;flex-shrink:0;">1</span>Regular set<span id="set-opt-check-regular" style="display:none;margin-left:auto;flex-shrink:0;line-height:1;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
   </button>
   <button onclick="setSetType('warmup')" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:16px;-webkit-tap-highlight-color:transparent;">
-    <span style="font-size:16px;font-weight:300;color:#fbbf24;width:20px;text-align:center;flex-shrink:0;">W</span>Warm up set<span id="set-opt-check-warmup" style="display:none;margin-left:auto;flex-shrink:0;color:#e8ff47;font-size:20px;line-height:1;">&#10003;</span>
+    <span style="font-size:16px;font-weight:300;color:#fbbf24;width:20px;text-align:center;flex-shrink:0;">W</span>Warm up set<span id="set-opt-check-warmup" style="display:none;margin-left:auto;flex-shrink:0;line-height:1;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
   </button>
   <button onclick="setSetType('drop')" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:16px;-webkit-tap-highlight-color:transparent;">
-    <span style="font-size:16px;font-weight:300;color:#60a5fa;width:20px;text-align:center;flex-shrink:0;">D</span>Drop set<span id="set-opt-check-drop" style="display:none;margin-left:auto;flex-shrink:0;color:#e8ff47;font-size:20px;line-height:1;">&#10003;</span>
+    <span style="font-size:16px;font-weight:300;color:#60a5fa;width:20px;text-align:center;flex-shrink:0;">D</span>Drop set<span id="set-opt-check-drop" style="display:none;margin-left:auto;flex-shrink:0;line-height:1;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
   </button>
   <button onclick="setSetType('delete')" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#ff4747;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:16px;-webkit-tap-highlight-color:transparent;">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff4747" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>Delete set
@@ -19098,8 +19132,8 @@ function deleteCoachWorkout(id) {
   </div>
   <div id="workout-photo-cropper-wrap" style="position:relative;width:100%;flex-shrink:0;overflow:hidden;background:#111;">
     <canvas id="workout-photo-cropper-canvas" style="touch-action:none;display:block;width:100%;"></canvas>
-    <div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);font-family:'DM Sans';font-size:10px;color:rgba(255,255,255,0.3);white-space:nowrap;pointer-events:none;">Drag to reposition</div>
   </div>
+  <div style="text-align:center;padding:6px 0 2px;font-family:'DM Sans';font-size:10px;color:rgba(255,255,255,0.3);white-space:nowrap;flex-shrink:0;">Drag to reposition</div>
   <div style="padding:12px 20px;flex-shrink:0;">
     <canvas id="workout-photo-preview-169" style="width:100%;aspect-ratio:16/9;border-radius:6px;border:1px solid #2a2a2a;display:block;"></canvas>
   </div>
@@ -19853,7 +19887,7 @@ function openRepsPopup(span, exId) {
     editorDiv.innerHTML = `<div class="kg-inline-editor-inner" style="padding:12px 12px 10px;">
       <div style="display:flex;flex-direction:column;gap:10px;">
         <div style="display:flex;gap:8px;">
-          <button onclick="repsEditorDelta(-1)" style="flex:1;background:transparent;border:1px solid #555;border-radius:8px;color:#f87171;font-size:42px;font-weight:300;padding:18px 0;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;-webkit-tap-highlight-color:transparent;"></button>
+          <button onclick="repsEditorDelta(-1)" style="flex:1;background:transparent;border:1px solid #555;border-radius:8px;color:#f87171;font-size:42px;font-weight:300;padding:18px 0;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;-webkit-tap-highlight-color:transparent;">−</button>
           <button onclick="repsEditorDelta(1)" style="flex:1;background:transparent;border:1px solid #555;border-radius:8px;color:var(--accent);font-size:42px;font-weight:300;padding:18px 0;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;-webkit-tap-highlight-color:transparent;">+</button>
         </div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
@@ -20869,8 +20903,11 @@ let _exPhotoRawImg = null;
 let _exPhotoCropState = { x: 0, y: 0, size: 0, dragging: false, startX: 0, startY: 0, imgX: 0, imgY: 0 };
 
 function openExPhotoSheet() {
+  window._workoutPhotoMode = false;
   const exName = document.getElementById('ex-detail-overlay-title')?.textContent || '';
   const hasPhoto = !!localStorage.getItem(`ironlog_ex_photo_${exName}`);
+  const titleEl = document.getElementById('ex-photo-sheet-title');
+  if (titleEl) titleEl.textContent = 'EXERCISE PHOTO';
   const removeBtn = document.getElementById('ex-photo-remove-btn');
   if (removeBtn) removeBtn.style.display = hasPhoto ? 'flex' : 'none';
   document.getElementById('ex-photo-sheet-overlay').style.display = 'block';
@@ -20881,6 +20918,28 @@ function closeExPhotoSheet() {
   document.getElementById('ex-photo-sheet').style.display = 'none';
 }
 function triggerExPhoto(source) {
+  if (window._workoutPhotoMode) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    if (source === 'camera') input.capture = 'environment';
+    input.style.display = 'none';
+    input.onchange = e => {
+      const file = e.target.files[0];
+      input.remove();
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const img = new Image();
+        img.onload = () => { _exPhotoRawImg = img; setTimeout(() => _openExPhotoCropper(img), 80); };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    };
+    document.body.appendChild(input);
+    input.click();
+    return;
+  }
   const input = document.getElementById(source === 'camera' ? 'ex-photo-input-camera' : 'ex-photo-input-gallery');
   if (input) input.click();
 }
@@ -20903,11 +20962,20 @@ function handleExPhotoRaw(input) {
 
 function _openExPhotoCropper(img) {
   const overlay = document.getElementById('ex-photo-cropper-overlay');
+  if (!overlay) return;
+  // Show immediately — before any sub-element checks so the overlay never
+  // stays hidden due to a stale DOM reference
+  overlay.style.display = 'flex';
+  overlay.style.zIndex = '9999';
+
+  // 1:1 preview is only meaningful for exercises, not workouts
+  const _isWorkoutCtx = window._workoutPhotoMode || window._newWorkoutPhotoStepMode;
+  const p11wrap = document.getElementById('ex-photo-preview-11-wrap');
+  if (p11wrap) p11wrap.style.display = _isWorkoutCtx ? 'none' : '';
+
   const wrap = document.getElementById('ex-photo-cropper-wrap');
   const canvas = document.getElementById('ex-photo-cropper-canvas');
-  if (!overlay || !canvas) return;
-
-  overlay.style.display = 'flex';
+  if (!canvas) return;
 
   // Hide old absolutely-positioned overlay divs — canvas draws everything now
   ['ex-photo-crop-box-32','ex-photo-crop-box-11','ex-photo-crop-dim-left','ex-photo-crop-dim-right']
@@ -21088,6 +21156,34 @@ function saveExPhotoCrop() {
     if (icon) icon.style.display = 'none';
     if (label) { label.textContent = 'Replace Photo/Image'; label.style.color = 'var(--accent)'; }
     window._newExPhotoMode = false;
+    closeExPhotoCropper();
+    return;
+  }
+
+  if (window._newWorkoutPhotoStepMode) {
+    window._pendingWorkoutPhoto = url32;
+    const prev   = document.getElementById('workoutPhotoPreview');
+    const cam    = document.getElementById('workoutPhotoCameraIcon');
+    const rem    = document.getElementById('workoutPhotoRemoveBtn');
+    const vidSec = document.getElementById('workoutVideoSection');
+    if (prev)   { prev.src = url32; prev.style.display = 'block'; }
+    if (cam)    cam.style.display = 'none';
+    if (rem)    rem.style.display = 'flex';
+    if (vidSec) vidSec.style.display = 'block';
+    const _doneBtn = document.getElementById('workoutPhotoDoneBtn');
+    if (_doneBtn) _doneBtn.textContent = 'Next';
+    window._newWorkoutPhotoStepMode = false;
+    closeExPhotoCropper();
+    return;
+  }
+
+  if (window._workoutPhotoMode) {
+    const w = workouts[_workoutPhotoIdx];
+    if (w) {
+      try { localStorage.setItem(`ironlog_workout_photo_${w.name}`, url32); } catch(e) { showToast('Storage full — photo not saved'); }
+      renderWorkoutsTab2();
+    }
+    window._workoutPhotoMode = false;
     closeExPhotoCropper();
     return;
   }
@@ -21468,51 +21564,22 @@ function openWorkoutPhotoFlow(idx) {
   _workoutPhotoIdx = idx;
   const w = workouts[idx];
   if (!w) return;
-  // Show action sheet
+  window._workoutPhotoMode = true;
   const hasPhoto = !!localStorage.getItem(`ironlog_workout_photo_${w.name}`);
-  const sheet = document.createElement('div');
-  sheet.id = 'workout-photo-sheet-tmp';
-  sheet.style.cssText = 'position:fixed;inset:0;z-index:400;';
-  sheet.innerHTML = `
-    <div onclick="document.getElementById('workout-photo-sheet-tmp').remove()" style="position:absolute;inset:0;background:rgba(0,0,0,0.6);"></div>
-    <div style="position:absolute;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:#1a1a1a;border-radius:20px 20px 0 0;padding:0 16px calc(16px + env(safe-area-inset-bottom));">
-      <div style="width:36px;height:3px;background:#555;border-radius:2px;margin:12px auto 4px;"></div>
-      <div style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#888;letter-spacing:.8px;text-align:center;padding:6px 0 12px;">WORKOUT PHOTO</div>
-      <button onclick="document.getElementById('workout-photo-sheet-tmp').remove();_triggerWorkoutPhoto('camera')" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-        Take Photo
-      </button>
-      <button onclick="document.getElementById('workout-photo-sheet-tmp').remove();_triggerWorkoutPhoto('gallery')" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-        Choose from Gallery
-      </button>
-      ${hasPhoto ? `<button onclick="document.getElementById('workout-photo-sheet-tmp').remove();_removeWorkoutPhoto()" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#ff4747;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff4747" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-        Remove Photo
-      </button>` : ''}
-      <div style="height:8px;"></div>
-      <button onclick="document.getElementById('workout-photo-sheet-tmp').remove()" style="width:100%;background:#111;border:1px solid #444;border-radius:12px;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:600;padding:14px;cursor:pointer;text-align:center;">Cancel</button>
-    </div>`;
-  document.body.appendChild(sheet);
+  const titleEl = document.getElementById('ex-photo-sheet-title');
+  if (titleEl) titleEl.textContent = 'WORKOUT PHOTO';
+  const removeBtn = document.getElementById('ex-photo-remove-btn');
+  if (removeBtn) removeBtn.style.display = hasPhoto ? 'flex' : 'none';
+  document.getElementById('ex-photo-sheet-overlay').style.display = 'block';
+  document.getElementById('ex-photo-sheet').style.display = 'block';
 }
 
-function _triggerWorkoutPhoto(mode) {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'image/*';
-  if (mode === 'camera') input.capture = 'environment';
-  input.onchange = e => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      const img = new Image();
-      img.onload = () => _openWorkoutPhotoCropper(img);
-      img.src = ev.target.result;
-    };
-    reader.readAsDataURL(file);
-  };
-  input.click();
+function _removeCurrentPhoto() {
+  if (window._workoutPhotoMode) {
+    _removeWorkoutPhoto();
+  } else {
+    removeExPhoto();
+  }
 }
 
 function _removeWorkoutPhoto() {
@@ -21736,6 +21803,16 @@ function openW2Sheet(idx) {
 
   document.getElementById('w2-sheet-name').textContent = w.name || 'Workout';
 
+  const _photoWrap = document.getElementById('w2-sheet-photo-wrap');
+  const _photoImg  = document.getElementById('w2-sheet-photo');
+  const _wPhoto = localStorage.getItem(`ironlog_workout_photo_${w.name}`);
+  if (_wPhoto && _photoWrap && _photoImg) {
+    _photoImg.src = _wPhoto;
+    _photoWrap.style.display = 'block';
+  } else if (_photoWrap) {
+    _photoWrap.style.display = 'none';
+  }
+
   const muscleCounts = {};
   (w.exercises || []).forEach(e => {
     const m = e.muscle || getAllExercises().find(x=>x.name===e.name||x.label===e.name)?.muscle || 'Other';
@@ -21790,7 +21867,7 @@ function openW2Sheet(idx) {
     if (_backDiv)  _backDiv.style.display  = _w2FrontOnly ? 'none' : '';
     const _w2Shift = _w2FrontOnly ? 'translateX(68px) ' : _w2OneSide ? 'translateX(114px) ' : 'translateX(50px) ';
     _w2Body.style.width = _w2OneSide ? '50%' : '100%';
-    _w2Body.style.transform = `${_w2Shift}scale(0.855) translateZ(0)`;
+    _w2Body.style.transform = `${_w2Shift}scale(0.8) translateZ(0)`;
     _w2Body.style.transformOrigin = 'top center';
     if (_w2Parent) { _w2Parent.style.position = 'relative'; _w2Parent.style.overflow = 'visible'; }
 
@@ -22170,7 +22247,7 @@ function _updateKgDisplay(val, isBWMode) {
 <div id="ex-float-bar" style="display:none;flex-direction:row;">
   <button id="ex-float-note" onclick="exFloatAction('note')" title="Note" style="position:relative;">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-    <span id="ex-float-note-badge" style="display:none;position:absolute;top:2px;right:6px;font-size:16px;font-weight:700;color:#e8ff47;line-height:1;"></span>
+    <span id="ex-float-note-badge" style="display:none;position:absolute;top:3px;right:4px;line-height:1;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
     Note
   </button>
   <button id="ex-float-timer" onclick="exFloatAction('timer')" title="Timer" style="position:relative;">
