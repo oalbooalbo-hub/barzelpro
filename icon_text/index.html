@@ -1689,7 +1689,7 @@ function hidAuthScreen() {
           <div style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#fff;letter-spacing:.5px;margin-bottom:8px;">VIDEO (optional)</div>
           <div style="position:relative;display:flex;align-items:center;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:12px;pointer-events:none;flex-shrink:0;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-            <input id="newExVideoUrl" type="url" autocomplete="off" inputmode="url" style="width:100%;background:#1a1a1a;border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans';font-size:14px;font-weight:500;padding:12px 12px 12px 34px;box-sizing:border-box;outline:none;" placeholder="Paste YouTube or video URL" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"/>
+            <input id="newExVideoUrl" type="text" autocomplete="off" enterkeyhint="done" style="width:100%;background:#1a1a1a;border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans';font-size:14px;font-weight:500;padding:12px 12px 12px 34px;box-sizing:border-box;outline:none;" placeholder="Paste YouTube or video URL" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"/>
           </div>
         </div>
       </div>
@@ -3038,7 +3038,7 @@ const _imgCacheBust = `?v=${Date.now()}`;
     if (--_pending === 0 && typeof renderExercisesTab === 'function') renderExercisesTab();
   };
   muscles.forEach(m => {
-    const src = `/images/${m.toLowerCase()}_exercise_default.webp${_imgCacheBust}`;
+    const src = `images/${m.toLowerCase()}_exercise_default.webp${_imgCacheBust}`;
     const img = new Image();
     img.onload = () => { _EX_DEFAULT_PHOTOS[m] = src; _onDone(); };
     img.onerror = () => _onDone();
@@ -3047,7 +3047,7 @@ const _imgCacheBust = `?v=${Date.now()}`;
 })();
 
 // Default workout image
-const _workoutDefaultPhoto = `/images/workout_default.webp${_imgCacheBust}`;
+const _workoutDefaultPhoto = `images/workout_default.webp${_imgCacheBust}`;
 function _getWorkoutPhoto(name) {
   return (name ? localStorage.getItem(`ironlog_workout_photo_${name}`) : null)
     || _workoutDefaultPhoto
@@ -6590,7 +6590,7 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
       <div class="comment-area" id="comment-area-${id}">
         <div class="comment-area-inner" id="comment-area-inner-${id}" style="position:relative;border:1px solid var(--accent);border-radius:9px;padding:18px 11px 10px;margin-top:6px;transition:border-color .2s;width:calc(min(430px,100vw) - 32px);max-width:398px;box-sizing:border-box;">
           <span class="comment-area-label" style="position:absolute;top:-9px;left:12px;background:var(--bg);padding:0 5px;font-size:12px;font-weight:700;color:var(--accent);letter-spacing:.3px;pointer-events:none;">Note</span>
-          <textarea class="comment-box" id="comment-${id}" placeholder="Tap for editing&" oninput="updateNoteBtn('${id}');saveSession();if(window._isNewWorkoutFlow)updateWflowCloseBtn('${id}');this.style.direction=/[\u0590-\u05FF]/.test(this.value)?'rtl':'ltr';this.style.textAlign=/[\u0590-\u05FF]/.test(this.value)?'right':'left';this.style.height='auto';this.style.height=this.scrollHeight+'px'" onfocus="showNoteToolbar('${id}');this.closest('.comment-area')?.classList.add('note-active')" onblur="hideNoteToolbar();if(!this.value.trim())this.closest('.comment-area')?.classList.remove('note-active')"></textarea>
+          <textarea class="comment-box" id="comment-${id}" autocomplete="off" enterkeyhint="done" placeholder="Tap for editing&" oninput="updateNoteBtn('${id}');saveSession();if(window._isNewWorkoutFlow)updateWflowCloseBtn('${id}');this.style.direction=/[\u0590-\u05FF]/.test(this.value)?'rtl':'ltr';this.style.textAlign=/[\u0590-\u05FF]/.test(this.value)?'right':'left';this.style.height='auto';this.style.height=this.scrollHeight+'px'" onfocus="showNoteToolbar('${id}');this.closest('.comment-area')?.classList.add('note-active')" onblur="hideNoteToolbar();if(!this.value.trim())this.closest('.comment-area')?.classList.remove('note-active')"></textarea>
         </div>
       </div>
 
@@ -9548,6 +9548,7 @@ function cancelWorkoutNameModal() {
       window._preNewWorkoutName = null;
       window._pendingWorkoutPhoto = null;
       resetWorkoutState();
+      showTodayStartScreen();
       switchTab('workouts2');
     }
   }
@@ -14275,7 +14276,7 @@ window.addEventListener('load', function() {
   <div class="modal-sheet" style="padding:24px 20px 32px;border-radius:20px;border:1px solid var(--border);margin-bottom:20vh;animation:modalFadeIn 1s ease both;">
     <div class="modal-title" style="margin-bottom:4px;color:#34d399;">WORKOUT NAME</div>
     <div id="workoutNameDuplicateMsg" style="display:none;color:#ff4747;font-family:'DM Sans';font-size:12px;font-weight:600;margin-bottom:10px;">Name already exists</div>
-    <input id="workoutNameModalInput" type="text" placeholder="Name..."
+    <input id="workoutNameModalInput" type="text" autocomplete="off" enterkeyhint="done" placeholder="Name..."
       style="width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);border-radius:0;color:#fff;font-family:'DM Sans';font-size:20px;font-weight:700;letter-spacing:0;padding:12px 14px;box-sizing:border-box;outline:none;margin-bottom:20px;-webkit-text-fill-color:#fff;caret-color:#fff;text-align:right;"
       oninput="document.getElementById('workoutNameDuplicateMsg').style.display='none';const _hb=/[֐-׿]/.test(this.value);this.style.direction=_hb?'rtl':'ltr';const _sb=document.getElementById('workoutNameSaveBtn');if(_sb){const _v=this.value.trim();const _changed=window._isNewWorkoutFlow?!!_v:(_v&&_v!==(window._workoutNameOriginal||'').trim());_sb.disabled=!_changed;_sb.style.opacity=_changed?'1':'0.4';_sb.style.cursor=_changed?'pointer':'not-allowed';}"
       onkeydown="if(event.key==='Enter'&&this.value.trim())confirmWorkoutNameModal()"/>
@@ -21955,9 +21956,10 @@ let _workoutPhotoIdx = null;
 function openWorkoutPhotoFlow(idx) {
   _workoutPhotoIdx = idx;
   const w = workouts[idx];
-  if (!w) return;
+  const _wName = w ? w.name : (document.getElementById('workoutName')?.value || '').trim();
+  if (!w && !_wName) return;
   window._workoutPhotoMode = true;
-  const hasPhoto = !!localStorage.getItem(`ironlog_workout_photo_${w.name}`);
+  const hasPhoto = !!localStorage.getItem(`ironlog_workout_photo_${_wName}`);
   const titleEl = document.getElementById('ex-photo-sheet-title');
   if (titleEl) titleEl.textContent = 'WORKOUT PHOTO';
   const removeBtn = document.getElementById('ex-photo-remove-btn');
@@ -21971,10 +21973,14 @@ function _w2OpenEditSheet() {
   if (idx == null) {
     const _nm = (document.getElementById('workoutName')?.value || '').trim();
     idx = _nm ? workouts.findIndex(w => w.name === _nm) : -1;
-    if (idx === -1) { openWorkoutPhotoFlow(null); return; }
+    if (idx === -1) {
+      if (!window._isNewWorkoutFlow) { openWorkoutPhotoFlow(null); return; }
+      idx = null; // new workout: no workouts entry yet
+    }
   }
-  const w = workouts[idx];
-  if (!w) return;
+  const w = idx != null ? workouts[idx] : null;
+  if (idx != null && !w) return;
+  const _curName = w ? w.name : (document.getElementById('workoutName')?.value || '').trim();
   let overlay = document.getElementById('_w2EditOverlay');
   if (!overlay) {
     overlay = document.createElement('div');
@@ -21990,11 +21996,11 @@ function _w2OpenEditSheet() {
     sheet.style.cssText = 'position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:#1a1a1a;border-radius:20px 20px 0 0;z-index:501;padding:0 16px calc(24px + env(safe-area-inset-bottom));';
     document.body.appendChild(sheet);
   }
-  const safeName = (w.name || '').replace(/"/g, '&quot;');
+  const safeName = (_curName || '').replace(/"/g, '&quot;');
   sheet.innerHTML = `
     <div style="width:36px;height:3px;background:#555;border-radius:2px;margin:12px auto 16px;"></div>
     <div style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#888;letter-spacing:.8px;text-align:center;margin-bottom:16px;">EDIT WORKOUT</div>
-    <input id="_w2EditNameInput" type="text" value="${safeName}" style="width:100%;background:#111;border:1px solid #333;border-radius:10px;color:#fff;font-family:'DM Sans';font-size:16px;font-weight:600;padding:12px 14px;box-sizing:border-box;outline:none;margin-bottom:12px;text-align:right;" placeholder="Workout name..." />
+    <input id="_w2EditNameInput" type="text" autocomplete="off" enterkeyhint="done" value="${safeName}" style="width:100%;background:#111;border:1px solid #333;border-radius:10px;color:#fff;font-family:'DM Sans';font-size:16px;font-weight:600;padding:12px 14px;box-sizing:border-box;outline:none;margin-bottom:12px;text-align:right;" placeholder="Workout name..." />
     <button onclick="_w2ChangePhoto()" style="width:100%;background:transparent;border:1px solid #333;border-radius:10px;color:#aaa;font-family:'DM Sans';font-size:15px;font-weight:600;padding:13px;cursor:pointer;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;-webkit-tap-highlight-color:transparent;box-sizing:border-box;">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
       Change Photo
@@ -22023,8 +22029,8 @@ function _w2ChangePhoto() {
 function _w2CameraIconTap() {
   let idx = window._w2SheetIdx != null ? window._w2SheetIdx : window._editingWorkoutIdx;
   if (idx == null) { const _nm=(document.getElementById('workoutName')?.value||'').trim(); idx=_nm?workouts.findIndex(w=>w.name===_nm):-1; if(idx===-1)idx=null; }
-  if (idx != null) {
-    openWorkoutPhotoFlow(idx);
+  if (idx != null || window._isNewWorkoutFlow) {
+    _w2OpenEditSheet();
   } else {
     const _inp = document.createElement('input');
     _inp.type = 'file'; _inp.accept = 'image/*'; _inp.style.display = 'none';
@@ -22045,10 +22051,16 @@ function _w2CameraIconTap() {
 function _w2ApplyNameChange() {
   let idx = window._w2SheetIdx != null ? window._w2SheetIdx : window._editingWorkoutIdx;
   if (idx == null) { const _nm=(document.getElementById('workoutName')?.value||'').trim(); idx=_nm?workouts.findIndex(w=>w.name===_nm):-1; if(idx===-1)idx=null; }
-  const w = workouts[idx];
-  if (!w) return null;
   const newName = (document.getElementById('_w2EditNameInput')?.value || '').trim();
   if (!newName) return null;
+  if (idx == null) {
+    const _wn = document.getElementById('workoutName');
+    if (_wn) _wn.value = newName;
+    if (typeof _setWorkoutHeroPhoto === 'function') _setWorkoutHeroPhoto(newName);
+    return newName;
+  }
+  const w = workouts[idx];
+  if (!w) return null;
   const oldName = w.name;
   if (newName !== oldName) {
     const photo = localStorage.getItem(`ironlog_workout_photo_${oldName}`);
