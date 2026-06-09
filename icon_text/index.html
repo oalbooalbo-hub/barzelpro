@@ -1269,14 +1269,12 @@ function hidAuthScreen() {
 
   <!-- ACTIVE WORKOUT: hidden until user picks an option -->
   <!-- Top-edge workout progress bar — outside sticky header to avoid stacking context -->
-  <div id="workout-top-progress-wrap" style="display:none;position:fixed;top:0;left:0;right:0;max-width:430px;margin:0 auto;height:3px;background:#222;overflow:hidden;z-index:500;">
-    <div id="workout-progress-fill" style="height:100%;background:#39FF14;width:0%;transition:width .4s cubic-bezier(.4,0,.2,1);"></div>
-  </div>
+  <div id="workout-top-progress-wrap" style="display:none;position:fixed;top:0;left:0;right:0;max-width:430px;margin:0 auto;height:3px;background:#222;overflow:hidden;z-index:500;"></div>
   <div id="today-workout-area" style="display:none;overflow-x:visible;">
     <div id="workout-sticky-header" style="position:fixed;top:0;left:0;right:0;max-width:430px;margin-left:auto;margin-right:auto;z-index:15;background:#0a0a0a;padding-top:10px;">
       <div id="workout-hero-photo" style="display:none;width:100%;overflow:hidden;"></div>
       <div id="workout-progress-section" style="display:none;"></div>
-      <div id="todayMuscleChipsWrap" style="display:none;align-items:center;gap:0;flex-wrap:nowrap;padding:4px 16px 10px;width:100%;box-sizing:border-box;overflow:hidden;border-bottom:1px solid #2a2a2a;">
+      <div id="todayMuscleChipsWrap" style="display:none;align-items:center;gap:0;flex-wrap:nowrap;padding:4px 10px 10px;width:100%;box-sizing:border-box;overflow:hidden;border-bottom:1px solid #2a2a2a;">
         <div id="todayMuscleChipsFixed" style="display:flex;gap:6px;flex-shrink:0;padding-right:6px;"></div>
         <div id="todayMuscleChips" style="display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;scrollbar-width:none;flex:1;"></div>
       </div>
@@ -2981,6 +2979,7 @@ function _doStartNewWorkout(fromWorkouts=false) {
   openWorkoutNameModal();
 }
 function resetWorkoutState() {
+  window._todayChipsScrollPos = 0;
   window._sessionFinalized = false;
   document.getElementById('exerciseList').innerHTML = '';
   exerciseCounter = 0; setCounters = {};
@@ -3085,7 +3084,7 @@ function _setWorkoutHeroPhoto(name) {
   if (photo) {
     el.style.display = 'block';
     const ps = document.getElementById('workout-progress-section');
-    if (ps && !window._isNewWorkoutFlow) { ps.style.display = 'block'; const _tw=document.getElementById('workout-top-progress-wrap');if(_tw)_tw.style.display='block'; _updateWorkoutProgress(); }
+    if (ps && !window._isNewWorkoutFlow) { ps.style.display = 'block'; _updateWorkoutProgress(); }
     el.innerHTML = `${!window._isNewWorkoutFlow ? `<div id="workout-above-elapsed" style="display:none;align-items:center;gap:5px;padding:0 16px 8px;justify-content:center;position:relative;">
       <button onclick="openWorkoutMenu(event)" style="position:absolute;left:16px;background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="#888"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
@@ -3096,8 +3095,9 @@ function _setWorkoutHeroPhoto(name) {
       <button id="workout-hero-close-btn" onclick="if(typeof clearSession==='function')clearSession()" style="position:absolute;right:16px;background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
-    </div>` : ''}
-    <div style="position:relative;margin:0 10px;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;">
+    </div>
+    <div id="workout-hero-progress-wrap" style="height:6px;background:#222;overflow:hidden;display:none;width:80%;margin:-2px auto;border-radius:3px;"><div id="workout-progress-fill" style="height:100%;background:#39FF14;width:0%;transition:width .4s cubic-bezier(.4,0,.2,1);"></div></div>` : ''}
+    <div style="position:relative;margin:4px 10px 0;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;">
       <img src="${photo}" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;filter:brightness(0.85);">
       ${window._editingWorkoutIdx != null ? `<button onclick="event.stopPropagation();_w2CameraIconTap()" style="position:absolute;top:8px;right:8px;z-index:4;background:rgba(0,0,0,0.55);border:none;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>` : ''}
       ${localStorage.getItem(`ironlog_workout_video_${name}`) ? `<button onclick="event.stopPropagation();const _v=localStorage.getItem('ironlog_workout_video_${name}');if(_v)window.open(_v,'_blank');" style="position:absolute;bottom:8px;left:10px;z-index:4;display:flex;align-items:center;gap:5px;background:transparent;border:none;padding:4px 6px;border-radius:4px;cursor:pointer;-webkit-tap-highlight-color:transparent;"><svg width="13" height="13" viewBox="0 0 24 24" fill="var(--accent)" stroke="none"><polygon points="5,3 19,12 5,21"/></svg><span style="color:var(--accent);font-family:'DM Sans';font-size:11px;font-weight:700;letter-spacing:.5px;">PLAY</span></button>` : ''}
@@ -3139,7 +3139,7 @@ function _updateWorkoutProgress() {
   const fill     = document.getElementById('workout-progress-fill');
   const fraction = document.getElementById('workout-progress-fraction');
   const prStars  = document.getElementById('workout-pr-stars');
-  const topWrap  = document.getElementById('workout-top-progress-wrap');
+  const topWrap  = document.getElementById('workout-hero-progress-wrap');
   if (!section || !fill || !fraction) return;
   const total = document.querySelectorAll('#exerciseList .exercise-card').length;
   const done  = document.querySelectorAll('#exerciseList .exercise-card.completed').length;
@@ -3148,6 +3148,10 @@ function _updateWorkoutProgress() {
     : `${total}`;
   fill.style.width = total > 0 ? (done / total * 100) + '%' : '0%';
   if (topWrap) topWrap.style.display = total > 0 ? 'block' : 'none';
+  const exFill = document.getElementById('ex-detail-progress-fill');
+  const exWrap = document.getElementById('ex-detail-progress-wrap');
+  if (exFill) exFill.style.width = fill.style.width;
+  if (exWrap) exWrap.style.display = total > 0 ? 'block' : 'none';
   if (prStars) {
     let weightPRs = 0, volPRs = 0, volumePRs = 0;
     document.querySelectorAll('#exerciseList .exercise-card').forEach(c => {
@@ -3298,6 +3302,7 @@ function restoreSession() {
       addExerciseCard(ex, false, cd);
     });
     checkFinishReady();
+    window._todayChipsScrollPos = 0;
     updateTodayMuscleChips();
     // Update mark-done buttons based on restored set states
     document.querySelectorAll('.exercise-card').forEach(card => { updateMarkDoneBtn(card.id); setTimeout(() => updateVolProgressBar(card.id), 100); });
@@ -6336,18 +6341,19 @@ function updateTodayMuscleChips() {
 
   // Fixed chips — Hide  only shown when not in new workout creation flow
   const showHideChip = false;
-  const _btnBase = `display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:10px;padding:0 4px;width:80px;height:50px;flex-shrink:0;font-family:'DM Sans';cursor:pointer;transition:all .15s;`;
+  const _btnBase = `display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:10px;padding:0 4px;width:76px;height:50px;flex-shrink:0;font-family:'DM Sans';cursor:pointer;transition:all .15s;`;
 
   // Only Hide button stays fixed/sticky
   const _hideBtnBase = `display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:10px;padding:0;width:60px;height:50px;flex-shrink:0;font-family:'DM Sans';cursor:pointer;transition:all .15s;`;
   const hideDoneHtml = showHideChip ? `<button onclick="toggleTodayHideDone()" ${!anyDone ? 'disabled' : ''} style="${_hideBtnBase}background:${_todayHideDone ? 'rgba(var(--accent-rgb),.15)' : 'var(--surface2)'};border:1px solid ${_todayHideDone ? 'var(--accent)' : 'var(--border)'};cursor:${anyDone ? 'pointer' : 'default'};"><span style="font-size:14px;font-weight:600;color:${_todayHideDone ? 'var(--accent)' : anyDone ? '#fff' : '#555'};letter-spacing:.2px;line-height:1;white-space:nowrap;">${_todayHideDone ? 'Show' : 'Hide'}</span><span style="font-size:14px;font-weight:600;color:${_todayHideDone ? 'var(--accent)' : anyDone ? '#fff' : '#555'};letter-spacing:.2px;line-height:1;white-space:nowrap;">Done</span></button>` : '';
   fixedEl.innerHTML = hideDoneHtml;
+  fixedEl.style.display = hideDoneHtml ? 'flex' : 'none';
 
   // Scrollable: All button + muscle chips
   const _totalDisplay = _todayHideDone
     ? Object.values(remainCounts).reduce((a,b)=>a+b,0)
     : Object.values(counts).reduce((a,b)=>a+b,0);
-  const _savedScrollLeft = scrollEl.scrollLeft;
+  const _savedScrollLeft = window._todayChipsScrollPos ?? 0;
   scrollEl.innerHTML = entries.map(([m, c]) => {
     const color = muscleColors[m] || '#888';
     const _muscleAbbr = MUSCLE_ABBR[m] || m.slice(0,4);
@@ -6366,6 +6372,7 @@ function updateTodayMuscleChips() {
     scrollEl.style.justifyContent = 'flex-start';
     scrollEl.style.overflowX = 'auto';
     scrollEl.scrollLeft = _savedScrollLeft;
+    window._todayChipsScrollPos = scrollEl.scrollLeft;
   }
 }
 
@@ -19173,16 +19180,21 @@ function deleteCoachWorkout(id) {
 <!-- Exercise detail overlay -->
 <div id="ex-detail-overlay">
   <!-- Sticky top bar (workout mode): elapsed timer, ... menu, back chevron — always above scroll -->
-  <div id="ex-detail-above-elapsed" style="display:none;align-items:center;gap:5px;padding:calc(env(safe-area-inset-top) + 10px) 16px 8px;justify-content:center;">
-    <button onclick="openExDetailMenu()" style="position:absolute;left:16px;background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="#888"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
-    </button>
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
-    <span id="ex-detail-above-elapsed-val" style="font-family:'DM Sans';font-size:13px;font-weight:700;color:#888;letter-spacing:.3px;">0:00</span>
-    <span id="ex-detail-above-elapsed-dot" style="width:4px;height:4px;border-radius:50%;background:#888;display:inline-block;transition:opacity 0.8s ease;opacity:0;"></span>
-    <button onclick="document.getElementById('page-exercises')?.classList.contains('active') ? closeExTabDetail() : closeExDetailOverlay()" style="position:absolute;right:16px;background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><line x1="5" y1="12" x2="19" y2="12" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/><polyline points="13,6 19,12 13,18" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </button>
+  <div id="ex-detail-above-elapsed" style="display:none;flex-direction:column;">
+    <div id="ex-detail-elapsed-row" style="display:flex;align-items:center;gap:5px;padding:calc(env(safe-area-inset-top) + 10px) 16px 8px;justify-content:center;position:relative;">
+      <button onclick="openExDetailMenu()" style="position:absolute;left:16px;background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="#888"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+      </button>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+      <span id="ex-detail-above-elapsed-val" style="font-family:'DM Sans';font-size:13px;font-weight:700;color:#888;letter-spacing:.3px;">0:00</span>
+      <span id="ex-detail-above-elapsed-dot" style="width:4px;height:4px;border-radius:50%;background:#888;display:inline-block;transition:opacity 0.8s ease;opacity:0;"></span>
+      <button onclick="document.getElementById('page-exercises')?.classList.contains('active') ? closeExTabDetail() : closeExDetailOverlay()" style="position:absolute;right:16px;background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><line x1="5" y1="12" x2="19" y2="12" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/><polyline points="13,6 19,12 13,18" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+    <div id="ex-detail-progress-wrap" style="display:none;height:6px;background:#222;overflow:hidden;width:80%;margin:-2px auto;border-radius:3px;">
+      <div id="ex-detail-progress-fill" style="height:100%;background:#39FF14;width:0%;transition:width .4s cubic-bezier(.4,0,.2,1);"></div>
+    </div>
   </div>
   <!-- No photo: simple sticky header -->
   <div id="ex-detail-no-photo-wrap" style="display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top)+12px) 16px 10px;flex-shrink:0;">
@@ -19201,11 +19213,11 @@ function deleteCoachWorkout(id) {
   <div id="ex-detail-overlay-body">
     <!-- Photo (21:9) + FINISH — scrollable, not sticky -->
     <div id="ex-detail-photo-wrap" style="display:none;">
-      <div style="position:relative;margin:0 10px;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;">
+      <div style="position:relative;margin:4px 2px 0;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;">
         <img id="ex-detail-photo-img" src="" style="width:100%;height:100%;object-fit:cover;display:block;">
       </div>
       <!-- FINISH + exercise name — below image -->
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 10px 4px;gap:8px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 2px 4px;gap:8px;">
         <button id="ex-detail-finish-btn" onclick="markExDetailDone()" style="background:var(--accent);border:none;border-radius:8px;padding:7px 0;width:76px;cursor:pointer;-webkit-tap-highlight-color:transparent;flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:2px;">
           <span style="color:#000;font-family:'DM Sans';font-size:13px;font-weight:900;letter-spacing:.5px;">FINISH</span>
           <span style="color:#000;font-family:'DM Sans';font-size:10px;font-weight:700;letter-spacing:.3px;">EXERCISE</span>
