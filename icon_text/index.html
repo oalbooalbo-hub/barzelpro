@@ -1669,9 +1669,9 @@ function hidAuthScreen() {
             <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:6px;gap:1px;">
               <div id="nex-bodypart-label" style="min-height:15px;font-family:'DM Sans';font-size:12px;font-weight:700;letter-spacing:.2px;white-space:nowrap;text-align:center;"></div>
               <div style="display:flex;align-items:center;width:100%;">
-                <button id="nex-muscle-checkbox" class="set-done-btn" onclick="_nExCheckboxClick(this)" style="flex-shrink:0;width:34px;height:34px;margin:0;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
-                <div id="nex-muscle-label" style="flex:1;text-align:center;font-family:'DM Sans';font-size:17px;font-weight:700;letter-spacing:.3px;"></div>
                 <div style="width:34px;flex-shrink:0;"></div>
+                <div id="nex-muscle-label" onclick="const _cb=document.getElementById('nex-muscle-checkbox');if(_cb&&_cb.style.visibility!=='hidden')_nExCheckboxClick(_cb);" style="flex:1;text-align:center;font-family:'DM Sans';font-size:17px;font-weight:700;letter-spacing:.3px;cursor:pointer;-webkit-tap-highlight-color:transparent;"></div>
+                <button id="nex-muscle-checkbox" class="set-done-btn" onclick="_nExCheckboxClick(this)" style="flex-shrink:0;width:34px;height:34px;margin:0;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
               </div>
             </div>
           </div>
@@ -3099,7 +3099,7 @@ function _setWorkoutHeroPhoto(name) {
     <div id="workout-hero-progress-wrap" style="height:6px;background:#222;overflow:hidden;display:none;width:80%;margin:-2px auto;border-radius:3px;"><div id="workout-progress-fill" style="height:100%;background:#39FF14;width:0%;transition:width .4s cubic-bezier(.4,0,.2,1);"></div></div>` : ''}
     <div style="position:relative;margin:4px 10px 0;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;">
       <img src="${photo}" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;filter:brightness(0.85);">
-      ${window._editingWorkoutIdx != null ? `<button onclick="event.stopPropagation();_w2CameraIconTap()" style="position:absolute;top:8px;right:8px;z-index:4;background:rgba(0,0,0,0.55);border:none;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>` : ''}
+      ${window._editingWorkoutIdx != null ? `<button onclick="event.stopPropagation();_w2CameraIconTap()" style="position:absolute;top:8px;right:8px;z-index:4;background:rgba(0,0,0,0.55);border:none;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>` : `<button onclick="event.stopPropagation();const _n=document.getElementById('workout-hero-name')?.dataset?.name||'';const _i=(typeof workouts!=='undefined'?workouts:[]).findIndex(w=>w.name===_n);if(_i>=0){window._w2FromSession=true;openW2Sheet(_i);}" style="position:absolute;top:8px;right:8px;z-index:4;background:rgba(0,0,0,0.38);border:none;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;-webkit-tap-highlight-color:transparent;padding:0;font-family:Georgia,serif;font-style:italic;font-size:15px;font-weight:700;line-height:1;">i</button>`}
       ${localStorage.getItem(`ironlog_workout_video_${name}`) ? `<button onclick="event.stopPropagation();const _v=localStorage.getItem('ironlog_workout_video_${name}');if(_v)window.open(_v,'_blank');" style="position:absolute;bottom:8px;left:10px;z-index:4;display:flex;align-items:center;gap:5px;background:transparent;border:none;padding:4px 6px;border-radius:4px;cursor:pointer;-webkit-tap-highlight-color:transparent;"><svg width="13" height="13" viewBox="0 0 24 24" fill="var(--accent)" stroke="none"><polygon points="5,3 19,12 5,21"/></svg><span style="color:var(--accent);font-family:'DM Sans';font-size:11px;font-weight:700;letter-spacing:.5px;">PLAY</span></button>` : ''}
       <div style="position:absolute;bottom:0;left:0;right:0;padding:10px 14px 12px;pointer-events:none;text-align:right;">
         <div id="workout-hero-name" data-name="${name||''}" style="font-family:'DM Sans';font-size:20px;font-weight:900;color:#fff;max-width:60%;margin-left:auto;line-height:1.2;${_heroNameDir(name)}">${_heroNameHtml(name)}</div>
@@ -3609,6 +3609,9 @@ function renderExercisesTab() {
     });
   }
 
+  const _isHeb = n => /[א-ת]/.test(n);
+  const _tn = n => { if (n.length <= 35) return n; const _cut = n.slice(0,35).trimEnd().replace(/[,،.!?:;]+$/, ''); return _isHeb(n) ? _cut + '...' : _cut + '…'; };
+
   // Build exercise list for selected muscle (Favorites view)
   const exes = byMuscle[selected] || [];
   const color = MUSCLE_COLORS[selected] || '#888';
@@ -3637,7 +3640,7 @@ function renderExercisesTab() {
         ${_makeExThumbHtml(ex.name, ex.muscle)}
         <!-- Name + stats -->
         <div ${_pickMode ? `onclick="pickExercise('${ex.name.replace(/'/g,"\\'")}') "` : ''} style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;align-items:flex-end;padding:8px 15px 8px 0;${_pickMode ? 'cursor:pointer;' : ''}">
-          <div style="font-family:'DM Sans';font-size:17px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;">${ex.name}</div>
+          <div dir="auto" style="font-family:'DM Sans';font-size:17px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;">${_tn(ex.name)}</div>
           ${ex.lastDate ? `<div style="font-family:'DM Sans';font-size:11px;font-weight:600;color:var(--muted);margin-top:2px;text-align:right;">${fmtShort(ex.lastDate)}</div>` : ''}
         </div>
         <!-- Stats + menu -->
@@ -3689,7 +3692,7 @@ function renderExercisesTab() {
           <div onclick="${_pickMode ? '' : `openExtabExOverlay('${ex.name.replace(/'/g,"\\'")}') `}" style="display:flex;align-items:stretch;border-bottom:1px solid var(--border);${_pickMode ? '' : 'cursor:pointer;'}">
             ${_makeExThumbHtml(ex.name, ex.muscle)}
             <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;align-items:flex-end;padding:8px 15px 8px 0;">
-              <div style="font-family:'DM Sans';font-size:17px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;">${ex.name}</div>
+              <div dir="auto" style="font-family:'DM Sans';font-size:17px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;">${_tn(ex.name)}</div>
               ${_lcd ? `<div style="font-family:'DM Sans';font-size:11px;font-weight:600;color:var(--muted);margin-top:2px;text-align:right;">${fmtShort(_lcd)}</div>` : ''}
             </div>
             ${_pickMode ? `<div style="display:flex;align-items:center;padding-right:10px;"><div class="picker-check" style="width:22px;height:22px;border-radius:50%;border:2px solid ${_isPickSel ? _pc : '#333'};background:${_isPickSel ? _pc : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;">${_isPickSel ? '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</div></div>` : ''}
@@ -3713,7 +3716,7 @@ function renderExercisesTab() {
       <div onclick="${_pickMode ? '' : `openExtabExOverlay('${ex.name.replace(/'/g,"\\'")}') `}" style="display:flex;align-items:stretch;border-bottom:1px solid var(--border);${_pickMode ? '' : 'cursor:pointer;'}">
         ${_makeExThumbHtml(ex.name, ex.muscle)}
         <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;align-items:flex-end;padding:8px 15px 8px 0;">
-          <div style="font-family:'DM Sans';font-size:17px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;">${ex.name}</div>
+          <div dir="auto" style="font-family:'DM Sans';font-size:17px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;">${_tn(ex.name)}</div>
           ${ex.lastDate ? `<div style="font-family:'DM Sans';font-size:11px;font-weight:600;color:var(--muted);margin-top:2px;text-align:right;">${fmtShort(ex.lastDate)}</div>` : ''}
         </div>
         ${_pickMode ? `<div style="display:flex;align-items:center;padding-right:10px;"><div class="picker-check" style="width:22px;height:22px;border-radius:50%;border:2px solid ${_isPickSel ? _pc : '#333'};background:${_isPickSel ? _pc : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;">${_isPickSel ? '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</div></div>` : ''}
@@ -3795,7 +3798,7 @@ function renderExercisesTab() {
         const isSelected = _pickModeSelected.some(s => s.name === ex.name);
         return `<div data-exname="${ex.name}" onclick="pickExercise('${ex.name.replace(/'/g,"\\'")}'); " style="margin-bottom:6px;background:var(--surface);border:1px solid ${isSelected ? pickColor : 'var(--border)'};border-radius:10px;overflow:hidden;cursor:pointer;transition:border-color .15s;">
           <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;">
-            <div style="font-family:'DM Sans';font-size:17px;font-weight:400;color:var(--text);flex:1;">${ex.name}</div>
+            <div dir="auto" style="font-family:'DM Sans';font-size:17px;font-weight:400;color:var(--text);flex:1;">${_tn(ex.name)}</div>
             <div class="picker-check" style="width:22px;height:22px;border-radius:50%;border:2px solid ${isSelected ? pickColor : '#333'};background:${isSelected ? pickColor : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;">${isSelected ? '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</div>
           </div>
         </div>`;
@@ -4674,6 +4677,7 @@ function openWeekSummary(weekStartStr) {
     ${workoutRows || cardioRows ? `<div style="max-height:200px;overflow-y:auto;">${workoutRows}${cardioRows}</div>` : '<div style="text-align:center;color:var(--muted);font-size:13px;padding:12px 0;">No activity this week</div>'}
   `;
   document.getElementById('weekSummaryOverlay').classList.add('open');
+  if (window._historyPush) window._historyPush('week-summary');
 }
 function closeWeekSummary() {
   document.getElementById('weekSummaryOverlay').classList.remove('open');
@@ -4858,13 +4862,15 @@ function closeExTabDetail() {
 }
 window.closeExTabDetail = closeExTabDetail;
 
-function openExtabExOverlay(exName) {
+function openExtabExOverlay(exName, musclesOnly) {
   const overlay = document.getElementById('extab-ex-overlay');
   const body = document.getElementById('extab-ex-overlay-body');
   if (!overlay || !body) return;
 
   body._swipeAC?.abort();
   body.innerHTML = '';
+  const _ctEl = document.getElementById('extab-carousel-title');
+  if (_ctEl) _ctEl.style.display = 'none';
 
   const exDef = getAllExercises().find(x => x.name === exName || x.label === exName);
   const muscle = exDef?.muscle || 'Other';
@@ -4880,26 +4886,21 @@ function openExtabExOverlay(exName) {
   const photoImg = document.getElementById('extab-ex-photo-img');
   const _applyExtabPhoto = (src) => {
     document.getElementById('extab-play-badge')?.remove();
-    document.getElementById('extab-icon-placeholder')?.remove();
     if (photoImg) photoImg.style.display = '';
     if (photoWrap) photoWrap.style.display = 'block';
     if (noPhotoWrap) noPhotoWrap.style.display = 'none';
     if (src && photoImg) {
       photoImg.src = src;
     } else {
-      if (photoImg) photoImg.style.display = 'none';
-      const _photoContainer = photoImg?.parentElement;
-      if (_photoContainer) {
-        const _ph = document.createElement('div');
-        _ph.id = 'extab-icon-placeholder';
-        _ph.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#0d0d0d;';
-        _ph.innerHTML = `<span style="color:${muscleColor};">${_exSvgIcon(muscle, 64)}</span>`;
-        _photoContainer.appendChild(_ph);
-      }
+      const _ml = muscle?.toLowerCase();
+      const _defaultSrc = ['arms','back','chest','core','legs','mix','shoulders'].includes(_ml)
+        ? `images/${_ml}_exercise_default.webp`
+        : 'images/workout_default.webp';
+      if (photoImg) photoImg.src = _defaultSrc;
     }
     // Play badge — show whenever photoWrap is visible and a video URL exists
     if (_exVideoUrl) {
-      const _anchorEl = src ? photoImg?.parentElement : document.getElementById('extab-icon-placeholder');
+      const _anchorEl = photoImg?.parentElement;
       if (_anchorEl) {
         const _pb = document.createElement('div');
         _pb.id = 'extab-play-badge';
@@ -5004,19 +5005,17 @@ function openExtabExOverlay(exName) {
     // — both sides visible → full width; one side → 50% width (same as one side in new exercise)
     // — same scale(0.95) as nex-body-container
     diagWrap.id = 'extab-diag-wrap';
-    diagWrap.style.cssText = 'padding:10px 16px 0;margin-top:-45px;display:flex;justify-content:center;position:relative;overflow:visible;';
+    diagWrap.style.cssText = 'padding:10px 0 10px;margin-top:10px;display:flex;justify-content:center;position:relative;background:#161616;border-radius:14px;margin-left:16px;margin-right:16px;';
     const scaleWrap = document.createElement('div');
     const _backOnly = !hasFront && hasBack;
     const _frontOnly = hasFront && !hasBack;
     const _oneSideShift = _backOnly ? 'translateX(23px) ' : _frontOnly ? 'translateX(-26px) ' : '';
-    scaleWrap.style.cssText = `width:${_oneSide ? '50%' : '100%'};transform:${_oneSide ? _oneSideShift : 'translateX(50px) '}scale(0.855) translateZ(0);transform-origin:top center;backface-visibility:hidden;position:relative;`;
+    scaleWrap.style.cssText = `width:${_oneSide ? '50%' : '100%'};transform:${_oneSide ? _oneSideShift + 'scale(0.855)' : 'translateX(30px) scale(0.94)'} translateZ(0);transform-origin:top center;backface-visibility:hidden;position:relative;`;
     scaleWrap.appendChild(bc);
 
-    diagWrap.appendChild(scaleWrap);
-
-    // Muscle list pinned to left edge of diagWrap (window-aligned)
+    // Muscle list — flex sibling so it drives the card height
     const muscleList = document.createElement('div');
-    muscleList.style.cssText = 'position:absolute;left:16px;top:90px;display:flex;flex-direction:column;gap:5px;align-items:flex-start;z-index:1;pointer-events:none;';
+    muscleList.style.cssText = 'display:flex;flex-direction:column;gap:5px;align-items:flex-start;z-index:1;pointer-events:none;padding:10px 0 10px 16px;justify-content:center;';
     const listItems = muscle === 'Mix'
       ? (subs.length > 0 ? subs : _COMP_SUBS.map(s => s.n))
       : (subs.length > 0 ? subs : (NEX_BODY_SUBMUSCLES[muscle] || []));
@@ -5030,13 +5029,14 @@ function openExtabExOverlay(exName) {
         smColor = isBodyPart ? (W2_MUSCLE_COLORS[sm] || mainColor || '#aaa') : (mainColor || '#aaa');
       }
       const item = document.createElement('div');
-      item.style.cssText = `font-family:'DM Sans';font-size:12px;font-weight:700;color:${smColor};letter-spacing:.2px;text-shadow:0 1px 4px #000;`;
+      item.style.cssText = `font-family:'DM Sans';font-size:12px;font-weight:700;color:${smColor};letter-spacing:.2px;text-shadow:0 1px 4px #000;white-space:nowrap;`;
       item.textContent = sm;
       muscleList.appendChild(item);
     });
     diagWrap.appendChild(muscleList);
+    diagWrap.appendChild(scaleWrap);
 
-    body.appendChild(diagWrap);
+    if (musclesOnly !== 'stats') body.appendChild(diagWrap);
   }
 
   // MAX · 1RM · B.Set · VOL · PROGRESS carousel
@@ -5060,38 +5060,34 @@ function openExtabExOverlay(exName) {
       if (sessionVol > (_chartVolMap.get(dayKey) || 0)) _chartVolMap.set(dayKey, sessionVol);
     });
   });
-  if (_maxKg > 0) {
+  {
     const _volStr = _maxVol >= 1000 ? (_maxVol / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : String(Math.round(_maxVol));
-    const slides = [
-      { val: 'PROGRESS', unit: '', prefix: '', label: '' },
-      { val: 'MUSCLES', unit: '', prefix: '', label: '' },
-      { val: 'YOUR BEST', unit: '', prefix: '', label: '' },
-    ];
-    const PROG_IDX = 0;
-    const TABLE_IDX = 2;
-    const _startIdx = 1; // open on MUSCLES
+    const slides = musclesOnly === true
+      ? [{ val: 'MUSCLES', unit: '', prefix: '', label: '' }]
+      : musclesOnly === 'stats'
+        ? [{ val: 'PROGRESS', unit: '', prefix: '', label: '' }, { val: 'YOUR BEST', unit: '', prefix: '', label: '' }]
+        : [
+            { val: 'PROGRESS', unit: '', prefix: '', label: '' },
+            { val: 'MUSCLES', unit: '', prefix: '', label: '' },
+            { val: 'YOUR BEST', unit: '', prefix: '', label: '' },
+          ];
+    const PROG_IDX  = (musclesOnly === true) ? -1 : 0;
+    const TABLE_IDX = (musclesOnly === true) ? -1 : (musclesOnly === 'stats') ? 1 : 2;
+    const _startIdx = (musclesOnly === true) ? 0 : (musclesOnly === 'stats') ? 0 : 1; // default: open on MUSCLES
     let _cur = _startIdx;
     const carousel = document.createElement('div');
     carousel.id = 'extab-carousel';
     carousel.style.cssText = 'padding:12px 0 calc(env(safe-area-inset-bottom,0px) + 14px);text-align:center;width:100%;user-select:none;flex-shrink:0;background:var(--bg,#111);';
 
+    const _titleEl = document.getElementById('extab-carousel-title');
     function _renderSlideVal(slide) {
-      valEl.innerHTML = slide.val + (slide.unit ? `<span style="font-family:'Bebas Neue';font-size:26px;color:${muscleColor};letter-spacing:1px;opacity:0.75;margin-left:5px;vertical-align:baseline;">${slide.unit}</span>` : '');
+      if (_titleEl) { _titleEl.textContent = slide.val; _titleEl.style.color = muscleColor; _titleEl.style.display = 'block'; }
     }
-    const valEl = document.createElement('div');
-    valEl.style.cssText = `font-family:'Bebas Neue';font-size:64px;line-height:1;color:${muscleColor};letter-spacing:1px;min-height:64px;`;
     _renderSlideVal(slides[_startIdx]);
-
-    const prefixEl = document.createElement('div');
-    prefixEl.style.cssText = "font-family:'DM Sans';font-size:11px;font-weight:700;color:#FFD600;letter-spacing:.8px;margin-top:6px;min-height:16px;";
-    prefixEl.textContent = slides[_startIdx].prefix;
-
-    const lblEl = document.createElement('div');
-    lblEl.style.cssText = "font-family:'DM Sans';font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.5px;margin-top:2px;padding:0 20px;min-height:12px;";
-    lblEl.textContent = slides[_startIdx].label;
+    if (musclesOnly === 'stats') setTimeout(_renderProgChart, 80);
 
     const dots = document.createElement('div');
-    dots.style.cssText = 'display:flex;gap:6px;margin-top:10px;justify-content:center;';
+    dots.style.cssText = `display:${musclesOnly === true ? 'none' : 'flex'};gap:6px;justify-content:center;padding:10px 0 0;`;
     const dotEls = slides.map((_, i) => {
       const d = document.createElement('div');
       d.style.cssText = `width:6px;height:6px;border-radius:50%;background:${i===_startIdx ? muscleColor : 'rgba(255,255,255,0.25)'};transition:background .2s;cursor:pointer;display:inline-block;`;
@@ -5100,22 +5096,13 @@ function openExtabExOverlay(exName) {
       return d;
     });
 
-    const slideWrap = document.createElement('div');
-    slideWrap.style.cssText = 'overflow:hidden;width:100%;';
-    const slideInner = document.createElement('div');
-    slideInner.style.cssText = 'display:flex;flex-direction:column;align-items:center;will-change:transform;';
-    slideInner.appendChild(prefixEl);
-    slideInner.appendChild(valEl);
-    slideInner.appendChild(lblEl);
-    slideWrap.appendChild(slideInner);
-
     // ── Progress chart pane ──────────────────────────────────────────────────
-    let _progMetric = 'wt', _progRange = '3M';
+    let _progMetric = 'wt', _progRange = '1Y';
     const _PC = { wt:{line:'#e8ff47',fill:'rgba(232,255,71,.08)'}, rm:{line:'#ff8c42',fill:'rgba(255,140,66,.08)'}, vol:{line:'#a78bfa',fill:'rgba(167,139,250,.08)'} };
     const _mKeys = ['wt','rm','vol'], _mLabels = ['MAX','1RM','VOL'], _mColors = ['#e8ff47','#ff8c42','#a78bfa'];
     const progPane = document.createElement('div');
     progPane.id = 'extab-prog-pane';
-    progPane.style.cssText = 'display:none;padding:8px 16px 0;';
+    progPane.style.cssText = `display:${musclesOnly === 'stats' ? 'block' : 'none'};padding:8px 16px 0;`;
     const metricBtns = [];
     const metricBar = document.createElement('div');
     metricBar.style.cssText = 'display:flex;gap:0;margin-bottom:10px;border-bottom:1px solid var(--border);';
@@ -5131,26 +5118,12 @@ function openExtabExOverlay(exName) {
       metricBar.appendChild(btn);
       metricBtns.push(btn);
     });
-    const rangeBtns = [];
-    const rangeBar = document.createElement('div');
-    rangeBar.style.cssText = 'display:flex;gap:4px;margin-bottom:6px;margin-top:10px;';
-    ['2W','1M','3M','6M','1Y'].forEach(r => {
-      const active = r === _progRange;
-      const btn = document.createElement('button');
-      btn.style.cssText = `flex:1;border:1px solid ${active?'var(--accent)':'var(--border)'};border-radius:6px;background:${active?'rgba(232,255,71,.12)':'transparent'};color:${active?'var(--accent)':'var(--muted)'};font-family:'DM Sans';font-size:16px;font-weight:700;padding:4px;cursor:pointer;transition:all .15s;`;
-      btn.textContent = r;
-      btn.onclick = () => {
-        _progRange = r;
-        rangeBtns.forEach(b => { const a = b.textContent===r; b.style.border=`1px solid ${a?'var(--accent)':'var(--border)'}`; b.style.background=a?'rgba(232,255,71,.12)':'transparent'; b.style.color=a?'var(--accent)':'var(--muted)'; });
-        _renderProgChart();
-      };
-      rangeBar.appendChild(btn);
-      rangeBtns.push(btn);
-    });
+    const _rangeNames = {'2W':'2 Weeks','1M':'1 Month','3M':'3 Months','6M':'6 Months','1Y':'1 Year'};
+    const _rangeKeys = ['1Y','6M','3M','1M','2W'];
     // Value display (shows selected day's value + diff)
     const progBigVal = document.createElement('div');
     progBigVal.id = 'extab-prog-bigval';
-    progBigVal.style.cssText = "font-family:'DM Sans';font-size:13px;font-weight:700;min-height:18px;padding:2px 0 4px;display:none;text-align:center;position:relative;";
+    progBigVal.style.cssText = "font-family:'DM Sans';font-size:18px;font-weight:700;min-height:22px;padding:2px 0 4px;display:none;text-align:center;position:relative;";
     const progNoData = document.createElement('div');
     progNoData.style.cssText = "display:none;text-align:center;padding:30px 0;font-family:'DM Sans';font-size:12px;color:var(--muted);";
     progNoData.textContent = 'Not enough data for this range';
@@ -5160,33 +5133,67 @@ function openExtabExOverlay(exName) {
     progCanvas.id = 'extab-prog-canvas';
     progCanvasWrap.appendChild(progCanvas);
     // Scrubber
+    // Centered date display below the chart
+    const selectedDayEl = document.createElement('div');
+    selectedDayEl.id = 'extab-prog-sel-date';
+    selectedDayEl.style.cssText = "display:none;font-family:'DM Sans';font-size:13px;font-weight:700;color:var(--text);text-align:center;padding:6px 0 2px;";
     const progScrubWrap = document.createElement('div');
-    progScrubWrap.style.cssText = 'display:none;padding:8px 0 4px;';
-    const progScrubInfo = document.createElement('div');
-    progScrubInfo.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;';
-    const progScrubDate = document.createElement('span');
-    progScrubDate.id = 'extab-prog-scrub-date';
-    progScrubDate.style.cssText = "font-family:'DM Sans';font-size:11px;font-weight:700;color:var(--text);";
+    progScrubWrap.style.cssText = 'display:none;padding:4px 0 4px;';
+    const _chevSvg = `<svg style="vertical-align:middle;margin-left:3px;" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
+    const progScrubHeader = document.createElement('div');
+    progScrubHeader.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;';
     const progScrubLbl = document.createElement('span');
     progScrubLbl.style.cssText = "font-family:'DM Sans';font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;";
     progScrubLbl.textContent = 'Select Day';
-    progScrubInfo.appendChild(progScrubDate);
-    progScrubInfo.appendChild(progScrubLbl);
+    const periodWrap = document.createElement('div');
+    periodWrap.style.cssText = 'position:relative;';
+    const periodBtn = document.createElement('button');
+    periodBtn.style.cssText = `background:transparent;border:1px solid #333;border-radius:6px;color:var(--accent);font-family:'DM Sans';font-size:11px;font-weight:700;padding:3px 8px;cursor:pointer;line-height:1.4;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;`;
+    const _updatePeriodBtn = () => { periodBtn.innerHTML = _rangeNames[_progRange] + _chevSvg; };
+    _updatePeriodBtn();
+    const periodDropdown = document.createElement('div');
+    periodDropdown.style.cssText = 'display:none;position:absolute;left:0;bottom:calc(100% + 4px);background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;overflow:hidden;z-index:20;min-width:110px;box-shadow:0 8px 24px rgba(0,0,0,.5);';
+    _rangeKeys.forEach((r, i) => {
+      const item = document.createElement('button');
+      item.style.cssText = `width:100%;background:transparent;border:none;${i<_rangeKeys.length-1?'border-bottom:1px solid #222;':''}color:${r===_progRange?'var(--accent)':'#aaa'};font-family:'DM Sans';font-size:13px;font-weight:${r===_progRange?'700':'400'};padding:9px 14px;cursor:pointer;text-align:left;display:block;`;
+      item.textContent = _rangeNames[r];
+      item.onclick = (e) => {
+        e.stopPropagation();
+        _progRange = r;
+        _updatePeriodBtn();
+        periodDropdown.style.display = 'none';
+        periodDropdown.querySelectorAll('button').forEach((b, j) => { b.style.color = j===i?'var(--accent)':'#aaa'; b.style.fontWeight = j===i?'700':'400'; });
+        _renderProgChart();
+      };
+      periodDropdown.appendChild(item);
+    });
+    periodBtn.onclick = (e) => {
+      e.stopPropagation();
+      const opening = periodDropdown.style.display === 'none';
+      periodDropdown.style.display = opening ? 'block' : 'none';
+      if (opening) { setTimeout(() => { const _c = () => { periodDropdown.style.display='none'; document.removeEventListener('click',_c,true); }; document.addEventListener('click',_c,true); }, 0); }
+    };
+    periodWrap.appendChild(periodBtn);
+    periodWrap.appendChild(periodDropdown);
+    progScrubHeader.appendChild(progScrubLbl);
+    progScrubHeader.appendChild(periodWrap);
     const progScrub = document.createElement('input');
     progScrub.type = 'range'; progScrub.min = '0'; progScrub.max = '0'; progScrub.value = '0'; progScrub.step = '1';
     progScrub.style.cssText = 'width:100%;accent-color:#555;cursor:pointer;height:3px;';
     progScrub.oninput = () => _onProgScrub(parseInt(progScrub.value));
-    progScrubWrap.appendChild(progScrubInfo);
+    progScrubWrap.appendChild(progScrubHeader);
     progScrubWrap.appendChild(progScrub);
     const scrubSection = document.createElement('div');
     scrubSection.style.cssText = 'background:#161616;border-radius:14px;padding:10px 14px 12px;margin-top:10px;';
-    rangeBar.style.cssText = 'display:flex;gap:4px;margin-top:10px;';
     scrubSection.appendChild(progScrubWrap);
-    scrubSection.appendChild(rangeBar);
+    const chartCard = document.createElement('div');
+    chartCard.style.cssText = 'background:#161616;border-radius:14px;padding:12px 0 10px;margin-top:8px;';
+    chartCard.appendChild(progBigVal);
+    chartCard.appendChild(progNoData);
+    chartCard.appendChild(progCanvasWrap);
+    chartCard.appendChild(selectedDayEl);
     progPane.appendChild(metricBar);
-    progPane.appendChild(progBigVal);
-    progPane.appendChild(progNoData);
-    progPane.appendChild(progCanvasWrap);
+    progPane.appendChild(chartCard);
     progPane.appendChild(scrubSection);
 
     // ── Stats table pane ──────────────────────────────────────────────────────
@@ -5201,7 +5208,7 @@ function openExtabExOverlay(exName) {
       `<div style="background:#111;border:1px solid #1e1e1e;border-radius:14px;padding:14px 10px 12px;display:flex;flex-direction:column;align-items:center;gap:2px;">` +
       `<div style="font-family:'DM Sans';font-size:10px;font-weight:700;color:${muscleColor};letter-spacing:1px;">${lbl}</div>` +
       `<div style="font-family:'Bebas Neue';font-size:44px;line-height:1;color:${muscleColor};white-space:nowrap;">${bigHtml}</div>` +
-      `<div style="font-family:'DM Sans';font-size:10px;font-weight:600;color:#555;margin-top:1px;">${sub}</div>` +
+      `<div style="font-family:'DM Sans';font-size:10px;font-weight:600;color:#888;margin-top:1px;">${sub}</div>` +
       `</div>`;
     tablePane.innerHTML =
       `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">` +
@@ -5222,8 +5229,8 @@ function openExtabExOverlay(exName) {
       chart.data.datasets[0].pointRadius = pts.map((_, j) => j === idx ? 6 : j === maxIdx ? 4 : 2);
       chart.data.datasets[0].pointBackgroundColor = pts.map((_, j) => j === idx ? '#fff' : j === maxIdx ? '#ff4444' : line);
       chart.update('none');
-      const dateEl = document.getElementById('extab-prog-scrub-date');
-      if (dateEl) dateEl.textContent = pts[idx]?.date || '';
+      const selDayEl = document.getElementById('extab-prog-sel-date');
+      if (selDayEl) { selDayEl.textContent = pts[idx]?.date || ''; selDayEl.style.display = pts[idx]?.date ? 'block' : 'none'; }
       const bigValEl = document.getElementById('extab-prog-bigval');
       if (bigValEl && pts[idx]) {
         const pt = pts[idx];
@@ -5241,19 +5248,31 @@ function openExtabExOverlay(exName) {
       if (!canvas) return;
       const cutoff = Date.now() - ({'2W':14,'1M':30,'3M':91,'6M':182,'1Y':365}[_progRange]||91) * 86400000;
       const srcMap = {wt:_chartWtMap, rm:_chartRmMap, vol:_chartVolMap}[_progMetric];
-      const pts = [...srcMap.entries()].filter(([k])=>k>=cutoff).sort((a,b)=>a[0]-b[0]).map(([k,v])=>{const _d=new Date(k);return{date:_d.getDate()+'/'+(_d.getMonth()+1),val:v};});
+      const _mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const pts = [...srcMap.entries()].filter(([k])=>k>=cutoff).sort((a,b)=>a[0]-b[0]).map(([k,v])=>{const _d=new Date(k);return{date:_d.getDate()+' '+_mo[_d.getMonth()]+' '+_d.getFullYear(),val:v};});
       if (canvas._chartInst) { canvas._chartInst.destroy(); canvas._chartInst = null; }
       const hasData = pts.length >= 2;
       progNoData.style.display = hasData ? 'none' : 'block';
       progCanvasWrap.style.display = hasData ? '' : 'none';
       progScrubWrap.style.display = hasData ? 'block' : 'none';
       const bigValEl = document.getElementById('extab-prog-bigval');
-      if (!hasData) { if (bigValEl) bigValEl.style.display = 'none'; return; }
+      if (!hasData) { if (bigValEl) bigValEl.style.display = 'none'; const _sd=document.getElementById('extab-prog-sel-date'); if(_sd) _sd.style.display='none'; return; }
       const {line, fill} = _PC[_progMetric];
+      const _minVal = Math.min(...pts.map(p => p.val));
+      const _maxVal = Math.max(...pts.map(p => p.val));
+      const _fmtYVal = v => v % 1 === 0 ? String(v) : parseFloat(v.toFixed(1));
       canvas._chartInst = new Chart(canvas.getContext('2d'), {
         type:'line',
         data:{labels:pts.map(p=>p.date),datasets:[{data:pts.map(p=>p.val),borderColor:line,backgroundColor:fill,pointBackgroundColor:line,tension:0,fill:true,borderWidth:1.5,pointRadius:2}]},
-        options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:20}},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{ticks:{color:'#555',font:{size:9}},grid:{display:false}},y:{ticks:{color:'#555',font:{size:9}},grid:{color:'#1e1e1e'}}}},
+        options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:20,left:41}},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{ticks:{display:false},grid:{display:false}},y:{ticks:{display:false},grid:{color:'#1e1e1e'}}}},
+        plugins:[{id:'yminmax',afterDraw(chart){
+          const ctx=chart.ctx,yS=chart.scales.y;
+          ctx.save();ctx.fillStyle='#aaa';ctx.font="700 12px 'DM Sans',sans-serif";ctx.textAlign='right';ctx.textBaseline='middle';
+          const x=chart.chartArea.left-9;
+          ctx.fillText(_fmtYVal(_maxVal),x,yS.getPixelForValue(_maxVal));
+          ctx.fillText(_fmtYVal(_minVal),x,yS.getPixelForValue(_minVal));
+          ctx.restore();
+        }}]
       });
       canvas._chartInst._pts = pts;
       progScrub.max = String(pts.length - 1);
@@ -5265,17 +5284,8 @@ function openExtabExOverlay(exName) {
     let _progPreDiag = null;
     function goTo(idx) {
       const _prevIdx = _cur;
-      const dir = idx > _prevIdx ? 1 : -1;
       _cur = idx;
-      slideInner.style.transition = 'none';
-      slideInner.style.transform = `translateX(${dir * 100}%)`;
-      requestAnimationFrame(() => requestAnimationFrame(() => {
-        _renderSlideVal(slides[idx]);
-        prefixEl.textContent = slides[idx].prefix;
-        lblEl.textContent = slides[idx].label;
-        slideInner.style.transition = 'transform 0.28s cubic-bezier(0.25,0.46,0.45,0.94)';
-        slideInner.style.transform = 'translateX(0%)';
-      }));
+      _renderSlideVal(slides[idx]);
       dotEls.forEach((d, i) => d.style.background = i === idx ? muscleColor : 'rgba(255,255,255,0.25)');
       // ── Diagram & pane state machine ───────────────────────────────────────
       const _wasSpec = _prevIdx === PROG_IDX || _prevIdx === TABLE_IDX;
@@ -5307,15 +5317,7 @@ function openExtabExOverlay(exName) {
         tablePane.style.display = 'none';
       }
     }
-    function _bounceEdge(direction) {
-      const nudge = direction * 12;
-      slideInner.style.transition = 'transform 0.15s ease-out';
-      slideInner.style.transform = `translateX(${nudge}%)`;
-      setTimeout(() => {
-        slideInner.style.transition = 'transform 0.2s ease-in-out';
-        slideInner.style.transform = 'translateX(0%)';
-      }, 150);
-    }
+    function _bounceEdge() {}
     const _swipeAC = new AbortController();
     body._swipeAC = _swipeAC;
     let _tx = 0, _ty = 0, _swipeBlocked = false;
@@ -5334,10 +5336,13 @@ function openExtabExOverlay(exName) {
       goTo(next);
     }, {passive:true, signal:_swipeAC.signal});
 
-    carousel.appendChild(slideWrap);
+    if (_maxKg === 0) {
+      const _noRec = '<div style="text-align:center;padding:30px 0;font-family:\'DM Sans\';font-size:16px;font-weight:600;color:#fff;">No record yet</div>';
+      progPane.innerHTML = _noRec;
+      tablePane.innerHTML = _noRec;
+    }
     carousel.appendChild(dots);
-    body.appendChild(progPane);
-    body.appendChild(tablePane);
+    if (musclesOnly !== true) { body.appendChild(progPane); body.appendChild(tablePane); }
     overlay.appendChild(carousel);
   }
 
@@ -5362,23 +5367,43 @@ function openExtabExOverlay(exName) {
   }
 
   document.body.classList.add('extab-ex-open');
+  overlay.dataset.musclesOnly = (musclesOnly === true || musclesOnly === 'stats') ? '1' : '';
   overlay.style.display = 'flex';
+  if (musclesOnly === true || musclesOnly === 'stats') {
+    overlay.style.transform = `translateY(${window.innerHeight}px)`;
+    _springAnimate(overlay, window.innerHeight, 0, 300, 30, () => { overlay.style.transform = ''; });
+  }
   if (window._historyPush) window._historyPush('extab-ex-overlay');
 }
 window.openExtabExOverlay = openExtabExOverlay;
 
 function closeExtabExOverlay() {
   const overlay = document.getElementById('extab-ex-overlay');
-  if (!overlay) return;
+  if (!overlay || overlay.style.display === 'none') return;
+  const _cleanup = () => {
+    overlay.style.display = 'none';
+    overlay.dataset.musclesOnly = '';
+    const body = document.getElementById('extab-ex-overlay-body');
+    if (body) { body._swipeAC?.abort(); body._swipeAC = null; body.innerHTML = ''; }
+    document.getElementById('extab-carousel')?.remove();
+    const photoImg = document.getElementById('extab-ex-photo-img');
+    if (photoImg) { photoImg.src = ''; photoImg.style.display = ''; }
+    document.getElementById('extab-play-badge')?.remove();
+    document.getElementById('extab-icon-placeholder')?.remove();
+  };
   document.body.classList.remove('extab-ex-open');
-  overlay.style.display = 'none';
-  const body = document.getElementById('extab-ex-overlay-body');
-  if (body) { body._swipeAC?.abort(); body._swipeAC = null; body.innerHTML = ''; }
-  document.getElementById('extab-carousel')?.remove();
-  const photoImg = document.getElementById('extab-ex-photo-img');
-  if (photoImg) { photoImg.src = ''; photoImg.style.display = ''; }
-  document.getElementById('extab-play-badge')?.remove();
-  document.getElementById('extab-icon-placeholder')?.remove();
+  if (overlay.dataset.musclesOnly === '1') {
+    overlay.style.pointerEvents = 'none';
+    const _curY = parseFloat(overlay.style.transform?.match(/translateY\((.+)px\)/)?.[1] || 0);
+    _springAnimate(overlay, _curY, window.innerHeight, 280, 25, () => { overlay.style.transform = ''; overlay.style.pointerEvents = ''; _cleanup(); });
+  } else {
+    _cleanup();
+  }
+  // If called from UI (not system back), clean up the orphaned history entry
+  if (history.state?.view === 'extab-ex-overlay') {
+    window._suppressNextPopstate = true;
+    history.back();
+  }
 }
 window.closeExtabExOverlay = closeExtabExOverlay;
 
@@ -5717,13 +5742,22 @@ function renderWorkoutsTab2() {
 
   // ── Toggle bar ────────────────────────────────────────
   const _wHasCoach = window._currentUserData?.coachId && window._currentUserData?.coachingExpires && new Date(window._currentUserData.coachingExpires) >= new Date();
-  const _wToggleHtml = `<div style="font-family:'DM Sans';font-size:20px;font-weight:700;color:var(--text);padding:10px 0 6px;">Workouts</div><div style="display:flex;gap:0;align-items:center;">
+  const _wToggleHtml = `<div style="display:flex;align-items:center;padding:10px 0 6px;"><span style="font-family:'DM Sans';font-size:20px;font-weight:700;color:var(--text);">Workouts</span><div style="flex:1;"></div><button id="w2-get-coach-btn" onclick="" style="opacity:0;background:transparent;border:1px solid #7ec8e3;border-radius:8px;color:#7ec8e3;font-family:'DM Sans';font-size:11px;font-weight:700;padding:6px 12px;cursor:pointer;letter-spacing:.5px;-webkit-tap-highlight-color:transparent;white-space:nowrap;">GET A COACH</button></div><div style="display:flex;gap:0;align-items:center;">
     <button onclick="switchWTabView('all')" id="wTab-seg-all" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_wTabView==='all'?'var(--accent)':'#555'};border-bottom:2px solid ${_wTabView==='all'?'var(--accent)':'transparent'};transition:all .15s;">ALL</button>
     <button onclick="switchWTabView('custom')" id="wTab-seg-custom" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_wTabView==='custom'?'var(--accent)':'#555'};border-bottom:2px solid ${_wTabView==='custom'?'var(--accent)':'transparent'};transition:all .15s;">CUSTOM</button>
     ${_wHasCoach ? `<button onclick="switchWTabView('coach')" id="wTab-seg-coach" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_wTabView==='coach'?'#7ec8e3':'#555'};border-bottom:2px solid ${_wTabView==='coach'?'#7ec8e3':'transparent'};transition:all .15s;">COACH</button>` : ''}
     <button id="w2-add-btn" onclick="startNewWorkout(true)" style="flex-shrink:0;padding:4px 8px 4px 12px;border:none;background:transparent;color:var(--accent);cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;"><svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></button>
   </div>`;
-  if (toggleBar) toggleBar.innerHTML = _wToggleHtml;
+  if (toggleBar) {
+    toggleBar.innerHTML = _wToggleHtml;
+    setTimeout(() => {
+      const _cb = document.getElementById('w2-get-coach-btn');
+      if (_cb) {
+        _springAnimate(_cb, 24, 0, 300, 28);
+        _fadeAnimate(_cb, 0, 1, 320);
+      }
+    }, 800);
+  }
 
   // ── Coach view ────────────────────────────────────────
   if (_wTabView === 'coach') {
@@ -6284,7 +6318,7 @@ function updateTodayMuscleChips() {
       const _allBtn = '';
       const _muscBtns = _entries.map(([m,c])=>{
         const col=_mc[m]||'#888', abbr=_ma[m]||m.slice(0,4), act=_todayMuscleFilter===m;
-        return `<button onclick="filterTodayByMuscle('${m}')" style="${_bb}position:relative;background:${act?col+'33':'rgba(255,255,255,.05)'};border:1px solid ${act?col:'#333'};"><span style="font-size:18px;font-weight:700;color:${act?col:'#555'};line-height:1;">${c}</span><span style="font-size:13px;font-weight:600;color:${act?col:'#444'};letter-spacing:.2px;line-height:1;white-space:nowrap;">${abbr}</span></button>`;
+        return `<button onclick="filterTodayByMuscle('${m}')" style="${_bb}position:relative;background:${act?col+'33':'rgba(255,255,255,.05)'};border:1px solid ${act?col:'#333'};"><span style="font-size:18px;font-weight:700;color:${act?col:'#888'};line-height:1;">${c}</span><span style="font-size:13px;font-weight:600;color:${act?col:'#888'};letter-spacing:.2px;line-height:1;white-space:nowrap;">${abbr}</span></button>`;
       }).join('');
       _chipsRowHtml = `<div style="display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding-bottom:8px;">${_allBtn}${_muscBtns}</div>`;
     }
@@ -6353,7 +6387,7 @@ function updateTodayMuscleChips() {
   const _totalDisplay = _todayHideDone
     ? Object.values(remainCounts).reduce((a,b)=>a+b,0)
     : Object.values(counts).reduce((a,b)=>a+b,0);
-  const _savedScrollLeft = window._todayChipsScrollPos ?? 0;
+  const _savedScrollLeft = scrollEl.scrollLeft;
   scrollEl.innerHTML = entries.map(([m, c]) => {
     const color = muscleColors[m] || '#888';
     const _muscleAbbr = MUSCLE_ABBR[m] || m.slice(0,4);
@@ -6361,9 +6395,9 @@ function updateTodayMuscleChips() {
     const done = doneCounts[m] || 0;
     const total = c;
     const countHtml = done > 0
-      ? `<span style="font-size:15px;font-weight:700;color:${active ? color : '#aaa'};line-height:1;white-space:nowrap;">${done}<span style="font-size:11px;font-weight:600;opacity:0.6;">/${total}</span></span>`
-      : `<span style="font-size:18px;font-weight:700;color:${active ? color : '#555'};line-height:1;">${total}</span>`;
-    return `<button onclick="filterTodayByMuscle('${m}')" style="${_btnBase}position:relative;background:${active ? color+'33' : 'rgba(255,255,255,.05)'};border:1px solid ${active ? color : '#333'};">${countHtml}<span style="font-size:14px;font-weight:600;color:${active ? color : '#444'};letter-spacing:.2px;line-height:1;white-space:nowrap;">${_muscleAbbr}</span></button>`;
+      ? `<span style="font-size:18px;font-weight:700;color:${active ? color : '#bbb'};line-height:1;white-space:nowrap;">${done}<span style="font-size:13px;font-weight:600;opacity:0.6;">/${total}</span></span>`
+      : `<span style="font-size:18px;font-weight:700;color:${active ? color : '#888'};line-height:1;">${total}</span>`;
+    return `<button onclick="filterTodayByMuscle('${m}')" style="${_btnBase}position:relative;background:${active ? color+'33' : 'rgba(255,255,255,.05)'};border:1px solid ${active ? color : '#333'};">${countHtml}<span style="font-size:14px;font-weight:600;color:${active ? color : '#888'};letter-spacing:.2px;line-height:1;white-space:nowrap;">${_muscleAbbr}</span></button>`;
   }).join('');
   if (entries.length <= 4) {
     scrollEl.style.justifyContent = 'center';
@@ -6371,6 +6405,7 @@ function updateTodayMuscleChips() {
   } else {
     scrollEl.style.justifyContent = 'flex-start';
     scrollEl.style.overflowX = 'auto';
+    void scrollEl.scrollWidth; // flush layout so scrollLeft assignment sticks
     scrollEl.scrollLeft = _savedScrollLeft;
     window._todayChipsScrollPos = scrollEl.scrollLeft;
   }
@@ -6427,10 +6462,17 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
   photoBox.id = `ex-photo-box-${id}`;
   photoBox.style.cssText = 'width:80px;height:80px;flex-shrink:0;margin:8px 0 8px 10px;border:1px solid #1e1e1e;border-radius:8px;overflow:hidden;background:#0d0d0d;display:flex;align-items:center;justify-content:center;cursor:pointer;';
   photoBox.onclick = () => openExDetail(id);
+  const _defaultExImgs = { Chest:'chest', Back:'back', Legs:'legs', Shoulders:'shoulders', Arms:'arms', Core:'core', Mix:'mix' };
+  const _defMusKey = _defaultExImgs[_exMuscle];
   if (_savedPhoto) {
     photoBox.innerHTML = `<img src="${_savedPhoto}" style="width:100%;height:100%;object-fit:cover;display:block;">`;
   } else {
-    photoBox.innerHTML = `<div style="color:${muscleColor};opacity:0.4;">${_svgIcon}</div>`;
+    if (_defMusKey) {
+      photoBox.innerHTML = `<img src="images/${_defMusKey}_exercise_default.webp" style="width:100%;height:100%;object-fit:cover;display:block;filter:brightness(0.65);">`;
+      photoBox.querySelector('img').onerror = () => { photoBox.innerHTML = `<div style="color:${muscleColor};opacity:0.4;">${_svgIcon}</div>`; };
+    } else {
+      photoBox.innerHTML = `<div style="color:${muscleColor};opacity:0.4;">${_svgIcon}</div>`;
+    }
     if (window.localforage) {
       window.localforage.getItem(_exPhotoKey).then(p => {
         if (p) photoBox.innerHTML = `<img src="${p}" style="width:100%;height:100%;object-fit:cover;display:block;">`;
@@ -9299,6 +9341,7 @@ function openWorkoutNameModal() {
   const _cb = document.getElementById('workoutNameCancelBtn');
   if (_cb) _cb.textContent = window._newFromToday ? 'Exit' : 'Cancel';
   document.getElementById('workoutNameModalOverlay').classList.add('open');
+  if (window._historyPush) window._historyPush('workout-name');
   const _dupMsg = document.getElementById('workoutNameDuplicateMsg');
   if (_dupMsg) _dupMsg.style.display = 'none';
   setTimeout(() => inp?.focus(), 100);
@@ -10169,6 +10212,7 @@ function openEditHistory(wi) {
     <button class="btn-save-edit" onclick="saveEditHistory()">SAVE CHANGES</button>
   `;
   document.getElementById('editHistoryOverlay').classList.add('open');
+  if (window._historyPush) window._historyPush('edit-history');
 }
 
 function openEditHistoryExPicker() {
@@ -14276,33 +14320,34 @@ window.addEventListener('load', function() {
 });
 </script>
 <!-- WORKOUT NAME EDIT MODAL -->
-<div class="modal-overlay" id="workoutNameModalOverlay" style="align-items:center;padding:0 16px;background:#0a0a0a;backdrop-filter:none;-webkit-backdrop-filter:none;">
+<div class="modal-overlay" id="workoutNameModalOverlay" style="align-items:flex-start;padding:calc(env(safe-area-inset-top) + 62px) 16px 0;background:#0a0a0a;backdrop-filter:none;-webkit-backdrop-filter:none;">
   <button onclick="cancelWorkoutNameModal()" style="position:absolute;top:calc(env(safe-area-inset-top) + 16px);right:20px;background:transparent;border:none;cursor:pointer;padding:4px;z-index:1;-webkit-tap-highlight-color:transparent;">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><line x1="5" y1="12" x2="19" y2="12" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><polyline points="13,6 19,12 13,18" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
   </button>
-  <div class="modal-sheet" style="padding:24px 20px 32px;border-radius:20px;border:1px solid var(--border);margin-bottom:20vh;animation:modalFadeIn 1s ease both;">
-    <div class="modal-title" style="margin-bottom:4px;color:#34d399;">WORKOUT NAME</div>
-    <div id="workoutNameDuplicateMsg" style="display:none;color:#ff4747;font-family:'DM Sans';font-size:12px;font-weight:600;margin-bottom:10px;">Name already exists</div>
-    <input id="workoutNameModalInput" type="text" autocomplete="off" enterkeyhint="done" placeholder="Name..."
-      style="width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);border-radius:0;color:#fff;font-family:'DM Sans';font-size:20px;font-weight:700;letter-spacing:0;padding:12px 14px;box-sizing:border-box;outline:none;margin-bottom:20px;-webkit-text-fill-color:#fff;caret-color:#fff;text-align:right;"
-      oninput="document.getElementById('workoutNameDuplicateMsg').style.display='none';const _hb=/[֐-׿]/.test(this.value);this.style.direction=_hb?'rtl':'ltr';const _sb=document.getElementById('workoutNameSaveBtn');if(_sb){const _v=this.value.trim();const _changed=window._isNewWorkoutFlow?!!_v:(_v&&_v!==(window._workoutNameOriginal||'').trim());_sb.disabled=!_changed;_sb.style.opacity=_changed?'1':'0.4';_sb.style.cursor=_changed?'pointer':'not-allowed';}"
-      onkeydown="if(event.key==='Enter'&&this.value.trim())confirmWorkoutNameModal()"/>
-    <div style="display:flex;gap:10px;">
-      <button id="workoutNameCancelBtn" onclick="cancelWorkoutNameModal()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:#fff;font-family:'DM Sans';font-size:16px;font-weight:700;padding:14px;cursor:pointer;">Cancel</button>
-      <button id="workoutNameSaveBtn" onclick="confirmWorkoutNameModal()" disabled style="flex:1;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:16px;font-weight:700;padding:14px;cursor:not-allowed;opacity:0.4;">Next</button>
+  <div class="modal-sheet" style="padding-bottom:32px;min-height:calc((100vw - 52px) * 0.4286 + 148px);display:flex;flex-direction:column;border-radius:20px;border:1px solid var(--border);animation:modalFadeIn 1s ease both;">
+    <div class="modal-title" style="margin:24px 20px 4px;color:#34d399;">WORKOUT NAME</div>
+    <div style="padding:0 20px;flex:1;display:flex;flex-direction:column;">
+      <div id="workoutNameDuplicateMsg" style="display:none;color:#ff4747;font-family:'DM Sans';font-size:12px;font-weight:600;margin-bottom:10px;">Name already exists</div>
+      <input id="workoutNameModalInput" type="text" autocomplete="off" enterkeyhint="done" placeholder="Name..."
+        style="width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);border-radius:0;color:#fff;font-family:'DM Sans';font-size:20px;font-weight:700;letter-spacing:0;padding:12px 14px;box-sizing:border-box;outline:none;margin-top:40px;margin-bottom:20px;-webkit-text-fill-color:#fff;caret-color:#fff;text-align:right;"
+        oninput="document.getElementById('workoutNameDuplicateMsg').style.display='none';const _hb=/[֐-׿]/.test(this.value);this.style.direction=_hb?'rtl':'ltr';const _sb=document.getElementById('workoutNameSaveBtn');if(_sb){const _v=this.value.trim();const _changed=window._isNewWorkoutFlow?!!_v:(_v&&_v!==(window._workoutNameOriginal||'').trim());_sb.disabled=!_changed;_sb.style.opacity=_changed?'1':'0.4';_sb.style.cursor=_changed?'pointer':'not-allowed';}"
+        onkeydown="if(event.key==='Enter'&&this.value.trim())confirmWorkoutNameModal()"/>
+      <div style="display:flex;gap:10px;margin-top:auto;">
+        <button id="workoutNameCancelBtn" onclick="cancelWorkoutNameModal()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:#fff;font-family:'DM Sans';font-size:16px;font-weight:700;padding:14px;cursor:pointer;">Cancel</button>
+        <button id="workoutNameSaveBtn" onclick="confirmWorkoutNameModal()" disabled style="flex:1;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:16px;font-weight:700;padding:14px;cursor:not-allowed;opacity:0.4;">Next</button>
+      </div>
     </div>
   </div>
 </div>
 
 <!-- WORKOUT PHOTO STEP — shown after naming a new workout -->
 <!-- WORKOUT PHOTO STEP — shown after naming a new workout -->
-<div class="modal-overlay" id="workoutPhotoModalOverlay" style="align-items:center;padding:0 16px;background:#0a0a0a;backdrop-filter:none;-webkit-backdrop-filter:none;">
+<div class="modal-overlay" id="workoutPhotoModalOverlay" style="align-items:flex-start;padding:calc(env(safe-area-inset-top) + 62px) 16px 0;background:#0a0a0a;backdrop-filter:none;-webkit-backdrop-filter:none;">
   <button onclick="_backToWorkoutNameStep()" style="position:absolute;top:calc(env(safe-area-inset-top) + 16px);right:20px;background:transparent;border:none;cursor:pointer;padding:4px;z-index:1;-webkit-tap-highlight-color:transparent;">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><line x1="5" y1="12" x2="19" y2="12" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><polyline points="13,6 19,12 13,18" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
   </button>
-  <div class="modal-sheet" style="padding-bottom:32px;border-radius:20px;border:1px solid var(--border);margin-bottom:20vh;animation:modalFadeIn 1s ease both;">
-    <div class="modal-handle"></div>
-    <div class="modal-title" style="margin:8px 20px 4px;color:#34d399;">WORKOUT IMAGE</div>
+  <div class="modal-sheet" style="padding-bottom:32px;border-radius:20px;border:1px solid var(--border);animation:modalFadeIn 1s ease both;">
+    <div class="modal-title" style="margin:24px 20px 4px;color:#34d399;">WORKOUT IMAGE</div>
     <!-- Photo area — identical structure/style to the hero photo on Today -->
     <div style="margin:4px 10px 0;">
       <div id="workoutPhotoPh" style="position:relative;aspect-ratio:21/9;overflow:hidden;border-radius:12px;background:#111;">
@@ -18927,7 +18972,7 @@ function deleteCoachWorkout(id) {
     <button onclick="event.stopPropagation();toggleWtabCardMenu(window._w2SheetIdx)" style="background:transparent;border:none;color:#fff;cursor:pointer;padding:4px 6px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
     </button>
-    <button onclick="closeW2Sheet();switchTab('workouts2')" style="background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
+    <button onclick="if(window._w2FromSession){window._w2FromSession=false;closeW2Sheet();}else{closeW2Sheet();switchTab('workouts2');}" style="background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><line x1="5" y1="12" x2="19" y2="12" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><polyline points="13,6 19,12 13,18" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
   </div>
@@ -18940,6 +18985,8 @@ function deleteCoachWorkout(id) {
   </div>
   <!-- Scrollable content area — body diagram scrolls with exercise list -->
   <div id="w2-scroll-area" style="overflow-y:auto;overflow-x:hidden;flex:1;-webkit-overflow-scrolling:touch;scrollbar-width:none;position:relative;overscroll-behavior:contain;">
+  <!-- Exercises section (hidden when opened from active session) -->
+  <div id="w2-exercises-section">
   <!-- Exercises label -->
   <div style="padding:10px 20px 4px;display:flex;align-items:flex-end;gap:6px;">
     <span id="w2-exercise-count" style="font-family:'DM Sans';font-size:32px;font-weight:700;color:#fff;line-height:1;"></span>
@@ -18951,6 +18998,7 @@ function deleteCoachWorkout(id) {
   <div id="w2-exercise-list" style="padding:0 20px;"></div>
   <!-- Divider before body diagram -->
   <div style="height:1px;background:#444;margin:10px 20px 0;"></div>
+  </div>
   <div style="padding:8px 20px 0;"><span style="font-family:'DM Sans';font-size:12px;font-weight:700;color:#888;letter-spacing:.8px;">MUSCLES</span></div>
   <!-- Body diagram -->
   <div style="display:block;width:100%;box-sizing:border-box;padding:4px 16px calc(140px + env(safe-area-inset-bottom));margin-top:-25px;overflow:visible;position:relative;">
@@ -19153,6 +19201,7 @@ function deleteCoachWorkout(id) {
       <button onclick="openExtabExMenu()" style="background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="#888"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
       </button>
+      <div id="extab-ex-muscle-badge" style="font-family:'DM Sans';font-size:15px;font-weight:900;letter-spacing:.5px;text-align:center;flex:1;"></div>
       <button onclick="closeExtabExOverlay()" style="background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><line x1="5" y1="12" x2="19" y2="12" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><polyline points="13,6 19,12 13,18" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
@@ -19160,10 +19209,8 @@ function deleteCoachWorkout(id) {
     <div style="position:relative;margin:0 10px;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;">
       <img id="extab-ex-photo-img" src="" style="width:100%;height:100%;object-fit:cover;display:block;">
     </div>
-    <!-- Muscle name left, exercise name right (mirrors FINISH + title layout) -->
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 10px 4px;gap:8px;">
-      <div id="extab-ex-muscle-badge" style="font-family:'DM Sans';font-size:15px;font-weight:900;letter-spacing:.5px;text-transform:uppercase;flex-shrink:0;"></div>
-      <div id="extab-ex-overlay-name" style="font-family:'DM Sans';font-size:24px;font-weight:900;color:var(--text);text-align:right;flex:1;min-width:0;word-break:break-word;"></div>
+    <div style="padding:10px 10px 4px;">
+      <div id="extab-ex-overlay-name" style="font-family:'DM Sans';font-size:24px;font-weight:900;color:var(--text);text-align:right;word-break:break-word;"></div>
     </div>
   </div>
   <!-- No-photo header -->
@@ -19174,6 +19221,7 @@ function deleteCoachWorkout(id) {
     <div id="extab-ex-overlay-name-nophoto" style="font-family:'DM Sans';font-size:18px;font-weight:900;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;direction:rtl;text-align:right;"></div>
     <div id="extab-ex-muscle-badge-nophoto" style="font-family:'DM Sans';font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;flex-shrink:0;"></div>
   </div>
+  <div id="extab-carousel-title" style="display:none;font-family:'Bebas Neue';font-size:26px;letter-spacing:1px;text-align:center;padding:4px 10px 6px;flex-shrink:0;"></div>
   <div id="extab-ex-overlay-body" style="flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding-bottom:calc(90px + env(safe-area-inset-bottom));scrollbar-width:none;"></div>
 </div>
 
@@ -19215,6 +19263,7 @@ function deleteCoachWorkout(id) {
     <div id="ex-detail-photo-wrap" style="display:none;">
       <div style="position:relative;margin:4px 2px 0;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;">
         <img id="ex-detail-photo-img" src="" style="width:100%;height:100%;object-fit:cover;display:block;">
+        <button onclick="openExtabExOverlay((document.getElementById('ex-detail-overlay-title')?.textContent||'').trim(),true)" style="position:absolute;top:8px;right:8px;z-index:2;background:rgba(0,0,0,0.38);border:none;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;-webkit-tap-highlight-color:transparent;padding:0;font-family:Georgia,serif;font-style:italic;font-size:15px;font-weight:700;line-height:1;">i</button>
       </div>
       <!-- FINISH + exercise name — below image -->
       <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 2px 4px;gap:8px;">
@@ -19518,6 +19567,7 @@ function openWorkoutMenu(e) {
   if (deleteBtn)   deleteBtn.style.display   = isNew ? 'none' : 'flex';
   document.getElementById('workout-menu-overlay').style.display = 'block';
   document.getElementById('workout-menu-sheet').style.display = 'block';
+  if (window._historyPush) window._historyPush('workout-menu');
 }
 function closeWorkoutMenu() {
   document.getElementById('workout-menu-overlay').style.display = 'none';
@@ -19829,7 +19879,7 @@ function showExFloatBar(cardId) {
   if (!onToday || !workoutActive) return;
   // Reset all buttons to deselected state
   const _grey = 'var(--muted)';
-  ['ex-float-note','ex-float-timer','ex-float-graph','ex-float-pro'].forEach(btnId => {
+  ['ex-float-note','ex-float-timer','ex-float-stats'].forEach(btnId => {
     const btn = document.getElementById(btnId);
     if (btn) { btn.style.color = _grey; btn.classList.remove('active'); }
   });
@@ -19875,15 +19925,6 @@ function _updateExFloatBar(cardId) {
   const timerPanelOpen = timerPanel?.classList.contains('open');
   if (floatTimer) floatTimer.style.color = timerPanelOpen ? 'var(--accent)' : _grey;
 
-  // Graph button — highlight if graph is open
-  const chartDiv = document.getElementById(`mini-chart-${cardId}`);
-  const floatGraph = document.getElementById('ex-float-graph');
-  if (floatGraph) floatGraph.style.color = (chartDiv && chartDiv.classList.contains('visible')) ? 'var(--accent)' : _grey;
-
-  // PRO button — highlight if pro bar is open
-  const proBar = document.getElementById(`vol-target-bar-${cardId}`);
-  const floatPro = document.getElementById('ex-float-pro');
-  if (floatPro) floatPro.style.color = proBar?.dataset.proOpen === 'true' ? '#34d399' : _grey;
 }
 
 function exFloatAction(action) {
@@ -19893,13 +19934,11 @@ function exFloatAction(action) {
   // Helper: check if a section is currently open
   const _isNoteOpen  = () => !!document.getElementById(`comment-area-${id}`)?.classList.contains('open');
   const _isTimerOpen = () => !!document.getElementById(`timer-panel-${id}`)?.classList.contains('open');
-  const _isGraphOpen = () => !!document.getElementById(`mini-chart-${id}`)?.classList.contains('visible');
-  const _isProOpen   = () => document.getElementById(`vol-target-bar-${id}`)?.dataset?.proOpen === 'true';
   const _isKgOpen    = () => !!_inlineKgEditorId;
   const _isRepsOpen  = () => !!_repsEditorSpan;
 
   // True if any closeable box is currently open
-  const _anyOpen = () => _isNoteOpen() || _isTimerOpen() || _isGraphOpen() || _isProOpen() || _isKgOpen() || _isRepsOpen();
+  const _anyOpen = () => _isNoteOpen() || _isTimerOpen() || _isKgOpen() || _isRepsOpen();
 
   // Close all sections (inline editors + float-bar panels)
   const _closeAll = () => {
@@ -19907,8 +19946,6 @@ function exFloatAction(action) {
     if (_isRepsOpen())  _closeRepsEditor(true);
     if (_isNoteOpen())  toggleComment(id);
     if (_isTimerOpen()) toggleTimer(id);
-    if (_isGraphOpen()) toggleMiniChart(id);
-    if (_isProOpen())   toggleSessionProgress(id);
   };
 
   const _scrollToBottom = () => {
@@ -19920,9 +19957,7 @@ function exFloatAction(action) {
   // Determine if the tapped panel was already open (so we skip re-opening — acts as toggle)
   const _targetWasOpen =
     (action === 'note'  && _isNoteOpen())  ||
-    (action === 'timer' && _isTimerOpen()) ||
-    (action === 'graph' && _isGraphOpen()) ||
-    (action === 'pro'   && _isProOpen());
+    (action === 'timer' && _isTimerOpen());
 
   // Wait for close animation only when something was open and we are opening a different panel
   const _hadOpen = _anyOpen();
@@ -19950,14 +19985,10 @@ function exFloatAction(action) {
       } else if (action === 'timer') {
         toggleTimer(id);
         setTimeout(_scrollToBottom, 120);
-      } else if (action === 'graph') {
-        toggleMiniChart(id);
-        setTimeout(_scrollToBottom, 120);
-      } else if (action === 'pro') {
-        toggleSessionProgress(id);
-        setTimeout(() => {
-          document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 120);
+      } else if (action === 'stats') {
+        const _card = document.getElementById(id);
+        const _exName = _card?.querySelector('.ex-name')?.textContent?.trim() || '';
+        if (_exName) openExtabExOverlay(_exName, 'stats');
       }
     }, _delay);
   }
@@ -21237,6 +21268,7 @@ function openExPhotoSheet() {
   if (titleEl) titleEl.textContent = 'EXERCISE PHOTO';
   const removeBtn = document.getElementById('ex-photo-remove-btn');
   if (removeBtn) removeBtn.style.display = hasPhoto ? 'flex' : 'none';
+  if (window._historyPush) window._historyPush('ex-photo-sheet');
   document.getElementById('ex-photo-sheet-overlay').style.display = 'block';
   document.getElementById('ex-photo-sheet').style.display = 'block';
 }
@@ -21695,6 +21727,7 @@ function openSetOptions(btn, exId) {
     const el = document.getElementById(`set-opt-check-${t}`);
     if (el) el.style.display = t === currentType ? 'flex' : 'none';
   });
+  if (window._historyPush) window._historyPush('set-options');
   document.getElementById('set-options-overlay').style.display = 'block';
   document.getElementById('set-options-sheet').style.display = 'block';
 }
@@ -21765,6 +21798,7 @@ function openExDetailMenu() {
   window._exMenuFromExtab = false;
   const changeBtn = document.getElementById('ex-detail-menu-change-btn');
   if (changeBtn) changeBtn.style.display = 'flex';
+  if (window._historyPush) window._historyPush('ex-detail-menu');
   document.getElementById('ex-detail-menu-overlay').style.display = 'block';
   document.getElementById('ex-detail-menu-sheet').style.display = 'block';
 }
@@ -21779,6 +21813,7 @@ function openExtabExMenu() {
   window._exMenuFromExtab = true;
   const changeBtn = document.getElementById('ex-detail-menu-change-btn');
   if (changeBtn) changeBtn.style.display = 'none';
+  if (window._historyPush) window._historyPush('ex-detail-menu');
   document.getElementById('ex-detail-menu-overlay').style.display = 'block';
   document.getElementById('ex-detail-menu-sheet').style.display = 'block';
 }
@@ -21851,6 +21886,7 @@ function changeExerciseDetail() {
   window._changeExCardId  = id;
   window._changeExMuscle  = card?.dataset.exmuscle || 'Chest';
   document.getElementById('change-ex-confirm-name').textContent = exName;
+  if (window._historyPush) window._historyPush('change-ex-confirm');
   document.getElementById('change-ex-confirm-overlay').style.display = 'block';
   document.getElementById('change-ex-confirm-sheet').style.display  = 'block';
 }
@@ -21908,6 +21944,7 @@ function deleteExerciseDetail() {
     const exName = card?.querySelector('.ex-name')?.textContent || card?.dataset?.exname || '';
     closeExDetailMenu();
     document.getElementById('delete-ex-confirm-name').textContent = exName;
+    if (window._historyPush) window._historyPush('delete-ex-confirm');
     document.getElementById('delete-ex-confirm-overlay').style.display = 'block';
     document.getElementById('delete-ex-confirm-sheet').style.display  = 'block';
   }
@@ -21976,6 +22013,7 @@ function openWorkoutPhotoFlow(idx) {
   if (titleEl) titleEl.textContent = 'WORKOUT PHOTO';
   const removeBtn = document.getElementById('ex-photo-remove-btn');
   if (removeBtn) removeBtn.style.display = hasPhoto ? 'flex' : 'none';
+  if (window._historyPush) window._historyPush('ex-photo-sheet');
   document.getElementById('ex-photo-sheet-overlay').style.display = 'block';
   document.getElementById('ex-photo-sheet').style.display = 'block';
 }
@@ -22557,8 +22595,10 @@ function _w2SetHeight(expanded) {
   // Toggle start button position: inline when collapsed, bottom when expanded
   const inlineWrap = document.getElementById('w2-start-inline-wrap');
   const bottomWrap = document.getElementById('w2-start-bottom-wrap');
-  if (inlineWrap) inlineWrap.style.display = expanded ? 'none' : 'block';
-  if (bottomWrap) bottomWrap.style.display = expanded ? 'block' : 'none';
+  if (!window._w2FromSession) {
+    if (inlineWrap) inlineWrap.style.display = expanded ? 'none' : 'block';
+    if (bottomWrap) bottomWrap.style.display = expanded ? 'block' : 'none';
+  }
 }
 
 function _w2BuildExerciseList(workout) {
@@ -22741,7 +22781,9 @@ function openW2Sheet(idx) {
   const inlineWrap = document.getElementById('w2-start-inline-wrap');
   const bottomWrap = document.getElementById('w2-start-bottom-wrap');
   if (inlineWrap) inlineWrap.style.display = 'none';
-  if (bottomWrap) bottomWrap.style.display = 'block';
+  if (bottomWrap) bottomWrap.style.display = window._w2FromSession ? 'none' : 'block';
+  const exSection = document.getElementById('w2-exercises-section');
+  if (exSection) exSection.style.display = window._w2FromSession ? 'none' : '';
 
   overlay.style.display = 'block';
   overlay.style.opacity = '0';
@@ -22881,6 +22923,9 @@ function closeW2Sheet() {
   _fadeAnimate(overlay, parseFloat(overlay.style.opacity)||0.6, 0, 300);
   window._w2SheetIdx = null;
   window._w2SheetExpanded = false;
+  window._w2FromSession = false;
+  const _exSec = document.getElementById('w2-exercises-section');
+  if (_exSec) _exSec.style.display = '';
 }
 
 function _runWorkoutLoadingAnim(onDone) {
@@ -23122,13 +23167,9 @@ function _updateKgDisplay(val, isBWMode) {
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
     Timer
   </button>
-  <button id="ex-float-graph" onclick="exFloatAction('graph')" title="Graph">
-    <svg width="20" height="20" viewBox="0 0 140 100" fill="none"><line x1="14" y1="2" x2="14" y2="90" stroke="currentColor" stroke-width="8" stroke-linecap="round"/><line x1="14" y1="90" x2="138" y2="90" stroke="currentColor" stroke-width="8" stroke-linecap="round"/><polyline points="14,85 34,55 54,70 80,30 104,48 130,10" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="14" cy="85" r="8" fill="currentColor"/><circle cx="34" cy="55" r="8" fill="currentColor"/><circle cx="54" cy="70" r="8" fill="currentColor"/><circle cx="80" cy="30" r="8" fill="currentColor"/><circle cx="104" cy="48" r="8" fill="currentColor"/><circle cx="130" cy="10" r="8" fill="currentColor"/></svg>
-    Graph
-  </button>
-  <button id="ex-float-pro" onclick="exFloatAction('pro')" title="PRO">
-    <span style="font-size:16px;letter-spacing:1px;">PRO</span>
-    Analyze
+  <button id="ex-float-stats" onclick="exFloatAction('stats')" title="Stats">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="13" width="4" height="9"/><rect x="9" y="8" width="4" height="14"/><rect x="16" y="3" width="4" height="19"/></svg>
+    Stats
   </button>
 </div>
 
@@ -23150,7 +23191,7 @@ function _updateKgDisplay(val, isBWMode) {
     'extab-ex-overlay': () => { if (typeof window.closeExtabExOverlay === 'function') window.closeExtabExOverlay(); },
     'share-qr':         () => { if (typeof window.closeShareQR === 'function') window.closeShareQR(); },
     'summary':          () => { const o = document.getElementById('summaryOverlay'); if (o) o.classList.remove('open'); },
-    'workout-name':     () => { const o = document.getElementById('workoutNameModal'); if (o) o.classList.remove('open'); },
+    'workout-name':     () => { if (typeof closeWorkoutNameModal === 'function') closeWorkoutNameModal(); },
     'rename-ex':        () => { const o = document.getElementById('renameExOverlay'); if (o) o.classList.remove('open'); },
     'new-ex':           () => { const o = document.getElementById('newExModalOverlay'); if (o) o.classList.remove('open'); },
     'edit-history':     () => { const o = document.getElementById('editHistoryOverlay'); if (o) o.classList.remove('open'); },
@@ -23159,10 +23200,17 @@ function _updateKgDisplay(val, isBWMode) {
     'user-menu':        () => { const o = document.getElementById('userMenuOverlay'); if (o) o.style.display = 'none'; },
     'workout-menu':     () => { closeWorkoutMenu(); },
     'w2-sheet':         () => { if (typeof closeW2Sheet === 'function') closeW2Sheet(); },
+    'workout-share-qr': () => { if (typeof closeWorkoutShareQR === 'function') closeWorkoutShareQR(); },
+    'ex-photo-sheet':   () => { if (typeof closeExPhotoSheet === 'function') closeExPhotoSheet(); },
+    'set-options':      () => { if (typeof closeSetOptions === 'function') closeSetOptions(); },
+    'ex-detail-menu':   () => { if (typeof closeExDetailMenu === 'function') closeExDetailMenu(); },
+    'change-ex-confirm':() => { if (typeof cancelChangeExercise === 'function') cancelChangeExercise(); },
+    'delete-ex-confirm':() => { if (typeof cancelDeleteExercise === 'function') cancelDeleteExercise(); },
   };
 
   // Handle back button
   window.addEventListener('popstate', function(e) {
+    if (window._suppressNextPopstate) { window._suppressNextPopstate = false; return; }
     const view = e.state?.view;
     if (view && _closers[view]) {
       _closers[view]();
