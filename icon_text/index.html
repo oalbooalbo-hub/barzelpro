@@ -119,6 +119,10 @@ body.desktop-mode .pages-wrap {
 .workouts-flow-card .set-done-btn{opacity:0!important;pointer-events:none!important;}
 .kg-editor-active .set-done-btn{opacity:0!important;pointer-events:none!important;}
 .kg-editor-active .set-num{pointer-events:none!important;cursor:default!important;}
+#nwf-hero-name:empty::before{content:'Workout name';color:rgba(255,255,255,0.3);pointer-events:none;}
+#nwf-description::placeholder,#nwf-video-link::placeholder{color:#888;-webkit-text-fill-color:#888;opacity:1;}
+.ex-editor-open #ex-detail-finish-btn{display:none!important;}
+.ex-editor-open #ex-detail-back-btn,.ex-editor-open #ex-detail-back-btn-nophoto,.ex-editor-open #ex-detail-menu-btn,.ex-editor-open #ex-detail-menu-btn-nophoto,.ex-editor-open #ex-detail-info-btn{display:none!important;}
 .workouts-flow-card .btn-done,.workouts-flow-card .cancel-done-btn,.workouts-flow-card .btn-timer,.workouts-flow-card .timer-panel{display:none!important;}
 .workouts-flow-card .workouts-flow-only{display:inline-flex!important;}
 .empty-state .big{font-family:'Bebas Neue';font-size:48px;color:var(--surface2);display:block;}
@@ -1273,6 +1277,7 @@ function hidAuthScreen() {
   <div id="today-workout-area" style="display:none;overflow-x:visible;">
     <div id="workout-sticky-header" style="position:fixed;top:0;left:0;right:0;max-width:430px;margin-left:auto;margin-right:auto;z-index:15;background:#0a0a0a;padding-top:10px;">
       <div id="workout-hero-photo" style="display:none;width:100%;overflow:hidden;"></div>
+      <div id="nwf-ex-count-display" style="display:none;text-align:center;padding:18px 0 14px;"></div>
       <div id="workout-progress-section" style="display:none;"></div>
       <div id="todayMuscleChipsWrap" style="display:none;align-items:center;gap:0;flex-wrap:nowrap;padding:4px 10px 10px;width:100%;box-sizing:border-box;overflow:hidden;border-bottom:1px solid #2a2a2a;">
         <div id="todayMuscleChipsFixed" style="display:flex;gap:6px;flex-shrink:0;padding-right:6px;"></div>
@@ -1285,16 +1290,20 @@ function hidAuthScreen() {
       <button class="btn-load-history" onclick="window._loadFromToday=true;switchTab('workouts2')" style="display:none;"></button>
     </div>
     <div id="today-chips-block"></div>
-    <div id="nwf-bottom-bar" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:var(--bg,#0a0a0a);border-top:1px solid var(--border,#1e1e1e);z-index:20;box-sizing:border-box;"></div>
+    <div id="nwf-bottom-bar" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;padding:16px 16px calc(env(safe-area-inset-bottom,0px) + 16px);background:var(--bg,#0a0a0a);z-index:20;box-sizing:border-box;gap:10px;"></div>
     <div id="ex-nav-slider">
       <div id="ex-nav-list">
         <div id="exerciseList"></div>
         <div class="add-ex-row">
+          <div id="nwf-build-prompt" style="display:none;width:100%;text-align:center;padding:28px 20px 20px;box-sizing:border-box;">
+            <div style="font-family:'DM Sans',sans-serif;font-size:24px;font-weight:800;color:#fff;line-height:1.2;">Let's Build Your Workout</div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;color:#888;margin-top:8px;">Start adding exercises from library</div>
+          </div>
           <button class="btn-add-exercise" onclick="enterPickMode(_todayMuscleFilter)">+ ADD EXERCISE</button>
         </div>
       </div>
       <div id="ex-nav-detail" style="overflow-y:auto;">
-        <div id="ex-detail-back" onclick="closeExDetail()">
+        <div id="ex-detail-back" onclick="_maybeCloseExDetail()">
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><polyline points="13,4 7,10 13,16" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
           <span id="ex-detail-back-label">Back</span>
         </div>
@@ -1403,9 +1412,9 @@ function hidAuthScreen() {
 <!-- EXERCISES -->
 <div class="page" id="page-exercises" style="padding-top:calc(60px + env(safe-area-inset-top));padding-bottom:calc(120px + env(safe-area-inset-bottom));padding-left:10px;padding-right:10px;">
   <div id="exercisesTabContent"></div>
-  <div id="pick-mode-btns" style="display:none;flex-direction:row;gap:10px;position:fixed;bottom:0;left:0;right:0;z-index:60;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:var(--bg);border-top:1px solid var(--border);max-width:430px;margin:0 auto;">
-    <button onclick="exitPickMode()" style="flex:0 0 auto;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:16px;font-weight:700;padding:14px 20px;cursor:pointer;">Cancel</button>
-    <button id="pick-mode-done-btn" onclick="donePickMode()" style="flex:1;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:16px;font-weight:900;-webkit-text-stroke:0.4px currentColor;padding:14px 16px;cursor:pointer;">Done</button>
+  <div id="pick-mode-btns" style="display:none;flex-direction:row;gap:10px;position:fixed;bottom:0;left:0;right:0;z-index:60;padding:16px 16px calc(env(safe-area-inset-bottom,0px) + 16px);background:var(--bg);max-width:430px;margin:0 auto;">
+    <button onclick="exitPickMode()" style="flex:1;background:transparent;border:1px solid rgba(255,255,255,0.18);border-radius:12px;color:rgba(255,255,255,0.65);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Back</button>
+    <button id="pick-mode-done-btn" onclick="donePickMode()" style="flex:1;background:var(--accent);border:none;border-radius:12px;color:#000;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Done</button>
   </div>
 </div>
 
@@ -1858,6 +1867,8 @@ function hidAuthScreen() {
 //  GLOBAL DECLARATIONS (must be before all functions)
 // ══════════════════════════════════════════════════════
 let _defaultExercises = {}; // populated from brand_library.json
+var _libraryWorkouts = [];   // declared early — also assigned in the library script block
+var _libraryLoaded = false;  // declared early — same reason
 
 // Muscle colors used throughout — declared here to avoid ReferenceError
 const PICKER_COLORS = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171', Mix:'#20d4c8' };
@@ -2205,6 +2216,45 @@ function _checkFinishReadyImpl() {
   if (addExBtn && !window._isNewWorkoutFlow) {
     addExBtn.style.color = hasExercises ? '' : '#ff9500';
     addExBtn.style.borderColor = hasExercises ? '' : '#ff9500';
+  }
+
+  // "Let's Build Your Workout" prompt — new workout flow, empty list only
+  const _prompt = document.getElementById('nwf-build-prompt');
+  const _addRow = document.querySelector('.add-ex-row');
+  const _heroPhoto = document.getElementById('workout-hero-photo');
+  if (_prompt && _addRow) {
+    const _showPrompt = window._isNewWorkoutFlow && !hasExercises;
+    if (_heroPhoto && window._isNewWorkoutFlow) _heroPhoto.style.display = 'none';
+    const _countDisplay = document.getElementById('nwf-ex-count-display');
+    if (_countDisplay) {
+      if (window._isNewWorkoutFlow && !_showPrompt) {
+        const _exCount = document.querySelectorAll('#exerciseList .exercise-card').length;
+        _countDisplay.innerHTML = `<div style="font-family:'DM Sans',sans-serif;font-size:72px;font-weight:900;color:#fff;line-height:1;">${_exCount}</div><div style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#888;margin-top:4px;">exercises</div>`;
+        _countDisplay.style.display = 'block';
+        _countDisplay.style.cursor = 'pointer';
+        _countDisplay.onclick = () => { if (_todayMuscleFilter) filterTodayByMuscle(null); };
+      } else {
+        _countDisplay.style.display = 'none';
+      }
+    }
+    const _chipsWrap = document.getElementById('todayMuscleChipsWrap');
+    if (_chipsWrap && window._isNewWorkoutFlow) _chipsWrap.style.display = _showPrompt ? 'none' : '';
+    _prompt.style.display = _showPrompt ? 'block' : 'none';
+    _addRow.style.flexDirection = _showPrompt ? 'column' : '';
+    _addRow.style.alignItems = _showPrompt ? 'center' : '';
+    _addRow.style.background = _showPrompt ? '#1e1e1e' : '';
+    _addRow.style.borderRadius = _showPrompt ? '24px' : '';
+    _addRow.style.border = _showPrompt ? '1px solid #333' : '';
+    _addRow.style.gap = _showPrompt ? '0' : '';
+    _addRow.style.paddingTop = _showPrompt ? '80px' : '';
+    _addRow.style.paddingBottom = _showPrompt ? '80px' : '';
+    if (addExBtn) {
+      addExBtn.style.flex = _showPrompt ? 'none' : '';
+      addExBtn.style.width = _showPrompt ? 'calc(100% - 48px)' : '';
+      addExBtn.style.borderRadius = window._isNewWorkoutFlow ? '12px' : '';
+      addExBtn.style.border = window._isNewWorkoutFlow ? '1px solid var(--accent)' : '';
+      addExBtn.style.color = window._isNewWorkoutFlow ? 'var(--accent)' : '';
+    }
   }
 
   // Update PICK button visibility based on whether workouts exist
@@ -2620,7 +2670,7 @@ function showTodayStartScreen() {
   // Restore tab bar
   const _tabsEl2 = document.querySelector('.tabs');
   if (_tabsEl2) _tabsEl2.style.display = '';
-  ['workoutsToggleBar','exercisesToggleBar','progressToggleBar'].forEach(id=>{const b=document.getElementById(id);if(b)b.style.display='none';});
+  ['workoutsToggleBar','exercisesToggleBar','progressToggleBar','w2ToggleBar'].forEach(id=>{const b=document.getElementById(id);if(b)b.style.display='none';});
   // Hide PICK if no saved workouts exist
   const hasWorkouts = (() => {
     const _dn = JSON.parse(_LS.get('ironlog_deleted_tab_names')||'[]');
@@ -2910,7 +2960,7 @@ function showTodayWorkoutArea(isNew=false) {
   // Ensure log page is shown with correct tab highlight
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-log').classList.add('active');
-  ['workoutsToggleBar','exercisesToggleBar','progressToggleBar'].forEach(id=>{const b=document.getElementById(id);if(b)b.style.display='none';});
+  ['workoutsToggleBar','exercisesToggleBar','progressToggleBar','w2ToggleBar'].forEach(id=>{const b=document.getElementById(id);if(b)b.style.display='none';});
   const _hl = (window._activeTabHighlight && window._activeTabHighlight !== 'log') ? window._activeTabHighlight : 'log';
   document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active',['log','exercises','progress','workouts2'][i]===_hl));
   updatePickModeTabs();
@@ -2976,7 +3026,7 @@ function _doStartNewWorkout(fromWorkouts=false) {
   const _db = document.getElementById('dateBadge');
   if (_db) { _db.style.cursor = 'default'; _db.style.opacity = '0.5'; }
   updatePickModeTabs();
-  openWorkoutNameModal();
+  _openNwfNamePage();
 }
 function resetWorkoutState() {
   window._todayChipsScrollPos = 0;
@@ -3077,6 +3127,182 @@ function _heroNameHtml(name) {
 function _heroNameDir(name) {
   return /[֐-׿]/.test(name||'') ? 'direction:rtl;' : '';
 }
+function _openPhotoModalFromHero() {
+  const nwfPage = document.getElementById('nwf-name-page');
+  if (nwfPage && nwfPage.style.display !== 'none') {
+    const nameEl = document.getElementById('nwf-hero-name');
+    const raw = (nameEl?.dataset.name || '').trim();
+    if (raw) {
+      const wn = document.getElementById('workoutName');
+      if (wn) wn.value = raw;
+    }
+  }
+  openWorkoutPhotoFlow(window._editingWorkoutIdx);
+}
+function _startHeroNameEdit(el) {
+  if (el.contentEditable === 'true') return;
+  // Show raw name (strip any <br> splitting) for editing
+  el.textContent = el.dataset.name || '';
+  el.contentEditable = 'true';
+  el.style.borderBottom = '2px solid rgba(255,255,255,0.55)';
+  el.style.outline = 'none';
+  el.style.caretColor = '#34d399';
+  el.style.cursor = 'text';
+  el.spellcheck = false;
+  el.focus();
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  const sel = window.getSelection();
+  if (sel) { sel.removeAllRanges(); sel.addRange(range); }
+  el._heroSplitInput = function() {
+    if (el.id === 'nwf-hero-name') {
+      const hasText = !!(el.innerText || el.textContent).trim();
+      const _b1 = document.getElementById('nwf-name-next-btn');
+      const _b2 = document.getElementById('nwf-bottom-next-btn');
+      if (_b1) _b1.style.opacity = hasText ? '1' : '0.35';
+      if (_b2) { _b2.style.background = hasText ? 'var(--accent)' : '#444'; _b2.style.color = hasText ? '#000' : '#fff'; }
+    }
+    clearTimeout(el._splitTimer);
+    el._splitTimer = setTimeout(() => {
+      const rawUntrimmed = (el.innerText || el.textContent).replace(/\n/g, ' ');
+      if (/\s$/.test(rawUntrimmed)) return;
+      const raw = rawUntrimmed.trim();
+      const html = _heroNameHtml(raw);
+      if (el.innerHTML !== html) {
+        el.innerHTML = html;
+        const r = document.createRange();
+        r.selectNodeContents(el);
+        r.collapse(false);
+        const s = window.getSelection();
+        if (s) { s.removeAllRanges(); s.addRange(r); }
+      }
+    }, 250);
+  };
+  el.addEventListener('input', el._heroSplitInput);
+  el._heroEditKeydown = function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+    if (e.key === 'Escape') { el.textContent = el.dataset.name || ''; el.blur(); }
+  };
+  el.addEventListener('keydown', el._heroEditKeydown);
+  el.addEventListener('blur', function _onBlur() {
+    el.removeEventListener('blur', _onBlur);
+    _finishHeroNameEdit(el);
+  });
+}
+function _finishHeroNameEdit(el) {
+  if (el._heroSplitInput) { el.removeEventListener('input', el._heroSplitInput); el._heroSplitInput = null; }
+  clearTimeout(el._splitTimer); el._splitTimer = null;
+  if (el._heroEditKeydown) { el.removeEventListener('keydown', el._heroEditKeydown); el._heroEditKeydown = null; }
+  el.contentEditable = 'false';
+  el.style.borderBottom = '';
+  el.style.caretColor = '';
+  el.style.cursor = window._isNewWorkoutFlow ? 'pointer' : 'default';
+  const raw = (el.innerText || el.textContent).replace(/\n/g, ' ').trim();
+  if (!raw) { el.innerHTML = _heroNameHtml(el.dataset.name || ''); return; }
+  // Duplicate check (mirrors confirmWorkoutNameModal)
+  const nameLower = raw.toLowerCase();
+  const isDup = (workouts||[]).some((w,i) => {
+    if (w._draft) return false;
+    if (window._editingWorkoutIdx !== undefined && i === window._editingWorkoutIdx) return false;
+    return (w.name||'').trim().toLowerCase() === nameLower;
+  }) || (_libraryWorkouts||[]).some(w => (w.name||'').trim().toLowerCase() === nameLower)
+    || (_coachWorkouts||[]).some(w => (w.name||'').trim().toLowerCase() === nameLower);
+  if (isDup) {
+    el.innerHTML = _heroNameHtml(el.dataset.name || '');
+    el.style.color = '#ff4747';
+    setTimeout(() => { el.style.color = '#fff'; }, 1500);
+    return;
+  }
+  // Migrate photo key if renaming existing workout
+  const _oldName = (el.dataset.name || '').trim();
+  if (_oldName && _oldName !== raw) {
+    const _ph = localStorage.getItem(`ironlog_workout_photo_${_oldName}`);
+    if (_ph) {
+      localStorage.setItem(`ironlog_workout_photo_${raw}`, _ph);
+      localStorage.removeItem(`ironlog_workout_photo_${_oldName}`);
+    }
+  }
+  // Apply split + direction
+  el.dataset.name = raw;
+  el.innerHTML = _heroNameHtml(raw);
+  el.style.direction = /[֐-׿]/.test(raw) ? 'rtl' : '';
+  // Sync hidden input
+  const wn = document.getElementById('workoutName');
+  if (wn) { wn.value = raw; const _hb = /[֐-׿]/.test(raw); wn.style.direction = _hb ? 'rtl' : 'ltr'; wn.style.textAlign = _hb ? 'right' : 'left'; }
+  if (typeof saveSession === 'function') saveSession();
+  // Update → button opacity on nwf-name-page after a name is set/cleared
+  if (el && el.id === 'nwf-hero-name') _nwfUpdateNextBtn();
+}
+function _nwfUpdateNextBtn() {
+  const btn  = document.getElementById('nwf-name-next-btn');
+  const btn2 = document.getElementById('nwf-bottom-next-btn');
+  const el   = document.getElementById('nwf-hero-name');
+  if (!el) return;
+  const hasName = !!(el.dataset.name || '').trim();
+  if (btn)  btn.style.opacity = hasName ? '1' : '0.35';
+  if (btn2) { btn2.style.background = hasName ? 'var(--accent)' : '#444'; btn2.style.color = hasName ? '#000' : '#fff'; }
+}
+function _openNwfNamePage() {
+  const nameEl = document.getElementById('nwf-hero-name');
+  const cur = (document.getElementById('workoutName')?.value || '').trim();
+  if (nameEl) {
+    nameEl.dataset.name = cur;
+    nameEl.innerHTML = cur ? _heroNameHtml(cur) : '';
+    nameEl.style.direction = /[֐-׿]/.test(cur) ? 'rtl' : '';
+    nameEl.contentEditable = 'false';
+    nameEl.style.borderBottom = '';
+    nameEl.style.caretColor  = '';
+    nameEl.style.cursor = 'pointer';
+  }
+  const nwfBg = document.getElementById('nwf-hero-bg');
+  if (nwfBg) {
+    const _savedPhoto = cur ? localStorage.getItem(`ironlog_workout_photo_${cur}`) : null;
+    nwfBg.src = _savedPhoto || _workoutDefaultPhoto || 'images/workout_background.webp';
+  }
+  _nwfUpdateNextBtn();
+  if (window._closers) window._closers['nwf-name'] = () => _cancelNwfNamePage();
+  document.getElementById('nwf-name-page').style.display = 'block';
+  if (window._historyPush) window._historyPush('nwf-name');
+  if (!cur && nameEl) setTimeout(() => _startHeroNameEdit(nameEl), 250);
+}
+function _closeNwfNamePage() {
+  document.getElementById('nwf-name-page').style.display = 'none';
+}
+function _cancelNwfNamePage() {
+  _closeNwfNamePage();
+  cancelWorkoutNameModal();
+}
+function _proceedFromNwfNamePage() {
+  const nameEl = document.getElementById('nwf-hero-name');
+  if (nameEl && nameEl.contentEditable === 'true') {
+    nameEl.addEventListener('blur', function _proceed() {
+      nameEl.removeEventListener('blur', _proceed);
+      setTimeout(_proceedFromNwfNamePage, 50);
+    });
+    nameEl.blur();
+    return;
+  }
+  const raw = (nameEl?.dataset.name || '').trim();
+  if (!raw) {
+    if (nameEl) _startHeroNameEdit(nameEl);
+    return;
+  }
+  const nameLower = raw.toLowerCase();
+  const isDup = (workouts||[]).some((w,i) => {
+    if (w._draft) return false;
+    if (window._editingWorkoutIdx !== undefined && i === window._editingWorkoutIdx) return false;
+    return (w.name||'').trim().toLowerCase() === nameLower;
+  }) || (_libraryWorkouts||[]).some(w => (w.name||'').trim().toLowerCase() === nameLower)
+    || (_coachWorkouts||[]).some(w => (w.name||'').trim().toLowerCase() === nameLower);
+  if (isDup) {
+    if (nameEl) { nameEl.style.color = '#ff4747'; setTimeout(() => { nameEl.style.color = '#fff'; }, 1500); }
+    return;
+  }
+  const wn = document.getElementById('workoutName');
+  if (wn) { wn.value = raw; const _hb = /[֐-׿]/.test(raw); wn.style.direction = _hb ? 'rtl' : 'ltr'; }
+  _closeNwfNamePage();
+  _finalizeNewWorkoutArea();
+}
 function _setWorkoutHeroPhoto(name) {
   const el = document.getElementById('workout-hero-photo');
   if (!el) return;
@@ -3097,12 +3323,12 @@ function _setWorkoutHeroPhoto(name) {
       </button>
     </div>
     <div id="workout-hero-progress-wrap" style="height:6px;background:#222;overflow:hidden;display:none;width:80%;margin:-2px auto;border-radius:3px;"><div id="workout-progress-fill" style="height:100%;background:#39FF14;width:0%;transition:width .4s cubic-bezier(.4,0,.2,1);"></div></div>` : ''}
-    <div style="position:relative;margin:4px 10px 0;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;">
+    <div style="position:relative;margin:${window._isNewWorkoutFlow ? '0' : '4px'} 10px 0;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;">
       <img src="${photo}" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;filter:brightness(0.85);">
-      ${window._editingWorkoutIdx != null ? `<button onclick="event.stopPropagation();_w2CameraIconTap()" style="position:absolute;top:8px;right:8px;z-index:4;background:rgba(0,0,0,0.55);border:none;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>` : `<button onclick="event.stopPropagation();const _n=document.getElementById('workout-hero-name')?.dataset?.name||'';const _i=(typeof workouts!=='undefined'?workouts:[]).findIndex(w=>w.name===_n);if(_i>=0){window._w2FromSession=true;openW2Sheet(_i);}" style="position:absolute;top:8px;right:8px;z-index:4;background:rgba(0,0,0,0.38);border:none;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;-webkit-tap-highlight-color:transparent;padding:0;font-family:Georgia,serif;font-style:italic;font-size:15px;font-weight:700;line-height:1;">i</button>`}
+      ${window._isNewWorkoutFlow ? `<button onclick="event.stopPropagation();_openPhotoModalFromHero()" style="position:absolute;top:8px;right:8px;z-index:4;background:rgba(0,0,0,0.55);border:none;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>` : `<button onclick="event.stopPropagation();const _n=document.getElementById('workout-hero-name')?.dataset?.name||'';const _i=(typeof workouts!=='undefined'?workouts:[]).findIndex(w=>w.name===_n);if(_i>=0){window._w2FromSession=true;openW2Sheet(_i);}" style="position:absolute;top:8px;right:8px;z-index:4;background:rgba(0,0,0,0.38);border:none;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;-webkit-tap-highlight-color:transparent;padding:0;font-family:Georgia,serif;font-style:italic;font-size:15px;font-weight:700;line-height:1;">i</button>`}
       ${localStorage.getItem(`ironlog_workout_video_${name}`) ? `<button onclick="event.stopPropagation();const _v=localStorage.getItem('ironlog_workout_video_${name}');if(_v)window.open(_v,'_blank');" style="position:absolute;bottom:8px;left:10px;z-index:4;display:flex;align-items:center;gap:5px;background:transparent;border:none;padding:4px 6px;border-radius:4px;cursor:pointer;-webkit-tap-highlight-color:transparent;"><svg width="13" height="13" viewBox="0 0 24 24" fill="var(--accent)" stroke="none"><polygon points="5,3 19,12 5,21"/></svg><span style="color:var(--accent);font-family:'DM Sans';font-size:11px;font-weight:700;letter-spacing:.5px;">PLAY</span></button>` : ''}
       <div style="position:absolute;bottom:0;left:0;right:0;padding:10px 14px 12px;pointer-events:none;text-align:right;">
-        <div id="workout-hero-name" data-name="${name||''}" style="font-family:'DM Sans';font-size:20px;font-weight:900;color:#fff;max-width:60%;margin-left:auto;line-height:1.2;${_heroNameDir(name)}">${_heroNameHtml(name)}</div>
+        <div id="workout-hero-name" data-name="${name||''}" onclick="if(window._isNewWorkoutFlow)_startHeroNameEdit(this)" style="font-family:'DM Sans';font-size:20px;font-weight:900;color:#fff;max-width:60%;margin-left:auto;line-height:1.2;pointer-events:${window._isNewWorkoutFlow?'auto':'none'};cursor:${window._isNewWorkoutFlow?'pointer':'default'};-webkit-tap-highlight-color:transparent;${_heroNameDir(name)}">${_heroNameHtml(name)}</div>
       </div>
     </div>
     ${window._isNewWorkoutFlow ? '' : `<div style="display:flex;align-items:flex-end;padding:8px 10px 4px;gap:8px;">
@@ -3120,8 +3346,9 @@ function _setWorkoutHeroPhoto(name) {
     // New workout with no photo — black placeholder matching hero geometry
     el.style.display = 'block';
     el.innerHTML = `<div style="position:relative;margin:0 10px;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;background:#000;">
+      <button onclick="event.stopPropagation();_openPhotoModalFromHero()" style="position:absolute;top:8px;right:8px;z-index:4;background:rgba(0,0,0,0.55);border:none;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
       <div style="position:absolute;bottom:0;left:0;right:0;padding:10px 14px 12px;pointer-events:none;text-align:right;">
-        <div id="workout-hero-name" data-name="${name||''}" style="font-family:'DM Sans';font-size:20px;font-weight:900;color:#fff;max-width:60%;margin-left:auto;line-height:1.2;${_heroNameDir(name)}">${_heroNameHtml(name)}</div>
+        <div id="workout-hero-name" data-name="${name||''}" onclick="_startHeroNameEdit(this)" style="font-family:'DM Sans';font-size:20px;font-weight:900;color:#fff;max-width:60%;margin-left:auto;line-height:1.2;pointer-events:auto;cursor:pointer;-webkit-tap-highlight-color:transparent;${_heroNameDir(name)}">${_heroNameHtml(name)}</div>
       </div>
     </div>`;
   } else {
@@ -3144,7 +3371,7 @@ function _updateWorkoutProgress() {
   const total = document.querySelectorAll('#exerciseList .exercise-card').length;
   const done  = document.querySelectorAll('#exerciseList .exercise-card.completed').length;
   fraction.innerHTML = done > 0
-    ? `${done}<span style="font-size:22px;font-weight:700;color:#888;"> / ${total}</span>`
+    ? `<span style="font-size:22px;font-weight:900;color:#fff;">${done}</span><span style="font-size:32px;font-weight:900;color:#888;margin:0 2px;">/</span><span style="font-size:32px;font-weight:900;color:#888;">${total}</span>`
     : `${total}`;
   fill.style.width = total > 0 ? (done / total * 100) + '%' : '0%';
   if (topWrap) topWrap.style.display = total > 0 ? 'block' : 'none';
@@ -3758,7 +3985,7 @@ function renderExercisesTab() {
     <button onclick="switchExTabView('all')" id="exTab-seg-all" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_exTabView==='all'?'var(--accent)':'#555'};border-bottom:2px solid ${_exTabView==='all'?'var(--accent)':'transparent'};transition:all .15s;">ALL</button>
     <button onclick="switchExTabView('custom')" id="exTab-seg-custom" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_exTabView==='custom'?'var(--accent)':'#555'};border-bottom:2px solid ${_exTabView==='custom'?'var(--accent)':'transparent'};transition:all .15s;">CUSTOM</button>
     ${_hasCoach ? `<button onclick="switchExTabView('coach')" id="exTab-seg-coach" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_exTabView==='coach'?'#7ec8e3':'#555'};border-bottom:2px solid ${_exTabView==='coach'?'#7ec8e3':'transparent'};transition:all .15s;">COACH</button>` : ''}
-    <button id="ex-add-btn" onclick="openNewExModal(window._exTabMuscle||'Chest')" style="flex-shrink:0;padding:4px 8px 4px 12px;border:none;background:transparent;color:var(--accent);cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;"><svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></button>
+    <button id="ex-add-btn" onclick="openNewExModal(window._exTabMuscle||'Chest')" style="flex-shrink:0;padding:4px 8px 4px 12px;border:none;background:transparent;color:${_exTabView==='custom'?'var(--accent)':'#555'};cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;"><svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></button>
   </div>${_exSubtitle()}`;
   const exToggleBar = document.getElementById('exercisesToggleBar');
   if (exToggleBar) {
@@ -3979,9 +4206,10 @@ function _updatePickModeDoneBtn() {
   const n = _pickModeSelected.length;
   btnsWrap.style.display = _pickMode ? 'flex' : 'none';
   btn.textContent = n > 0 ? `Done (${n})` : 'Done';
-  btn.style.opacity = n > 0 ? '1' : '0.4';
-  btn.style.background = window._coachMode ? '#7ec8e3' : 'var(--accent)';
-  btn.style.color = '#000';
+  btn.style.opacity = '1';
+  btn.style.background = n > 0 ? (window._coachMode ? '#7ec8e3' : 'var(--accent)') : '#444';
+  btn.style.color = n > 0 ? '#000' : '#fff';
+  btn.style.cursor = n > 0 ? 'pointer' : 'not-allowed';
 }
 
 function donePickMode() {
@@ -5746,7 +5974,7 @@ function renderWorkoutsTab2() {
     <button onclick="switchWTabView('all')" id="wTab-seg-all" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_wTabView==='all'?'var(--accent)':'#555'};border-bottom:2px solid ${_wTabView==='all'?'var(--accent)':'transparent'};transition:all .15s;">ALL</button>
     <button onclick="switchWTabView('custom')" id="wTab-seg-custom" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_wTabView==='custom'?'var(--accent)':'#555'};border-bottom:2px solid ${_wTabView==='custom'?'var(--accent)':'transparent'};transition:all .15s;">CUSTOM</button>
     ${_wHasCoach ? `<button onclick="switchWTabView('coach')" id="wTab-seg-coach" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_wTabView==='coach'?'#7ec8e3':'#555'};border-bottom:2px solid ${_wTabView==='coach'?'#7ec8e3':'transparent'};transition:all .15s;">COACH</button>` : ''}
-    <button id="w2-add-btn" onclick="startNewWorkout(true)" style="flex-shrink:0;padding:4px 8px 4px 12px;border:none;background:transparent;color:var(--accent);cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;"><svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></button>
+    <button id="w2-add-btn" onclick="startNewWorkout(true)" style="flex-shrink:0;padding:4px 8px 4px 12px;border:none;background:transparent;color:${_wTabView==='custom'?'var(--accent)':'#555'};cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;"><svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></button>
   </div>`;
   if (toggleBar) {
     toggleBar.innerHTML = _wToggleHtml;
@@ -6251,6 +6479,19 @@ function applyTodayFilters() {
   }
 }
 
+function _updateAllExCircleColors() {
+  const _mc = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171', Mix:'#20d4c8' };
+  document.querySelectorAll('#exerciseList .exercise-card').forEach(card => {
+    const color = _todayMuscleFilter ? (_mc[card.dataset.muscle] || '#888') : null;
+    const circle = document.getElementById(`no-done-check-${card.id}`);
+    if (circle) circle.style.borderColor = color || '#555';
+    const checkSvg = document.querySelector(`#done-check-${card.id} svg`);
+    if (checkSvg) checkSvg.setAttribute('stroke', color || '#fff');
+    const dot = document.getElementById(`nwf-dot-${card.id}`);
+    if (dot) dot.style.background = color || '#555';
+  });
+}
+
 function filterTodayByMuscle(muscle) {
   _todayMuscleFilter = (muscle === null || _todayMuscleFilter === muscle) ? null : muscle;
   document.querySelectorAll('#exerciseList .exercise-card[data-open="true"]').forEach(c => {
@@ -6258,6 +6499,7 @@ function filterTodayByMuscle(muscle) {
   });
   applyTodayFilters();
   updateTodayMuscleChips();
+  _updateAllExCircleColors();
   _scrollToNextExercise();
 }
 
@@ -6288,7 +6530,6 @@ function updateTodayMuscleChips() {
   // New workout creation — body-part chips above Cancel / Save
   if (window._isNewWorkoutFlow) {
     const _chipsBlock = document.getElementById('today-chips-block');
-    wrap.style.display = 'flex';
     wrap.style.flexDirection = 'column';
     wrap.style.alignItems = 'stretch';
     wrap.style.marginTop = '10px';
@@ -6306,6 +6547,7 @@ function updateTodayMuscleChips() {
     });
     const _entries = Object.entries(_counts);
     const _hasEx = _entries.length > 0;
+    wrap.style.display = _hasEx ? 'flex' : 'none';
 
     // Chips row — only shown when exercises have been added
     let _chipsRowHtml = '';
@@ -6330,10 +6572,10 @@ function updateTodayMuscleChips() {
     const _nwfBar = document.getElementById('nwf-bottom-bar');
     if (_nwfBar) {
       const _saveStyle = _hasEx
-        ? `flex:1;background:var(--accent,#e8ff47);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:16px;font-weight:700;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;`
-        : `flex:1;background:var(--accent,#e8ff47);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:16px;font-weight:700;padding:14px;cursor:not-allowed;opacity:0.35;-webkit-tap-highlight-color:transparent;`;
-      _nwfBar.innerHTML = `<div style="display:flex;gap:10px;"><button onclick="clearSession()" style="flex:0 0 auto;background:transparent;border:1px solid var(--border,#2a2a2a);border-radius:10px;color:var(--muted,#888);font-family:'DM Sans';font-size:16px;font-weight:700;padding:14px 20px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Cancel</button><button onclick="finishWorkout()" ${_hasEx?'':'disabled'} style="${_saveStyle}">Save</button></div>`;
-      _nwfBar.style.display = 'block';
+        ? `flex:1;background:var(--accent);border:none;border-radius:12px;color:#000;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;`
+        : `flex:1;background:#444;border:none;border-radius:12px;color:#fff;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;padding:14px;cursor:not-allowed;-webkit-tap-highlight-color:transparent;`;
+      _nwfBar.innerHTML = `<button onclick="document.getElementById('_nwf-back-wrapper')?.remove();_nwfResetHeaderPadding();_openNwfNamePage();" style="flex:1;background:transparent;border:1px solid rgba(255,255,255,0.18);border-radius:12px;color:rgba(255,255,255,0.65);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Back</button><button onclick="finishWorkout()" ${_hasEx?'':'disabled'} style="${_saveStyle}">Save</button>`;
+      _nwfBar.style.display = 'flex';
     }
     // Ensure the ADD EXERCISE button scrolls clear of the bottom bar
     const _nl = document.getElementById('ex-nav-list');
@@ -6395,7 +6637,7 @@ function updateTodayMuscleChips() {
     const done = doneCounts[m] || 0;
     const total = c;
     const countHtml = done > 0
-      ? `<span style="font-size:18px;font-weight:700;color:${active ? color : '#bbb'};line-height:1;white-space:nowrap;">${done}<span style="font-size:13px;font-weight:600;opacity:0.6;">/${total}</span></span>`
+      ? `<span style="font-size:13px;font-weight:700;color:#fff;line-height:1;white-space:nowrap;">${done}<span style="font-size:18px;font-weight:700;opacity:0.6;">/${total}</span></span>`
       : `<span style="font-size:18px;font-weight:700;color:${active ? color : '#888'};line-height:1;">${total}</span>`;
     return `<button onclick="filterTodayByMuscle('${m}')" style="${_btnBase}position:relative;background:${active ? color+'33' : 'rgba(255,255,255,.05)'};border:1px solid ${active ? color : '#333'};">${countHtml}<span style="font-size:14px;font-weight:600;color:${active ? color : '#888'};letter-spacing:.2px;line-height:1;white-space:nowrap;">${_muscleAbbr}</span></button>`;
   }).join('');
@@ -6461,6 +6703,7 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
   photoBox.className = 'ex-photo-box';
   photoBox.id = `ex-photo-box-${id}`;
   photoBox.style.cssText = 'width:80px;height:80px;flex-shrink:0;margin:8px 0 8px 10px;border:1px solid #1e1e1e;border-radius:8px;overflow:hidden;background:#0d0d0d;display:flex;align-items:center;justify-content:center;cursor:pointer;';
+  if (window._isNewWorkoutFlow) photoBox.style.display = 'none';
   photoBox.onclick = () => openExDetail(id);
   const _defaultExImgs = { Chest:'chest', Back:'back', Legs:'legs', Shoulders:'shoulders', Arms:'arms', Core:'core', Mix:'mix' };
   const _defMusKey = _defaultExImgs[_exMuscle];
@@ -6488,7 +6731,18 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
   const exNameEl = document.createElement('div');
   exNameEl.className = 'ex-name';
   exNameEl.style.textAlign = 'right';
-  exNameEl.textContent = ex.label;
+  if (window._isNewWorkoutFlow) {
+    const _dotColor = _todayMuscleFilter ? muscleColor : '#555';
+    const _nameSpan = document.createElement('span');
+    _nameSpan.textContent = ex.label;
+    const _dot = document.createElement('span');
+    _dot.id = `nwf-dot-${id}`;
+    _dot.style.cssText = `display:inline-block;width:7px;height:7px;border-radius:50%;background:${_dotColor};flex-shrink:0;vertical-align:middle;margin-left:6px;`;
+    exNameEl.style.cssText += 'display:flex;align-items:center;justify-content:flex-end;';
+    exNameEl.append(_nameSpan, _dot);
+  } else {
+    exNameEl.textContent = ex.label;
+  }
 
   const setsRow = document.createElement('div');
   setsRow.style.cssText = 'display:flex;align-items:center;justify-content:flex-end;';
@@ -6496,34 +6750,29 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
   const repCount = ex.sets?.find(s => !s.ignored)?.reps ?? ex.targetReps ?? '—';
   setsRow.id = `ex-sets-count-row-${id}`;
   setsRow.innerHTML = `<span style="font-family:'DM Sans';font-size:13px;font-weight:600;color:#555;">${setCount} sets · ${repCount} reps</span>`;
+  if (window._isNewWorkoutFlow) setsRow.style.display = 'none';
 
   // PR stars row — fixed slots so position never shifts when one star appears/disappears
   const prRow = document.createElement('div');
   prRow.id = `pr-stars-card-${id}`;
   prRow.style.cssText = 'display:flex;justify-content:flex-end;gap:0;min-height:22px;';
   prRow.innerHTML = `<span id="pr-slot-wt-${id}"  style="width:22px;display:inline-flex;justify-content:center;align-items:center;"></span><span id="pr-slot-vol-${id}" style="width:22px;display:inline-flex;justify-content:center;align-items:center;"></span><span id="pr-slot-vl-${id}"  style="width:22px;display:inline-flex;justify-content:center;align-items:center;"></span>`;
+  if (window._isNewWorkoutFlow) prRow.style.display = 'none';
 
   contentArea.append(exNameEl, setsRow, prRow);
 
   // 4a. No-sets-done indicator (grey circle — shown when no set is marked done)
   const noDoneCheck = document.createElement('div');
   noDoneCheck.id = `no-done-check-${id}`;
-  noDoneCheck.style.cssText = 'display:flex;width:28px;height:28px;border-radius:50%;background:transparent;border:2px solid #555;flex-shrink:0;align-self:center;margin-right:10px;cursor:pointer;';
+  noDoneCheck.style.cssText = `display:flex;width:28px;height:28px;border-radius:50%;background:transparent;border:2px solid ${_todayMuscleFilter ? muscleColor : '#555'};flex-shrink:0;align-self:center;margin-right:10px;cursor:pointer;`;
   noDoneCheck.onclick = () => openExDetail(id);
 
-  // 4b. Partial done indicator (grey circle + red "!" — shown when ≥1 set done but exercise not finished)
-  const partialCheck = document.createElement('div');
-  partialCheck.id = `partial-check-${id}`;
-  partialCheck.style.cssText = 'display:none;align-items:center;justify-content:center;align-self:center;margin-right:10px;flex-shrink:0;cursor:pointer;';
-  partialCheck.onclick = () => openExDetail(id);
-  partialCheck.innerHTML = `<svg width="28" height="28" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="12" stroke="var(--accent)" stroke-width="2"/></svg>`;
-
-  // 4c. Done check (bare checkmark, no circle — shown when exercise is finished)
+  // 4b. Done check (bare checkmark, no circle — shown when exercise is finished)
   const doneCheck = document.createElement('div');
   doneCheck.id = `done-check-${id}`;
   doneCheck.style.cssText = 'display:none;flex-shrink:0;align-items:center;justify-content:center;align-self:center;margin-right:10px;cursor:pointer;';
   doneCheck.onclick = () => openExDetail(id);
-  doneCheck.innerHTML = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+  doneCheck.innerHTML = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="${_todayMuscleFilter ? muscleColor : '#fff'}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
 
   if (window._isNewWorkoutFlow) {
     const trashWrap = document.createElement('div');
@@ -6533,11 +6782,10 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
     trashBtn.style.cssText = 'background:transparent;border:none;color:#555;cursor:pointer;padding:2px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;';
     trashBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
     trashBtn.onclick = (e) => { e.stopPropagation(); card.remove(); saveSession?.(); };
-    noDoneCheck.style.marginRight = '0';
-    trashWrap.append(trashBtn, noDoneCheck);
-    header.append(photoBox, contentArea, trashWrap, partialCheck, doneCheck);
+    trashWrap.append(trashBtn);
+    header.append(photoBox, contentArea, trashWrap);
   } else {
-    header.append(photoBox, contentArea, noDoneCheck, partialCheck, doneCheck);
+    header.append(photoBox, contentArea, noDoneCheck, doneCheck);
   }
 
   // BODY
@@ -7556,6 +7804,50 @@ function closeExDetail() { closeExDetailOverlay(); }
 window.openExDetail = openExDetail;
 window.closeExDetail = closeExDetail;
 
+function _maybeCloseExDetail() {
+  const id = window._exDetailCardId;
+  if (!id || window._isNewWorkoutFlow) { closeExDetailOverlay(); return; }
+  const card = document.getElementById(id);
+  if (!card || card.classList.contains('completed')) { closeExDetailOverlay(); return; }
+  const anyDone = !!card.querySelector('.set-done-btn.done');
+  if (!anyDone) { closeExDetailOverlay(); return; }
+  _showFinishExPopup(id);
+}
+window._maybeCloseExDetail = _maybeCloseExDetail;
+
+function _showFinishExPopup(id) {
+  let pop = document.getElementById('_finish-ex-popup');
+  if (!pop) {
+    pop = document.createElement('div');
+    pop.id = '_finish-ex-popup';
+    pop.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0.6);-webkit-tap-highlight-color:transparent;';
+    pop.innerHTML = `<div style="width:100%;max-width:430px;background:#141414;border-radius:20px 20px 0 0;border:1px solid #2a2a2a;border-bottom:none;padding:24px 20px calc(env(safe-area-inset-bottom) + 32px);box-sizing:border-box;"><div style="font-family:'DM Sans';font-size:17px;font-weight:700;color:#fff;text-align:center;margin-bottom:8px;">Finish exercise?</div><div style="font-family:'DM Sans';font-size:13px;font-weight:400;color:#888;text-align:center;margin-bottom:24px;">You have sets marked as done.</div><div style="display:flex;flex-direction:column;gap:10px;"><button onclick="_finishExAndClose()" style="width:100%;background:var(--accent,#e8ff47);border:none;border-radius:12px;color:#000;font-family:'DM Sans';font-size:16px;font-weight:700;padding:16px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Finish Exercise</button><button onclick="_dismissFinishExPopup()" style="width:100%;background:transparent;border:1px solid #333;border-radius:12px;color:#fff;font-family:'DM Sans';font-size:16px;font-weight:700;padding:16px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Cancel</button></div></div>`;
+    document.body.appendChild(pop);
+  }
+  pop._popExId = id;
+  pop.style.display = 'flex';
+}
+window._showFinishExPopup = _showFinishExPopup;
+
+function _dismissFinishExPopup() {
+  const pop = document.getElementById('_finish-ex-popup');
+  if (pop) pop.style.display = 'none';
+}
+window._dismissFinishExPopup = _dismissFinishExPopup;
+
+function _finishExAndClose() {
+  const pop = document.getElementById('_finish-ex-popup');
+  const id = pop?._popExId || window._exDetailCardId;
+  _dismissFinishExPopup();
+  if (id) {
+    const card = document.getElementById(id);
+    if (card && !card.classList.contains('completed')) toggleDone(id);
+  }
+  window._exDetailFinishTapped = true;
+  closeExDetailOverlay();
+}
+window._finishExAndClose = _finishExAndClose;
+
 function _attachExDetailSwipe() {
   const detail = document.getElementById('ex-nav-detail');
   if (!detail || detail._swipeAttached) return;
@@ -7564,7 +7856,7 @@ function _attachExDetailSwipe() {
   detail.addEventListener('touchstart', e => { _sx = e.touches[0].clientX; }, { passive: true });
   detail.addEventListener('touchend', e => {
     const dx = e.changedTouches[0].clientX - _sx;
-    if (dx > 60) closeExDetail();
+    if (dx > 60) _maybeCloseExDetail();
   }, { passive: true });
 }
 
@@ -8325,35 +8617,44 @@ function _updateExSetCount(exId, warnIfNoneDone = false) {
 
 
 function _updatePartialDoneIndicator(exId) {
-  const noDoneCheck  = document.getElementById(`no-done-check-${exId}`);
-  const partialCheck = document.getElementById(`partial-check-${exId}`);
-  const doneCheck    = document.getElementById(`done-check-${exId}`);
-  if (!partialCheck) return;
+  const noDoneCheck = document.getElementById(`no-done-check-${exId}`);
+  const doneCheck   = document.getElementById(`done-check-${exId}`);
+  if (!noDoneCheck && !doneCheck) return;
 
-  // Check both original card and any overlay body
   const card = document.getElementById(exId);
-  const overlayBody = document.getElementById('ex-detail-overlay-body');
-  const searchEl = overlayBody?.querySelector('.exercise-card') || card;
-
-  // Exercise is "finished" when the card has the .completed class (set by toggleDone)
   const isCompleted = !!card?.classList.contains('completed');
 
-  if (isCompleted) {
-    // Completed — show checkmark circle, hide others
-    if (noDoneCheck)  noDoneCheck.style.display  = 'none';
-    partialCheck.style.display = 'none';
-    if (doneCheck)    doneCheck.style.display    = 'flex';
-    return;
-  }
-
-  const anyDone = searchEl ? !!searchEl.querySelector('.set-done-btn.done') : false;
-  partialCheck.style.display               = anyDone ? 'flex' : 'none';
-  if (noDoneCheck) noDoneCheck.style.display = anyDone ? 'none' : 'flex';
-  if (doneCheck)   doneCheck.style.display   = 'none';
+  if (noDoneCheck) noDoneCheck.style.display = isCompleted ? 'none' : 'flex';
+  if (doneCheck)   doneCheck.style.display   = isCompleted ? 'flex' : 'none';
 }
 window._updatePartialDoneIndicator = _updatePartialDoneIndicator;
 
+function _showAddSetMsg(msg) {
+  const _existing = document.getElementById('_addset-validation-msg');
+  if (_existing) _existing.remove();
+  const _el = document.createElement('div');
+  _el.id = '_addset-validation-msg';
+  _el.style.cssText = "position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 100px);left:50%;transform:translateX(-50%);background:#1e1e1e;border:1px solid #444;border-radius:14px;padding:13px 22px;color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;z-index:9999;white-space:nowrap;pointer-events:none;box-shadow:0 4px 24px rgba(0,0,0,0.5);";
+  _el.textContent = msg;
+  document.body.appendChild(_el);
+  setTimeout(() => _el.remove(), 2500);
+}
 function addSet(exId, defaultKg=null, defaultReps=null, defaultDone=false) {
+  // Validate previous set is filled before adding a new one
+  if (!window._isNewWorkoutFlow && defaultKg === null && defaultReps === null) {
+    const _rows = document.querySelectorAll(`#${exId} .set-row`);
+    if (_rows.length > 0) {
+      const _lastRow = _rows[_rows.length - 1];
+      const _kgInput = _lastRow.querySelector('.kg-box-wrap input.set-input');
+      const _repsSpan = _lastRow.querySelector('.reps-spin-val');
+      const _kgVal = parseFloat(_kgInput?.value);
+      const _repsVal = _repsSpan ? parseInt(_repsSpan.dataset.reps) : 0;
+      if (!(_kgVal > 0) || !(_repsVal > 0)) {
+        _showAddSetMsg('Fill in weight & reps before adding a new set');
+        return;
+      }
+    }
+  }
   setCounters[exId] = (setCounters[exId]||0)+1;
   const n = setCounters[exId];
   // Inherit from last row if no explicit default
@@ -9478,7 +9779,7 @@ function _triggerWorkoutPhotoStep(mode) {
 function _backToWorkoutNameStep() {
   document.getElementById('workoutPhotoModalOverlay').classList.remove('open');
   window._nwfBackFromPhoto = true;
-  openWorkoutNameModal();
+  _openNwfNamePage();
 }
 function _backToWorkoutPhotoStep() {
   document.getElementById('_nwf-back-wrapper')?.remove();
@@ -9536,7 +9837,7 @@ function _confirmWorkoutPhotoStep() {
 }
 function _nwfResetHeaderPadding() {
   const h = document.getElementById('workout-sticky-header');
-  if (h) h.style.paddingTop = '';
+  if (h) { h.style.paddingTop = ''; h.style.zIndex = ''; }
 }
 function _finalizeNewWorkoutArea() {
   document.getElementById('today-start-screen').style.display = 'none';
@@ -9550,30 +9851,17 @@ function _finalizeNewWorkoutArea() {
   if (_ptw) _ptw.style.display = 'none';
   updateTodayMuscleChips();
   checkFinishReady();
-  // Push the hero photo below the back icon
   const _hdr = document.getElementById('workout-sticky-header');
-  if (_hdr) _hdr.style.paddingTop = 'calc(env(safe-area-inset-top) + 52px)';
+  if (_hdr) { _hdr.style.paddingTop = 'calc(env(safe-area-inset-top) + 80px)'; _hdr.style.zIndex = '31'; }
   document.getElementById('_nwf-back-wrapper')?.remove();
   const _nwfWrap = document.createElement('div');
   _nwfWrap.id = '_nwf-back-wrapper';
   _nwfWrap.style.cssText = 'position:fixed;inset:0;max-width:430px;margin:0 auto;pointer-events:none;z-index:500;';
-  const _backBtn = document.createElement('button');
-  _backBtn.id = '_nwf-back-btn';
-  _backBtn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><line x1="5" y1="12" x2="19" y2="12" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><polyline points="13,6 19,12 13,18" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  _backBtn.style.cssText = 'position:absolute;top:calc(env(safe-area-inset-top) + 16px);right:20px;pointer-events:auto;background:transparent;border:none;cursor:pointer;padding:4px;-webkit-tap-highlight-color:transparent;';
-  _backBtn.onclick = () => { if (_pickMode) { exitPickMode(); } else if (document.body.classList.contains('ex-detail-open')) { if (typeof closeExDetailOverlay === 'function') closeExDetailOverlay(); } else { _nwfWrap.remove(); _backToWorkoutPhotoStep(); } };
   const _editTitle = document.createElement('div');
   _editTitle.id = '_nwf-edit-title';
-  _editTitle.style.cssText = 'position:absolute;top:calc(env(safe-area-inset-top) + 20px);left:20px;font-family:\'DM Sans\',sans-serif;font-size:20px;font-weight:700;color:#34d399;letter-spacing:0;pointer-events:none;';
-  _editTitle.textContent = 'EDIT WORKOUT';
+  _editTitle.style.cssText = 'position:absolute;top:calc(env(safe-area-inset-top) + 20px);left:0;right:0;text-align:center;pointer-events:none;';
+  _editTitle.innerHTML = '<div style="font-family:\'DM Sans\',sans-serif;font-size:20px;font-weight:700;color:#34d399;letter-spacing:0;line-height:1.2;">NEW WORKOUT</div><div style="font-family:\'DM Sans\',sans-serif;font-size:14px;font-weight:500;color:#aaa;letter-spacing:.2px;margin-top:2px;">Step 2 of 2</div>';
   _nwfWrap.appendChild(_editTitle);
-  _nwfWrap.appendChild(_backBtn);
-  const _nwfCamBtn = document.createElement('button');
-  _nwfCamBtn.id = '_nwf-cam-btn';
-  _nwfCamBtn.style.cssText = 'position:absolute;top:calc(env(safe-area-inset-top, 0px) + 60px);right:18px;pointer-events:auto;background:rgba(0,0,0,0.55);border:none;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;';
-  _nwfCamBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>';
-  _nwfCamBtn.onclick = () => _w2CameraIconTap();
-  _nwfWrap.appendChild(_nwfCamBtn);
   document.body.appendChild(_nwfWrap);
 }
 function cancelWorkoutNameModal() {
@@ -13966,7 +14254,7 @@ function editWorkoutFromTab(idx) {
   _nwfCamBtn2.id = '_nwf-cam-btn';
   _nwfCamBtn2.style.cssText = 'position:absolute;top:calc(env(safe-area-inset-top, 0px) + 60px);right:18px;pointer-events:auto;background:rgba(0,0,0,0.55);border:none;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;';
   _nwfCamBtn2.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>';
-  _nwfCamBtn2.onclick = () => _w2CameraIconTap();
+  _nwfCamBtn2.onclick = () => _openPhotoModalFromHero();
   _nwfWrap2.appendChild(_nwfCamBtn2);
   document.body.appendChild(_nwfWrap2);
 }
@@ -14337,6 +14625,45 @@ window.addEventListener('load', function() {
         <button id="workoutNameSaveBtn" onclick="confirmWorkoutNameModal()" disabled style="flex:1;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:16px;font-weight:700;padding:14px;cursor:not-allowed;opacity:0.4;">Next</button>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- NEW WORKOUT FIRST PAGE — hero image + inline name edit -->
+<div id="nwf-name-page" style="display:none;position:fixed;inset:0;z-index:201;background:#0a0a0a;max-width:430px;margin:0 auto;overflow:hidden;">
+  <div style="position:absolute;top:calc(env(safe-area-inset-top,0px) + 20px);left:0;right:0;z-index:2;pointer-events:none;text-align:center;">
+    <div style="font-family:'DM Sans',sans-serif;font-size:20px;font-weight:700;color:#34d399;letter-spacing:0;line-height:1.2;">NEW WORKOUT</div>
+    <div style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;color:#aaa;letter-spacing:.2px;margin-top:2px;">Step 1 of 2</div>
+  </div>
+  <div style="position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 80px);padding:0 10px;">
+    <div style="position:relative;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;">
+      <img id="nwf-hero-bg" src="images/workout_background.webp" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;filter:brightness(0.85);">
+      <button onclick="event.stopPropagation();_openPhotoModalFromHero()" style="position:absolute;top:8px;right:8px;z-index:4;background:rgba(0,0,0,0.55);border:none;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      </button>
+      <div style="position:absolute;bottom:0;left:0;right:0;padding:10px 14px 12px;pointer-events:none;text-align:right;">
+        <div id="nwf-hero-name" data-name="" onclick="_startHeroNameEdit(this)" spellcheck="false"
+             style="font-family:'DM Sans',sans-serif;font-size:20px;font-weight:900;color:#fff;max-width:60%;margin-left:auto;line-height:1.2;pointer-events:auto;cursor:pointer;-webkit-tap-highlight-color:transparent;outline:none;"></div>
+      </div>
+    </div>
+    <div style="font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;color:#fff;letter-spacing:0;margin-top:14px;margin-bottom:6px;padding:0 2px;">Description (optional)</div>
+    <div style="background:#111;border:1px solid #444;border-radius:12px;padding:10px 14px 12px;">
+      <textarea id="nwf-description" placeholder="Add details about the workout focus..." rows="2" spellcheck="false"
+                style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:400;line-height:1.5;resize:none;caret-color:#34d399;-webkit-text-fill-color:#fff;box-sizing:border-box;"></textarea>
+    </div>
+    <div style="font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;color:#fff;letter-spacing:0;margin-top:14px;margin-bottom:6px;padding:0 2px;">Video link (optional)</div>
+    <div style="background:#111;border:1px solid #444;border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:8px;">
+      <input id="nwf-video-link" type="url" inputmode="url" placeholder="https://..." spellcheck="false" autocomplete="off"
+             style="flex:1;background:transparent;border:none;outline:none;color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:400;caret-color:#34d399;-webkit-text-fill-color:#fff;box-sizing:border-box;min-width:0;">
+      <button onclick="navigator.clipboard.readText().then(t=>{const i=document.getElementById('nwf-video-link');if(i)i.value=t;}).catch(()=>{})" style="background:transparent;border:none;padding:2px;cursor:pointer;flex-shrink:0;-webkit-tap-highlight-color:transparent;display:flex;align-items:center;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+  <div style="position:absolute;bottom:0;left:0;right:0;padding:16px 16px calc(env(safe-area-inset-bottom,0px) + 16px);display:flex;gap:10px;z-index:2;">
+    <button onclick="_cancelNwfNamePage()" style="flex:1;background:transparent;border:1px solid rgba(255,255,255,0.18);border-radius:12px;color:rgba(255,255,255,0.65);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Cancel</button>
+    <button id="nwf-bottom-next-btn" onclick="_proceedFromNwfNamePage()" style="flex:1;background:#444;border:none;border-radius:12px;color:#fff;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .2s,color .2s;">Next</button>
   </div>
 </div>
 
@@ -16822,8 +17149,7 @@ function requestCoach(coachUid, coachName) {
 //  LIBRARY SYSTEM
 // ══════════════════════════════════════════════════════
 let _libraryExercises = [];
-var _libraryWorkouts = [];
-let _libraryLoaded = false;
+// _libraryWorkouts and _libraryLoaded declared early in main script block
 // _defaultExercises declared at top of main script
 
 function canEditLibrary() {
@@ -17325,7 +17651,7 @@ function openAddExploreWorkout() {
     // Fade out black screen
     _sb.style.opacity = '0';
     setTimeout(() => _sb.remove(), 300);
-    openWorkoutNameModal();
+    _openNwfNamePage();
   }, 100);
 }
 
@@ -18980,7 +19306,7 @@ function deleteCoachWorkout(id) {
   <div id="w2-sheet-photo-wrap" style="display:none;position:relative;margin:0 10px;aspect-ratio:21/9;overflow:hidden;border-radius:12px;flex-shrink:0;">
     <img id="w2-sheet-photo" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;filter:brightness(0.85);" />
     <div style="position:absolute;bottom:0;left:0;right:0;padding:10px 14px 12px;pointer-events:none;text-align:right;">
-      <div id="w2-sheet-name" style="font-family:'DM Sans';font-size:20px;font-weight:900;color:#fff;max-width:60%;margin-left:auto;line-height:1.2;"></div>
+      <div id="w2-sheet-name" onclick="if(window._editingWorkoutIdx!=null)openWorkoutNameModal()" style="font-family:'DM Sans';font-size:20px;font-weight:900;color:#fff;max-width:60%;margin-left:auto;line-height:1.2;pointer-events:auto;cursor:default;-webkit-tap-highlight-color:transparent;"></div>
     </div>
   </div>
   <!-- Scrollable content area — body diagram scrolls with exercise list -->
@@ -19230,13 +19556,13 @@ function deleteCoachWorkout(id) {
   <!-- Sticky top bar (workout mode): elapsed timer, ... menu, back chevron — always above scroll -->
   <div id="ex-detail-above-elapsed" style="display:none;flex-direction:column;">
     <div id="ex-detail-elapsed-row" style="display:flex;align-items:center;gap:5px;padding:calc(env(safe-area-inset-top) + 10px) 16px 8px;justify-content:center;position:relative;">
-      <button onclick="openExDetailMenu()" style="position:absolute;left:16px;background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
+      <button id="ex-detail-menu-btn" onclick="openExDetailMenu()" style="position:absolute;left:16px;background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="#888"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
       </button>
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
       <span id="ex-detail-above-elapsed-val" style="font-family:'DM Sans';font-size:13px;font-weight:700;color:#888;letter-spacing:.3px;">0:00</span>
       <span id="ex-detail-above-elapsed-dot" style="width:4px;height:4px;border-radius:50%;background:#888;display:inline-block;transition:opacity 0.8s ease;opacity:0;"></span>
-      <button onclick="document.getElementById('page-exercises')?.classList.contains('active') ? closeExTabDetail() : closeExDetailOverlay()" style="position:absolute;right:16px;background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
+      <button id="ex-detail-back-btn" onclick="document.getElementById('page-exercises')?.classList.contains('active') ? closeExTabDetail() : _maybeCloseExDetail()" style="position:absolute;right:16px;background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><line x1="5" y1="12" x2="19" y2="12" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/><polyline points="13,6 19,12 13,18" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
     </div>
@@ -19246,11 +19572,11 @@ function deleteCoachWorkout(id) {
   </div>
   <!-- No photo: simple sticky header -->
   <div id="ex-detail-no-photo-wrap" style="display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top)+12px) 16px 10px;flex-shrink:0;">
-    <button onclick="document.getElementById('page-exercises')?.classList.contains('active') ? closeExTabDetail() : closeExDetailOverlay()" style="background:transparent;border:none;color:var(--accent);cursor:pointer;display:flex;align-items:center;padding:0;flex-shrink:0;-webkit-tap-highlight-color:transparent;">
+    <button id="ex-detail-back-btn-nophoto" onclick="document.getElementById('page-exercises')?.classList.contains('active') ? closeExTabDetail() : _maybeCloseExDetail()" style="background:transparent;border:none;color:var(--accent);cursor:pointer;display:flex;align-items:center;padding:0;flex-shrink:0;-webkit-tap-highlight-color:transparent;">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/></svg>
     </button>
     <div id="ex-detail-overlay-title-nophoto" style="font-family:'DM Sans';font-size:18px;font-weight:900;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
-    <button onclick="openExDetailMenu()" style="background:transparent;border:none;cursor:pointer;padding:4px;-webkit-tap-highlight-color:transparent;">
+    <button id="ex-detail-menu-btn-nophoto" onclick="openExDetailMenu()" style="background:transparent;border:none;cursor:pointer;padding:4px;-webkit-tap-highlight-color:transparent;">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--muted)"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
     </button>
     <button onclick="openExPhotoSheet()" style="background:#0d0d0d;border:1px solid #2a2a2a;border-radius:8px;padding:6px;cursor:pointer;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
@@ -19263,7 +19589,7 @@ function deleteCoachWorkout(id) {
     <div id="ex-detail-photo-wrap" style="display:none;">
       <div style="position:relative;margin:4px 2px 0;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;">
         <img id="ex-detail-photo-img" src="" style="width:100%;height:100%;object-fit:cover;display:block;">
-        <button onclick="openExtabExOverlay((document.getElementById('ex-detail-overlay-title')?.textContent||'').trim(),true)" style="position:absolute;top:8px;right:8px;z-index:2;background:rgba(0,0,0,0.38);border:none;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;-webkit-tap-highlight-color:transparent;padding:0;font-family:Georgia,serif;font-style:italic;font-size:15px;font-weight:700;line-height:1;">i</button>
+        <button id="ex-detail-info-btn" onclick="openExtabExOverlay((document.getElementById('ex-detail-overlay-title')?.textContent||'').trim(),true)" style="position:absolute;top:8px;right:8px;z-index:2;background:rgba(0,0,0,0.38);border:none;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;-webkit-tap-highlight-color:transparent;padding:0;font-family:Georgia,serif;font-style:italic;font-size:15px;font-weight:700;line-height:1;">i</button>
       </div>
       <!-- FINISH + exercise name — below image -->
       <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 2px 4px;gap:8px;">
@@ -20223,6 +20549,7 @@ function openRepsPopup(span, exId) {
     if (_repsBottomBlocker) _repsBottomBlocker.style.display = 'none';
   }
   document.getElementById(exId)?.classList.add('kg-editor-active');
+  document.body.classList.add('ex-editor-open');
 
   // Highlight set number yellow
   const setNum = _repsEditorRow?.querySelector('.set-num');
@@ -20368,6 +20695,7 @@ function cancelRepsEditor() {
 }
 
 function _closeRepsEditor(silent = false) {
+  document.body.classList.remove('ex-editor-open');
   // Find reps editor row — could be next sibling or sibling before kg-inline-editor-row
   let editorRow = _repsEditorRow?.nextElementSibling;
   if (editorRow && !editorRow.classList.contains('reps-inline-editor-row')) {
@@ -20863,6 +21191,7 @@ closeInlineKgEditor(false);
   const _setNumEl = row?.querySelector('.set-num');
   if (_setNumEl) { _setNumEl.style.color = 'var(--accent)'; _setNumEl.style.borderColor = 'var(--accent)'; _setNumEl.dataset.highlighted = '1'; }
   document.getElementById(exId)?.classList.add('kg-editor-active');
+  document.body.classList.add('ex-editor-open');
 
   // Position editor visually below the tapped row using margin-top
   // We'll set this after opening
@@ -21088,6 +21417,7 @@ function cancelInlineKgEditor() {
 function closeInlineKgEditor(restoreFocus = true) {
 /* DBG_START *//* DBG_END */
 if (restoreFocus) _kgEditorFocusLeave();
+  document.body.classList.remove('ex-editor-open');
   if (!_inlineKgEditorId) return;
   const editorDiv = document.getElementById(_inlineKgEditorId);
   if (editorDiv) {
@@ -21614,6 +21944,13 @@ function saveExPhotoCrop() {
     if (w) {
       try { localStorage.setItem(`ironlog_workout_photo_${w.name}`, url32); } catch(e) { showToast('Storage full — photo not saved'); }
       renderWorkoutsTab2();
+    } else {
+      const _nwfName = (document.getElementById('nwf-hero-name')?.dataset?.name || document.getElementById('workoutName')?.value || '').trim();
+      if (_nwfName) {
+        try { localStorage.setItem(`ironlog_workout_photo_${_nwfName}`, url32); } catch(e) { showToast('Storage full — photo not saved'); }
+      }
+      const nwfBg = document.getElementById('nwf-hero-bg');
+      if (nwfBg) nwfBg.src = url32;
     }
     window._workoutPhotoMode = false;
     closeExPhotoCropper();
@@ -21688,21 +22025,31 @@ function _loadExDetailPhoto(exName) {
     window.localforage.getItem(`ironlog_ex_photo_${exName}`).then(p => { if (p) _applyDetailPhoto(p); });
   }
   if (!saved) {
-    // Show black background with camera icon (photo may load async above)
-    imgEl.src = '';
-    wrap.style.display = 'block';
-    if (noPhotoWrap) noPhotoWrap.style.display = 'none';
-    requestAnimationFrame(_syncExDetailBodyTop);
-    const existingBg = wrap.querySelector('.ex-detail-no-img-bg');
-    if (!existingBg) {
+    // Try default muscle image first
+    const _defaultExImgs = { Chest:'chest', Back:'back', Legs:'legs', Shoulders:'shoulders', Arms:'arms', Core:'core', Mix:'mix' };
+    const _detailCard = window._exDetailCardId ? document.getElementById(window._exDetailCardId) : null;
+    const _detailMuscle = _detailCard?.dataset.muscle || _detailCard?.dataset.exmuscle || '';
+    const _defKey = _defaultExImgs[_detailMuscle];
+    wrap.querySelector('.ex-detail-no-img-bg')?.remove();
+    if (_defKey) {
+      imgEl.src = `images/${_defKey}_exercise_default.webp`;
+      imgEl.style.display = 'block';
+      wrap.style.display = 'block';
+      if (noPhotoWrap) noPhotoWrap.style.display = 'none';
+    } else {
+      // No default image — show black background with camera icon
+      imgEl.src = '';
+      imgEl.style.display = 'none';
+      wrap.style.display = 'block';
+      if (noPhotoWrap) noPhotoWrap.style.display = 'none';
       const bg = document.createElement('div');
       bg.className = 'ex-detail-no-img-bg';
       bg.onclick = () => openExPhotoSheet();
       bg.style.cssText = 'width:100%;aspect-ratio:2/1;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;';
       bg.innerHTML = `<div style="width:80px;height:80px;border-radius:50%;border:1.5px solid #aaa;display:flex;align-items:center;justify-content:center;"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>`;
-      imgEl.style.display = 'none';
       imgEl.parentElement.insertBefore(bg, imgEl);
     }
+    requestAnimationFrame(_syncExDetailBodyTop);
   }
 }
 
@@ -22006,7 +22353,7 @@ function openWorkoutPhotoFlow(idx) {
   _workoutPhotoIdx = idx;
   const w = workouts[idx];
   const _wName = w ? w.name : (document.getElementById('workoutName')?.value || '').trim();
-  if (!w && !_wName) return;
+  if (!w && !_wName && !window._isNewWorkoutFlow) return;
   window._workoutPhotoMode = true;
   const hasPhoto = !!localStorage.getItem(`ironlog_workout_photo_${_wName}`);
   const titleEl = document.getElementById('ex-photo-sheet-title');
@@ -22259,7 +22606,9 @@ function _openWorkoutRectCropper(img) {
 
   const _cropName = window._wRectCropNewMode
     ? (document.getElementById('workoutName')?.value || '').trim()
-    : (workouts[_workoutPhotoIdx]?.name || '');
+    : (workouts[_workoutPhotoIdx]?.name ||
+       document.getElementById('nwf-hero-name')?.dataset?.name ||
+       (document.getElementById('workoutName')?.value) || '').trim();
   _wRectState = { img, scale, imgW, imgH, rectW, rectH, rx, ry, dragging: false, name: _cropName };
   const _nameEl = document.getElementById('workout-crop-preview-name');
   if (_nameEl) {
@@ -22406,7 +22755,14 @@ function saveWorkoutRectCrop() {
         const _w2Ph = document.getElementById('w2-sheet-photo');
         if (_w2Ph) _w2Ph.src = url;
       } else {
+        const _nwfName = (document.getElementById('nwf-hero-name')?.dataset?.name || document.getElementById('workoutName')?.value || '').trim();
+        if (_nwfName) {
+          try { localStorage.setItem(`ironlog_workout_photo_${_nwfName}`, url); } catch(e) {}
+        }
+        const nwfBg = document.getElementById('nwf-hero-bg');
+        if (nwfBg) nwfBg.src = url;
         closeWorkoutPhotoCropper();
+        if (_nwfName && typeof _setWorkoutHeroPhoto === 'function') _setWorkoutHeroPhoto(_nwfName);
       }
     }
   });
@@ -22641,6 +22997,7 @@ function openW2Sheet(idx) {
   if (_nameEl) {
     _nameEl.innerHTML = _heroNameHtml(w.name || 'Workout');
     _nameEl.style.direction = _heroNameDir(w.name || '');
+    _nameEl.style.cursor = window._editingWorkoutIdx != null ? 'pointer' : 'default';
   }
 
   const _photoWrap = document.getElementById('w2-sheet-photo-wrap');
@@ -23186,7 +23543,7 @@ function _updateKgDisplay(val, isBWMode) {
   // Map of view IDs to their close functions
   const _closers = {
     'calendar':         () => { if (typeof closeCalendar === 'function') closeCalendar(); },
-    'ex-detail':        () => { if (typeof window.closeExDetailOverlay === 'function') window.closeExDetailOverlay(); },
+    'ex-detail':        () => { if (typeof window._maybeCloseExDetail === 'function') window._maybeCloseExDetail(); else if (typeof window.closeExDetailOverlay === 'function') window.closeExDetailOverlay(); },
     'extab-detail':     () => { if (typeof window.closeExTabDetail === 'function') window.closeExTabDetail(); },
     'extab-ex-overlay': () => { if (typeof window.closeExtabExOverlay === 'function') window.closeExtabExOverlay(); },
     'share-qr':         () => { if (typeof window.closeShareQR === 'function') window.closeShareQR(); },
