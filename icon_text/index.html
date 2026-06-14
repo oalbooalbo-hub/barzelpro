@@ -110,7 +110,7 @@ body.desktop-mode .pages-wrap {
 .tab{flex:1;padding:12px 4px 10px;border-radius:0;border:none;background:transparent;color:var(--muted);font-family:'DM Sans';font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;outline:none;-webkit-tap-highlight-color:transparent;text-align:center;}
 .tab:focus,.tab:focus-visible{outline:none;border-color:var(--border);}
 .tab.active{background:transparent;color:var(--accent);border:none;font-weight:700;}.tab#tab-progress-btn.active,.tab#tab-progress-btn2.active{color:#34d399;border:none;}#tab-progress-btn,#tab-progress-btn2{flex:1;}
-.page{display:none;padding:14px 10px;padding-bottom:calc(130px + env(safe-area-inset-bottom));box-sizing:border-box;}.page.active.delayed-reveal{animation:pageFadeIn .15s ease .3s both;}@keyframes pageFadeIn{from{opacity:0}to{opacity:1}}
+.page{display:none;padding:14px 10px;padding-bottom:calc(130px + env(safe-area-inset-bottom));box-sizing:border-box;}.page.active.delayed-reveal{animation:pageFadeIn .15s ease .3s both;}@keyframes pageFadeIn{from{opacity:0}to{opacity:1}}@keyframes tabSlideUp{from{transform:translateY(48px);opacity:0}to{transform:translateY(0);opacity:1}}.page.active:not(.delayed-reveal):not(#page-log){animation:tabSlideUp .4s cubic-bezier(0.2,0.8,0.3,1);}
 .page.active{display:block;}
 .section-title{font-family:'DM Sans';font-size:20px;font-weight:700;margin-bottom:14px;color:var(--muted);letter-spacing:0;position:sticky;top:0;z-index:25;background:var(--bg);padding:10px 0 6px;}
 .section-title span{color:var(--text);}
@@ -120,7 +120,7 @@ body.desktop-mode .pages-wrap {
 .kg-editor-active .set-done-btn{opacity:0!important;pointer-events:none!important;}
 .kg-editor-active .set-num{pointer-events:none!important;cursor:default!important;}
 #nwf-hero-name:empty::before{content:'Workout name';color:rgba(255,255,255,0.3);pointer-events:none;}
-#nwf-description::placeholder,#nwf-video-link::placeholder{color:#888;-webkit-text-fill-color:#888;opacity:1;}
+#nwf-description::placeholder,#nwf-video-link::placeholder,#nwf-name-input::placeholder{color:#888;-webkit-text-fill-color:#888;opacity:1;}
 .ex-editor-open #ex-detail-finish-btn{display:none!important;}
 .ex-editor-open #ex-detail-back-btn,.ex-editor-open #ex-detail-back-btn-nophoto,.ex-editor-open #ex-detail-menu-btn,.ex-editor-open #ex-detail-menu-btn-nophoto,.ex-editor-open #ex-detail-info-btn{display:none!important;}
 .workouts-flow-card .btn-done,.workouts-flow-card .cancel-done-btn,.workouts-flow-card .btn-timer,.workouts-flow-card .timer-panel{display:none!important;}
@@ -357,20 +357,20 @@ body.desktop-mode .pages-wrap {
 }
 #ex-detail-overlay.ex-overlay-in{
   display:block !important;
-  animation:exFadeScaleIn .18s cubic-bezier(.4,0,.2,1) forwards;
+  animation:exFadeScaleIn .42s cubic-bezier(0.2,0.8,0.3,1) forwards;
 }
 #ex-detail-overlay.ex-overlay-open{display:block !important;}
 #ex-detail-overlay.ex-overlay-out{
   display:block !important;
-  animation:exFadeScaleOut .15s cubic-bezier(.4,0,.2,1) forwards;
+  animation:exFadeScaleOut .22s cubic-bezier(.4,0,.2,1) forwards;
 }
 @keyframes exFadeScaleIn{
-  from{opacity:0.3;transform:scale(.97);}
-  to{opacity:1;transform:scale(1);}
+  from{opacity:0;transform:translateY(48px);}
+  to{opacity:1;transform:translateY(0);}
 }
 @keyframes exFadeScaleOut{
-  from{opacity:1;transform:scale(1);}
-  to{opacity:0.3;transform:scale(.97);}
+  from{opacity:1;transform:translateY(0);}
+  to{opacity:0;transform:translateY(48px);}
 }
 #ex-detail-no-photo-wrap{
   position:absolute;top:0;left:0;right:0;z-index:3;
@@ -450,7 +450,7 @@ body.ex-tab-detail-open #ex-float-bar{display:none !important;}
 .btn-add-exercise{flex:1;background:var(--surface);border:1px dashed var(--border);border-radius:var(--radius);color:var(--muted);font-family:'DM Sans';font-size:14px;font-weight:600;padding:19px 14px;cursor:pointer;transition:color .2s,border-color .2s;text-align:center;}
 .btn-add-exercise:hover{border-color:var(--accent);color:var(--accent);}
 .btn-add-exercise.new-workout{color:#ff9500;}
-#exerciseList:empty + .add-ex-row{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:calc(min(430px,100vw) - 32px);margin-bottom:0;z-index:10;}
+#exerciseList:empty + .add-ex-row{position:fixed;top:calc(50% - 30px);left:50%;transform:translate(-50%,-50%);width:calc(min(430px,100vw) - 32px);margin-bottom:0;z-index:10;}
 .btn-save{width:100%;background:var(--accent);border:none;border-radius:var(--radius);color:#000;font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;letter-spacing:0;-webkit-text-stroke:0.4px currentColor;padding:15px;cursor:pointer;transition:transform .15s,opacity .15s;margin-top:4px;}
 .btn-save:active{transform:scale(.98);opacity:.85;}
 
@@ -558,7 +558,7 @@ body.ex-tab-detail-open #ex-float-bar{display:none !important;}
 /* ── MODALS ────────────────────────────────────── */
 .modal-overlay{position:fixed;top:0;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:rgba(0,0,0,.88);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);z-index:250;display:none;align-items:flex-end;justify-content:center;}
 .modal-overlay.open{display:flex;}
-.modal-sheet{width:100%;max-width:430px;background:var(--surface);border-radius:20px 20px 0 0;border:1px solid var(--border);border-bottom:none;max-height:88vh;max-height:88dvh;display:flex;flex-direction:column;animation:sheetUp .3s cubic-bezier(.34,1.56,.64,1);padding-bottom:env(safe-area-inset-bottom);}
+.modal-sheet{width:100%;max-width:430px;background:var(--surface);border-radius:20px 20px 0 0;border:1px solid var(--border);border-bottom:none;max-height:88vh;max-height:88dvh;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom);}
 #calendarOverlay{background:rgba(0,0,0,.5)!important;top:0!important;align-items:flex-start!important;}#calendarOverlay .modal-sheet{border-radius:0 0 20px 20px;border-top:none;border-bottom:1px solid var(--border);animation:sheetDown .3s cubic-bezier(.34,1.56,.64,1);margin-top:0;border-radius:0 0 20px 20px;max-height:100dvh;max-height:100vh;}@keyframes sheetDown{from{transform:translateY(-60px);opacity:0}to{transform:translateY(0);opacity:1}}
 @keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 @keyframes prStarPop{0%{transform:scale(0) rotate(-25deg);opacity:0}55%{transform:scale(1.5) rotate(10deg);opacity:1}78%{transform:scale(0.85) rotate(-5deg)}100%{transform:scale(1) rotate(0deg);opacity:1}}
@@ -1297,7 +1297,7 @@ function hidAuthScreen() {
         <div class="add-ex-row">
           <div id="nwf-build-prompt" style="display:none;width:100%;text-align:center;padding:28px 20px 20px;box-sizing:border-box;">
             <div style="font-family:'DM Sans',sans-serif;font-size:24px;font-weight:800;color:#fff;line-height:1.2;">Let's Build Your Workout</div>
-            <div style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;color:#888;margin-top:8px;">Start adding exercises from library</div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;color:#888;margin-top:8px;margin-bottom:16px;">Start adding exercises from library</div>
           </div>
           <button class="btn-add-exercise" onclick="enterPickMode(_todayMuscleFilter)">+ ADD EXERCISE</button>
         </div>
@@ -2229,7 +2229,7 @@ function _checkFinishReadyImpl() {
     if (_countDisplay) {
       if (window._isNewWorkoutFlow && !_showPrompt) {
         const _exCount = document.querySelectorAll('#exerciseList .exercise-card').length;
-        _countDisplay.innerHTML = `<div style="font-family:'DM Sans',sans-serif;font-size:72px;font-weight:900;color:#fff;line-height:1;">${_exCount}</div><div style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#888;margin-top:4px;">exercises</div>`;
+        _countDisplay.innerHTML = `<div style="font-family:'DM Sans',sans-serif;font-size:48px;font-weight:900;color:#fff;line-height:1;">${_exCount}</div><div style="font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;color:#888;margin-top:4px;">exercises</div>`;
         _countDisplay.style.display = 'block';
         _countDisplay.style.cursor = 'pointer';
         _countDisplay.onclick = () => { if (_todayMuscleFilter) filterTodayByMuscle(null); };
@@ -2246,8 +2246,10 @@ function _checkFinishReadyImpl() {
     _addRow.style.borderRadius = _showPrompt ? '24px' : '';
     _addRow.style.border = _showPrompt ? '1px solid #333' : '';
     _addRow.style.gap = _showPrompt ? '0' : '';
-    _addRow.style.paddingTop = _showPrompt ? '80px' : '';
-    _addRow.style.paddingBottom = _showPrompt ? '80px' : '';
+    _addRow.style.minHeight = _showPrompt ? '500px' : '';
+    _addRow.style.justifyContent = _showPrompt ? 'center' : '';
+    _addRow.style.paddingTop = _showPrompt ? '24px' : '';
+    _addRow.style.paddingBottom = _showPrompt ? '24px' : '';
     if (addExBtn) {
       addExBtn.style.flex = _showPrompt ? 'none' : '';
       addExBtn.style.width = _showPrompt ? 'calc(100% - 48px)' : '';
@@ -3236,9 +3238,7 @@ function _finishHeroNameEdit(el) {
 function _nwfUpdateNextBtn() {
   const btn  = document.getElementById('nwf-name-next-btn');
   const btn2 = document.getElementById('nwf-bottom-next-btn');
-  const el   = document.getElementById('nwf-hero-name');
-  if (!el) return;
-  const hasName = !!(el.dataset.name || '').trim();
+  const hasName = !!(document.getElementById('nwf-name-input')?.value.trim() || document.getElementById('workoutName')?.value.trim());
   if (btn)  btn.style.opacity = hasName ? '1' : '0.35';
   if (btn2) { btn2.style.background = hasName ? 'var(--accent)' : '#444'; btn2.style.color = hasName ? '#000' : '#fff'; }
 }
@@ -3259,32 +3259,67 @@ function _openNwfNamePage() {
     const _savedPhoto = cur ? localStorage.getItem(`ironlog_workout_photo_${cur}`) : null;
     nwfBg.src = _savedPhoto || _workoutDefaultPhoto || 'images/workout_background.webp';
   }
+  const nwfNameInput = document.getElementById('nwf-name-input');
+  if (nwfNameInput) { nwfNameInput.value = cur; nwfNameInput.style.direction = /[֐-׿]/.test(cur) ? 'rtl' : ''; nwfNameInput.style.color = ''; }
   _nwfUpdateNextBtn();
   if (window._closers) window._closers['nwf-name'] = () => _cancelNwfNamePage();
-  document.getElementById('nwf-name-page').style.display = 'block';
+  const _nwfPage = document.getElementById('nwf-name-page');
+  _nwfPage.style.transform = 'translateY(48px)';
+  _nwfPage.style.opacity = '0';
+  _nwfPage.style.transition = 'none';
+  _nwfPage.style.display = 'block';
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    _nwfPage.style.transition = 'transform 0.45s cubic-bezier(0.2,0.8,0.3,1), opacity 0.35s ease';
+    _nwfPage.style.transform = '';
+    _nwfPage.style.opacity = '';
+    _nwfPage.addEventListener('transitionend', () => { _nwfPage.style.transition = ''; }, { once: true });
+  }));
   if (window._historyPush) window._historyPush('nwf-name');
-  if (!cur && nameEl) setTimeout(() => _startHeroNameEdit(nameEl), 250);
+  if (!cur) setTimeout(() => document.getElementById('nwf-name-input')?.focus(), 250);
 }
 function _closeNwfNamePage() {
-  document.getElementById('nwf-name-page').style.display = 'none';
+  const _p = document.getElementById('nwf-name-page');
+  if (!_p) return;
+  _p.style.transition = 'none';
+  _p.style.transform = '';
+  _p.style.opacity = '';
+  _p.style.display = 'none';
 }
 function _cancelNwfNamePage() {
+  const _page = document.getElementById('nwf-name-page');
+  if (!_page || _page.style.display === 'none') return;
+  const _exCount = document.querySelectorAll('#exerciseList .exercise-card').length;
+  if (_exCount > 0) {
+    const _discardOvl = document.createElement('div');
+    _discardOvl.className = 'delete-confirm-overlay';
+    _discardOvl.style.zIndex = '9999';
+    _discardOvl.innerHTML = `
+      <div class="delete-confirm-sheet">
+        <div class="delete-confirm-title">Discard Workout?</div>
+        <div class="delete-confirm-sub">All added exercises will be lost.</div>
+        <div class="delete-confirm-btns">
+          <button class="btn-del-cancel" id="_nwfDiscardKeep">Keep</button>
+          <button class="btn-del-yes" id="_nwfDiscardConfirm">Discard</button>
+        </div>
+      </div>`;
+    document.body.appendChild(_discardOvl);
+    _discardOvl.querySelector('#_nwfDiscardKeep').onclick = () => _discardOvl.remove();
+    _discardOvl.querySelector('#_nwfDiscardConfirm').onclick = () => {
+      _discardOvl.remove();
+      _closeNwfNamePage();
+      cancelWorkoutNameModal();
+    };
+    return;
+  }
   _closeNwfNamePage();
   cancelWorkoutNameModal();
 }
+window._cancelNwfNamePage = _cancelNwfNamePage;
 function _proceedFromNwfNamePage() {
-  const nameEl = document.getElementById('nwf-hero-name');
-  if (nameEl && nameEl.contentEditable === 'true') {
-    nameEl.addEventListener('blur', function _proceed() {
-      nameEl.removeEventListener('blur', _proceed);
-      setTimeout(_proceedFromNwfNamePage, 50);
-    });
-    nameEl.blur();
-    return;
-  }
-  const raw = (nameEl?.dataset.name || '').trim();
+  const nameInp = document.getElementById('nwf-name-input');
+  const raw = (nameInp?.value || document.getElementById('workoutName')?.value || '').trim();
   if (!raw) {
-    if (nameEl) _startHeroNameEdit(nameEl);
+    nameInp?.focus();
     return;
   }
   const nameLower = raw.toLowerCase();
@@ -3295,13 +3330,42 @@ function _proceedFromNwfNamePage() {
   }) || (_libraryWorkouts||[]).some(w => (w.name||'').trim().toLowerCase() === nameLower)
     || (_coachWorkouts||[]).some(w => (w.name||'').trim().toLowerCase() === nameLower);
   if (isDup) {
-    if (nameEl) { nameEl.style.color = '#ff4747'; setTimeout(() => { nameEl.style.color = '#fff'; }, 1500); }
+    if (nameInp) { nameInp.style.color = '#ff4747'; setTimeout(() => { nameInp.style.color = ''; }, 1500); }
     return;
   }
+  if (window._closers) delete window._closers['nwf-name'];
   const wn = document.getElementById('workoutName');
   if (wn) { wn.value = raw; const _hb = /[֐-׿]/.test(raw); wn.style.direction = _hb ? 'rtl' : 'ltr'; }
+  const nameEl = document.getElementById('nwf-hero-name');
+  if (nameEl) { nameEl.dataset.name = raw; }
+  const _transOvl = document.createElement('div');
+  _transOvl.style.cssText = 'position:fixed;inset:0;background:#0a0a0a;z-index:9999;pointer-events:none;';
+  document.body.appendChild(_transOvl);
   _closeNwfNamePage();
   _finalizeNewWorkoutArea();
+  setTimeout(() => {
+    const _animEls = [
+      document.getElementById('workout-sticky-header'),
+      document.getElementById('_nwf-edit-title'),
+      document.getElementById('workout-hero-photo'),
+      document.getElementById('exerciseList'),
+      document.getElementById('nwf-bottom-bar'),
+    ].filter(Boolean);
+    _animEls.forEach(el => { el.style.transform = 'translateY(48px)'; el.style.opacity = '0'; el.style.transition = 'none'; });
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      _transOvl.style.transition = 'opacity 0.28s ease';
+      _transOvl.style.opacity = '0';
+      _animEls.forEach(el => {
+        el.style.transition = 'transform 0.45s cubic-bezier(0.2,0.8,0.3,1), opacity 0.35s ease';
+        el.style.transform = '';
+        el.style.opacity = '';
+      });
+      _transOvl.addEventListener('transitionend', () => {
+        _transOvl.remove();
+        _animEls.forEach(el => { el.style.transition = ''; });
+      }, { once: true });
+    }));
+  }, 100);
 }
 function _setWorkoutHeroPhoto(name) {
   const el = document.getElementById('workout-hero-photo');
@@ -4258,15 +4322,53 @@ function donePickMode() {
   const hidden = JSON.parse(_LS.get('ironlog_hidden_ex') || '[]');
   const newHidden = hidden.filter(n => !toAdd.some(e => e.name === n));
   if (newHidden.length !== hidden.length) _LS.set('ironlog_hidden_ex', JSON.stringify(newHidden));
-  exitPickMode();
-  switchTab('log');  toAdd.forEach(ex => {
-    addExerciseCard(ex);
-  });
-  saveSession();
-  setTimeout(() => {
-    const _addBtn = document.querySelector('.btn-add-exercise');
-    if (_addBtn) _addBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, 300);
+  if (window._isNewWorkoutFlow) {
+    const _doneOvl = document.createElement('div');
+    _doneOvl.style.cssText = 'position:fixed;inset:0;background:#0a0a0a;z-index:9999;pointer-events:none;';
+    document.body.appendChild(_doneOvl);
+    exitPickMode();
+    switchTab('log');
+    toAdd.forEach(ex => addExerciseCard(ex));
+    saveSession();
+    const _nwfTitle = document.getElementById('_nwf-edit-title');
+    if (_nwfTitle) { _nwfTitle.style.transform = 'translateY(-24px)'; _nwfTitle.style.opacity = '0'; }
+    const _countDisp = document.getElementById('nwf-ex-count-display');
+    if (_countDisp) { _countDisp.style.transform = 'translateY(32px)'; _countDisp.style.opacity = '0'; }
+    const _exList = document.getElementById('exerciseList');
+    if (_exList) { _exList.style.transform = 'translateY(32px)'; _exList.style.opacity = '0'; }
+    setTimeout(() => {
+      _doneOvl.style.transition = 'opacity 0.38s ease';
+      _doneOvl.style.opacity = '0';
+      if (_nwfTitle) { _nwfTitle.style.transition = 'transform 0.5s cubic-bezier(0.2,0.8,0.3,1), opacity 0.4s ease'; _nwfTitle.style.transform = ''; _nwfTitle.style.opacity = ''; }
+      if (_countDisp) { _countDisp.style.transition = 'transform 0.5s cubic-bezier(0.2,0.8,0.3,1), opacity 0.4s ease'; _countDisp.style.transform = ''; _countDisp.style.opacity = ''; }
+      if (_exList) { _exList.style.transition = 'transform 0.52s cubic-bezier(0.2,0.8,0.3,1) 0.05s, opacity 0.42s ease 0.05s'; _exList.style.transform = ''; _exList.style.opacity = ''; }
+      _doneOvl.addEventListener('transitionend', () => {
+        _doneOvl.remove();
+        if (_nwfTitle) { _nwfTitle.style.transition = ''; }
+        if (_countDisp) { _countDisp.style.transition = ''; }
+        if (_exList) { _exList.style.transition = ''; }
+      }, { once: true });
+    }, 80);
+    setTimeout(() => {
+      const _exCount = document.querySelectorAll('#exerciseList .exercise-card').length;
+      if (_exCount > 6) {
+        const _addBtn = document.querySelector('.btn-add-exercise');
+        if (_addBtn) _addBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 400);
+  } else {
+    exitPickMode();
+    switchTab('log');
+    toAdd.forEach(ex => addExerciseCard(ex));
+    saveSession();
+    setTimeout(() => {
+      const _exCount = document.querySelectorAll('#exerciseList .exercise-card').length;
+      if (_exCount > 6) {
+        const _addBtn = document.querySelector('.btn-add-exercise');
+        if (_addBtn) _addBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 300);
+  }
 }
 
 function pickExercise(exName) {
@@ -4330,7 +4432,23 @@ function openNewExModal(muscle) {
   _renderNewExPills(window._newExMuscle);
   _nExSetupBodySVG();
   _nExHighlightMuscle(window._newExMuscle);
-  document.getElementById('newExModalOverlay').classList.add('open');
+  const _nxOvl = document.getElementById('newExModalOverlay');
+  const _nxSheet = _nxOvl?.querySelector('.modal-sheet');
+  if (_nxOvl) { _nxOvl.style.opacity = '0'; _nxOvl.style.transition = 'none'; }
+  if (_nxSheet) { _nxSheet.style.animation = 'none'; _nxSheet.style.transform = 'translateY(48px)'; _nxSheet.style.opacity = '0'; _nxSheet.style.transition = 'none'; }
+  _nxOvl.classList.add('open');
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    if (_nxOvl) { _nxOvl.style.transition = 'opacity 0.35s ease'; _nxOvl.style.opacity = ''; }
+    if (_nxSheet) {
+      _nxSheet.style.transition = 'transform 0.45s cubic-bezier(0.2,0.8,0.3,1), opacity 0.38s ease';
+      _nxSheet.style.transform = '';
+      _nxSheet.style.opacity = '';
+      _nxSheet.addEventListener('transitionend', () => {
+        if (_nxOvl) { _nxOvl.style.transition = ''; }
+        if (_nxSheet) { _nxSheet.style.transition = ''; _nxSheet.style.animation = ''; }
+      }, { once: true });
+    }
+  }));
   if (window._historyPush) window._historyPush('new-ex');
 }
 
@@ -5600,6 +5718,16 @@ function openExtabExOverlay(exName, musclesOnly) {
   if (musclesOnly === true || musclesOnly === 'stats') {
     overlay.style.transform = `translateY(${window.innerHeight}px)`;
     _springAnimate(overlay, window.innerHeight, 0, 300, 30, () => { overlay.style.transform = ''; });
+  } else {
+    overlay.style.transform = 'translateY(48px)';
+    overlay.style.opacity = '0';
+    overlay.style.transition = 'none';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      overlay.style.transition = 'transform 0.45s cubic-bezier(0.2,0.8,0.3,1), opacity 0.38s ease';
+      overlay.style.transform = '';
+      overlay.style.opacity = '';
+      overlay.addEventListener('transitionend', () => { overlay.style.transition = ''; }, { once: true });
+    }));
   }
   if (window._historyPush) window._historyPush('extab-ex-overlay');
 }
@@ -6571,10 +6699,8 @@ function updateTodayMuscleChips() {
     // Cancel / Save fixed at bottom
     const _nwfBar = document.getElementById('nwf-bottom-bar');
     if (_nwfBar) {
-      const _saveStyle = _hasEx
-        ? `flex:1;background:var(--accent);border:none;border-radius:12px;color:#000;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;`
-        : `flex:1;background:#444;border:none;border-radius:12px;color:#fff;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;padding:14px;cursor:not-allowed;-webkit-tap-highlight-color:transparent;`;
-      _nwfBar.innerHTML = `<button onclick="document.getElementById('_nwf-back-wrapper')?.remove();_nwfResetHeaderPadding();_openNwfNamePage();" style="flex:1;background:transparent;border:1px solid rgba(255,255,255,0.18);border-radius:12px;color:rgba(255,255,255,0.65);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Back</button><button onclick="finishWorkout()" ${_hasEx?'':'disabled'} style="${_saveStyle}">Save</button>`;
+      const _saveBtn = _hasEx ? `<button onclick="finishWorkout()" style="flex:1;background:var(--accent);border:none;border-radius:12px;color:#000;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Save</button>` : '';
+      _nwfBar.innerHTML = `<button onclick="document.getElementById('_nwf-back-wrapper')?.remove();_nwfResetHeaderPadding();_openNwfNamePage();" style="flex:1;background:transparent;border:1px solid rgba(255,255,255,0.18);border-radius:12px;color:rgba(255,255,255,0.65);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Back</button>${_saveBtn}`;
       _nwfBar.style.display = 'flex';
     }
     // Ensure the ADD EXERCISE button scrolls clear of the bottom bar
@@ -6776,14 +6902,14 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
 
   if (window._isNewWorkoutFlow) {
     const trashWrap = document.createElement('div');
-    trashWrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;margin-right:10px;';
+    trashWrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;margin-right:10px;margin-left:10px;';
     const trashBtn = document.createElement('button');
     trashBtn.className = 'nw-trash-btn';
     trashBtn.style.cssText = 'background:transparent;border:none;color:#555;cursor:pointer;padding:2px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;';
     trashBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
     trashBtn.onclick = (e) => { e.stopPropagation(); card.remove(); saveSession?.(); };
     trashWrap.append(trashBtn);
-    header.append(photoBox, contentArea, trashWrap);
+    header.append(trashWrap, contentArea);
   } else {
     header.append(photoBox, contentArea, noDoneCheck, doneCheck);
   }
@@ -9427,13 +9553,19 @@ function saveWorkoutToList() {
         if (existing) existing.remove();
         const optDiv = document.createElement('div');
         optDiv.id = 'postSaveOptions';
-        optDiv.style.cssText = 'display:flex;flex-direction:column;gap:10px;padding:12px 0;opacity:0;transition:opacity .4s ease;align-items:center;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:calc(100% - 32px);max-width:398px;z-index:201;';
+        optDiv.style.cssText = 'display:flex;flex-direction:column;gap:10px;padding:12px 0;opacity:0;transition:opacity 0.4s ease, transform 0.45s cubic-bezier(0.2,0.8,0.3,1);align-items:center;position:fixed;top:50%;left:50%;transform:translate(-50%, calc(-50% + 48px));width:calc(100% - 32px);max-width:398px;z-index:201;';
         const exitOnclick = _wasFromWorkouts
           ? `document.getElementById('postSaveOptions').remove();document.getElementById('_saveBlackScreen')?.remove();document.getElementById('_nwf-back-wrapper')?.remove();_nwfResetHeaderPadding();document.querySelectorAll('.tab').forEach(t=>{t.style.opacity='';t.style.pointerEvents=''});const _db=document.getElementById('dateBadge');if(_db){_db.style.opacity='';_db.style.cursor='';}actionsRowRestore();resetWorkoutState();document.getElementById('workoutName').value='';showTodayStartScreen();checkFinishReady();switchTab('workouts2');`
           : `document.getElementById('postSaveOptions').remove();document.getElementById('_saveBlackScreen')?.remove();document.getElementById('_nwf-back-wrapper')?.remove();_nwfResetHeaderPadding();document.querySelectorAll('.tab').forEach(t=>{t.style.opacity='';t.style.pointerEvents=''});const _db=document.getElementById('dateBadge');if(_db){_db.style.opacity='';_db.style.cursor='';}actionsRowRestore();resetWorkoutState();document.getElementById('workoutName').value='';showTodayStartScreen();checkFinishReady();`;
         optDiv.innerHTML = `
-            <button onclick="document.getElementById('postSaveOptions').remove();document.getElementById('_saveBlackScreen')?.remove();document.getElementById('_nwf-back-wrapper')?.remove();_nwfResetHeaderPadding();document.querySelectorAll('.tab').forEach(t=>{t.style.opacity='';t.style.pointerEvents=''});const _db=document.getElementById('dateBadge');if(_db){_db.style.opacity='';_db.style.cursor='';}actionsRowRestore();loadWorkout(0);switchTab('log');" style="width:100%;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:20px;font-weight:900;-webkit-text-stroke:0.4px currentColor;padding:16px;cursor:pointer;text-align:center;">Start the workout now</button>
-            <button onclick="${exitOnclick}" style="width:100%;background:transparent;border:1px solid var(--border);border-radius:10px;color:#fff;font-family:'DM Sans';font-size:16px;font-weight:700;padding:16px;cursor:pointer;text-align:center;">Exit</button>
+            <div style="text-align:center;margin-bottom:18px;">
+              <div style="display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:50%;background:#34d399;margin-bottom:14px;">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div style="font-family:'DM Sans',sans-serif;font-size:32px;font-weight:900;color:#fff;line-height:1.15;letter-spacing:-0.5px;margin-bottom:16px;">Workout created !</div>
+            </div>
+            <button onclick="_nwfStartWorkout();" style="width:100%;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:20px;font-weight:900;-webkit-text-stroke:0.4px currentColor;padding:16px;cursor:pointer;text-align:center;">Start Workout</button>
+            <button onclick="${exitOnclick}" style="width:100%;background:transparent;border:1px solid var(--border);border-radius:10px;color:#888;font-family:'DM Sans';font-size:16px;font-weight:400;padding:16px;cursor:pointer;text-align:center;">Back to Workouts</button>
           `;
         if (actionsRow.parentNode) actionsRow.parentNode.insertBefore(optDiv, actionsRow);
         else document.getElementById('today-workout-area')?.prepend(optDiv);
@@ -9449,7 +9581,7 @@ function saveWorkoutToList() {
         });
         const _db = document.getElementById('dateBadge');
         if (_db) { _db.style.opacity = '0.4'; _db.style.cursor = 'default'; }
-        requestAnimationFrame(() => requestAnimationFrame(() => { optDiv.style.opacity = '1'; }));
+        requestAnimationFrame(() => requestAnimationFrame(() => { optDiv.style.opacity = '1'; optDiv.style.transform = 'translate(-50%, -50%)'; }));
       }
     }, 450);
   } else {
@@ -9838,6 +9970,42 @@ function _confirmWorkoutPhotoStep() {
 function _nwfResetHeaderPadding() {
   const h = document.getElementById('workout-sticky-header');
   if (h) { h.style.paddingTop = ''; h.style.zIndex = ''; }
+}
+function _nwfStartWorkout() {
+  document.getElementById('postSaveOptions')?.remove();
+  document.getElementById('_nwf-back-wrapper')?.remove();
+  _nwfResetHeaderPadding();
+  document.querySelectorAll('.tab').forEach(t => { t.style.opacity = ''; t.style.pointerEvents = ''; });
+  const _db = document.getElementById('dateBadge');
+  if (_db) { _db.style.opacity = ''; _db.style.cursor = ''; }
+  actionsRowRestore();
+  loadWorkout(0);
+  switchTab('log');
+  const _sb = document.getElementById('_saveBlackScreen');
+  const _elems = [
+    document.getElementById('workout-hero-photo'),
+    document.getElementById('exerciseList'),
+    document.querySelector('.add-ex-row'),
+    document.querySelector('.today-actions')
+  ];
+  _elems.forEach((el, i) => { if (el) { el.style.transform = `translateY(${48 + i * 6}px)`; el.style.opacity = '0'; } });
+  if (_sb) {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      _sb.style.transition = 'opacity 0.38s ease';
+      _sb.style.opacity = '0';
+      _elems.forEach((el, i) => {
+        if (el) {
+          el.style.transition = `transform 0.45s cubic-bezier(0.2,0.8,0.3,1) ${i * 0.03}s, opacity 0.38s ease ${i * 0.03}s`;
+          el.style.transform = '';
+          el.style.opacity = '';
+        }
+      });
+      _sb.addEventListener('transitionend', () => {
+        _sb.remove();
+        _elems.forEach(el => { if (el) { el.style.transition = ''; } });
+      }, { once: true });
+    }));
+  }
 }
 function _finalizeNewWorkoutArea() {
   document.getElementById('today-start-screen').style.display = 'none';
@@ -14640,17 +14808,26 @@ window.addEventListener('load', function() {
       <button onclick="event.stopPropagation();_openPhotoModalFromHero()" style="position:absolute;top:8px;right:8px;z-index:4;background:rgba(0,0,0,0.55);border:none;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
       </button>
+      <div id="nwf-hero-name" data-name="" style="display:none;"></div>
       <div style="position:absolute;bottom:0;left:0;right:0;padding:10px 14px 12px;pointer-events:none;text-align:right;">
-        <div id="nwf-hero-name" data-name="" onclick="_startHeroNameEdit(this)" spellcheck="false"
-             style="font-family:'DM Sans',sans-serif;font-size:20px;font-weight:900;color:#fff;max-width:60%;margin-left:auto;line-height:1.2;pointer-events:auto;cursor:pointer;-webkit-tap-highlight-color:transparent;outline:none;"></div>
+        <div style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:rgba(255,255,255,0.45);letter-spacing:1px;text-transform:uppercase;">preview</div>
       </div>
     </div>
-    <div style="font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;color:#fff;letter-spacing:0;margin-top:14px;margin-bottom:6px;padding:0 2px;">Description (optional)</div>
+    <div style="font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;color:#fff;letter-spacing:0;margin-top:14px;margin-bottom:6px;padding:0 2px;">Workout Name</div>
+    <div style="background:#111;border:1px solid #444;border-radius:12px;padding:10px 14px;">
+      <input id="nwf-name-input" type="text" autocomplete="off" enterkeyhint="done" spellcheck="false" placeholder="Name your workout..."
+             style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;caret-color:#34d399;-webkit-text-fill-color:#fff;box-sizing:border-box;"
+             oninput="(function(v){const _hb=/[֐-׿]/.test(v);document.getElementById('nwf-name-input').style.direction=_hb?'rtl':'ltr';const wn=document.getElementById('workoutName');if(wn)wn.value=v.trim();const ne=document.getElementById('nwf-hero-name');if(ne){ne.dataset.name=v.trim();ne.innerHTML=v.trim()?_heroNameHtml(v.trim()):'';ne.style.direction=_hb?'rtl':'';}if(typeof _nwfUpdateNextBtn==='function')_nwfUpdateNextBtn();})(this.value)"
+             onblur="(function(inp){const v=inp.value.trim();if(!v)return;const nl=v.toLowerCase();const isDup=(workouts||[]).some(w=>!w._draft&&(w.name||'').trim().toLowerCase()===nl);if(isDup){inp.style.color='#ff4747';setTimeout(()=>{inp.style.color='';},1500);if(typeof _showAddSetMsg==='function')_showAddSetMsg('A workout with this name already exists');const wn=document.getElementById('workoutName');if(wn)wn.value='';const ne=document.getElementById('nwf-hero-name');if(ne){ne.dataset.name='';ne.innerHTML='';}if(typeof _nwfUpdateNextBtn==='function')_nwfUpdateNextBtn();}})(this)"
+             onkeydown="if(event.key==='Enter')this.blur()">
+    </div>
+    <div style="font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;color:#fff;letter-spacing:0;margin-top:14px;margin-bottom:6px;padding:0 2px;">Description <span style="color:#888;font-weight:500;">(optional)</span></div>
     <div style="background:#111;border:1px solid #444;border-radius:12px;padding:10px 14px 12px;">
       <textarea id="nwf-description" placeholder="Add details about the workout focus..." rows="2" spellcheck="false"
-                style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:400;line-height:1.5;resize:none;caret-color:#34d399;-webkit-text-fill-color:#fff;box-sizing:border-box;"></textarea>
+                style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:400;line-height:1.5;resize:none;overflow:hidden;caret-color:#34d399;-webkit-text-fill-color:#fff;box-sizing:border-box;"
+                oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
     </div>
-    <div style="font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;color:#fff;letter-spacing:0;margin-top:14px;margin-bottom:6px;padding:0 2px;">Video link (optional)</div>
+    <div style="font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;color:#fff;letter-spacing:0;margin-top:14px;margin-bottom:6px;padding:0 2px;">Video link <span style="color:#888;font-weight:500;">(optional)</span></div>
     <div style="background:#111;border:1px solid #444;border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:8px;">
       <input id="nwf-video-link" type="url" inputmode="url" placeholder="https://..." spellcheck="false" autocomplete="off"
              style="flex:1;background:transparent;border:none;outline:none;color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:400;caret-color:#34d399;-webkit-text-fill-color:#fff;box-sizing:border-box;min-width:0;">
@@ -19892,7 +20069,11 @@ function openWorkoutMenu(e) {
   if (scheduleBtn) scheduleBtn.style.display = isNew ? 'none' : 'flex';
   if (deleteBtn)   deleteBtn.style.display   = isNew ? 'none' : 'flex';
   document.getElementById('workout-menu-overlay').style.display = 'block';
-  document.getElementById('workout-menu-sheet').style.display = 'block';
+  const _wmSht = document.getElementById('workout-menu-sheet');
+  _wmSht.style.animation = 'none';
+  _wmSht.offsetHeight;
+  _wmSht.style.animation = 'sheetUp .25s ease';
+  _wmSht.style.display = 'block';
   if (window._historyPush) window._historyPush('workout-menu');
 }
 function closeWorkoutMenu() {
@@ -20116,6 +20297,9 @@ function toggleWtabCardMenu(idx) {
     <button onclick="closeWtabMenu()" style="width:100%;background:#111;border:1px solid #444;border-radius:12px;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:600;padding:14px;cursor:pointer;text-align:center;-webkit-tap-highlight-color:transparent;">Cancel</button>
   `;
   overlay.style.display = 'block';
+  sheet.style.animation = 'none';
+  sheet.offsetHeight;
+  sheet.style.animation = 'sheetUp .25s ease';
   sheet.style.display = 'block';
 }
 
@@ -21468,7 +21652,16 @@ window._expandAnimShow = _expandAnimShow;
 function openShareQR() {
   const modal = document.getElementById('share-qr-modal');
   if (!modal) return;
+  modal.style.transform = 'translateY(48px)';
+  modal.style.opacity = '0';
+  modal.style.transition = 'none';
   modal.style.display = 'flex';
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    modal.style.transition = 'transform 0.45s cubic-bezier(0.2,0.8,0.3,1), opacity 0.35s ease';
+    modal.style.transform = '';
+    modal.style.opacity = '';
+    modal.addEventListener('transitionend', () => { modal.style.transition = ''; }, { once: true });
+  }));
   if (window._historyPush) window._historyPush('share-qr');
   const url = window.location.origin + window.location.pathname.replace(/[^/]*$/, '') + 'index.html';
   window._shareQRUrl = url;
@@ -21600,7 +21793,11 @@ function openExPhotoSheet() {
   if (removeBtn) removeBtn.style.display = hasPhoto ? 'flex' : 'none';
   if (window._historyPush) window._historyPush('ex-photo-sheet');
   document.getElementById('ex-photo-sheet-overlay').style.display = 'block';
-  document.getElementById('ex-photo-sheet').style.display = 'block';
+  const _sht = document.getElementById('ex-photo-sheet');
+  _sht.style.animation = 'none';
+  _sht.offsetHeight;
+  _sht.style.animation = 'sheetUp .25s ease';
+  _sht.style.display = 'block';
 }
 function closeExPhotoSheet() {
   document.getElementById('ex-photo-sheet-overlay').style.display = 'none';
@@ -22076,7 +22273,11 @@ function openSetOptions(btn, exId) {
   });
   if (window._historyPush) window._historyPush('set-options');
   document.getElementById('set-options-overlay').style.display = 'block';
-  document.getElementById('set-options-sheet').style.display = 'block';
+  const _soSht = document.getElementById('set-options-sheet');
+  _soSht.style.animation = 'none';
+  _soSht.offsetHeight;
+  _soSht.style.animation = 'sheetUp .25s ease';
+  _soSht.style.display = 'block';
 }
 
 function closeSetOptions() {
@@ -22147,7 +22348,11 @@ function openExDetailMenu() {
   if (changeBtn) changeBtn.style.display = 'flex';
   if (window._historyPush) window._historyPush('ex-detail-menu');
   document.getElementById('ex-detail-menu-overlay').style.display = 'block';
-  document.getElementById('ex-detail-menu-sheet').style.display = 'block';
+  const _edmSht = document.getElementById('ex-detail-menu-sheet');
+  _edmSht.style.animation = 'none';
+  _edmSht.offsetHeight;
+  _edmSht.style.animation = 'sheetUp .25s ease';
+  _edmSht.style.display = 'block';
 }
 function openExtabExMenu() {
   const name = (document.getElementById('extab-ex-overlay-name')?.textContent ||
@@ -22162,7 +22367,11 @@ function openExtabExMenu() {
   if (changeBtn) changeBtn.style.display = 'none';
   if (window._historyPush) window._historyPush('ex-detail-menu');
   document.getElementById('ex-detail-menu-overlay').style.display = 'block';
-  document.getElementById('ex-detail-menu-sheet').style.display = 'block';
+  const _etmSht = document.getElementById('ex-detail-menu-sheet');
+  _etmSht.style.animation = 'none';
+  _etmSht.offsetHeight;
+  _etmSht.style.animation = 'sheetUp .25s ease';
+  _etmSht.style.display = 'block';
 }
 window.openExtabExMenu = openExtabExMenu;
 function closeExDetailMenu() {
@@ -22362,7 +22571,11 @@ function openWorkoutPhotoFlow(idx) {
   if (removeBtn) removeBtn.style.display = hasPhoto ? 'flex' : 'none';
   if (window._historyPush) window._historyPush('ex-photo-sheet');
   document.getElementById('ex-photo-sheet-overlay').style.display = 'block';
-  document.getElementById('ex-photo-sheet').style.display = 'block';
+  const _sht2 = document.getElementById('ex-photo-sheet');
+  _sht2.style.animation = 'none';
+  _sht2.offsetHeight;
+  _sht2.style.animation = 'sheetUp .25s ease';
+  _sht2.style.display = 'block';
 }
 
 function _w2OpenEditSheet() {
@@ -23542,6 +23755,7 @@ function _updateKgDisplay(val, isBWMode) {
 
   // Map of view IDs to their close functions
   const _closers = {
+    'nwf-name':         () => { if (typeof window._cancelNwfNamePage === 'function') window._cancelNwfNamePage(); },
     'calendar':         () => { if (typeof closeCalendar === 'function') closeCalendar(); },
     'ex-detail':        () => { if (typeof window._maybeCloseExDetail === 'function') window._maybeCloseExDetail(); else if (typeof window.closeExDetailOverlay === 'function') window.closeExDetailOverlay(); },
     'extab-detail':     () => { if (typeof window.closeExTabDetail === 'function') window.closeExTabDetail(); },
@@ -23564,6 +23778,8 @@ function _updateKgDisplay(val, isBWMode) {
     'change-ex-confirm':() => { if (typeof cancelChangeExercise === 'function') cancelChangeExercise(); },
     'delete-ex-confirm':() => { if (typeof cancelDeleteExercise === 'function') cancelDeleteExercise(); },
   };
+
+  window._closers = _closers;
 
   // Handle back button
   window.addEventListener('popstate', function(e) {
