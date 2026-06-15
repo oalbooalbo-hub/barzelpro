@@ -121,7 +121,7 @@ body.desktop-mode .pages-wrap {
 .kg-editor-active .set-num{pointer-events:none!important;cursor:default!important;}
 #nwf-hero-name:empty::before{content:'Workout name';color:rgba(255,255,255,0.3);pointer-events:none;}
 #nwf-description::placeholder,#nwf-video-link::placeholder,#nwf-name-input::placeholder{color:#888;-webkit-text-fill-color:#888;opacity:1;}
-.ex-editor-open #ex-detail-finish-btn{display:none!important;}
+.ex-editor-open #ex-detail-finish-btn{opacity:0.3;pointer-events:none;filter:grayscale(1);}
 .ex-editor-open #ex-detail-back-btn,.ex-editor-open #ex-detail-back-btn-nophoto,.ex-editor-open #ex-detail-menu-btn,.ex-editor-open #ex-detail-menu-btn-nophoto,.ex-editor-open #ex-detail-info-btn{display:none!important;}
 .workouts-flow-card .btn-done,.workouts-flow-card .cancel-done-btn,.workouts-flow-card .btn-timer,.workouts-flow-card .timer-panel{display:none!important;}
 .workouts-flow-card .workouts-flow-only{display:inline-flex!important;}
@@ -257,7 +257,7 @@ body.desktop-mode .pages-wrap {
 .kg-bw-btn-active{border-color:var(--accent) !important;color:var(--accent) !important;}
 #kgBWBtnInline{will-change:color,border-color;-webkit-transform:translateZ(0);transform:translateZ(0);}
 #kgEditorDisplay{will-change:contents;-webkit-transform:translateZ(0);transform:translateZ(0);display:inline-block;}
-.kg-inline-editor{height:0;overflow:hidden;transition:height .3s cubic-bezier(.4,0,.2,1);background:#0a0a0a;border:none;border-radius:14px;margin:4px 8px;}
+.kg-inline-editor{height:0;overflow:hidden;}
 /* Exercise slide nav */
 #ex-nav-slider{display:block;width:100%;position:relative;}
 #ex-nav-list{width:100%;}
@@ -271,10 +271,12 @@ body.desktop-mode .pages-wrap {
 .kg-focus-hiding{animation:kgFocusHide 300ms cubic-bezier(.4,0,.2,1) forwards;}
 .kg-focus-showing{animation:kgFocusShow 300ms cubic-bezier(.4,0,.2,1) forwards;}
 
-.kg-inline-editor .kg-inline-editor-inner{opacity:0;transition:opacity .25s ease;pointer-events:none;}
-.kg-inline-editor.open{height:auto;border:1px solid #1e1e1e;overflow:visible;}
-.kg-inline-editor.open .kg-inline-editor-inner{opacity:1;pointer-events:auto;overflow-y:auto;max-height:520px;}
-.kg-inline-editor-inner{padding:12px 12px 10px;}
+.kg-inline-editor .kg-inline-editor-inner{pointer-events:none;}
+.kg-inline-editor.open{position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;z-index:9000;height:auto;overflow:visible;background:#1a1a1a;border-top:1px solid #2a2a2a;border-radius:20px 20px 0 0;animation:sheetUp .25s ease;}
+.kg-inline-editor.open .kg-inline-editor-inner{pointer-events:auto;overflow-y:auto;max-height:520px;}
+.kg-inline-editor-closing{position:fixed!important;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;z-index:9000;height:auto!important;overflow:visible!important;background:#1a1a1a;border-top:1px solid #2a2a2a;border-radius:20px 20px 0 0;animation:sheetSlideDown .2s ease forwards;}
+@keyframes sheetSlideDown{from{transform:translateY(0)}to{transform:translateY(100%)}}
+.kg-inline-editor-inner{padding:12px 12px calc(12px + env(safe-area-inset-bottom,0px));}
 #reps-popup{position:fixed;z-index:9000;background:#1a1a2e;border:1px solid rgba(255,255,255,0.1);border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.7);padding:12px;display:none;flex-direction:column;align-items:center;gap:10px;min-width:140px;}
 #reps-popup.open{display:flex;}
 #reps-popup .reps-pop-val{font-family:'Bebas Neue';font-size:48px;color:var(--text);line-height:1;min-width:80px;text-align:center;}
@@ -1223,12 +1225,26 @@ function hidAuthScreen() {
 
   <!-- START SCREEN: shown when no workout is active -->
   <div id="today-start-screen" style="display:flex;flex-direction:column;align-items:center;justify-content:center;position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom));padding:44px 16px 4px;gap:12px;background:var(--bg);z-index:5;">
+    <!-- Weekly strength progress ring -->
+    <div id="today-week-progress" onclick="openStrengthTargetSheet()" style="display:none;width:100%;max-width:380px;flex-direction:column;align-items:center;gap:6px;cursor:pointer;-webkit-tap-highlight-color:transparent;">
+      <span style="font-family:'DM Sans';font-size:11px;font-weight:800;color:var(--accent);letter-spacing:2.5px;text-transform:uppercase;">YOUR PROGRESS</span>
+      <div style="position:relative;width:140px;height:140px;">
+        <svg width="140" height="140" viewBox="0 0 140 140" style="display:block;">
+          <circle cx="70" cy="70" r="55" fill="none" stroke="#1e1e1e" stroke-width="12"/>
+          <circle id="today-progress-ring" cx="70" cy="70" r="55" fill="none" stroke="#7ec8e3" stroke-width="12" stroke-linecap="round" stroke-dasharray="345.58" stroke-dashoffset="345.58" transform="rotate(-90 70 70)" style="transition:stroke-dashoffset .6s ease,stroke .4s ease;"/>
+        </svg>
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;">
+          <span style="font-family:'DM Sans';font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;">This Week:</span>
+          <span id="today-progress-count" style="font-family:'DM Sans';font-size:32px;font-weight:800;color:var(--text);line-height:1;">0/3</span>
+        </div>
+      </div>
+    </div>
     <div id="today-plan-card" style="width:100%;max-width:380px;display:none;"></div>
+    <div style="width:100%;max-width:380px;">
+      <button id="today-coach-btn" onclick="switchTab('coach-profile')" style="width:100%;height:55px;display:flex;align-items:center;justify-content:center;background:transparent;color:#7ec8e3;border:1px solid #7ec8e3;border-radius:26px;font-family:'DM Sans';font-size:14px;letter-spacing:0;cursor:pointer;box-sizing:border-box;line-height:1;font-weight:700;opacity:0;transform:translateY(24px);">GET A COACH</button>
+    </div>
     <div id="today-load-btn-wrap" style="width:100%;max-width:380px;display:none;">
       <button onclick="window._isNewWorkoutFlow=false;window._loadFromToday=true;loadOrSwitchWorkouts()" style="width:100%;height:160px;display:flex;align-items:center;justify-content:center;background:var(--accent);color:#000;border:1px solid var(--accent);border-radius:26px;font-family:'DM Sans';font-size:22px;letter-spacing:0;cursor:pointer;box-sizing:border-box;line-height:1;font-weight:700;">START WORKOUT</button>
-    </div>
-    <div style="width:100%;max-width:380px;">
-      <button onclick="switchTab('coach-profile')" style="width:100%;height:55px;display:flex;align-items:center;justify-content:center;background:transparent;color:#7ec8e3;border:1px solid #7ec8e3;border-radius:26px;font-family:'DM Sans';font-size:14px;letter-spacing:0;cursor:pointer;box-sizing:border-box;line-height:1;font-weight:700;">GET A COACH</button>
     </div>
     <div style="width:100%;max-width:380px;display:flex;gap:8px;">
       <button id="today-replace-btn" onclick="replaceTodayPlan()" style="display:none;padding:16px 20px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:12px;font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;letter-spacing:0;cursor:pointer;box-sizing:border-box;line-height:1;">REPLACE</button>
@@ -1275,7 +1291,7 @@ function hidAuthScreen() {
   <!-- Top-edge workout progress bar — outside sticky header to avoid stacking context -->
   <div id="workout-top-progress-wrap" style="display:none;position:fixed;top:0;left:0;right:0;max-width:430px;margin:0 auto;height:3px;background:#222;overflow:hidden;z-index:500;"></div>
   <div id="today-workout-area" style="display:none;overflow-x:visible;">
-    <div id="workout-sticky-header" style="position:fixed;top:0;left:0;right:0;max-width:430px;margin-left:auto;margin-right:auto;z-index:15;background:#0a0a0a;padding-top:10px;">
+    <div id="workout-sticky-header" style="position:fixed;top:0;left:0;right:0;max-width:430px;margin-left:auto;margin-right:auto;z-index:25;background:#0a0a0a;padding-top:10px;">
       <div id="workout-hero-photo" style="display:none;width:100%;overflow:hidden;"></div>
       <div id="nwf-ex-count-display" style="display:none;text-align:center;padding:18px 0 14px;"></div>
       <div id="workout-progress-section" style="display:none;"></div>
@@ -2238,7 +2254,7 @@ function _checkFinishReadyImpl() {
       }
     }
     const _chipsWrap = document.getElementById('todayMuscleChipsWrap');
-    if (_chipsWrap && window._isNewWorkoutFlow) _chipsWrap.style.display = _showPrompt ? 'none' : '';
+    if (_chipsWrap && window._isNewWorkoutFlow) _chipsWrap.style.display = _showPrompt ? 'none' : 'flex';
     _prompt.style.display = _showPrompt ? 'block' : 'none';
     _addRow.style.flexDirection = _showPrompt ? 'column' : '';
     _addRow.style.alignItems = _showPrompt ? 'center' : '';
@@ -2689,6 +2705,21 @@ function showTodayStartScreen() {
   const loadWrap = document.getElementById('today-load-btn-wrap');
   if (loadWrap) loadWrap.style.display = hasWorkouts ? '' : 'none';
   renderTodayPlanCard();
+  renderTodayWeekProgress();
+  _animateCoachBtn();
+}
+
+function _animateCoachBtn() {
+  const _coachBtn = document.getElementById('today-coach-btn');
+  if (!_coachBtn) return;
+  _coachBtn.style.opacity = '0';
+  _coachBtn.style.transform = 'translateY(24px)';
+  const _fire = () => { _springAnimate(_coachBtn, 24, 0, 300, 28); _fadeAnimate(_coachBtn, 0, 1, 320); };
+  if (!window._splashGone) {
+    window._pendingCoachAnim = _fire;
+  } else {
+    setTimeout(_fire, 800);
+  }
 }
 function replaceTodayPlan() {
   const _now = new Date();
@@ -2757,6 +2788,77 @@ function cancelTodayPlan() {
     renderTodayPlanCard();
   };
 }
+
+function renderTodayWeekProgress() {
+  const el = document.getElementById('today-week-progress');
+  if (!el) return;
+  const target = workoutWeekTarget || parseInt(localStorage.getItem('ironlog_workout_target')) || 3;
+  const now = new Date();
+  const dayOfWeek = now.getDay(); // 0=Sun, matches calendar convention
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - dayOfWeek);
+  weekStart.setHours(0, 0, 0, 0);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  weekEnd.setHours(23, 59, 59, 999);
+  const deletedIds = new Set((deletedWorkouts || []).map(dw => dw.id));
+  const count = (workouts || []).filter(w => {
+    if (w._draft || w._template || deletedIds.has(w.id)) return false;
+    const d = new Date(w.date);
+    if (d < weekStart || d > weekEnd) return false;
+    return w.exercises && w.exercises.some(e => e.sets && e.sets.some(s => s.done && !s.ignored));
+  }).length;
+  const countEl = document.getElementById('today-progress-count');
+  if (countEl) countEl.textContent = `${count}/${target}`;
+  const ring = document.getElementById('today-progress-ring');
+  if (ring) {
+    const circ = 2 * Math.PI * 55;
+    const achieved = count >= target;
+    ring.setAttribute('stroke-dasharray', circ.toFixed(2));
+    ring.setAttribute('stroke-dashoffset', (circ * (1 - Math.min(count / target, 1))).toFixed(2));
+    ring.style.stroke = achieved ? 'var(--accent)' : '#7ec8e3';
+  }
+  el.style.display = 'flex';
+}
+window.renderTodayWeekProgress = renderTodayWeekProgress;
+
+function openStrengthTargetSheet() {
+  const sheet = document.getElementById('strength-target-sheet');
+  const overlay = document.getElementById('strength-target-overlay');
+  if (!sheet) return;
+  const val = document.getElementById('strength-target-val');
+  if (val) val.textContent = workoutWeekTarget;
+  overlay.style.display = 'block';
+  sheet.style.display = 'block';
+  sheet.style.animation = 'sheetUp .25s ease';
+}
+
+function _adjustStrengthTarget(delta) {
+  const newVal = Math.max(1, Math.min(7, workoutWeekTarget + delta));
+  workoutWeekTarget = newVal;
+  const val = document.getElementById('strength-target-val');
+  if (val) val.textContent = newVal;
+}
+
+function closeStrengthTargetSheet(save) {
+  const sheet = document.getElementById('strength-target-sheet');
+  const overlay = document.getElementById('strength-target-overlay');
+  if (!sheet) return;
+  if (save) {
+    localStorage.setItem('ironlog_workout_target', workoutWeekTarget);
+    renderTodayWeekProgress();
+  } else {
+    workoutWeekTarget = parseInt(localStorage.getItem('ironlog_workout_target')) || 3;
+  }
+  sheet.style.animation = 'sheetSlideDown .2s ease forwards';
+  setTimeout(() => {
+    sheet.style.display = 'none';
+    sheet.style.animation = '';
+    overlay.style.display = 'none';
+  }, 220);
+}
+window.openStrengthTargetSheet = openStrengthTargetSheet;
+window.closeStrengthTargetSheet = closeStrengthTargetSheet;
 
 function renderTodayPlanCard() {
   const cardEl = document.getElementById('today-plan-card');
@@ -3267,7 +3369,7 @@ function _openNwfNamePage() {
   _nwfPage.style.transform = 'translateY(48px)';
   _nwfPage.style.opacity = '0';
   _nwfPage.style.transition = 'none';
-  _nwfPage.style.display = 'block';
+  _nwfPage.style.display = 'flex';
   requestAnimationFrame(() => requestAnimationFrame(() => {
     _nwfPage.style.transition = 'transform 0.45s cubic-bezier(0.2,0.8,0.3,1), opacity 0.35s ease';
     _nwfPage.style.transform = '';
@@ -3275,7 +3377,15 @@ function _openNwfNamePage() {
     _nwfPage.addEventListener('transitionend', () => { _nwfPage.style.transition = ''; }, { once: true });
   }));
   if (window._historyPush) window._historyPush('nwf-name');
-  if (!cur) setTimeout(() => document.getElementById('nwf-name-input')?.focus(), 250);
+  if (window.visualViewport) {
+    window._nwfVpHandler = () => {
+      const btns = document.getElementById('nwf-bottom-btns');
+      if (!btns) return;
+      const keyboardOpen = window.visualViewport.height < window.innerHeight - 100;
+      btns.style.display = keyboardOpen ? 'none' : 'flex';
+    };
+    window.visualViewport.addEventListener('resize', window._nwfVpHandler);
+  }
 }
 function _closeNwfNamePage() {
   const _p = document.getElementById('nwf-name-page');
@@ -3284,6 +3394,12 @@ function _closeNwfNamePage() {
   _p.style.transform = '';
   _p.style.opacity = '';
   _p.style.display = 'none';
+  if (window.visualViewport && window._nwfVpHandler) {
+    window.visualViewport.removeEventListener('resize', window._nwfVpHandler);
+    window._nwfVpHandler = null;
+  }
+  const _nwfBtns = document.getElementById('nwf-bottom-btns');
+  if (_nwfBtns) _nwfBtns.style.display = 'flex';
 }
 function _cancelNwfNamePage() {
   const _page = document.getElementById('nwf-name-page');
@@ -3395,12 +3511,12 @@ function _setWorkoutHeroPhoto(name) {
         <div id="workout-hero-name" data-name="${name||''}" onclick="if(window._isNewWorkoutFlow)_startHeroNameEdit(this)" style="font-family:'DM Sans';font-size:20px;font-weight:900;color:#fff;max-width:60%;margin-left:auto;line-height:1.2;pointer-events:${window._isNewWorkoutFlow?'auto':'none'};cursor:${window._isNewWorkoutFlow?'pointer':'default'};-webkit-tap-highlight-color:transparent;${_heroNameDir(name)}">${_heroNameHtml(name)}</div>
       </div>
     </div>
-    ${window._isNewWorkoutFlow ? '' : `<div style="display:flex;align-items:flex-end;padding:8px 10px 4px;gap:8px;">
+    ${window._isNewWorkoutFlow ? '' : `<div style="display:flex;align-items:flex-end;padding:8px 10px 4px;gap:8px;position:relative;">
       <button onclick="finishWorkout()" style="background:var(--accent);border:none;border-radius:8px;padding:7px 0;width:76px;cursor:pointer;-webkit-tap-highlight-color:transparent;display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;">
         <span style="color:#000;font-family:'DM Sans';font-size:13px;font-weight:900;letter-spacing:.5px;">FINISH</span>
         <span style="color:#000;font-family:'DM Sans';font-size:10px;font-weight:700;letter-spacing:.3px;">WORKOUT</span>
       </button>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:1px;flex-shrink:0;">
+      <div style="position:absolute;left:50%;transform:translateX(-50%);bottom:4px;display:flex;flex-direction:column;align-items:center;gap:1px;">
         <span id="workout-progress-fraction" style="font-family:'DM Sans';font-size:32px;font-weight:900;color:#fff;line-height:1;">0</span>
         <span style="font-family:'DM Sans';font-size:11px;font-weight:600;color:#888;line-height:1;">exercises</span>
       </div>
@@ -3435,7 +3551,7 @@ function _updateWorkoutProgress() {
   const total = document.querySelectorAll('#exerciseList .exercise-card').length;
   const done  = document.querySelectorAll('#exerciseList .exercise-card.completed').length;
   fraction.innerHTML = done > 0
-    ? `<span style="font-size:22px;font-weight:900;color:#fff;">${done}</span><span style="font-size:32px;font-weight:900;color:#888;margin:0 2px;">/</span><span style="font-size:32px;font-weight:900;color:#888;">${total}</span>`
+    ? `<span style="font-size:32px;font-weight:900;color:#fff;">${done}</span><span style="font-size:32px;font-weight:300;color:#888;margin:0 4px;">of</span><span style="font-size:32px;font-weight:900;color:#888;">${total}</span>`
     : `${total}`;
   fill.style.width = total > 0 ? (done / total * 100) + '%' : '0%';
   if (topWrap) topWrap.style.display = total > 0 ? 'block' : 'none';
@@ -5626,41 +5742,82 @@ function openExtabExOverlay(exName, musclesOnly) {
       _onProgScrub(pts.length - 1);
     }
 
-    // ── goTo with Progress show/hide ─────────────────────────────────────────
+    // ── goTo with animated transitions ───────────────────────────────────────
     let _progPreDiag = null;
     function goTo(idx) {
+      if (idx === _cur) return;
       const _prevIdx = _cur;
+      const dir = idx > _prevIdx ? 1 : -1; // 1 = forward/right, -1 = backward/left
       _cur = idx;
-      _renderSlideVal(slides[idx]);
       dotEls.forEach((d, i) => d.style.background = i === idx ? muscleColor : 'rgba(255,255,255,0.25)');
+
+      // ── Animate title ──────────────────────────────────────────────────────
+      if (_titleEl) {
+        _titleEl.style.transition = 'opacity .13s ease, transform .13s ease';
+        _titleEl.style.opacity = '0';
+        _titleEl.style.transform = `translateX(${dir * -18}px)`;
+        setTimeout(() => {
+          _titleEl.textContent = slides[idx].val;
+          _titleEl.style.transition = 'none';
+          _titleEl.style.transform = `translateX(${dir * 18}px)`;
+          requestAnimationFrame(() => requestAnimationFrame(() => {
+            _titleEl.style.transition = 'opacity .22s ease, transform .22s cubic-bezier(.2,.8,.3,1)';
+            _titleEl.style.opacity = '1';
+            _titleEl.style.transform = 'translateX(0)';
+          }));
+        }, 130);
+      }
+
+      // ── Slide helpers ──────────────────────────────────────────────────────
+      function _slideIn(el) {
+        el.style.opacity = '0';
+        el.style.transform = `translateX(${dir * 32}px)`;
+        el.style.transition = 'none';
+        el.style.display = 'block';
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          el.style.transition = 'opacity .28s ease, transform .28s cubic-bezier(.2,.8,.3,1)';
+          el.style.opacity = '1';
+          el.style.transform = 'translateX(0)';
+          el.addEventListener('transitionend', () => { el.style.transition = ''; el.style.transform = ''; }, { once: true });
+        }));
+      }
+      function _slideOut(el, whenHidden) {
+        el.style.transition = 'opacity .18s ease, transform .18s ease';
+        el.style.opacity = '0';
+        el.style.transform = `translateX(${dir * -32}px)`;
+        setTimeout(() => {
+          el.style.display = 'none';
+          el.style.transition = ''; el.style.transform = ''; el.style.opacity = '';
+          if (whenHidden) whenHidden();
+        }, 190);
+      }
+
       // ── Diagram & pane state machine ───────────────────────────────────────
       const _wasSpec = _prevIdx === PROG_IDX || _prevIdx === TABLE_IDX;
       const _nowSpec  = idx     === PROG_IDX || idx     === TABLE_IDX;
-      // First entry into a special slide: collapse diagram
-      if (_nowSpec && !_wasSpec) {
-        const _diagEl = document.getElementById('extab-diag-wrap');
-        _progPreDiag = _diagEl?.style.display ?? '';
-        if (_diagEl) _diagEl.style.display = 'none';
+      const _diagEl = document.getElementById('extab-diag-wrap');
+      if (_nowSpec && !_wasSpec && _diagEl && _diagEl.style.display !== 'none') {
+        _progPreDiag = _diagEl.style.display;
+        _slideOut(_diagEl);
       }
-      // Exit from last special slide: restore diagram
-      if (!_nowSpec && _wasSpec) {
-        const _diagEl = document.getElementById('extab-diag-wrap');
-        if (_diagEl) _diagEl.style.display = _progPreDiag ?? '';
+      if (!_nowSpec && _wasSpec && _diagEl) {
+        _diagEl.style.display = _progPreDiag ?? '';
+        _slideIn(_diagEl);
       }
       // PROGRESS pane
       if (idx === PROG_IDX && _prevIdx !== PROG_IDX) {
-        progPane.style.display = 'block';
+        _slideIn(progPane);
         setTimeout(_renderProgChart, 50);
       }
       if (idx !== PROG_IDX && _prevIdx === PROG_IDX) {
-        progPane.style.display = 'none';
+        _slideOut(progPane);
       }
       // TABLE pane
       if (idx === TABLE_IDX && _prevIdx !== TABLE_IDX) {
-        tablePane.style.display = 'block';
+        _slideIn(tablePane);
       }
       if (idx !== TABLE_IDX && _prevIdx === TABLE_IDX) {
-        tablePane.style.display = 'none';
+        _slideOut(tablePane);
       }
     }
     function _bounceEdge() {}
@@ -6037,7 +6194,11 @@ function switchTab(tab) {
     if (openCard) toggleProgressCard(openCard.id);
     document.getElementById('prog-info-float')?.remove();
   }
-  if (tab==='log') checkFinishReady();
+  if (tab==='log') {
+    checkFinishReady();
+    const _startScreenVisible = document.getElementById('today-start-screen')?.style.display !== 'none';
+    if (_startScreenVisible) _animateCoachBtn();
+  }
   if (tab !== 'log' && tab !== 'exercises') { if (!window._createNewMode) window._activeTabHighlight = null; if (tab !== 'workouts') { window._loadFromToday = false; window._isChangingWorkout = false; } }
   localStorage.setItem('ironlog_active_tab', tab);
   updatePickModeTabs();
@@ -6098,7 +6259,7 @@ function renderWorkoutsTab2() {
 
   // ── Toggle bar ────────────────────────────────────────
   const _wHasCoach = window._currentUserData?.coachId && window._currentUserData?.coachingExpires && new Date(window._currentUserData.coachingExpires) >= new Date();
-  const _wToggleHtml = `<div style="display:flex;align-items:center;padding:10px 0 6px;"><span style="font-family:'DM Sans';font-size:20px;font-weight:700;color:var(--text);">Workouts</span><div style="flex:1;"></div><button id="w2-get-coach-btn" onclick="" style="opacity:0;background:transparent;border:1px solid #7ec8e3;border-radius:8px;color:#7ec8e3;font-family:'DM Sans';font-size:11px;font-weight:700;padding:6px 12px;cursor:pointer;letter-spacing:.5px;-webkit-tap-highlight-color:transparent;white-space:nowrap;">GET A COACH</button></div><div style="display:flex;gap:0;align-items:center;">
+  const _wToggleHtml = `<div style="display:flex;align-items:center;padding:10px 0 6px;"><span style="font-family:'DM Sans';font-size:20px;font-weight:700;color:var(--text);">Workouts</span><div style="flex:1;"></div><button id="w2-get-coach-btn" onclick="switchTab('coach-profile')" style="opacity:0;background:transparent;border:1px solid #7ec8e3;border-radius:8px;color:#7ec8e3;font-family:'DM Sans';font-size:11px;font-weight:700;padding:6px 12px;cursor:pointer;letter-spacing:.5px;-webkit-tap-highlight-color:transparent;white-space:nowrap;">GET A COACH</button></div><div style="display:flex;gap:0;align-items:center;">
     <button onclick="switchWTabView('all')" id="wTab-seg-all" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_wTabView==='all'?'var(--accent)':'#555'};border-bottom:2px solid ${_wTabView==='all'?'var(--accent)':'transparent'};transition:all .15s;">ALL</button>
     <button onclick="switchWTabView('custom')" id="wTab-seg-custom" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_wTabView==='custom'?'var(--accent)':'#555'};border-bottom:2px solid ${_wTabView==='custom'?'var(--accent)':'transparent'};transition:all .15s;">CUSTOM</button>
     ${_wHasCoach ? `<button onclick="switchWTabView('coach')" id="wTab-seg-coach" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_wTabView==='coach'?'#7ec8e3':'#555'};border-bottom:2px solid ${_wTabView==='coach'?'#7ec8e3':'transparent'};transition:all .15s;">COACH</button>` : ''}
@@ -6763,7 +6924,7 @@ function updateTodayMuscleChips() {
     const done = doneCounts[m] || 0;
     const total = c;
     const countHtml = done > 0
-      ? `<span style="font-size:13px;font-weight:700;color:#fff;line-height:1;white-space:nowrap;">${done}<span style="font-size:18px;font-weight:700;opacity:0.6;">/${total}</span></span>`
+      ? `<span style="font-size:18px;font-weight:300;opacity:0.6;color:#fff;line-height:1;white-space:nowrap;">${total}</span>`
       : `<span style="font-size:18px;font-weight:700;color:${active ? color : '#888'};line-height:1;">${total}</span>`;
     return `<button onclick="filterTodayByMuscle('${m}')" style="${_btnBase}position:relative;background:${active ? color+'33' : 'rgba(255,255,255,.05)'};border:1px solid ${active ? color : '#333'};">${countHtml}<span style="font-size:14px;font-weight:600;color:${active ? color : '#888'};letter-spacing:.2px;line-height:1;white-space:nowrap;">${_muscleAbbr}</span></button>`;
   }).join('');
@@ -6940,8 +7101,8 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
           <span style="position:absolute;top:-9px;left:12px;background:var(--bg);padding:0 5px;font-size:12px;font-weight:700;color:var(--accent);letter-spacing:.3px;pointer-events:none;">Timer</span>
           <div style="position:relative;display:flex;align-items:center;">
             <div class="timer-display" id="timer-display-${id}" style="margin-bottom:0;width:100%;text-align:center;">00:00</div>
-            <!-- Auto Start toggle — absolute right so number stays centered -->
-            <div style="position:absolute;right:0;display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <!-- Auto Start toggle — absolute left so number stays centered -->
+            <div style="position:absolute;left:0;display:flex;flex-direction:column;align-items:center;gap:4px;">
               <label style="position:relative;display:inline-block;width:44px;height:26px;cursor:pointer;">
                 <input type="checkbox" id="timer-autostart-${id}" onchange="toggleTimerAutoStart('${id}',this.checked)" style="opacity:0;width:0;height:0;position:absolute;">
                 <span id="timer-autostart-track-${id}" style="position:absolute;inset:0;background:#333;border-radius:13px;transition:background .2s;">
@@ -6950,9 +7111,13 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
               </label>
               <div style="font-size:10px;font-weight:700;color:#aaa;letter-spacing:.5px;">Auto Start</div>
             </div>
+            <!-- Preset button — absolute right -->
+            ${(()=>{const _opts=[30,60,90,120,150,180];const _lbls=['0.5m','1m','1.5m','2m','2.5m','3m'];const _ci=_opts.indexOf(_opts.reduce((a,b)=>Math.abs(b-lastTimerSecs)<Math.abs(a-lastTimerSecs)?b:a));const _cl=_lbls[_ci];return `<div style="position:absolute;right:0;display:flex;flex-direction:column;align-items:center;gap:4px;"><button id="timer-preset-btn-${id}" onclick="toggleTimerPresetMenu('${id}')" style="background:transparent;border:1px solid #555;border-radius:8px;padding:4px 7px;cursor:pointer;display:flex;align-items:center;gap:3px;-webkit-tap-highlight-color:transparent;"><span id="timer-preset-label-${id}" style="color:#aaa;font-family:'DM Sans';font-size:13px;font-weight:700;min-width:28px;text-align:center;">${_cl}</span><svg width="10" height="7" viewBox="0 0 10 7" fill="none"><path d="M1 1.5L5 5.5L9 1.5" stroke="#777" stroke-width="1.5" stroke-linecap="round"/></svg></button><div style="font-size:10px;font-weight:700;color:#aaa;letter-spacing:.5px;">Preset</div></div>`;})()}
           </div>
-          <div class="timer-presets">
-            ${(()=>{const opts=[30,60,90,120,180];const closest=opts.reduce((a,b)=>Math.abs(b-lastTimerSecs)<Math.abs(a-lastTimerSecs)?b:a);return opts.map((s,i)=>`<button class="timer-preset ${s===closest?'active':''}" onclick="setTimerPreset('${id}',${s})">${['0.5m','1m','1.5m','2m','3m'][i]}</button>`).join('');})()}
+          <!-- Expandable preset grid -->
+          ${(()=>{const _opts=[30,60,90,120,150,180];const _lbls=['0.5m','1m','1.5m','2m','2.5m','3m'];const _closest=_opts.reduce((a,b)=>Math.abs(b-lastTimerSecs)<Math.abs(a-lastTimerSecs)?b:a);return `<div id="timer-preset-menu-${id}" style="display:none;background:#111;border-radius:8px;margin:8px 0 2px;overflow:hidden;"><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:#2a2a2a;">${_opts.map((s,i)=>`<button onclick="selectTimerPreset('${id}',${s},'${_lbls[i]}')" style="background:#1a1a1a;border:none;color:${s===_closest?'#7ec8e3':'#aaa'};font-family:'DM Sans';font-size:14px;font-weight:700;padding:11px 0;cursor:pointer;-webkit-tap-highlight-color:transparent;">${_lbls[i]}</button>`).join('')}</div></div>`;})()}
+          <div class="timer-presets" style="display:none;">
+            ${(()=>{const opts=[30,60,90,120,150,180];const closest=opts.reduce((a,b)=>Math.abs(b-lastTimerSecs)<Math.abs(a-lastTimerSecs)?b:a);return opts.map((s,i)=>`<button class="timer-preset ${s===closest?'active':''}" onclick="setTimerPreset('${id}',${s})">${['0.5m','1m','1.5m','2m','2.5m','3m'][i]}</button>`).join('');})()}
           </div>
           <div class="timer-controls">
             <button class="timer-ctrl-btn" id="timer-start-${id}" onclick="timerStartStop('${id}')" style="position:relative;overflow:hidden;">
@@ -8944,6 +9109,14 @@ function setTimerPreset(id, secs) {
     const m = b.getAttribute('onclick').match(/,(\d+)\)/);
     if (m) b.classList.toggle('active', parseInt(m[1]) === secs);
   });
+  // Sync preset button labels and grid highlights
+  const _pLabels = {30:'0.5m',60:'1m',90:'1.5m',120:'2m',150:'2.5m',180:'3m'};
+  const _pLbl = _pLabels[secs] || (secs/60)+'m';
+  document.querySelectorAll('[id^="timer-preset-label-"]').forEach(el => el.textContent = _pLbl);
+  document.querySelectorAll('[id^="timer-preset-menu-"] button').forEach(btn => {
+    const m = btn.getAttribute('onclick')?.match(/,(\d+),/);
+    if (m) btn.style.color = parseInt(m[1]) === secs ? '#7ec8e3' : '#aaa';
+  });
   // Disable/enable Start button based on 0m
   document.querySelectorAll('.timer-ctrl-btn').forEach(btn => {
     if (secs === 0) {
@@ -8956,6 +9129,20 @@ function setTimerPreset(id, secs) {
       btn.style.cursor = '';
     }
   });
+}
+
+function toggleTimerPresetMenu(id) {
+  const menu = document.getElementById(`timer-preset-menu-${id}`);
+  if (!menu) return;
+  const isOpen = menu.style.display !== 'none';
+  document.querySelectorAll('[id^="timer-preset-menu-"]').forEach(m => { m.style.display = 'none'; });
+  if (!isOpen) menu.style.display = 'block';
+}
+
+function selectTimerPreset(id, secs, label) {
+  setTimerPreset(id, secs);
+  const menu = document.getElementById(`timer-preset-menu-${id}`);
+  if (menu) menu.style.display = 'none';
 }
 
 function updateTimerChevronDot(exId, show) {
@@ -9534,17 +9721,16 @@ function saveWorkoutToList() {
   setAddExerciseBtnStyle(false);
 
   if (_wasNewFlow) {
+    const _saveBlack = document.createElement('div');
+    _saveBlack.id = '_saveBlackScreen';
+    _saveBlack.style.cssText = 'position:fixed;inset:0;background:#0a0a0a;z-index:200;opacity:1;pointer-events:all;';
+    document.body.appendChild(_saveBlack);
     switchTab('log');
     document.getElementById('workoutNameBar')?.classList.remove('visible');
     // Re-apply workouts highlight if came from workouts
     if (_wasFromWorkouts) {
       document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active',['log','exercises','progress','workouts2'][i]==='workouts2'));
     }
-    const _saveBlack = document.createElement('div');
-    _saveBlack.id = '_saveBlackScreen';
-    _saveBlack.style.cssText = 'position:fixed;inset:0;background:#000;z-index:200;opacity:0;transition:opacity .35s ease;pointer-events:all;';
-    document.body.appendChild(_saveBlack);
-    requestAnimationFrame(() => requestAnimationFrame(() => { _saveBlack.style.opacity = '1'; }));
     setTimeout(() => {
       const actionsRow = document.querySelector('.today-actions');
       if (actionsRow) {
@@ -14756,7 +14942,14 @@ window.addEventListener('load', function() {
     const splash = document.getElementById('splashScreen');
     if (splash) {
       splash.style.opacity = '0';
-      setTimeout(() => splash.remove(), 400);
+      setTimeout(() => {
+        splash.remove();
+        window._splashGone = true;
+        if (window._pendingCoachAnim) {
+          setTimeout(window._pendingCoachAnim, 200);
+          window._pendingCoachAnim = null;
+        }
+      }, 400);
     }
   }, 800);
 
@@ -14797,12 +14990,12 @@ window.addEventListener('load', function() {
 </div>
 
 <!-- NEW WORKOUT FIRST PAGE — hero image + inline name edit -->
-<div id="nwf-name-page" style="display:none;position:fixed;inset:0;z-index:201;background:#0a0a0a;max-width:430px;margin:0 auto;overflow:hidden;">
-  <div style="position:absolute;top:calc(env(safe-area-inset-top,0px) + 20px);left:0;right:0;z-index:2;pointer-events:none;text-align:center;">
+<div id="nwf-name-page" style="display:none;position:fixed;inset:0;z-index:201;background:#0a0a0a;max-width:430px;margin:0 auto;flex-direction:column;">
+  <div style="flex-shrink:0;padding-top:calc(env(safe-area-inset-top,0px) + 20px);padding-bottom:14px;text-align:center;background:#0a0a0a;">
     <div style="font-family:'DM Sans',sans-serif;font-size:20px;font-weight:700;color:#34d399;letter-spacing:0;line-height:1.2;">NEW WORKOUT</div>
     <div style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;color:#aaa;letter-spacing:.2px;margin-top:2px;">Step 1 of 2</div>
   </div>
-  <div style="position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 80px);padding:0 10px;">
+  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 10px calc(env(safe-area-inset-bottom,0px) + 96px);">
     <div style="position:relative;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;">
       <img id="nwf-hero-bg" src="images/workout_background.webp" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;filter:brightness(0.85);">
       <button onclick="event.stopPropagation();_openPhotoModalFromHero()" style="position:absolute;top:8px;right:8px;z-index:4;background:rgba(0,0,0,0.55);border:none;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;">
@@ -14838,7 +15031,7 @@ window.addEventListener('load', function() {
       </button>
     </div>
   </div>
-  <div style="position:absolute;bottom:0;left:0;right:0;padding:16px 16px calc(env(safe-area-inset-bottom,0px) + 16px);display:flex;gap:10px;z-index:2;">
+  <div id="nwf-bottom-btns" style="flex-shrink:0;padding:16px 16px calc(env(safe-area-inset-bottom,0px) + 16px);display:flex;gap:10px;background:#0a0a0a;">
     <button onclick="_cancelNwfNamePage()" style="flex:1;background:transparent;border:1px solid rgba(255,255,255,0.18);border-radius:12px;color:rgba(255,255,255,0.65);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Cancel</button>
     <button id="nwf-bottom-next-btn" onclick="_proceedFromNwfNamePage()" style="flex:1;background:#444;border:none;border-radius:12px;color:#fff;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .2s,color .2s;">Next</button>
   </div>
@@ -19781,6 +19974,28 @@ function deleteCoachWorkout(id) {
   <div class="ex-detail-bottom-blocker" style="position:absolute;bottom:0;left:0;right:0;height:calc(100px + env(safe-area-inset-bottom));background:var(--bg);pointer-events:none;z-index:1;"></div>
 </div>
 
+<!-- KG / Reps editor sheet — body-level so position:fixed works outside any stacking context -->
+<div id="kg-editor-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;z-index:9000;background:#1a1a1a;border-top:1px solid #2a2a2a;border-radius:20px 20px 0 0;">
+  <div id="kg-editor-sheet-inner" style="padding:12px 12px calc(12px + env(safe-area-inset-bottom,0px));"></div>
+</div>
+
+<!-- Strength target sheet — body-level -->
+<div id="strength-target-overlay" onclick="closeStrengthTargetSheet()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:8999;"></div>
+<div id="strength-target-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;z-index:9000;background:#1a1a1a;border-top:1px solid #2a2a2a;border-radius:20px 20px 0 0;padding:12px 20px calc(28px + env(safe-area-inset-bottom,0px));box-sizing:border-box;">
+  <div style="width:36px;height:4px;border-radius:2px;background:#444;margin:0 auto 18px;"></div>
+  <div style="font-family:'DM Sans';font-size:18px;font-weight:800;color:var(--text);text-align:center;margin-bottom:4px;letter-spacing:.3px;">STRENGTH GOAL</div>
+  <div style="font-family:'DM Sans';font-size:13px;color:var(--muted);text-align:center;margin-bottom:28px;">How many workouts per week?</div>
+  <div style="display:flex;align-items:center;justify-content:center;gap:0;margin-bottom:28px;">
+    <button onclick="event.stopPropagation();_adjustStrengthTarget(-1)" style="width:64px;height:64px;border-radius:16px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:28px;font-weight:300;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">−</button>
+    <div style="display:flex;flex-direction:column;align-items:center;min-width:120px;">
+      <span id="strength-target-val" style="font-family:'DM Sans';font-size:64px;font-weight:800;color:var(--text);line-height:1;">3</span>
+      <span style="font-family:'DM Sans';font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.5px;margin-top:2px;">DAYS / WEEK</span>
+    </div>
+    <button onclick="event.stopPropagation();_adjustStrengthTarget(1)" style="width:64px;height:64px;border-radius:16px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:28px;font-weight:300;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">+</button>
+  </div>
+  <button onclick="closeStrengthTargetSheet(true)" style="width:100%;padding:16px;background:var(--accent);color:#000;border:none;border-radius:14px;font-family:'DM Sans';font-size:17px;font-weight:900;cursor:pointer;-webkit-tap-highlight-color:transparent;">SAVE</button>
+</div>
+
 <!-- Workout session menu sheet -->
 <div id="workout-menu-overlay" onclick="closeWorkoutMenu()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:300;"></div>
 <div id="workout-menu-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:#1a1a1a;border-radius:20px 20px 0 0;z-index:301;padding:0 16px calc(16px + env(safe-area-inset-bottom));">
@@ -20706,8 +20921,8 @@ function openRepsPopup(span, exId) {
     return;
   }
 
-  // Close any open reps editor first
-  _closeRepsEditor();
+  // Close any open reps editor — switching=true keeps the sheet open for new content
+  _closeRepsEditor(false, true);
 
   _repsEditorSpan = span;
   _repsEditorExId = exId;
@@ -20745,84 +20960,78 @@ function openRepsPopup(span, exId) {
   if (!editorTr?.classList.contains('reps-inline-editor-row')) {
     editorTr = document.createElement('tr');
     editorTr.className = 'reps-inline-editor-row';
-    const td = document.createElement('td');
-    td.colSpan = 10;
-    td.style.padding = '0';
-    const editorDiv = document.createElement('div');
-    editorDiv.className = 'kg-inline-editor';
-    editorDiv.id = `reps-editor-${exId}-${_repsEditorRow.querySelector('.set-num')?.textContent || Date.now()}`;
-    editorDiv.innerHTML = `<div class="kg-inline-editor-inner" style="padding:12px 12px 10px;">
-      <div style="display:flex;flex-direction:column;gap:10px;">
-        <div style="display:flex;gap:8px;">
-          <button onclick="repsEditorDelta(-1)" style="flex:1;background:transparent;border:1px solid #555;border-radius:8px;color:#f87171;font-size:42px;font-weight:300;padding:18px 0;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;-webkit-tap-highlight-color:transparent;">−</button>
-          <button onclick="repsEditorDelta(1)" style="flex:1;background:transparent;border:1px solid #555;border-radius:8px;color:var(--accent);font-size:42px;font-weight:300;padding:18px 0;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;-webkit-tap-highlight-color:transparent;">+</button>
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
-          <button class="kg-pad-btn" onclick="repsEditorPress('1')">1</button>
-          <button class="kg-pad-btn" onclick="repsEditorPress('2')">2</button>
-          <button class="kg-pad-btn" onclick="repsEditorPress('3')">3</button>
-          <button class="kg-pad-btn" onclick="repsEditorPress('4')">4</button>
-          <button class="kg-pad-btn" onclick="repsEditorPress('5')">5</button>
-          <button class="kg-pad-btn" onclick="repsEditorPress('6')">6</button>
-          <button class="kg-pad-btn" onclick="repsEditorPress('7')">7</button>
-          <button class="kg-pad-btn" onclick="repsEditorPress('8')">8</button>
-          <button class="kg-pad-btn" onclick="repsEditorPress('9')">9</button>
-          <button class="kg-pad-btn" style="opacity:0.15;pointer-events:none;"></button>
-          <button class="kg-pad-btn" onclick="repsEditorPress('0')">0</button>
-          <button class="kg-pad-btn" onclick="repsEditorBack()">⌫</button>
-        </div>
-        <div style="display:flex;gap:8px;">
-          <button onclick="cancelRepsEditor()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:18px;font-weight:700;padding:11px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Cancel</button>
-          <button onclick="confirmRepsEditor()" style="flex:2;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:18px;font-weight:700;padding:11px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Done</button>
-        </div>
-      </div>
-    </div>`;
-    td.appendChild(editorDiv);
+    const td = document.createElement('td'); td.colSpan = 10; td.style.padding = '0';
     editorTr.appendChild(td);
-    // Insert before kg-inline-editor-row so it appears right below set row
     const kgEditorRow = _repsEditorRow.nextElementSibling?.classList.contains('kg-inline-editor-row')
       ? _repsEditorRow.nextElementSibling : null;
-    if (kgEditorRow) {
-      _repsEditorRow.parentNode.insertBefore(editorTr, kgEditorRow);
-    } else {
-      _repsEditorRow.parentNode.insertBefore(editorTr, _repsEditorRow.nextSibling);
-    }
+    if (kgEditorRow) _repsEditorRow.parentNode.insertBefore(editorTr, kgEditorRow);
+    else _repsEditorRow.parentNode.insertBefore(editorTr, _repsEditorRow.nextSibling);
   }
 
-  // Animate open — same as KG editor
-  const editorDiv = editorTr.querySelector('.kg-inline-editor');
+  // Populate body-level sheet (avoids stacking-context trap)
+  document.getElementById('kg-editor-sheet-inner').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div style="display:flex;gap:8px;">
+        <button onclick="repsEditorDelta(-1)" style="flex:1;background:transparent;border:1px solid #555;border-radius:8px;color:#f87171;font-size:42px;font-weight:300;padding:18px 0;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;-webkit-tap-highlight-color:transparent;">−</button>
+        <button onclick="repsEditorDelta(1)" style="flex:1;background:transparent;border:1px solid #555;border-radius:8px;color:var(--accent);font-size:42px;font-weight:300;padding:18px 0;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;-webkit-tap-highlight-color:transparent;">+</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+        <button class="kg-pad-btn" onclick="repsEditorPress('1')">1</button>
+        <button class="kg-pad-btn" onclick="repsEditorPress('2')">2</button>
+        <button class="kg-pad-btn" onclick="repsEditorPress('3')">3</button>
+        <button class="kg-pad-btn" onclick="repsEditorPress('4')">4</button>
+        <button class="kg-pad-btn" onclick="repsEditorPress('5')">5</button>
+        <button class="kg-pad-btn" onclick="repsEditorPress('6')">6</button>
+        <button class="kg-pad-btn" onclick="repsEditorPress('7')">7</button>
+        <button class="kg-pad-btn" onclick="repsEditorPress('8')">8</button>
+        <button class="kg-pad-btn" onclick="repsEditorPress('9')">9</button>
+        <button class="kg-pad-btn" style="opacity:0.15;pointer-events:none;"></button>
+        <button class="kg-pad-btn" onclick="repsEditorPress('0')">0</button>
+        <button class="kg-pad-btn" onclick="repsEditorBack()">⌫</button>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="cancelRepsEditor()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:18px;font-weight:700;padding:11px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Cancel</button>
+        <button onclick="confirmRepsEditor()" style="flex:2;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:18px;font-weight:700;padding:11px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Done</button>
+      </div>
+    </div>`;
+
+  // Slide open from bottom
   requestAnimationFrame(() => {
-    editorDiv.classList.add('open');
+    const _sheet = document.getElementById('kg-editor-sheet');
+    if (_sheet.style.display === 'none') {
+      _sheet.style.animation = 'none';
+      _sheet.offsetHeight;
+      _sheet.style.display = 'block';
+      _sheet.style.animation = 'sheetUp .25s ease';
+    }
   });
 
   // Focus enter — dim other cards, hide footer
   _kgEditorFocusEnter(exId);
 
-  // Scroll to show set row + full editor
+  // Scroll so the tapped set row stays visible above the fixed editor sheet
   setTimeout(() => {
+    const editorHeight = document.getElementById('kg-editor-sheet')?.getBoundingClientRect().height || 300;
+    const _safeBottom = window.innerHeight - editorHeight - 16;
     const overlayBody = document.getElementById('ex-detail-overlay-body');
-    if (overlayBody && overlayBody.contains(editorTr)) {
-      const bodyRect = overlayBody.getBoundingClientRect();
-      const setRect = _repsEditorRow.getBoundingClientRect();
-      const editorRect = editorTr.getBoundingClientRect();
-      const overflowBottom = editorRect.bottom - bodyRect.bottom;
-      const setTop = setRect.top - bodyRect.top;
-      if (overflowBottom > 0) {
-        overlayBody.scrollBy({ top: overflowBottom + 16, behavior: 'instant' });
-      } else if (setTop < 0) {
-        overlayBody.scrollBy({ top: setTop - 8, behavior: 'instant' });
+    // Add spacer so last set can be scrolled above the editor sheet
+    if (!document.getElementById('_kgScrollSpacer')) {
+      const _sp = document.createElement('div');
+      _sp.id = '_kgScrollSpacer';
+      _sp.style.cssText = `height:${editorHeight + 24}px;pointer-events:none;flex-shrink:0;`;
+      if (overlayBody && overlayBody.contains(_repsEditorRow)) overlayBody.appendChild(_sp);
+      else document.getElementById('page-log')?.appendChild(_sp);
+    }
+    const setRect = _repsEditorRow.getBoundingClientRect();
+    if (overlayBody && overlayBody.contains(_repsEditorRow)) {
+      if (setRect.bottom > _safeBottom) {
+        overlayBody.scrollBy({ top: setRect.bottom - _safeBottom, behavior: 'smooth' });
+      } else if (setRect.top < overlayBody.getBoundingClientRect().top + 4) {
+        overlayBody.scrollBy({ top: setRect.top - overlayBody.getBoundingClientRect().top - 8, behavior: 'smooth' });
       }
     } else {
-      // Account for the fixed bottom .tabs bar — scrollIntoView doesn't know about it
-      const _editorRect = editorTr.getBoundingClientRect();
-      const _setRect    = _repsEditorRow.getBoundingClientRect();
-      const _tabsEl     = document.querySelector('.tabs');
-      const _tabsTop    = _tabsEl ? _tabsEl.getBoundingClientRect().top : window.innerHeight;
-      const _ovf        = _editorRect.bottom - _tabsTop + 16;
-      if (_ovf > 0) {
-        window.scrollBy({ top: _ovf, behavior: 'instant' });
-      } else if (_setRect.top < 0) {
-        window.scrollBy({ top: _setRect.top - 8, behavior: 'instant' });
+      if (setRect.bottom > _safeBottom) {
+        window.scrollBy({ top: setRect.bottom - _safeBottom, behavior: 'smooth' });
       }
     }
   }, 320);
@@ -20878,29 +21087,35 @@ function cancelRepsEditor() {
   _closeRepsEditor();
 }
 
-function _closeRepsEditor(silent = false) {
+function _closeRepsEditor(silent = false, switching = false) {
   document.body.classList.remove('ex-editor-open');
   // Find reps editor row — could be next sibling or sibling before kg-inline-editor-row
   let editorRow = _repsEditorRow?.nextElementSibling;
   if (editorRow && !editorRow.classList.contains('reps-inline-editor-row')) {
-    // Check if it's further down
     editorRow = null;
     const siblings = _repsEditorRow?.parentNode?.querySelectorAll('.reps-inline-editor-row');
     if (siblings?.length) editorRow = siblings[0];
   }
-  const editorDiv = editorRow?.querySelector('.kg-inline-editor');
-  if (editorDiv) {
-    // Capture current height explicitly so transition animates from px→0, not auto→0
-    editorDiv.style.height = editorDiv.scrollHeight + 'px';
-    requestAnimationFrame(() => {
-      editorDiv.classList.remove('open');
-      editorDiv.style.height = '0';
-      editorDiv.style.border = 'none';
-    });
-    setTimeout(() => {
+  const _sheet = document.getElementById('kg-editor-sheet');
+  if (_sheet && _sheet.style.display !== 'none') {
+    if (!silent && !switching) {
+      // Truly closing — animate sheet out
+      _sheet.style.animation = 'sheetSlideDown .2s ease forwards';
+      setTimeout(() => {
+        _sheet.style.display = 'none';
+        _sheet.style.animation = '';
+        document.getElementById('kg-editor-sheet-inner').innerHTML = '';
+        document.getElementById('_kgScrollSpacer')?.remove();
+        if (editorRow?.classList.contains('reps-inline-editor-row')) editorRow.remove();
+        requestAnimationFrame(() => { _syncExDetailBodyTop(); _scrollExDetailToPhoto(); });
+      }, 220);
+    } else {
+      // Switching editors — caller populates new content immediately, sheet stays open
       if (editorRow?.classList.contains('reps-inline-editor-row')) editorRow.remove();
-      requestAnimationFrame(() => { _syncExDetailBodyTop(); _scrollExDetailToPhoto(); });
-    }, 300);
+    }
+  } else {
+    document.getElementById('_kgScrollSpacer')?.remove();
+    if (editorRow?.classList.contains('reps-inline-editor-row')) editorRow.remove();
   }
   // Restore set num color and border
   const setNum = _repsEditorRow?.querySelector('.set-num');
@@ -21388,43 +21603,30 @@ closeInlineKgEditor(false);
   window._activeInlineEditorDiv = editorDiv;
   inputEl.closest('.kg-box-wrap')?.classList.add('editing');
   _kgEditorFocusEnter(exId);
-  // Scroll to show both set row and full editor
+  // Scroll so the tapped set row stays visible above the fixed editor sheet
   setTimeout(() => {
+    const editorHeight = document.getElementById('kg-editor-sheet')?.getBoundingClientRect().height || 300;
+    const _safeBottom = window.innerHeight - editorHeight - 16;
     const overlayBody = document.getElementById('ex-detail-overlay-body');
-    const _editorRow = row?.nextElementSibling?.classList.contains('kg-inline-editor-row')
-      ? row.nextElementSibling
-      : (row?.nextElementSibling?.classList.contains('reps-inline-editor-row') ? row.nextElementSibling.nextElementSibling : row?.nextElementSibling);
+    // Add spacer so last set can be scrolled above the editor sheet
+    if (!document.getElementById('_kgScrollSpacer')) {
+      const _sp = document.createElement('div');
+      _sp.id = '_kgScrollSpacer';
+      _sp.style.cssText = `height:${editorHeight + 24}px;pointer-events:none;flex-shrink:0;`;
+      if (overlayBody && overlayBody.contains(row)) overlayBody.appendChild(_sp);
+      else document.getElementById('page-log')?.appendChild(_sp);
+    }
+    const setRect = row.getBoundingClientRect();
     if (overlayBody && overlayBody.contains(row)) {
-      const bodyRect = overlayBody.getBoundingClientRect();
-      const setRect = row.getBoundingClientRect();
-      const editorRect = _editorRow?.getBoundingClientRect();
-      // We want: setRow top visible + editor bottom visible
-      // editor bottom relative to overlayBody viewport bottom
-      const editorBottom = editorRect ? editorRect.bottom : setRect.bottom;
-      const overflowBottom = editorBottom - bodyRect.bottom;
-      // set row top relative to overlayBody viewport top
-      const setTop = setRect.top - bodyRect.top;
-      if (overflowBottom > 0) {
-        // Editor bottom is below viewport — scroll down to show it
-        overlayBody.scrollBy({ top: overflowBottom + 16, behavior: 'instant' });
-      } else if (setTop < 0) {
-        // Set row is above viewport — scroll up to show it
-        overlayBody.scrollBy({ top: setTop - 8, behavior: 'instant' });
+      if (setRect.bottom > _safeBottom) {
+        overlayBody.scrollBy({ top: setRect.bottom - _safeBottom, behavior: 'smooth' });
+      } else if (setRect.top < overlayBody.getBoundingClientRect().top + 4) {
+        overlayBody.scrollBy({ top: setRect.top - overlayBody.getBoundingClientRect().top - 8, behavior: 'smooth' });
       }
     } else {
-      // Main scroll — show card top aligned below anchor bars
-      const _activeCard = document.getElementById(exId);
-      if (!_activeCard) return;
-      const _r = _activeCard.getBoundingClientRect();
-      let _anchor2 = 0;
-      ['todayMuscleChipsWrap','workoutNameBar'].forEach(eid => {
-        const el = document.getElementById(eid);
-        if (el && getComputedStyle(el).display !== 'none') _anchor2 = Math.max(_anchor2, el.getBoundingClientRect().bottom);
-      });
-      const _finishBar2 = document.querySelector('.today-actions');
-      if (_finishBar2 && getComputedStyle(_finishBar2).display !== 'none') _anchor2 = Math.max(_anchor2, _finishBar2.getBoundingClientRect().bottom);
-      const _diff2 = _r.top - (_anchor2 + 8);
-      if (Math.abs(_diff2) > 4) window.scrollBy({ top: _diff2, behavior: 'instant' });
+      if (setRect.bottom > _safeBottom) {
+        window.scrollBy({ top: setRect.bottom - _safeBottom, behavior: 'smooth' });
+      }
     }
   }, 320);
   // Save original state for Cancel restore
@@ -21487,7 +21689,8 @@ closeInlineKgEditor(false);
   const prevHtml = prevKg > 0 ? `<span style="color:#ff8c42;font-weight:700;font-size:11px;">prev: ${prevKg}kg</span>` : '';
   const bwActiveClass = isBW ? ' kg-bw-btn-active' : '';
 
-  editorDiv.querySelector('.kg-inline-editor-inner').innerHTML = `
+  // Populate body-level sheet (avoids stacking-context trap inside #ex-detail-overlay)
+  document.getElementById('kg-editor-sheet-inner').innerHTML = `
     <div style="display:flex;flex-direction:column;gap:10px;">
       <div style="display:flex;gap:8px;">
         <button onclick="kgPadBW()" id="kgBWBtnInline" class="${bwActiveClass}" style="flex:1;background:transparent;border:1px solid #555;border-radius:8px;color:#aaa;font-family:'DM Sans';font-size:12px;font-weight:700;padding:8px 10px;cursor:pointer;transition:all .2s;">Add Body Weight (BW)</button>
@@ -21519,9 +21722,15 @@ closeInlineKgEditor(false);
       </div>
     </div>`;
 
-  // Slide open
+  // Slide open from bottom
   requestAnimationFrame(() => {
-    editorDiv.classList.add('open');
+    const _sheet = document.getElementById('kg-editor-sheet');
+    if (_sheet.style.display === 'none') {
+      _sheet.style.animation = 'none';
+      _sheet.offsetHeight;
+      _sheet.style.display = 'block';
+      _sheet.style.animation = 'sheetUp .25s ease';
+    }
     // Hide bottom blocker while editor is open
     const _blocker = document.querySelector('#ex-detail-overlay > div[style*="position:absolute;bottom:0"]');
     if (_blocker) _blocker.style.display = 'none';
@@ -21529,26 +21738,6 @@ closeInlineKgEditor(false);
     const _exFooter = window._kgEditorInput?.closest('.exercise-card')?.querySelector('.ex-footer');
     if (_exFooter) _exFooter.style.display = 'none';
     if (_kgBWMode) setTimeout(() => _refreshBWCell(), 50);
-    // Scroll so KG box + full editor are both visible
-    setTimeout(() => {
-      const _input = window._kgEditorInput;
-      const _editorRow = editorDiv?.closest('tr') || editorDiv;
-      const _scrollContainer = document.getElementById('ex-detail-overlay-body') || window;
-      if (_input && _editorRow) {
-        const _inputRect = _input.closest('tr')?.getBoundingClientRect() || _input.getBoundingClientRect();
-        const _editorRect = _editorRow.getBoundingClientRect();
-        const _viewH = window.innerHeight;
-        const _totalH = _editorRect.bottom - _inputRect.top;
-        if (_editorRect.bottom > _viewH - 20) {
-          const _scrollBy = _editorRect.bottom - _viewH + 20;
-          if (_scrollContainer === window) {
-            window.scrollBy({ top: _scrollBy, behavior: 'smooth' });
-          } else {
-            _scrollContainer.scrollBy({ top: _scrollBy, behavior: 'smooth' });
-          }
-        }
-      }
-    }, 320); // after editor animation completes
   });
 }
 
@@ -21603,23 +21792,20 @@ function closeInlineKgEditor(restoreFocus = true) {
 if (restoreFocus) _kgEditorFocusLeave();
   document.body.classList.remove('ex-editor-open');
   if (!_inlineKgEditorId) return;
-  const editorDiv = document.getElementById(_inlineKgEditorId);
-  if (editorDiv) {
-    // Capture current height explicitly so transition animates from px→0, not auto→0
-    editorDiv.style.height = editorDiv.scrollHeight + 'px';
-    requestAnimationFrame(() => {
-      editorDiv.classList.remove('open');
-      editorDiv.style.height = '0';
-      editorDiv.style.border = 'none';
-    });
-    // Wait for height transition to complete before clearing innerHTML
-    setTimeout(() => {
-      const inner = editorDiv.querySelector('.kg-inline-editor-inner');
-      if (inner) inner.innerHTML = '';
-      editorDiv.style.height = '';
-      editorDiv.style.border = '';
-      requestAnimationFrame(() => { _syncExDetailBodyTop(); _scrollExDetailToPhoto(); });
-    }, 300);
+  const _sheet = document.getElementById('kg-editor-sheet');
+  if (_sheet && _sheet.style.display !== 'none') {
+    if (restoreFocus) {
+      // Truly closing — animate sheet out
+      _sheet.style.animation = 'sheetSlideDown .2s ease forwards';
+      setTimeout(() => {
+        _sheet.style.display = 'none';
+        _sheet.style.animation = '';
+        document.getElementById('kg-editor-sheet-inner').innerHTML = '';
+        document.getElementById('_kgScrollSpacer')?.remove();
+        requestAnimationFrame(() => { _syncExDetailBodyTop(); _scrollExDetailToPhoto(); });
+      }, 220);
+    }
+    // else: switching editors — caller populates new content immediately, sheet stays open
   }
   // Reset set number color — find the row from the stored input element
   const _closingInput = window._kgEditorInput;
@@ -21648,6 +21834,38 @@ window._kgEditorFocusEnter = _kgEditorFocusEnter;
 window._kgEditorFocusLeave = _kgEditorFocusLeave;
 window._expandAnimHide = _expandAnimHide;
 window._expandAnimShow = _expandAnimShow;
+
+window._selfTestKgSheet = function() {
+  const results = [];
+  const sheet = document.getElementById('kg-editor-sheet');
+  const inner = document.getElementById('kg-editor-sheet-inner');
+  if (!sheet) { console.error('[KG-SHEET] FAIL: #kg-editor-sheet missing from DOM'); return; }
+  if (!inner) { console.error('[KG-SHEET] FAIL: #kg-editor-sheet-inner missing from DOM'); return; }
+  results.push('PASS: #kg-editor-sheet exists');
+  // Check it is a direct child of body (no stacking context trap)
+  if (sheet.parentElement !== document.body) results.push('FAIL: #kg-editor-sheet is NOT a direct child of <body> — position:fixed will break');
+  else results.push('PASS: #kg-editor-sheet is direct child of <body>');
+  // Simulate open
+  inner.innerHTML = '<div style="height:80px;background:#333;border-radius:4px;"></div>';
+  sheet.style.animation = 'none'; sheet.offsetHeight;
+  sheet.style.display = 'block'; sheet.style.animation = 'sheetUp .25s ease';
+  const r = sheet.getBoundingClientRect();
+  const cs = getComputedStyle(sheet);
+  if (cs.position !== 'fixed') results.push('FAIL: position is ' + cs.position + ' (expected fixed)');
+  else results.push('PASS: position:fixed');
+  if (r.bottom <= window.innerHeight + 2) results.push('PASS: sheet bottom at viewport bottom (' + Math.round(r.bottom) + ' vs ' + window.innerHeight + ')');
+  else results.push('FAIL: sheet bottom (' + Math.round(r.bottom) + ') exceeds viewport (' + window.innerHeight + ')');
+  if (r.width > 0) results.push('PASS: sheet is visible (width=' + Math.round(r.width) + ')');
+  else results.push('FAIL: sheet has zero width');
+  // Check #ex-detail-overlay is NOT an ancestor
+  const overlay = document.getElementById('ex-detail-overlay');
+  if (overlay && overlay.contains(sheet)) results.push('FAIL: sheet is INSIDE #ex-detail-overlay — stacking context will break fixed');
+  else results.push('PASS: sheet is outside #ex-detail-overlay');
+  // Clean up
+  setTimeout(() => { sheet.style.display = 'none'; sheet.style.animation = ''; inner.innerHTML = ''; }, 1500);
+  results.forEach(r => console.log('[KG-SHEET]', r));
+  return results;
+};
 
 function openShareQR() {
   const modal = document.getElementById('share-qr-modal');
