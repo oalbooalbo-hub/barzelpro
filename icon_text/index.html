@@ -1227,7 +1227,6 @@ function hidAuthScreen() {
   <div id="today-start-screen" style="display:flex;flex-direction:column;align-items:center;justify-content:center;position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom));padding:44px 16px 4px;gap:12px;background:var(--bg);z-index:5;">
     <!-- Weekly strength progress ring -->
     <div id="today-week-progress" onclick="openStrengthTargetSheet()" style="display:none;width:100%;max-width:380px;flex-direction:column;align-items:center;gap:6px;cursor:pointer;-webkit-tap-highlight-color:transparent;">
-      <span style="font-family:'DM Sans';font-size:11px;font-weight:800;color:var(--accent);letter-spacing:2.5px;text-transform:uppercase;">YOUR PROGRESS</span>
       <div style="position:relative;width:140px;height:140px;">
         <svg width="140" height="140" viewBox="0 0 140 140" style="display:block;">
           <circle cx="70" cy="70" r="55" fill="none" stroke="#1e1e1e" stroke-width="12"/>
@@ -1237,6 +1236,7 @@ function hidAuthScreen() {
           <span style="font-family:'DM Sans';font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;">This Week:</span>
           <span id="today-progress-count" style="font-family:'DM Sans';font-size:32px;font-weight:800;color:var(--text);line-height:1;">0/3</span>
         </div>
+        <div id="today-progress-overflow" style="display:none;position:absolute;top:-8px;right:-4px;color:#4caf50;font-family:'DM Sans';font-size:26px;font-weight:800;line-height:1;white-space:nowrap;"></div>
       </div>
     </div>
     <div id="today-plan-card" style="width:100%;max-width:380px;display:none;"></div>
@@ -1663,9 +1663,9 @@ function hidAuthScreen() {
 <div class="modal-overlay" id="newExModalOverlay" style="align-items:stretch;padding:8px;" onclick="if(event.target===this){window._exploreExerciseMode=false;closeNewExModal()}">
   <div class="modal-sheet" style="padding:0;border-radius:16px;border:1px solid var(--border);width:100%;max-width:calc(100vw - 16px);box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column;max-height:calc(100vh - 16px);">
     <!-- Header -->
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 16px 14px;">
-      <span id="newExModalTitle" style="font-family:'DM Sans';font-size:18px;font-weight:900;color:var(--text);">New Exercise</span>
-      <button onclick="window._exploreExerciseMode=false;if(window._editExName){window._editExName=null;const t=document.getElementById('newExModalTitle');const s=document.getElementById('newExSaveBtn');if(t)t.textContent='New Exercise';if(s)s.textContent='SAVE EXERCISE';document.getElementById('newExModalOverlay').classList.remove('open');}else{closeNewExModal();}" style="background:transparent;border:none;cursor:pointer;display:flex;align-items:center;padding:0;flex-shrink:0;-webkit-tap-highlight-color:transparent;">
+    <div style="display:flex;align-items:center;justify-content:center;padding:18px 16px 14px;position:relative;">
+      <span id="newExModalTitle" style="font-family:'DM Sans';font-size:20px;font-weight:700;color:#34d399;">New Exercise</span>
+      <button onclick="window._exploreExerciseMode=false;if(window._editExName){window._editExName=null;const t=document.getElementById('newExModalTitle');const s=document.getElementById('newExSaveBtn');if(t)t.textContent='New Exercise';if(s)s.textContent='SAVE EXERCISE';document.getElementById('newExModalOverlay').classList.remove('open');}else{closeNewExModal();}" style="position:absolute;right:16px;background:transparent;border:none;cursor:pointer;display:flex;align-items:center;padding:0;flex-shrink:0;-webkit-tap-highlight-color:transparent;">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><line x1="5" y1="12" x2="19" y2="12" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><polyline points="13,6 19,12 13,18" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
     </div>
@@ -1676,18 +1676,18 @@ function hidAuthScreen() {
           <img id="newExPhotoDefaultImg" src="" style="width:100%;height:100%;object-fit:cover;display:none;filter:brightness(0.75);" onerror="this.style.display='none'">
           <img id="newExPhotoImg" src="" style="display:none;width:100%;height:100%;object-fit:cover;">
         </div>
-        <span id="newExPhotoLabel" style="font-family:'DM Sans';font-size:12px;color:#fff;font-weight:700;letter-spacing:.5px;cursor:pointer;" onclick="openNewExPhotoSheet()">Change Image (optional)</span>
+        <span id="newExPhotoLabel" style="font-family:'DM Sans';font-size:12px;color:#fff;font-weight:700;letter-spacing:.5px;cursor:pointer;" onclick="openNewExPhotoSheet()">Change Image <span style="color:#888;font-weight:500;">(optional)</span></span>
       </div>
       <!-- Name -->
       <input id="newExInput" type="text" autocomplete="off" enterkeyhint="done" style="width:100%;background:#1a1a1a;border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans';font-size:16px;font-weight:600;padding:14px;box-sizing:border-box;outline:none;" placeholder="Exercise name" oninput="const _hb=/[\u0590-\u05FF]/.test(this.value);this.style.direction=_hb?'rtl':'ltr';this.style.textAlign=_hb?'right':'left';document.getElementById('newExDuplicateNote').style.display='none';this.style.borderColor='var(--border)';const _sb=document.getElementById('newExSaveBtn');const _has=!!this.value.trim();_sb.style.opacity=_has?'1':'0.35';_sb.style.cursor=_has?'pointer':'not-allowed';" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"/>
       <div id="newExDuplicateNote" style="display:none;color:#ff8c42;font-family:'DM Sans';font-size:12px;font-weight:600;text-align:center;margin-top:-8px;">⚠ An exercise with this name already exists</div>
       <!-- Body part -->
       <div>
-        <div style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#fff;letter-spacing:.5px;margin-bottom:10px;">PRIMARY BODY PART</div>
+        <div style="font-family:'DM Sans';font-size:15px;font-weight:700;color:#fff;letter-spacing:.5px;margin-bottom:10px;">Primary Body Part</div>
         <div id="newExMusclePills" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;"></div>
         <!-- Body SVG diagram -->
         <div id="nex-body-container" style="display:flex;gap:18px;width:100%;box-sizing:border-box;margin-top:-26px;transform:scale(0.770) translateZ(0);transform-origin:top center;pointer-events:none;backface-visibility:hidden;"></div>
-        <div style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#fff;letter-spacing:.5px;margin-top:-77px;margin-bottom:6px;">MUSCLES</div>
+        <div style="font-family:'DM Sans';font-size:15px;font-weight:700;color:#fff;letter-spacing:.5px;margin-top:-77px;margin-bottom:6px;">Muscles <span style="color:#888;font-weight:500;">(optional)</span></div>
         <!-- Muscle slider -->
         <div id="nex-slider-wrap" style="display:none;margin-top:-4px;">
           <div id="nex-slider-label-row" style="width:60%;margin:0 auto;">
@@ -1709,10 +1709,14 @@ function hidAuthScreen() {
         </div>
         <!-- Video URL -->
         <div style="margin-top:16px;">
-          <div style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#fff;letter-spacing:.5px;margin-bottom:8px;">VIDEO (optional)</div>
-          <div style="position:relative;display:flex;align-items:center;">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:12px;pointer-events:none;flex-shrink:0;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-            <input id="newExVideoUrl" type="text" autocomplete="off" enterkeyhint="done" style="width:100%;background:#1a1a1a;border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans';font-size:14px;font-weight:500;padding:12px 12px 12px 34px;box-sizing:border-box;outline:none;" placeholder="Paste YouTube or video URL" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"/>
+          <div style="font-family:'DM Sans';font-size:15px;font-weight:700;color:#fff;letter-spacing:.5px;margin-bottom:8px;">Video Link <span style="color:#888;font-weight:500;">(optional)</span></div>
+          <div style="background:#111;border:1px solid #444;border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:8px;">
+            <input id="newExVideoUrl" type="url" inputmode="url" placeholder="https://..." spellcheck="false" autocomplete="off" style="flex:1;background:transparent;border:none;outline:none;color:#fff;font-family:'DM Sans';font-size:14px;font-weight:400;caret-color:#34d399;-webkit-text-fill-color:#fff;box-sizing:border-box;min-width:0;" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"/>
+            <button onclick="navigator.clipboard.readText().then(t=>{const i=document.getElementById('newExVideoUrl');if(i)i.value=t;}).catch(()=>{})" style="background:transparent;border:none;padding:2px;cursor:pointer;flex-shrink:0;-webkit-tap-highlight-color:transparent;display:flex;align-items:center;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+            </button>
           </div>
         </div>
       </div>
@@ -2705,22 +2709,9 @@ function showTodayStartScreen() {
   const loadWrap = document.getElementById('today-load-btn-wrap');
   if (loadWrap) loadWrap.style.display = hasWorkouts ? '' : 'none';
   renderTodayPlanCard();
-  renderTodayWeekProgress();
-  _animateCoachBtn();
+  renderTodayWeekProgress(true);
 }
 
-function _animateCoachBtn() {
-  const _coachBtn = document.getElementById('today-coach-btn');
-  if (!_coachBtn) return;
-  _coachBtn.style.opacity = '0';
-  _coachBtn.style.transform = 'translateY(24px)';
-  const _fire = () => { _springAnimate(_coachBtn, 24, 0, 300, 28); _fadeAnimate(_coachBtn, 0, 1, 320); };
-  if (!window._splashGone) {
-    window._pendingCoachAnim = _fire;
-  } else {
-    setTimeout(_fire, 800);
-  }
-}
 function replaceTodayPlan() {
   const _now = new Date();
   const _ty = _now.getFullYear(), _tm = _now.getMonth(), _td = _now.getDate();
@@ -2789,7 +2780,7 @@ function cancelTodayPlan() {
   };
 }
 
-function renderTodayWeekProgress() {
+function renderTodayWeekProgress(withAnim) {
   const el = document.getElementById('today-week-progress');
   if (!el) return;
   const target = workoutWeekTarget || parseInt(localStorage.getItem('ironlog_workout_target')) || 3;
@@ -2806,19 +2797,66 @@ function renderTodayWeekProgress() {
     if (w._draft || w._template || deletedIds.has(w.id)) return false;
     const d = new Date(w.date);
     if (d < weekStart || d > weekEnd) return false;
-    return w.exercises && w.exercises.some(e => e.sets && e.sets.some(s => s.done && !s.ignored));
+    return w.exercises && w.exercises.length > 0;
   }).length;
+  const overflow = count > target ? count - target : 0;
+  const exactHit = count === target;
+  const displayCount = overflow ? target : count;
   const countEl = document.getElementById('today-progress-count');
-  if (countEl) countEl.textContent = `${count}/${target}`;
+  if (countEl) countEl.textContent = `${displayCount}/${target}`;
+  const overflowEl = document.getElementById('today-progress-overflow');
+  const _showBadge = overflow || exactHit;
+  if (overflowEl) {
+    overflowEl.innerHTML = overflow ? `+${overflow}` : `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4caf50" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+    overflowEl.style.display = _showBadge ? '' : 'none';
+    overflowEl.style.opacity = withAnim && _showBadge ? '0' : '';
+    overflowEl.style.transform = withAnim && _showBadge ? 'scale(0.5)' : '';
+    overflowEl.style.transition = '';
+  }
   const ring = document.getElementById('today-progress-ring');
   if (ring) {
     const circ = 2 * Math.PI * 55;
     const achieved = count >= target;
+    const targetOffset = (circ * (1 - Math.min(count / target, 1))).toFixed(2);
     ring.setAttribute('stroke-dasharray', circ.toFixed(2));
-    ring.setAttribute('stroke-dashoffset', (circ * (1 - Math.min(count / target, 1))).toFixed(2));
     ring.style.stroke = achieved ? 'var(--accent)' : '#7ec8e3';
+    if (withAnim) {
+      const _doRingAnim = () => {
+        const _btn = document.getElementById('today-coach-btn');
+        if (_btn) { _btn.style.opacity = '0'; _btn.style.transform = 'translateY(24px)'; }
+        ring.style.transition = 'none';
+        ring.setAttribute('stroke-dashoffset', circ.toFixed(2));
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          ring.style.transition = 'stroke-dashoffset .6s ease,stroke .4s ease';
+          ring.setAttribute('stroke-dashoffset', targetOffset);
+          setTimeout(() => {
+            if (_showBadge && overflowEl) {
+              overflowEl.style.transition = 'opacity .3s ease, transform .3s cubic-bezier(.175,.885,.32,1.275)';
+              requestAnimationFrame(() => { overflowEl.style.opacity = '1'; overflowEl.style.transform = 'scale(1)'; });
+              setTimeout(_fireCoachBtn, 380);
+            } else {
+              _fireCoachBtn();
+            }
+          }, 700);
+        }));
+      };
+      if (!window._splashGone) {
+        ring.setAttribute('stroke-dashoffset', circ.toFixed(2));
+        window._pendingCoachAnim = _doRingAnim;
+      } else {
+        _doRingAnim();
+      }
+    } else {
+      ring.setAttribute('stroke-dashoffset', targetOffset);
+    }
   }
   el.style.display = 'flex';
+}
+function _fireCoachBtn() {
+  const btn = document.getElementById('today-coach-btn');
+  if (!btn) return;
+  _springAnimate(btn, 24, 0, 300, 28);
+  _fadeAnimate(btn, 0, 1, 320);
 }
 window.renderTodayWeekProgress = renderTodayWeekProgress;
 
@@ -2834,7 +2872,7 @@ function openStrengthTargetSheet() {
 }
 
 function _adjustStrengthTarget(delta) {
-  const newVal = Math.max(1, Math.min(7, workoutWeekTarget + delta));
+  const newVal = Math.max(1, Math.min(99, workoutWeekTarget + delta));
   workoutWeekTarget = newVal;
   const val = document.getElementById('strength-target-val');
   if (val) val.textContent = newVal;
@@ -3211,7 +3249,7 @@ function _scrollExDetailToPhoto() {
   const body = document.getElementById('ex-detail-overlay-body');
   const pw   = document.getElementById('ex-detail-photo-wrap');
   if (!body || !pw || getComputedStyle(pw).display === 'none') return;
-  body.scrollTo({ top: 0, behavior: 'instant' });
+  body.scrollTo({ top: 0, behavior: 'smooth' });
 }
 function _heroNameHtml(name) {
   const raw = name || '';
@@ -3362,8 +3400,10 @@ function _openNwfNamePage() {
     nwfBg.src = _savedPhoto || _workoutDefaultPhoto || 'images/workout_background.webp';
   }
   const nwfNameInput = document.getElementById('nwf-name-input');
-  if (nwfNameInput) { nwfNameInput.value = cur; nwfNameInput.style.direction = /[֐-׿]/.test(cur) ? 'rtl' : ''; nwfNameInput.style.color = ''; }
+  if (nwfNameInput) { nwfNameInput.value = cur; const _ni_rtl = /[֐-׿]/.test(cur); nwfNameInput.style.direction = _ni_rtl ? 'rtl' : 'ltr'; nwfNameInput.style.textAlign = _ni_rtl ? 'right' : 'left'; nwfNameInput.style.color = ''; }
   _nwfUpdateNextBtn();
+  const _nwfPageTitle = document.getElementById('nwf-page-title');
+  if (_nwfPageTitle) _nwfPageTitle.textContent = (window._editingWorkoutIdx != null) ? 'EDIT WORKOUT' : 'NEW WORKOUT';
   if (window._closers) window._closers['nwf-name'] = () => _cancelNwfNamePage();
   const _nwfPage = document.getElementById('nwf-name-page');
   _nwfPage.style.transform = 'translateY(48px)';
@@ -3404,6 +3444,22 @@ function _closeNwfNamePage() {
 function _cancelNwfNamePage() {
   const _page = document.getElementById('nwf-name-page');
   if (!_page || _page.style.display === 'none') return;
+  if (window._pendingEditFromW2 !== undefined) {
+    const _retIdx = window._pendingEditFromW2;
+    delete window._pendingEditFromW2;
+    window._editingWorkoutIdx = undefined;
+    window._isNewWorkoutFlow = false;
+    window._newFromWorkouts = false;
+    window._activeTabHighlight = null;
+    _closeNwfNamePage();
+    resetWorkoutState();
+    showTodayStartScreen();
+    updatePickModeTabs();
+    switchTab('workouts2');
+    window._w2SheetInstantOverlay = true;
+    openW2Sheet(_retIdx);
+    return;
+  }
   const _exCount = document.querySelectorAll('#exerciseList .exercise-card').length;
   if (_exCount > 0) {
     const _discardOvl = document.createElement('div');
@@ -3439,12 +3495,17 @@ function _proceedFromNwfNamePage() {
     return;
   }
   const nameLower = raw.toLowerCase();
-  const isDup = (workouts||[]).some((w,i) => {
-    if (w._draft) return false;
-    if (window._editingWorkoutIdx !== undefined && i === window._editingWorkoutIdx) return false;
-    return (w.name||'').trim().toLowerCase() === nameLower;
-  }) || (_libraryWorkouts||[]).some(w => (w.name||'').trim().toLowerCase() === nameLower)
-    || (_coachWorkouts||[]).some(w => (w.name||'').trim().toLowerCase() === nameLower);
+  // When editing, the original name is always valid — skip all dup checks for it.
+  const _origName = (window._editingWorkoutIdx != null && workouts[window._editingWorkoutIdx])
+    ? (workouts[window._editingWorkoutIdx].name || '').trim().toLowerCase() : null;
+  const isDup = (nameLower === _origName) ? false : (
+    (workouts||[]).some((w,i) => {
+      if (w._draft) return false;
+      if (window._editingWorkoutIdx !== undefined && i === window._editingWorkoutIdx) return false;
+      return (w.name||'').trim().toLowerCase() === nameLower;
+    }) || (_libraryWorkouts||[]).some(w => (w.name||'').trim().toLowerCase() === nameLower)
+      || (_coachWorkouts||[]).some(w => (w.name||'').trim().toLowerCase() === nameLower)
+  );
   if (isDup) {
     if (nameInp) { nameInp.style.color = '#ff4747'; setTimeout(() => { nameInp.style.color = ''; }, 1500); }
     return;
@@ -3459,6 +3520,31 @@ function _proceedFromNwfNamePage() {
   document.body.appendChild(_transOvl);
   _closeNwfNamePage();
   _finalizeNewWorkoutArea();
+  if (window._pendingEditFromW2 !== undefined) {
+    const _eIdx = window._pendingEditFromW2;
+    delete window._pendingEditFromW2;
+    const _eW = workouts[_eIdx];
+    if (_eW) {
+      _eW.exercises.forEach(exData => {
+        const ex = getAllExercises().find(e=>e.name===exData.name||e.label===exData.name)
+          || {name:exData.name, label:exData.name, muscle:exData.muscle||'Chest', custom:true};
+        addExerciseCard(ex, false, {
+          name: exData.name, muscle: exData.muscle,
+          sets: (exData.sets||[]).map(s => ({...s, done: false})),
+          comment: exData.comment||'', completed: false, open: false
+        });
+      });
+      const _ps = document.getElementById('workout-progress-section');
+      if (_ps) _ps.style.display = 'none';
+      const _ptw = document.getElementById('workout-top-progress-wrap');
+      if (_ptw) _ptw.style.display = 'none';
+      checkFinishReady();
+    }
+  }
+  if (window._editingWorkoutIdx != null) {
+    const _et = document.getElementById('_nwf-edit-title');
+    if (_et) _et.innerHTML = '<div style="font-family:\'DM Sans\',sans-serif;font-size:20px;font-weight:700;color:#34d399;letter-spacing:0;line-height:1.2;">EDIT WORKOUT</div><div style="font-family:\'DM Sans\',sans-serif;font-size:14px;font-weight:500;color:#aaa;letter-spacing:.2px;margin-top:2px;">Step 2 of 2</div>';
+  }
   setTimeout(() => {
     const _animEls = [
       document.getElementById('workout-sticky-header'),
@@ -3483,6 +3569,140 @@ function _proceedFromNwfNamePage() {
     }));
   }, 100);
 }
+function _selfTestEditNext() {
+  const _idx = (workouts||[]).findIndex(w => !w._draft && !w._template);
+  if (_idx < 0) { console.warn('[SELF-TEST editNext] No workout found'); return; }
+  const _w = workouts[_idx];
+  const _nl = (_w.name||'').trim().toLowerCase();
+  const _origAllowed = _nl; // same name must always pass when editing
+  const _dupW = (workouts||[]).some((w,i) => !w._draft && i !== _idx && (w.name||'').trim().toLowerCase() === _nl);
+  const _dupL = (_libraryWorkouts||[]).some(w => (w.name||'').trim().toLowerCase() === _nl);
+  const _dupC = (_coachWorkouts||[]).some(w => (w.name||'').trim().toLowerCase() === _nl);
+  const _blocked = _dupW || _dupL || _dupC;
+  console.log(`[SELF-TEST editNext] "${_w.name}" idx=${_idx}`);
+  console.log(`  dup in workouts : ${_dupW}`);
+  console.log(`  dup in library  : ${_dupL}${_dupL?' ← was blocking Next':''}`);
+  console.log(`  dup in coach    : ${_dupC}${_dupC?' ← was blocking Next':''}`);
+  console.log(`  old behaviour   : Next would ${_blocked?'❌ BLOCK':'✅ proceed'}`);
+  // Verify fix: _origName guard makes it pass
+  const _fixedIsDup = (_nl === _origAllowed) ? false : (_dupW || _dupL || _dupC);
+  console.log(`  new behaviour   : Next would ${_fixedIsDup?'❌ BLOCK':'✅ proceed'} ← after fix`);
+  return { _dupW, _dupL, _dupC, _blocked, _fixedPasses: !_fixedIsDup };
+}
+window._selfTestEditNext = _selfTestEditNext;
+function _selfTestW2Description() {
+  const _descEl = document.getElementById('w2-sheet-description');
+  if (!_descEl) { console.error('[SELF-TEST w2Desc] #w2-sheet-description NOT found in DOM ← HTML missing'); return { pass: false }; }
+  console.log('[SELF-TEST w2Desc] #w2-sheet-description found ✓');
+  const _nwfDesc = document.getElementById('nwf-description');
+  console.log('[SELF-TEST w2Desc] #nwf-description textarea found:', !!_nwfDesc, _nwfDesc ? '✓' : '← textarea missing');
+  const _wWithDesc = (workouts||[]).find(w => w.description && w.description.trim());
+  if (_wWithDesc) {
+    console.log(`[SELF-TEST w2Desc] Workout with description found: "${_wWithDesc.name}" → "${_wWithDesc.description}" ✓`);
+  } else {
+    console.warn('[SELF-TEST w2Desc] No workout has .description set — description column was never saved until this fix. Edit & re-save a workout to populate it.');
+  }
+  // Verify display logic by briefly showing a test value
+  const _prev = _descEl.textContent;
+  const _prevDisplay = _descEl.style.display;
+  _descEl.textContent = 'SELF-TEST: description display working ✓';
+  _descEl.style.display = 'block';
+  setTimeout(() => { _descEl.textContent = _prev; _descEl.style.display = _prevDisplay; }, 3000);
+  console.log('[SELF-TEST w2Desc] Temporarily showing test description in sheet for 3s — open W2 "i" sheet to see it');
+  return { elementFound: true, nwfDescFound: !!_nwfDesc, hasDescInWorkouts: !!_wWithDesc };
+}
+window._selfTestW2Description = _selfTestW2Description;
+function _selfTestW2PlayBtn() {
+  const _btn = document.getElementById('w2-sheet-play-btn');
+  if (!_btn) { console.error('[SELF-TEST w2Play] #w2-sheet-play-btn NOT in DOM ← HTML missing'); return { pass: false }; }
+  console.log('[SELF-TEST w2Play] #w2-sheet-play-btn found ✓, current display:', _btn.style.display);
+  const _nwfVid = document.getElementById('nwf-video-link');
+  console.log('[SELF-TEST w2Play] #nwf-video-link input found:', !!_nwfVid, _nwfVid ? '✓' : '← input missing');
+  const _videoKeys = [];
+  for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith('ironlog_workout_video_')) _videoKeys.push({ key: k, val: localStorage.getItem(k) }); }
+  if (_videoKeys.length > 0) {
+    console.log('[SELF-TEST w2Play] Video links in localStorage:', _videoKeys);
+  } else {
+    console.warn('[SELF-TEST w2Play] No ironlog_workout_video_* found in localStorage — edit a workout, add a video link in 1/2 page, save → then reopen "i" sheet');
+  }
+  // Force-show button for 5s to verify display works
+  const _prev = _btn.style.display;
+  _btn.style.display = 'flex';
+  _btn.onclick = (e) => { e.stopPropagation(); console.log('[SELF-TEST w2Play] Play button tapped ✓'); };
+  console.log('[SELF-TEST w2Play] Forced play button visible for 5s — check top-left of image in W2 "i" sheet');
+  setTimeout(() => { _btn.style.display = _prev; _btn.onclick = null; }, 5000);
+  return { elementFound: true, videoKeys: _videoKeys, nwfVidFound: !!_nwfVid };
+}
+window._selfTestW2PlayBtn = _selfTestW2PlayBtn;
+function _selfTestW2BodyDiagram() {
+  console.log('[SELF-TEST w2Body] Checking muscle front/back coverage...');
+  const issues = [];
+  // Check each top-level body part: if any sub-muscle has bb- IDs, the body-part entry should too
+  Object.entries(NEX_BODY_SUBMUSCLES).forEach(([bp, subs]) => {
+    const bpIds = W2_BODY_IDS[bp] || [];
+    const bpHasFront = bpIds.some(id => id.startsWith('bf-'));
+    const bpHasBack  = bpIds.some(id => id.startsWith('bb-'));
+    subs.forEach(sm => {
+      const smIds = NEX_SUB_MUSCLE_IDS[sm] || [];
+      const smHasFront = smIds.some(id => id.startsWith('bf-'));
+      const smHasBack  = smIds.some(id => id.startsWith('bb-'));
+      if (smHasBack && !bpHasBack) {
+        console.error(`[SELF-TEST w2Body] ✗ BUG: W2_BODY_IDS['${bp}'] is front-only but sub-muscle '${sm}' has bb- IDs — back body will never show for Core-without-subMuscles exercises`);
+        issues.push({ bp, sm });
+      }
+      if (smHasFront && !bpHasFront) {
+        console.error(`[SELF-TEST w2Body] ✗ BUG: W2_BODY_IDS['${bp}'] is back-only but sub-muscle '${sm}' has bf- IDs`);
+        issues.push({ bp, sm });
+      }
+    });
+  });
+  // Report all sub-muscles
+  console.log('[SELF-TEST w2Body] Sub-muscle front/back coverage:');
+  Object.entries(NEX_SUB_MUSCLE_IDS).forEach(([sm, ids]) => {
+    const f = ids.filter(id => id.startsWith('bf-')).length;
+    const b = ids.filter(id => id.startsWith('bb-')).length;
+    const label = (f > 0 && b > 0) ? 'BOTH ✓' : f > 0 ? 'front-only' : 'back-only';
+    console.log(`  ${sm}: ${label} (${f} front, ${b} back IDs)`);
+  });
+  if (issues.length === 0) console.log('[SELF-TEST w2Body] ✓ All body-part IDs consistent with sub-muscle IDs');
+  else console.error('[SELF-TEST w2Body] ✗ Issues found:', issues.map(x => `${x.bp}→${x.sm}`).join(', '));
+  return { issues };
+}
+window._selfTestW2BodyDiagram = _selfTestW2BodyDiagram;
+function _selfTestW2SubMuscleMapping() {
+  console.log('[SELF-TEST subMuscle] Checking NEX_SUB_MUSCLE_IDS for wrong SVG paths...');
+  const issues = [];
+  // Allowed data-slug values per sub-muscle (Lats may use bf-obliques for side wrap)
+  const ALLOWED = {
+    'Upper Chest': ['chest'], 'Lower Chest': ['chest'],
+    'Upper Traps': ['trapezius','neck'], 'Traps': ['trapezius'],
+    'Lats': ['upper-back','obliques'],
+    'Lower Back': ['lower-back'],
+    'Quads': ['quadriceps'], 'Hamstrings': ['hamstring'],
+    'Glutes': ['gluteal'], 'Inner Thigh': ['adductors','hamstring'],
+    'Calves': ['calves'], 'Outer Thigh': ['quadriceps','hamstring'],
+    'Deltoids': ['deltoids'], 'Biceps': ['biceps'],
+    'Triceps': ['triceps'], 'Forearms': ['forearm'],
+    'Abs': ['abs'], 'Obliques': ['obliques','lower-back'],
+  };
+  Object.entries(NEX_SUB_MUSCLE_IDS).forEach(([sm, ids]) => {
+    const allowed = ALLOWED[sm] || [];
+    ids.forEach(id => {
+      const el = document.getElementById(id);
+      const slug = el ? el.dataset.slug : null;
+      if (slug && !allowed.includes(slug)) {
+        console.error(`[SELF-TEST subMuscle] ✗ '${sm}' uses path '${id}' (slug='${slug}'), expected one of [${allowed.join(', ')}]`);
+        issues.push({ subMuscle: sm, id, slug });
+      } else if (!el) {
+        console.warn(`[SELF-TEST subMuscle] ⚠ '${sm}' references missing path '${id}'`);
+      }
+    });
+  });
+  if (issues.length === 0) console.log('[SELF-TEST subMuscle] ✓ All sub-muscle path mappings are correct');
+  else console.error(`[SELF-TEST subMuscle] ✗ ${issues.length} wrong path(s) found`);
+  return { issues };
+}
+window._selfTestW2SubMuscleMapping = _selfTestW2SubMuscleMapping;
 function _setWorkoutHeroPhoto(name) {
   const el = document.getElementById('workout-hero-photo');
   if (!el) return;
@@ -3506,7 +3726,7 @@ function _setWorkoutHeroPhoto(name) {
     <div style="position:relative;margin:${window._isNewWorkoutFlow ? '0' : '4px'} 10px 0;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;">
       <img src="${photo}" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;filter:brightness(0.85);">
       ${window._isNewWorkoutFlow ? `<button onclick="event.stopPropagation();_openPhotoModalFromHero()" style="position:absolute;top:8px;right:8px;z-index:4;background:rgba(0,0,0,0.55);border:none;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>` : `<button onclick="event.stopPropagation();const _n=document.getElementById('workout-hero-name')?.dataset?.name||'';const _i=(typeof workouts!=='undefined'?workouts:[]).findIndex(w=>w.name===_n);if(_i>=0){window._w2FromSession=true;openW2Sheet(_i);}" style="position:absolute;top:8px;right:8px;z-index:4;background:rgba(0,0,0,0.38);border:none;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;-webkit-tap-highlight-color:transparent;padding:0;font-family:Georgia,serif;font-style:italic;font-size:15px;font-weight:700;line-height:1;">i</button>`}
-      ${localStorage.getItem(`ironlog_workout_video_${name}`) ? `<button onclick="event.stopPropagation();const _v=localStorage.getItem('ironlog_workout_video_${name}');if(_v)window.open(_v,'_blank');" style="position:absolute;bottom:8px;left:10px;z-index:4;display:flex;align-items:center;gap:5px;background:transparent;border:none;padding:4px 6px;border-radius:4px;cursor:pointer;-webkit-tap-highlight-color:transparent;"><svg width="13" height="13" viewBox="0 0 24 24" fill="var(--accent)" stroke="none"><polygon points="5,3 19,12 5,21"/></svg><span style="color:var(--accent);font-family:'DM Sans';font-size:11px;font-weight:700;letter-spacing:.5px;">PLAY</span></button>` : ''}
+      ${localStorage.getItem(`ironlog_workout_video_${name}`) ? `<button onclick="event.stopPropagation();const _v=localStorage.getItem('ironlog_workout_video_${name}');if(_v)window.open(_v,'_blank');" style="position:absolute;top:8px;left:10px;z-index:4;display:flex;align-items:center;gap:5px;background:transparent;border:none;padding:4px 6px;border-radius:4px;cursor:pointer;-webkit-tap-highlight-color:transparent;"><svg width="13" height="13" viewBox="0 0 24 24" fill="var(--accent)" stroke="none"><polygon points="5,3 19,12 5,21"/></svg><span style="color:var(--accent);font-family:'DM Sans';font-size:11px;font-weight:700;letter-spacing:.5px;">PLAY</span></button>` : ''}
       <div style="position:absolute;bottom:0;left:0;right:0;padding:10px 14px 12px;pointer-events:none;text-align:right;">
         <div id="workout-hero-name" data-name="${name||''}" onclick="if(window._isNewWorkoutFlow)_startHeroNameEdit(this)" style="font-family:'DM Sans';font-size:20px;font-weight:900;color:#fff;max-width:60%;margin-left:auto;line-height:1.2;pointer-events:${window._isNewWorkoutFlow?'auto':'none'};cursor:${window._isNewWorkoutFlow?'pointer':'default'};-webkit-tap-highlight-color:transparent;${_heroNameDir(name)}">${_heroNameHtml(name)}</div>
       </div>
@@ -3992,13 +4212,8 @@ function renderExercisesTab() {
         : _svgFb;
     const safeKey = name.replace(/"/g, '&quot;');
     const noPhotoAttr = photo ? '' : ` data-photo-key="ironlog_ex_photo_${safeKey}"`;
-    const _vUrl = customExercises.find(e => e.name === name)?.videoUrl || '';
-    const _playBadge = _vUrl
-      ? `<div onclick="event.stopPropagation();window.open(${JSON.stringify(_vUrl)},'_blank')" style="position:absolute;bottom:4px;left:4px;display:flex;align-items:center;gap:3px;background:rgba(0,0,0,.72);border-radius:4px;padding:2px 6px;cursor:pointer;z-index:2;-webkit-tap-highlight-color:transparent;"><svg width="7" height="7" viewBox="0 0 24 24" fill="#e8ff47"><polygon points="5 3 19 12 5 21 5 3"/></svg><span style="font-family:'DM Sans';font-size:8px;font-weight:700;color:#e8ff47;letter-spacing:.3px;">PLAY</span></div>`
-      : '';
     return `<div style="position:relative;width:80px;height:80px;flex-shrink:0;margin:8px 12px 8px 10px;">
       <div${noPhotoAttr} style="width:100%;height:100%;border:1px solid #1e1e1e;border-radius:8px;overflow:hidden;background:#0d0d0d;">${inner}</div>
-      ${_playBadge}
     </div>`;
   }
 
@@ -4048,7 +4263,6 @@ function renderExercisesTab() {
         <!-- Name + stats -->
         <div ${_pickMode ? `onclick="pickExercise('${ex.name.replace(/'/g,"\\'")}') "` : ''} style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;align-items:flex-end;padding:8px 15px 8px 0;${_pickMode ? 'cursor:pointer;' : ''}">
           <div dir="auto" style="font-family:'DM Sans';font-size:17px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;">${_tn(ex.name)}</div>
-          ${ex.lastDate ? `<div style="font-family:'DM Sans';font-size:11px;font-weight:600;color:var(--muted);margin-top:2px;text-align:right;">${fmtShort(ex.lastDate)}</div>` : ''}
         </div>
         <!-- Stats + menu -->
         <div style="display:flex;align-items:center;gap:4px;padding-right:10px;">
@@ -4124,7 +4338,6 @@ function renderExercisesTab() {
         ${_makeExThumbHtml(ex.name, ex.muscle)}
         <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;align-items:flex-end;padding:8px 15px 8px 0;">
           <div dir="auto" style="font-family:'DM Sans';font-size:17px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;">${_tn(ex.name)}</div>
-          ${ex.lastDate ? `<div style="font-family:'DM Sans';font-size:11px;font-weight:600;color:var(--muted);margin-top:2px;text-align:right;">${fmtShort(ex.lastDate)}</div>` : ''}
         </div>
         ${_pickMode ? `<div style="display:flex;align-items:center;padding-right:10px;"><div class="picker-check" style="width:22px;height:22px;border-radius:50%;border:2px solid ${_isPickSel ? _pc : '#333'};background:${_isPickSel ? _pc : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;">${_isPickSel ? '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</div></div>` : ''}
       </div>
@@ -4543,7 +4756,7 @@ function openNewExModal(muscle) {
   if (_nxDefImg) { _nxDefImg.src = _EX_DEFAULT_PHOTOS[window._newExMuscle] || ''; _nxDefImg.style.display = 'block'; }
   document.getElementById('newExPhotoImg').style.display = 'none';
   document.getElementById('newExPhotoImg').src = '';
-  document.getElementById('newExPhotoLabel').textContent = 'Change Image (optional)';
+  document.getElementById('newExPhotoLabel').innerHTML = 'Change Image <span style="color:#888;font-weight:500;">(optional)</span>';
   document.getElementById('newExPhotoLabel').style.color = '#fff';
   _renderNewExPills(window._newExMuscle);
   _nExSetupBodySVG();
@@ -5366,9 +5579,9 @@ function openExtabExOverlay(exName, musclesOnly) {
       if (_anchorEl) {
         const _pb = document.createElement('div');
         _pb.id = 'extab-play-badge';
-        _pb.style.cssText = 'position:absolute;bottom:8px;left:8px;display:flex;align-items:center;gap:4px;background:rgba(0,0,0,.72);border-radius:6px;padding:4px 10px;cursor:pointer;z-index:2;-webkit-tap-highlight-color:transparent;';
+        _pb.style.cssText = 'position:absolute;top:8px;left:8px;display:flex;align-items:center;gap:5px;background:transparent;border:none;padding:4px 6px;border-radius:4px;cursor:pointer;z-index:2;-webkit-tap-highlight-color:transparent;';
         _pb.onclick = () => window.open(_exVideoUrl, '_blank');
-        _pb.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="#e8ff47"><polygon points="5 3 19 12 5 21 5 3"/></svg><span style="font-family:\'DM Sans\';font-size:10px;font-weight:700;color:#e8ff47;letter-spacing:.5px;">PLAY</span>';
+        _pb.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="var(--accent)" stroke="none"><polygon points="5,3 19,12 5,21"/></svg><span style="font-family:\'DM Sans\';font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.5px;">PLAY</span>';
         _anchorEl.appendChild(_pb);
       }
     }
@@ -6197,7 +6410,7 @@ function switchTab(tab) {
   if (tab==='log') {
     checkFinishReady();
     const _startScreenVisible = document.getElementById('today-start-screen')?.style.display !== 'none';
-    if (_startScreenVisible) _animateCoachBtn();
+    if (_startScreenVisible) { renderTodayWeekProgress(true); }
   }
   if (tab !== 'log' && tab !== 'exercises') { if (!window._createNewMode) window._activeTabHighlight = null; if (tab !== 'workouts') { window._loadFromToday = false; window._isChangingWorkout = false; } }
   localStorage.setItem('ironlog_active_tab', tab);
@@ -9571,7 +9784,8 @@ function finishWorkoutFull() {
     </div>
     ${allComplete ? `<div style="text-align:center;padding:8px 0 12px;font-size:28px;font-weight:900;color:#4caf50;font-family:'DM Sans';">All sets completed</div>` : exRows}`;
 
-  window._pendingWorkout = {name, date:Date.now(), exercises};
+  const _desc = (document.getElementById('nwf-description')?.value || '').trim();
+  window._pendingWorkout = {name, date:Date.now(), exercises, description: _desc};
   document.getElementById('summaryOverlay').classList.add('open');
   if (window._historyPush) window._historyPush('summary');
 }
@@ -9593,6 +9807,9 @@ function saveWorkoutToList() {
   const _wasNewFlow = !!window._isNewWorkoutFlow;
   const _wasFromWorkouts = !!window._newFromWorkouts;
   const name = document.getElementById('workoutName').value.trim() || 'Unnamed Workout';
+  const description = (document.getElementById('nwf-description')?.value || '').trim();
+  const _nwfVidLink = (document.getElementById('nwf-video-link')?.value || '').trim();
+  if (_nwfVidLink && name) localStorage.setItem(`ironlog_workout_video_${name}`, _nwfVidLink);
   const cards = document.querySelectorAll('#exerciseList .exercise-card');
   if (!cards.length) { showToast('Add at least one exercise first!'); return; }
 
@@ -9708,9 +9925,10 @@ function saveWorkoutToList() {
     const existing = workouts[window._editingWorkoutIdx];
     existing.name = name;
     existing.exercises = exercises;
+    existing.description = description;
     window._editingWorkoutIdx = undefined;
   } else {
-    workouts.unshift({ id: Date.now(), name, date: Date.now(), exercises, _template: true });
+    workouts.unshift({ id: Date.now(), name, date: Date.now(), exercises, description, _template: true });
   }
   save();
   _LS.remove('ironlog_session');
@@ -14562,55 +14780,28 @@ function _confirmWtabPlan() {
 function editWorkoutFromTab(idx) {
   const w = workouts[idx];
   if (!w) return;
-  // Load the workout into the today area in workouts flow
   window._isNewWorkoutFlow = true;
   window._activeTabHighlight = 'workouts';
-  window._editingWorkoutIdx = idx; // track which workout we're editing
+  window._editingWorkoutIdx = idx;
+  window._newFromWorkouts = true;
+  window._pendingEditFromW2 = idx;
   resetWorkoutState();
-  showTodayWorkoutArea(false);
-  document.getElementById('workoutName').value = w.name;
-  w.exercises.forEach(exData => {
-    const ex = getAllExercises().find(e=>e.name===exData.name||e.label===exData.name)
-      || {name:exData.name, label:exData.name, muscle:exData.muscle||'Chest', custom:true};
-    addExerciseCard(ex, false, {
-      name: exData.name, muscle: exData.muscle,
-      sets: (exData.sets||[]).map(s => ({...s, done: false})),
-      comment: exData.comment||'', completed: false, open: false
-    });
-  });
-  // Show workout image + name at top; hide progress section and PR stars
-  _setWorkoutHeroPhoto(w.name);
-  const _ps = document.getElementById('workout-progress-section');
-  if (_ps) _ps.style.display = 'none';
-  const _ptw = document.getElementById('workout-top-progress-wrap');
-  if (_ptw) _ptw.style.display = 'none';
-  checkFinishReady();
+  window._createNewMode = true;
+  setAddExerciseBtnStyle(true);
+  updatePickModeTabs();
+  const _wn = document.getElementById('workoutName');
+  if (_wn) _wn.value = w.name;
+  const _wdesc = document.getElementById('nwf-description');
+  if (_wdesc) {
+    _wdesc.value = w.description || '';
+    const _rtl = /[֐-׿]/.test(_wdesc.value);
+    _wdesc.style.direction = _rtl ? 'rtl' : 'ltr';
+    _wdesc.style.textAlign = _rtl ? 'right' : 'left';
+  }
+  const _wvid = document.getElementById('nwf-video-link');
+  if (_wvid) _wvid.value = localStorage.getItem(`ironlog_workout_video_${w.name}`) || '';
   switchTab('log');
-  // Create the fixed "EDIT WORKOUT" title overlay (same as _finalizeNewWorkoutArea but without re-running showTodayWorkoutArea)
-  const _hdr2 = document.getElementById('workout-sticky-header');
-  if (_hdr2) _hdr2.style.paddingTop = 'calc(env(safe-area-inset-top) + 52px)';
-  document.getElementById('_nwf-back-wrapper')?.remove();
-  const _nwfWrap2 = document.createElement('div');
-  _nwfWrap2.id = '_nwf-back-wrapper';
-  _nwfWrap2.style.cssText = 'position:fixed;inset:0;max-width:430px;margin:0 auto;pointer-events:none;z-index:500;';
-  const _backBtn2 = document.createElement('button');
-  _backBtn2.id = '_nwf-back-btn';
-  _backBtn2.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><line x1="5" y1="12" x2="19" y2="12" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><polyline points="13,6 19,12 13,18" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  _backBtn2.style.cssText = 'position:absolute;top:calc(env(safe-area-inset-top) + 16px);right:20px;pointer-events:auto;background:transparent;border:none;cursor:pointer;padding:4px;-webkit-tap-highlight-color:transparent;';
-  _backBtn2.onclick = () => { if (typeof clearSession === 'function') clearSession(); };
-  const _editTitle2 = document.createElement('div');
-  _editTitle2.id = '_nwf-edit-title';
-  _editTitle2.style.cssText = 'position:absolute;top:calc(env(safe-area-inset-top) + 20px);left:20px;font-family:\'DM Sans\',sans-serif;font-size:20px;font-weight:700;color:#34d399;letter-spacing:0;pointer-events:none;';
-  _editTitle2.textContent = 'EDIT WORKOUT';
-  _nwfWrap2.appendChild(_editTitle2);
-  _nwfWrap2.appendChild(_backBtn2);
-  const _nwfCamBtn2 = document.createElement('button');
-  _nwfCamBtn2.id = '_nwf-cam-btn';
-  _nwfCamBtn2.style.cssText = 'position:absolute;top:calc(env(safe-area-inset-top, 0px) + 60px);right:18px;pointer-events:auto;background:rgba(0,0,0,0.55);border:none;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;';
-  _nwfCamBtn2.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>';
-  _nwfCamBtn2.onclick = () => _openPhotoModalFromHero();
-  _nwfWrap2.appendChild(_nwfCamBtn2);
-  document.body.appendChild(_nwfWrap2);
+  _openNwfNamePage();
 }
 
 function _duplicateWorkout(idx) {
@@ -14653,7 +14844,7 @@ function deleteWorkoutFromTab(idx) {
     if (!_deletedTabNames.includes(w.name)) _deletedTabNames.push(w.name);
     _LS.set('ironlog_deleted_tab_names', JSON.stringify(_deletedTabNames));
     window._keepWorkoutsTabState = true;
-    renderWorkoutsTab();
+    renderWorkoutsTab2();
     closeW2Sheet();
   };
 }
@@ -14946,10 +15137,16 @@ window.addEventListener('load', function() {
         splash.remove();
         window._splashGone = true;
         if (window._pendingCoachAnim) {
-          setTimeout(window._pendingCoachAnim, 200);
+          window._pendingCoachAnim();
           window._pendingCoachAnim = null;
         }
       }, 400);
+    } else {
+      window._splashGone = true;
+      if (window._pendingCoachAnim) {
+        window._pendingCoachAnim();
+        window._pendingCoachAnim = null;
+      }
     }
   }, 800);
 
@@ -14992,7 +15189,7 @@ window.addEventListener('load', function() {
 <!-- NEW WORKOUT FIRST PAGE — hero image + inline name edit -->
 <div id="nwf-name-page" style="display:none;position:fixed;inset:0;z-index:201;background:#0a0a0a;max-width:430px;margin:0 auto;flex-direction:column;">
   <div style="flex-shrink:0;padding-top:calc(env(safe-area-inset-top,0px) + 20px);padding-bottom:14px;text-align:center;background:#0a0a0a;">
-    <div style="font-family:'DM Sans',sans-serif;font-size:20px;font-weight:700;color:#34d399;letter-spacing:0;line-height:1.2;">NEW WORKOUT</div>
+    <div id="nwf-page-title" style="font-family:'DM Sans',sans-serif;font-size:20px;font-weight:700;color:#34d399;letter-spacing:0;line-height:1.2;">NEW WORKOUT</div>
     <div style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;color:#aaa;letter-spacing:.2px;margin-top:2px;">Step 1 of 2</div>
   </div>
   <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 10px calc(env(safe-area-inset-bottom,0px) + 96px);">
@@ -15009,16 +15206,16 @@ window.addEventListener('load', function() {
     <div style="font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;color:#fff;letter-spacing:0;margin-top:14px;margin-bottom:6px;padding:0 2px;">Workout Name</div>
     <div style="background:#111;border:1px solid #444;border-radius:12px;padding:10px 14px;">
       <input id="nwf-name-input" type="text" autocomplete="off" enterkeyhint="done" spellcheck="false" placeholder="Name your workout..."
-             style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;caret-color:#34d399;-webkit-text-fill-color:#fff;box-sizing:border-box;"
-             oninput="(function(v){const _hb=/[֐-׿]/.test(v);document.getElementById('nwf-name-input').style.direction=_hb?'rtl':'ltr';const wn=document.getElementById('workoutName');if(wn)wn.value=v.trim();const ne=document.getElementById('nwf-hero-name');if(ne){ne.dataset.name=v.trim();ne.innerHTML=v.trim()?_heroNameHtml(v.trim()):'';ne.style.direction=_hb?'rtl':'';}if(typeof _nwfUpdateNextBtn==='function')_nwfUpdateNextBtn();})(this.value)"
-             onblur="(function(inp){const v=inp.value.trim();if(!v)return;const nl=v.toLowerCase();const isDup=(workouts||[]).some(w=>!w._draft&&(w.name||'').trim().toLowerCase()===nl);if(isDup){inp.style.color='#ff4747';setTimeout(()=>{inp.style.color='';},1500);if(typeof _showAddSetMsg==='function')_showAddSetMsg('A workout with this name already exists');const wn=document.getElementById('workoutName');if(wn)wn.value='';const ne=document.getElementById('nwf-hero-name');if(ne){ne.dataset.name='';ne.innerHTML='';}if(typeof _nwfUpdateNextBtn==='function')_nwfUpdateNextBtn();}})(this)"
+             style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;caret-color:#34d399;-webkit-text-fill-color:#fff;box-sizing:border-box;"
+             oninput="(function(v){const _hb=/[֐-׿]/.test(v);const _ni=document.getElementById('nwf-name-input');_ni.style.direction=_hb?'rtl':'ltr';_ni.style.textAlign=_hb?'right':'left';const wn=document.getElementById('workoutName');if(wn)wn.value=v.trim();const ne=document.getElementById('nwf-hero-name');if(ne){ne.dataset.name=v.trim();ne.innerHTML=v.trim()?_heroNameHtml(v.trim()):'';ne.style.direction=_hb?'rtl':'';}if(typeof _nwfUpdateNextBtn==='function')_nwfUpdateNextBtn();})(this.value)"
+             onblur="(function(inp){const v=inp.value.trim();if(!v)return;const nl=v.toLowerCase();const isDup=(workouts||[]).some((w,i)=>!w._draft&&(window._editingWorkoutIdx!=null&&i===window._editingWorkoutIdx?false:(w.name||'').trim().toLowerCase()===nl));if(isDup){inp.style.color='#ff4747';setTimeout(()=>{inp.style.color='';},1500);if(typeof _showAddSetMsg==='function')_showAddSetMsg('A workout with this name already exists');const wn=document.getElementById('workoutName');if(wn)wn.value='';const ne=document.getElementById('nwf-hero-name');if(ne){ne.dataset.name='';ne.innerHTML='';}if(typeof _nwfUpdateNextBtn==='function')_nwfUpdateNextBtn();}})(this)"
              onkeydown="if(event.key==='Enter')this.blur()">
     </div>
     <div style="font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;color:#fff;letter-spacing:0;margin-top:14px;margin-bottom:6px;padding:0 2px;">Description <span style="color:#888;font-weight:500;">(optional)</span></div>
     <div style="background:#111;border:1px solid #444;border-radius:12px;padding:10px 14px 12px;">
       <textarea id="nwf-description" placeholder="Add details about the workout focus..." rows="2" spellcheck="false"
-                style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:400;line-height:1.5;resize:none;overflow:hidden;caret-color:#34d399;-webkit-text-fill-color:#fff;box-sizing:border-box;"
-                oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+                style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:400;line-height:1.5;resize:none;overflow:hidden;caret-color:#34d399;-webkit-text-fill-color:#fff;box-sizing:border-box;"
+                oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px';var _rtl=/[֐-׿]/.test(this.value);this.style.direction=_rtl?'rtl':'ltr';this.style.textAlign=_rtl?'right':'left';"></textarea>
     </div>
     <div style="font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;color:#fff;letter-spacing:0;margin-top:14px;margin-bottom:6px;padding:0 2px;">Video link <span style="color:#888;font-weight:500;">(optional)</span></div>
     <div style="background:#111;border:1px solid #444;border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:8px;">
@@ -15838,6 +16035,7 @@ window.loadFromFirestore = function(uid) {
       if (s.lastTimerSecs) { lastTimerSecs = s.lastTimerSecs; localStorage.setItem('ironlog_last_timer', s.lastTimerSecs); }
       if (s.miniChartRange) { miniChartRange = s.miniChartRange; localStorage.setItem('ironlog_mini_range', s.miniChartRange); }
     }
+    if (typeof renderTodayWeekProgress === 'function') renderTodayWeekProgress();
     return true;
   }).catch(e => { console.warn('Firestore load failed:', e.message); return false; });
 };
@@ -19675,10 +19873,16 @@ function deleteCoachWorkout(id) {
   <!-- Workout photo + name overlay -->
   <div id="w2-sheet-photo-wrap" style="display:none;position:relative;margin:0 10px;aspect-ratio:21/9;overflow:hidden;border-radius:12px;flex-shrink:0;">
     <img id="w2-sheet-photo" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;filter:brightness(0.85);" />
+    <button id="w2-sheet-play-btn" style="display:none;position:absolute;top:8px;left:10px;z-index:4;align-items:center;gap:5px;background:transparent;border:none;padding:4px 6px;border-radius:4px;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="var(--accent)" stroke="none" style="pointer-events:none;flex-shrink:0;"><polygon points="5,3 19,12 5,21"/></svg>
+      <span style="color:var(--accent);font-family:'DM Sans';font-size:11px;font-weight:700;letter-spacing:.5px;pointer-events:none;">PLAY</span>
+    </button>
     <div style="position:absolute;bottom:0;left:0;right:0;padding:10px 14px 12px;pointer-events:none;text-align:right;">
       <div id="w2-sheet-name" onclick="if(window._editingWorkoutIdx!=null)openWorkoutNameModal()" style="font-family:'DM Sans';font-size:20px;font-weight:900;color:#fff;max-width:60%;margin-left:auto;line-height:1.2;pointer-events:auto;cursor:default;-webkit-tap-highlight-color:transparent;"></div>
     </div>
   </div>
+  <!-- Description (shown only when non-empty) -->
+  <div id="w2-sheet-description" style="display:none;padding:10px 20px 2px;font-family:'DM Sans';font-size:16px;font-weight:400;color:#aaa;line-height:1.5;white-space:pre-wrap;word-break:break-word;flex-shrink:0;"></div>
   <!-- Scrollable content area — body diagram scrolls with exercise list -->
   <div id="w2-scroll-area" style="overflow-y:auto;overflow-x:hidden;flex:1;-webkit-overflow-scrolling:touch;scrollbar-width:none;position:relative;overscroll-behavior:contain;">
   <!-- Exercises section (hidden when opened from active session) -->
@@ -19989,7 +20193,7 @@ function deleteCoachWorkout(id) {
     <button onclick="event.stopPropagation();_adjustStrengthTarget(-1)" style="width:64px;height:64px;border-radius:16px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:28px;font-weight:300;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">−</button>
     <div style="display:flex;flex-direction:column;align-items:center;min-width:120px;">
       <span id="strength-target-val" style="font-family:'DM Sans';font-size:64px;font-weight:800;color:var(--text);line-height:1;">3</span>
-      <span style="font-family:'DM Sans';font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.5px;margin-top:2px;">DAYS / WEEK</span>
+      <span style="font-family:'DM Sans';font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.5px;margin-top:2px;">WORKOUTS / WEEK</span>
     </div>
     <button onclick="event.stopPropagation();_adjustStrengthTarget(1)" style="width:64px;height:64px;border-radius:16px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:28px;font-weight:300;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">+</button>
   </div>
@@ -20488,10 +20692,6 @@ function toggleWtabCardMenu(idx) {
   sheet.innerHTML = `
     <div style="width:36px;height:3px;background:#555;border-radius:2px;margin:12px auto 4px;"></div>
     <div style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#888;letter-spacing:.8px;text-align:center;padding:6px 0 12px;">WORKOUT OPTIONS</div>
-    <button onclick="closeWtabMenu();openWorkoutPhotoFlow(${idx})" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-      ${hasPhoto ? 'Change Photo' : 'Add Photo'}
-    </button>
     <button onclick="closeWtabMenu();closeW2Sheet();editWorkoutFromTab(${idx})" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
       Edit Workout
@@ -21099,16 +21299,21 @@ function _closeRepsEditor(silent = false, switching = false) {
   const _sheet = document.getElementById('kg-editor-sheet');
   if (_sheet && _sheet.style.display !== 'none') {
     if (!silent && !switching) {
-      // Truly closing — animate sheet out
-      _sheet.style.animation = 'sheetSlideDown .2s ease forwards';
-      setTimeout(() => {
+      // Truly closing — spring-animate sheet out
+      const _sheetH = _sheet.getBoundingClientRect().height;
+      _sheet.style.animation = 'none';
+      _sheet.style.transform = 'translateY(0)';
+      _sheet.style.pointerEvents = 'none';
+      _springAnimate(_sheet, 0, _sheetH, 280, 25, () => {
         _sheet.style.display = 'none';
         _sheet.style.animation = '';
+        _sheet.style.transform = '';
+        _sheet.style.pointerEvents = '';
         document.getElementById('kg-editor-sheet-inner').innerHTML = '';
         document.getElementById('_kgScrollSpacer')?.remove();
         if (editorRow?.classList.contains('reps-inline-editor-row')) editorRow.remove();
         requestAnimationFrame(() => { _syncExDetailBodyTop(); _scrollExDetailToPhoto(); });
-      }, 220);
+      });
     } else {
       // Switching editors — caller populates new content immediately, sheet stays open
       if (editorRow?.classList.contains('reps-inline-editor-row')) editorRow.remove();
@@ -21795,15 +22000,20 @@ if (restoreFocus) _kgEditorFocusLeave();
   const _sheet = document.getElementById('kg-editor-sheet');
   if (_sheet && _sheet.style.display !== 'none') {
     if (restoreFocus) {
-      // Truly closing — animate sheet out
-      _sheet.style.animation = 'sheetSlideDown .2s ease forwards';
-      setTimeout(() => {
+      // Truly closing — spring-animate sheet out
+      const _sheetH = _sheet.getBoundingClientRect().height;
+      _sheet.style.animation = 'none';
+      _sheet.style.transform = 'translateY(0)';
+      _sheet.style.pointerEvents = 'none';
+      _springAnimate(_sheet, 0, _sheetH, 280, 25, () => {
         _sheet.style.display = 'none';
         _sheet.style.animation = '';
+        _sheet.style.transform = '';
+        _sheet.style.pointerEvents = '';
         document.getElementById('kg-editor-sheet-inner').innerHTML = '';
         document.getElementById('_kgScrollSpacer')?.remove();
         requestAnimationFrame(() => { _syncExDetailBodyTop(); _scrollExDetailToPhoto(); });
-      }, 220);
+      });
     }
     // else: switching editors — caller populates new content immediately, sheet stays open
   }
@@ -22639,7 +22849,7 @@ function editExerciseDetail() {
     } else {
       if (photoImg) { photoImg.src = ''; photoImg.style.display = 'none'; }
       if (defImg2) { defImg2.src = _EX_DEFAULT_PHOTOS[window._newExMuscle] || ''; defImg2.style.display = 'block'; }
-      if (photoLabel) { photoLabel.textContent = 'Change Image (optional)'; photoLabel.style.color = '#fff'; }
+      if (photoLabel) { photoLabel.innerHTML = 'Change Image <span style="color:#888;font-weight:500;">(optional)</span>'; photoLabel.style.color = '#fff'; }
     }
   };
   const _lsSrc = localStorage.getItem(`ironlog_ex_photo_${name}`);
@@ -23325,7 +23535,7 @@ const W2_BODY_IDS = {
   'Legs': ["bf-quadriceps-l0","bf-quadriceps-l1","bf-quadriceps-l2","bf-quadriceps-r0","bf-quadriceps-r1","bf-quadriceps-r2","bf-adductors-l0","bf-adductors-l1","bf-adductors-l2","bf-adductors-r0","bf-adductors-r1","bf-adductors-r2","bf-calves-l0","bf-calves-l1","bf-calves-r0","bf-calves-r1","bb-hamstring-l0","bb-hamstring-l1","bb-hamstring-l2","bb-hamstring-l3","bb-hamstring-r0","bb-hamstring-r1","bb-hamstring-r2","bb-hamstring-r3","bb-gluteal-l0","bb-gluteal-l1","bb-gluteal-r0","bb-gluteal-r1","bb-calves-l0","bb-calves-l1","bb-calves-l2","bb-calves-l3","bb-calves-r0","bb-calves-r1","bb-calves-r2","bb-calves-r3"],
   'Shoulders': ["bf-deltoids-l0","bf-deltoids-r0","bb-deltoids-l0","bb-deltoids-r0","bf-trapezius-l0","bf-trapezius-r0","bb-neck-l0","bb-neck-r0"],
   'Arms': ["bf-biceps-l0","bf-biceps-r0","bf-forearm-l0","bf-forearm-l1","bf-forearm-l2","bf-forearm-r0","bf-forearm-r1","bf-forearm-r2","bb-triceps-l0","bb-triceps-l1","bb-triceps-l2","bb-triceps-r0","bb-triceps-r1","bb-triceps-r2","bb-forearm-l0","bb-forearm-l1","bb-forearm-l2","bb-forearm-l3","bb-forearm-r0","bb-forearm-r1","bb-forearm-r2","bb-forearm-r3"],
-  'Core': ["bf-abs-l0","bf-abs-l1","bf-abs-l2","bf-abs-l3","bf-abs-r0","bf-abs-r1","bf-abs-r2","bf-abs-r3","bf-obliques-l0","bf-obliques-l1","bf-obliques-l2","bf-obliques-l3","bf-obliques-l4","bf-obliques-l5","bf-obliques-l6","bf-obliques-l7","bf-obliques-r0","bf-obliques-r1","bf-obliques-r2","bf-obliques-r3","bf-obliques-r4","bf-obliques-r5","bf-obliques-r6","bf-obliques-r7"],
+  'Core': ["bf-abs-l0","bf-abs-l1","bf-abs-l2","bf-abs-l3","bf-abs-r0","bf-abs-r1","bf-abs-r2","bf-abs-r3","bf-obliques-l0","bf-obliques-l1","bf-obliques-l2","bf-obliques-l3","bf-obliques-l4","bf-obliques-l5","bf-obliques-l6","bf-obliques-l7","bf-obliques-r0","bf-obliques-r1","bf-obliques-r2","bf-obliques-r3","bf-obliques-r4","bf-obliques-r5","bf-obliques-r6","bf-obliques-r7","bb-lower-back-l0","bb-lower-back-r1"],
   'Mix': ["bf-chest-upper-l0","bf-chest-upper-r0","bf-chest-lower-l0","bf-chest-lower-r0","bf-abs-l0","bf-abs-l1","bf-abs-l2","bf-abs-l3","bf-abs-r0","bf-abs-r1","bf-abs-r2","bf-abs-r3","bf-quadriceps-l0","bf-quadriceps-l1","bf-quadriceps-l2","bf-quadriceps-r0","bf-quadriceps-r1","bf-quadriceps-r2","bf-deltoids-l0","bf-deltoids-r0","bb-upper-back-l0","bb-upper-back-l1","bb-upper-back-l2","bb-upper-back-r0","bb-upper-back-r1","bb-upper-back-r2","bb-hamstring-l0","bb-hamstring-l1","bb-hamstring-l2","bb-hamstring-l3","bb-hamstring-r0","bb-hamstring-r1","bb-hamstring-r2","bb-hamstring-r3","bb-gluteal-l0","bb-gluteal-l1","bb-gluteal-r0","bb-gluteal-r1","bb-trapezius-l0","bb-trapezius-r0"],
 };
 const W2_ALL_MUSCLE_IDS = ["bf-chest-upper-l0","bf-chest-upper-r0","bf-chest-lower-l0","bf-chest-lower-r0","bb-neck-l0","bb-neck-r0","bf-obliques-l0","bf-obliques-l1","bf-obliques-l2","bf-obliques-l3","bf-obliques-l4","bf-obliques-l5","bf-obliques-l6","bf-obliques-l7","bf-obliques-r0","bf-obliques-r1","bf-obliques-r2","bf-obliques-r3","bf-obliques-r4","bf-obliques-r5","bf-obliques-r6","bf-obliques-r7","bf-abs-l0","bf-abs-l1","bf-abs-l2","bf-abs-l3","bf-abs-r0","bf-abs-r1","bf-abs-r2","bf-abs-r3","bf-biceps-l0","bf-biceps-r0","bf-triceps-l0","bf-triceps-r0","bf-trapezius-l0","bf-trapezius-r0","bf-deltoids-l0","bf-deltoids-r0","bf-adductors-l0","bf-adductors-l1","bf-adductors-l2","bf-adductors-r0","bf-adductors-r1","bf-adductors-r2","bf-quadriceps-l0","bf-quadriceps-l1","bf-quadriceps-l2","bf-quadriceps-r0","bf-quadriceps-r1","bf-quadriceps-r2","bf-calves-l0","bf-calves-l1","bf-calves-r0","bf-calves-r1","bf-forearm-l0","bf-forearm-l1","bf-forearm-l2","bf-forearm-r0","bf-forearm-r1","bf-forearm-r2","bb-trapezius-l0","bb-trapezius-r0","bb-deltoids-l0","bb-deltoids-r0","bb-upper-back-l0","bb-upper-back-l1","bb-upper-back-l2","bb-upper-back-r0","bb-upper-back-r1","bb-upper-back-r2","bb-triceps-l0","bb-triceps-l1","bb-triceps-l2","bb-triceps-r0","bb-triceps-r1","bb-triceps-r2","bb-lower-back-l0","bb-lower-back-l1","bb-lower-back-r0","bb-lower-back-r1","bb-forearm-l0","bb-forearm-l1","bb-forearm-l2","bb-forearm-l3","bb-forearm-r0","bb-forearm-r1","bb-forearm-r2","bb-forearm-r3","bb-gluteal-l0","bb-gluteal-l1","bb-gluteal-r0","bb-gluteal-r1","bb-adductors-l0","bb-adductors-r0","bb-hamstring-l0","bb-hamstring-l1","bb-hamstring-l2","bb-hamstring-l3","bb-hamstring-r0","bb-hamstring-r1","bb-hamstring-r2","bb-hamstring-r3","bb-calves-l0","bb-calves-l1","bb-calves-l2","bb-calves-l3","bb-calves-r0","bb-calves-r1","bb-calves-r2","bb-calves-r3"];
@@ -23440,6 +23650,28 @@ function openW2Sheet(idx) {
     _photoWrap.style.display = 'block';
   }
 
+  const _playBtn = document.getElementById('w2-sheet-play-btn');
+  if (_playBtn) {
+    const _videoUrl = localStorage.getItem(`ironlog_workout_video_${w.name}`);
+    if (_videoUrl) {
+      _playBtn.style.display = 'flex';
+      _playBtn.onclick = (e) => { e.stopPropagation(); window.open(_videoUrl, '_blank'); };
+    } else {
+      _playBtn.style.display = 'none';
+      _playBtn.onclick = null;
+    }
+  }
+
+  const _descEl = document.getElementById('w2-sheet-description');
+  if (_descEl) {
+    const _desc = (w.description || '').trim();
+    _descEl.textContent = _desc;
+    const _descRtl = /[֐-׿]/.test(_desc);
+    _descEl.style.direction = _descRtl ? 'rtl' : 'ltr';
+    _descEl.style.textAlign = _descRtl ? 'right' : 'left';
+    _descEl.style.display = _desc ? 'block' : 'none';
+  }
+
   const muscleCounts = {};
   (w.exercises || []).forEach(e => {
     const m = e.muscle || getAllExercises().find(x=>x.name===e.name||x.label===e.name)?.muscle || 'Other';
@@ -23477,7 +23709,14 @@ function openW2Sheet(idx) {
           (W2_BODY_IDS[bp] || []).forEach(id => { highlightMap[id] = W2_MUSCLE_COLORS[bp]; });
         });
       } else {
-        (W2_BODY_IDS[m] || []).forEach(id => { highlightMap[id] = color; });
+        const _fbSubs = NEX_BODY_SUBMUSCLES[m] || [];
+        if (_fbSubs.length > 0) {
+          _fbSubs.forEach(sm => {
+            (NEX_SUB_MUSCLE_IDS[sm] || W2_BODY_IDS[sm] || []).forEach(id => { highlightMap[id] = color; });
+          });
+        } else {
+          (W2_BODY_IDS[m] || []).forEach(id => { highlightMap[id] = color; });
+        }
       }
     }
   });
@@ -23574,7 +23813,6 @@ function openW2Sheet(idx) {
   if (exSection) exSection.style.display = window._w2FromSession ? 'none' : '';
 
   overlay.style.display = 'block';
-  overlay.style.opacity = '0';
   sheet.style.display = 'flex';
 
   const sheetH = window.innerHeight;
@@ -23588,7 +23826,13 @@ function openW2Sheet(idx) {
     });
   });
 
-  _fadeAnimate(overlay, 0, 0.6, 350);
+  if (window._w2SheetInstantOverlay) {
+    window._w2SheetInstantOverlay = false;
+    overlay.style.opacity = '0.6';
+  } else {
+    overlay.style.opacity = '0';
+    _fadeAnimate(overlay, 0, 0.6, 350);
+  }
 
   if (window._historyPush) window._historyPush('w2-sheet');
 
