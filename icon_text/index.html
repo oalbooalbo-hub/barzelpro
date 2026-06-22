@@ -296,7 +296,7 @@ body.desktop-mode .pages-wrap {
 /* ── EXERCISE FOOTER ───────────────────────────── */
 .ex-footer{padding:0 12px;display:flex;flex-direction:column;gap:0;}
 .ex-footer-row{display:flex;gap:6px;align-items:center;padding:0;}
-.add-set-outer{display:none;align-items:center;padding:15px 0 10px 12px;background:var(--bg);margin:0 -1px -1px;position:relative;border-radius:0 0 var(--radius) var(--radius);}
+.add-set-outer{display:none;align-items:center;padding:15px 0 10px 12px;background:var(--bg);position:relative;}
 .add-set-outer.open{display:flex;}
 .add-set-outer::before{content:'';position:absolute;left:26px;top:0;height:29px;width:1.5px;background:#2a2a2a;z-index:0;}
 .btn-small{background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:'DM Sans';font-size:12px;font-weight:600;padding:6px 12px;cursor:pointer;transition:all .2s;white-space:normal;text-align:center;}
@@ -419,6 +419,7 @@ body.ex-tab-detail-open #ex-float-bar{display:none !important;}
 #today-chips-block{display:none;}
 
 .comment-area.open{max-height:600px;}
+.exercise-card:not([data-open="true"]) .comment-area,.exercise-card:not([data-open="true"]) .timer-panel{display:none!important;}
 .comment-area > .comment-area-inner{opacity:0;transition:opacity .25s ease;}
 .comment-area.open > .comment-area-inner{opacity:1;transition:opacity .25s ease .6s;}
 .comment-area .comment-area-label{opacity:0;transition:opacity .2s;}
@@ -795,7 +796,7 @@ body.ex-tab-detail-open #ex-float-bar{display:none !important;}
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, sendPasswordResetEmail } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { getFirestore, doc, getDoc, setDoc, deleteDoc, getDocs, collection, query, where, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, getDoc, setDoc, deleteDoc, getDocs, collection, query, where, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { getStorage, ref as storageRef, uploadString, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
 
 // ── BRAND CONFIG ──────────────────────────────────────
@@ -825,7 +826,9 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app);
+const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+});
 const storage = getStorage(app);
 const googleProvider = new GoogleAuthProvider();
 
@@ -2842,7 +2845,7 @@ function renderTodayWeekProgress(withAnim) {
       };
       if (!window._splashGone) {
         ring.setAttribute('stroke-dashoffset', circ.toFixed(2));
-        window._pendingCoachAnim = _doRingAnim;
+        window._pendingCoachAnim = () => renderTodayWeekProgress(true);
       } else {
         _doRingAnim();
       }
@@ -2885,6 +2888,7 @@ function closeStrengthTargetSheet(save) {
   if (save) {
     localStorage.setItem('ironlog_workout_target', workoutWeekTarget);
     renderTodayWeekProgress();
+    if (window._currentUser && window.syncToFirestore) window.syncToFirestore();
   } else {
     workoutWeekTarget = parseInt(localStorage.getItem('ironlog_workout_target')) || 3;
   }
@@ -4058,8 +4062,6 @@ setTimeout(restoreSession, 0);
 setTimeout(() => {
   checkFinishReady();
   renderTodayPlanCard();
-  const savedTab = localStorage.getItem('ironlog_active_tab');
-  if (savedTab && ['log','exercises','progress','workouts2'].includes(savedTab)) switchTab(savedTab);
   const savedModal = localStorage.getItem('ironlog_modal');
   if (savedModal === 'calendar') openCalendar();
 }, 0);
@@ -4512,9 +4514,9 @@ function confirmRenameEx() {
     const muscle = window._exTabMuscle || 'Chest';
     customExercises.push({ name: trimmed, label: trimmed, muscle, custom: true });
   }
-  localStorage.setItem('ironlog_custom_ex', JSON.stringify(customExercises));
+  saveCustom();
   workouts.forEach(w => w.exercises.forEach(e => { if (e.name === oldName) { e.name = trimmed; e.label = trimmed; } }));
-  localStorage.setItem('ironlog_workouts', JSON.stringify(workouts));
+  save();
   renderExercisesTab();
 }
 
@@ -4536,7 +4538,7 @@ function deleteExTabExercise(name) {
   overlay.querySelector('#_delExConfirm').onclick = () => {
     close();
     const ci = customExercises.findIndex(e => e.name === name);
-    if (ci >= 0) { customExercises.splice(ci, 1); localStorage.setItem('ironlog_custom_ex', JSON.stringify(customExercises)); }
+    if (ci >= 0) { customExercises.splice(ci, 1); saveCustom(); }
     const hidden = JSON.parse(_LS.get('ironlog_hidden_ex') || '[]');
     if (!hidden.includes(name)) { hidden.push(name); _LS.set('ironlog_hidden_ex', JSON.stringify(hidden)); }
     _invalidateExCache();
@@ -5241,19 +5243,15 @@ function confirmNewEx() {
     hidden.splice(hiddenIdx, 1);
     _LS.set('ironlog_hidden_ex', JSON.stringify(hidden));
     const ci = customExercises.findIndex(e => e.name === name);
-    if (ci >= 0) { customExercises[ci].muscle = muscle; if (videoUrl) customExercises[ci].videoUrl = videoUrl; else delete customExercises[ci].videoUrl; localStorage.setItem('ironlog_custom_ex', JSON.stringify(customExercises)); }
-    else { customExercises.push({ name, label: name, muscle, custom: true, ...(videoUrl ? { videoUrl } : {}) }); localStorage.setItem('ironlog_custom_ex', JSON.stringify(customExercises)); }
+    if (ci >= 0) { customExercises[ci].muscle = muscle; if (videoUrl) customExercises[ci].videoUrl = videoUrl; else delete customExercises[ci].videoUrl; }
+    else { customExercises.push({ name, label: name, muscle, custom: true, ...(videoUrl ? { videoUrl } : {}) }); }
+    saveCustom();
   } else {
   // Disable button to prevent double-tap
   const addBtn = [...document.querySelectorAll('#newExModalOverlay button')].find(b => b.textContent.trim() === 'Add');
   if (addBtn) { addBtn.disabled = true; addBtn.textContent = ''; addBtn.style.opacity = '0.5'; }
   customExercises.push({ name, label: name, muscle, subMuscles, custom: true, ...(videoUrl ? { videoUrl } : {}) });
-  try {
-    localStorage.setItem('ironlog_custom_ex', JSON.stringify(customExercises));
-  } catch(e) {
-    _migratePhotosToIDB();
-    try { localStorage.setItem('ironlog_custom_ex', JSON.stringify(customExercises)); } catch(_) {}
-  }
+  saveCustom();
   setTimeout(() => {
     closeNewExModal();
     _exTabView = 'custom';
@@ -7455,7 +7453,12 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
   addSetOuter.className = 'add-set-outer' + (isOpen ? ' open' : '');
   addSetOuter.id = `add-set-outer-${id}`;
   addSetOuter.innerHTML = `<button class="btn-add-set" onclick="addSet('${id}');updateVolProgressBar('${id}')" title="Add set">+</button>`;
-  card.append(header, body, completeBar, addSetOuter); // muscleBar removed
+  card.append(header, body, completeBar, addSetOuter);
+  // Place note and timer panels below the "+" button, outside the sets card
+  const _timerPanel = card.querySelector(`#timer-panel-${id}`);
+  const _commentArea = card.querySelector(`#comment-area-${id}`);
+  if (_timerPanel) card.appendChild(_timerPanel);
+  if (_commentArea) card.appendChild(_commentArea);
   document.getElementById('exerciseList').appendChild(card);
   if (window._updateWorkoutProgress) _updateWorkoutProgress();
 
@@ -11534,14 +11537,14 @@ function importData(input) {
         const existingIds = new Set(workouts.map(w => w.id));
         const newW = data.workouts.filter(w => !existingIds.has(w.id));
         workouts.push(...newW);
-        localStorage.setItem('ironlog_workouts', JSON.stringify(workouts));
+        save();
       }
       // Merge deleted workouts
       if (Array.isArray(data.deletedWorkouts)) {
         const existingIds = new Set(deletedWorkouts.map(w => w.id));
         const newDW = data.deletedWorkouts.filter(w => !existingIds.has(w.id));
         deletedWorkouts.push(...newDW);
-        localStorage.setItem('ironlog_deleted_workouts', JSON.stringify(deletedWorkouts));
+        saveDeleted();
       }
       // Merge cardio (by date+type, avoid duplicates)
       if (Array.isArray(data.cardioLog)) {
@@ -11555,7 +11558,7 @@ function importData(input) {
         const existingNames = new Set(customExercises.map(e => e.name));
         const newEx = data.customExercises.filter(e => !existingNames.has(e.name));
         customExercises.push(...newEx);
-        localStorage.setItem('ironlog_custom_ex', JSON.stringify(customExercises));
+        saveCustom();
       }
       // Merge planned workouts (avoid duplicates by planId)
       if (Array.isArray(data.plannedWorkouts)) {
@@ -13679,6 +13682,7 @@ function adjustTarget(type, delta) {
     workoutWeekTarget = Math.max(1, workoutWeekTarget + delta);
     localStorage.setItem('ironlog_workout_target', workoutWeekTarget);
   }
+  if (window._currentUser && window.syncToFirestore) window.syncToFirestore();
   renderCalendar();
   if (selectedCalDay) selectCalDay(selectedCalDay);
 }
@@ -14815,7 +14819,7 @@ function _duplicateWorkout(idx) {
   copy.date = Date.now();
   delete copy._draft;
   workouts.push(copy);
-  localStorage.setItem('ironlog_workouts', JSON.stringify(workouts));
+  save();
   const photo = localStorage.getItem(`ironlog_workout_photo_${w.name}`);
   if (photo) localStorage.setItem(`ironlog_workout_photo_${newName}`, photo);
   if (typeof renderWorkoutsTab2 === 'function') renderWorkoutsTab2();
@@ -15950,6 +15954,27 @@ window._onAuthReady = (user) => {
   workouts = JSON.parse(_LS.get('ironlog_workouts') || '[]');
   deletedWorkouts = JSON.parse(_LS.get('ironlog_deleted_workouts') || '[]');
   cardioLog = JSON.parse(_LS.get('ironlog_cardio') || '[]');
+
+  // One-time migration: recover exercises previously saved to the non-scoped bare key
+  // by the old buggy code that called localStorage.setItem('ironlog_custom_ex', ...) directly.
+  // Merge into the brand-scoped key that _LS now resolves to, then clear the bare key.
+  (function _migrateBareCustEx() {
+    const _bareKey = 'ironlog_custom_ex';
+    const _scopedKey = _LS.key(_bareKey);
+    if (_scopedKey === _bareKey) return; // no brand prefix — nothing to migrate
+    const _bareRaw = localStorage.getItem(_bareKey);
+    if (!_bareRaw) return;
+    try {
+      const _bareList = JSON.parse(_bareRaw) || [];
+      if (!_bareList.length) { localStorage.removeItem(_bareKey); return; }
+      const _scopedList = JSON.parse(localStorage.getItem(_scopedKey) || '[]');
+      const _existing = new Set(_scopedList.map(function(e) { return e.name; }));
+      const _merged = _scopedList.concat(_bareList.filter(function(e) { return !_existing.has(e.name); }));
+      localStorage.setItem(_scopedKey, JSON.stringify(_merged));
+      localStorage.removeItem(_bareKey);
+    } catch(_) {}
+  })();
+
   customExercises = JSON.parse(_LS.get('ironlog_custom_ex') || '[]');
   plannedWorkouts = (() => { try { return JSON.parse(_LS.get('ironlog_planned') || '[]') || []; } catch(e) { return []; } })();
 
@@ -20891,16 +20916,6 @@ function exFloatAction(action) {
   const _ANIM_MS = 350; // longest CSS close transition is comment-area at 400ms; 350 gives safe overlap
   const _delay = (_hadOpen && !_targetWasOpen) ? _ANIM_MS : 0;
 
-  // Hide add-set button immediately when opening a panel; restore when all close
-  const _addSetEl = document.getElementById(`add-set-outer-${id}`);
-  if (!_targetWasOpen) {
-    _addSetEl?.classList.remove('open');
-  } else {
-    setTimeout(() => {
-      const card = document.getElementById(id);
-      if (card?.dataset.open === 'true') _addSetEl?.classList.add('open');
-    }, 420);
-  }
 
   if (!_targetWasOpen) {
     setTimeout(() => {
@@ -21538,7 +21553,23 @@ function _kgFocusAnimCancel(el) {
     el.removeEventListener('animationend', el._kgFocusHideEnd);
     delete el._kgFocusHideEnd;
   }
+  if (el._kgFocusShowEnd) {
+    el.removeEventListener('animationend', el._kgFocusShowEnd);
+    delete el._kgFocusShowEnd;
+  }
   el.classList.remove('kg-focus-hiding', 'kg-focus-showing');
+}
+function _kgFocusAnimShow(el, displayVal) {
+  if (!el) return;
+  _kgFocusAnimCancel(el);
+  const _dv = displayVal !== undefined ? displayVal : '';
+  el.style.display = _dv;
+  if (!_dv || _dv === 'none') return;
+  void el.offsetHeight;
+  el.classList.add('kg-focus-showing');
+  const _onEnd = () => { el.removeEventListener('animationend', _onEnd); el.classList.remove('kg-focus-showing'); delete el._kgFocusShowEnd; };
+  el._kgFocusShowEnd = _onEnd;
+  el.addEventListener('animationend', _onEnd);
 }
 function _kgEditorFocusEnter(exId) {
   const _chips0 = document.getElementById('todayMuscleChipsWrap');
@@ -21658,11 +21689,10 @@ function _kgEditorFocusLeave() {
     /* DBG_START *//* DBG_END */
 }
   const _chipsR = document.getElementById('todayMuscleChipsWrap');
-  _kgFocusAnimCancel(_chipsR);
   if (_chipsR && _chipsR.dataset.kgHide !== undefined) {
     // Always restore as flex (it's a flex container)
     const _chipsRestore = _chipsR.dataset.kgHide === 'none' ? 'none' : 'flex';
-    _chipsR.style.display = _chipsRestore;
+    _kgFocusAnimShow(_chipsR, _chipsRestore);
     delete _chipsR.dataset.kgHide;
     delete _chipsR.dataset.kgOrigDisplay;
     const _chipsBlkR = document.getElementById('today-chips-block');
@@ -21670,18 +21700,16 @@ function _kgEditorFocusLeave() {
     /* DBG_START *//* DBG_END */
 }
   const todayActions = document.querySelector('.today-actions');
-  _kgFocusAnimCancel(todayActions);
   if (todayActions && todayActions.dataset.kgHide !== undefined) {
     const _taRestore = todayActions.dataset.kgHide === 'none' ? 'none' : 'flex';
-    todayActions.style.display = _taRestore;
+    _kgFocusAnimShow(todayActions, _taRestore);
     delete todayActions.dataset.kgHide;
     delete todayActions.dataset.kgOrigDisplay;
     /* DBG_START *//* DBG_END */
 }
   const addExRow = document.querySelector('.add-ex-row');
-  _kgFocusAnimCancel(addExRow);
   if (addExRow && addExRow.dataset.kgHide !== undefined) {
-    addExRow.style.display = addExRow.dataset.kgHide;
+    _kgFocusAnimShow(addExRow, addExRow.dataset.kgHide);
     delete addExRow.dataset.kgHide;
   }
   const floatBar = document.getElementById('ex-float-bar');
@@ -21705,26 +21733,28 @@ function _kgEditorFocusLeave() {
   // Also restore the active card inside the overlay
   const _overlayCard = document.querySelector('#ex-detail-overlay-body .exercise-card');
   if (_overlayCard) {
-    _kgFocusAnimCancel(_overlayCard);
-    _overlayCard.querySelectorAll('.set-row, .kg-inline-editor-row, .reps-inline-editor-row').forEach(row => { _kgFocusAnimCancel(row); row.style.display = ''; delete row.dataset.kgHide; });
+    _overlayCard.querySelectorAll('.set-row, .kg-inline-editor-row, .reps-inline-editor-row').forEach(row => {
+      if (row.dataset.kgHide !== undefined) { _kgFocusAnimShow(row, ''); delete row.dataset.kgHide; } else { _kgFocusAnimCancel(row); }
+    });
     const _overlayFooter = _overlayCard.querySelector('.ex-footer');
-    _kgFocusAnimCancel(_overlayFooter);
-    if (_overlayFooter) { _overlayFooter.style.display = ''; delete _overlayFooter.dataset.kgHide; }
+    if (_overlayFooter && _overlayFooter.dataset.kgHide !== undefined) { _kgFocusAnimShow(_overlayFooter, ''); delete _overlayFooter.dataset.kgHide; }
   }
   document.querySelectorAll('#exerciseList .exercise-card').forEach(card => {
-    _kgFocusAnimCancel(card);
     if (card.dataset.kgHide !== undefined) {
       // Only restore non-completed cards; completed ones stay hidden
       if (!card.classList.contains('completed')) {
-        card.style.display = '';
+        _kgFocusAnimShow(card, '');
       }
       delete card.dataset.kgHide;
+    } else {
+      _kgFocusAnimCancel(card);
     }
     card.querySelectorAll('.set-row, .kg-inline-editor-row, .reps-inline-editor-row').forEach(row => {
-      _kgFocusAnimCancel(row);
       if (row.dataset.kgHide) {
-        row.style.display = '';
+        _kgFocusAnimShow(row, '');
         delete row.dataset.kgHide;
+      } else {
+        _kgFocusAnimCancel(row);
       }
     });
     card.querySelectorAll('.btn-done, .cancel-done-btn').forEach(el => {
@@ -21735,7 +21765,7 @@ function _kgEditorFocusLeave() {
     });
     const exFooter = card.querySelector('.ex-footer');
     if (exFooter && exFooter.dataset.kgHide !== undefined) {
-      exFooter.style.display = exFooter.dataset.kgHide;
+      _kgFocusAnimShow(exFooter, exFooter.dataset.kgHide);
       delete exFooter.dataset.kgHide;
     }
     // Restore note, timer, graph panels that were open
@@ -23107,7 +23137,7 @@ function _w2ApplyNameChange() {
       localStorage.removeItem(`ironlog_workout_photo_${oldName}`);
     }
     w.name = newName;
-    localStorage.setItem('ironlog_workouts', JSON.stringify(workouts));
+    save();
     const _nameEl = document.getElementById('w2-sheet-name');
     if (_nameEl) { _nameEl.innerHTML = _heroNameHtml(newName); _nameEl.style.direction = _heroNameDir(newName); }
     const _photoImg = document.getElementById('w2-sheet-photo');
