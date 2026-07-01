@@ -8744,8 +8744,14 @@ function _refreshExPRSlots(id) {
 }
 window._refreshExPRSlots = _refreshExPRSlots;
 
+let _scrollToNextExerciseTimer = null;
 function _scrollToNextExercise() {
-  setTimeout(() => {
+  // toggleDone() and closeExDetailOverlay() both call this after finishing an exercise —
+  // debounce so the two calls don't fire competing scrollIntoView animations against
+  // each other (which stretched the transition and let the just-finished card linger
+  // near/under the fixed header for far longer than intended).
+  clearTimeout(_scrollToNextExerciseTimer);
+  _scrollToNextExerciseTimer = setTimeout(() => {
     const all = [...document.querySelectorAll('.exercise-card:not(.completed)')];
     const visible = all.filter(c => c.offsetParent !== null);
     const nextCard = _todayMuscleFilter
