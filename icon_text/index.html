@@ -233,7 +233,7 @@ body.desktop-mode .pages-wrap {
 .reps-spinner{display:inline-flex;align-items:center;justify-content:center;gap:2px;}
 .set-row td{padding:6px 4px;text-align:center;border-top:1px solid var(--border);}
 .set-row td:first-child{position:relative;}
-.set-row td:first-child::before{content:'';position:absolute;left:25px;top:0;bottom:0;width:1.5px;background:#2a2a2a;z-index:0;}
+.set-row td:first-child::before{content:'';position:absolute;left:26px;top:0;bottom:0;width:1.5px;background:#2a2a2a;z-index:0;}
 .set-row:first-child td:first-child::before{top:50%;}
 .set-num{font-size:14px;color:#aaa;font-weight:700;width:28px;height:28px;border-radius:50%;border:1.5px solid #555;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;-webkit-tap-highlight-color:transparent;background:#1a1a1a;position:relative;z-index:1;}
 .kg-pad-btn{background:#141414;border:1px solid #2a2a2a;border-radius:10px;color:var(--text);font-family:'DM Sans';font-size:22px;font-weight:700;padding:14px 0;cursor:pointer;transition:background .1s;}
@@ -6643,16 +6643,20 @@ function renderWorkoutsTab2() {
     const _nwDir = _nwHebrew ? 'direction:rtl;' : '';
 
     const cardInner = `
-      <div style="position:relative;border-radius:14px;overflow:hidden;aspect-ratio:21/9;background:#1a1a1a;border:1px solid #2a2a2a;cursor:pointer;" onclick="_wtabLoadWorkout(${i})">
-        ${workoutPhoto ? `<img src="${workoutPhoto}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.72);">` : ''}
-        <button onclick="event.stopPropagation();openW2Sheet(${i})" style="position:absolute;top:8px;right:8px;z-index:2;background:rgba(0,0,0,0.38);border:none;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;-webkit-tap-highlight-color:transparent;padding:0;font-family:Georgia,serif;font-style:italic;font-size:15px;font-weight:700;line-height:1;">i</button>
-        <div style="position:absolute;bottom:0;left:0;right:0;padding:10px 14px 12px;pointer-events:none;text-align:right;">
-          ${lastDate ? `<div style="font-family:'DM Sans';font-size:11px;font-weight:600;color:rgba(255,255,255,0.55);margin-bottom:2px;">${lastDate}</div>` : ''}
-          <div style="font-family:'DM Sans';font-size:20px;font-weight:900;color:#fff;max-width:60%;margin-left:auto;line-height:1.2;${_nwDir}">${_nwHtml}</div>
+      <div style="position:relative;display:flex;border-radius:14px;overflow:hidden;aspect-ratio:21/9;background:#1a1a1a;border:1px solid #2a2a2a;">
+        <div id="w2-card-photo-${i}" style="position:relative;width:66.6667%;flex-shrink:0;overflow:hidden;cursor:pointer;" onclick="openW2Sheet(${i})">
+          ${workoutPhoto ? `<img src="${workoutPhoto}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.72);">` : ''}
+          <div style="position:absolute;bottom:0;left:0;right:0;padding:10px 14px 12px;pointer-events:none;text-align:right;">
+            ${lastDate ? `<div style="font-family:'DM Sans';font-size:11px;font-weight:600;color:rgba(255,255,255,0.55);margin-bottom:2px;">${lastDate}</div>` : ''}
+            <div style="font-family:'DM Sans';font-size:20px;font-weight:900;color:#fff;line-height:1.2;${_nwDir}">${_nwHtml}</div>
+          </div>
         </div>
+        <button id="w2-card-play-${i}" onclick="_wtabLoadWorkout(${i})" title="Start workout" style="width:33.3333%;flex-shrink:0;background:#2a2a2a;border:none;border-left:1px solid #000;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="#7ec8e3"><polygon points="6,4 20,12 6,20"/></svg>
+        </button>
       </div>`;
 
-    rowsHtml += `<div style="padding:5px 8px;${_isDimmed?'opacity:0.25;pointer-events:none;':''}">
+    rowsHtml += `<div style="padding:5px 2px;${_isDimmed?'opacity:0.25;pointer-events:none;':''}">
       ${cardInner}
     </div>`;
   });
@@ -7275,7 +7279,9 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
   const setCount = (ex.sets || []).filter(s => !s.ignored).length || ex.targetSets || 0;
   const repCount = ex.sets?.find(s => !s.ignored)?.reps ?? ex.targetReps ?? '—';
   setsRow.id = `ex-sets-count-row-${id}`;
-  setsRow.innerHTML = `<span style="font-family:'DM Sans';font-size:13px;font-weight:600;color:#555;">${setCount} sets · ${repCount} reps</span>`;
+  const _defaultSetsRowHtml = `<span style="font-family:'DM Sans';font-size:13px;font-weight:600;color:#555;">${setCount} sets · ${repCount} reps</span>`;
+  setsRow.dataset.defaultHtml = _defaultSetsRowHtml;
+  setsRow.innerHTML = _defaultSetsRowHtml;
   if (window._isNewWorkoutFlow) setsRow.style.display = 'none';
 
   // PR stars row — fixed slots so position never shifts when one star appears/disappears
@@ -7300,6 +7306,13 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
   doneCheck.onclick = () => openExDetail(id);
   doneCheck.innerHTML = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="${_todayMuscleFilter ? muscleColor : '#fff'}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
 
+  // 4c. In-progress indicator (partial ring — shown when some but not all sets are done)
+  const inProgressCheck = document.createElement('div');
+  inProgressCheck.id = `in-progress-check-${id}`;
+  inProgressCheck.style.cssText = 'display:none;position:relative;width:28px;height:28px;flex-shrink:0;align-self:center;margin-right:10px;cursor:pointer;';
+  inProgressCheck.onclick = () => openExDetail(id);
+  inProgressCheck.innerHTML = `<svg width="28" height="28" viewBox="0 0 28 28" style="transform:rotate(-90deg);"><circle cx="14" cy="14" r="11" fill="none" stroke="#3a2a12" stroke-width="2.5"/><circle class="in-progress-ring-fg" cx="14" cy="14" r="11" fill="none" stroke="#f5a623" stroke-width="2.5" stroke-linecap="round" style="transition:stroke-dashoffset .3s ease;"/></svg><span class="in-progress-frac" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'DM Sans';font-size:9px;font-weight:800;color:#f5a623;"></span>`;
+
   if (window._isNewWorkoutFlow) {
     const trashWrap = document.createElement('div');
     trashWrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;margin-right:10px;margin-left:10px;';
@@ -7311,7 +7324,7 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
     trashWrap.append(trashBtn);
     header.append(trashWrap, contentArea);
   } else {
-    header.append(photoBox, contentArea, noDoneCheck, doneCheck);
+    header.append(photoBox, contentArea, noDoneCheck, inProgressCheck, doneCheck);
   }
 
   // BODY
@@ -8340,48 +8353,13 @@ window.openExDetail = openExDetail;
 window.closeExDetail = closeExDetail;
 
 function _maybeCloseExDetail() {
-  const id = window._exDetailCardId;
-  if (!id || window._isNewWorkoutFlow) { closeExDetailOverlay(); return; }
-  const card = document.getElementById(id);
-  if (!card || card.classList.contains('completed')) { closeExDetailOverlay(); return; }
-  const anyDone = !!card.querySelector('.set-done-btn.done');
-  if (!anyDone) { closeExDetailOverlay(); return; }
-  _showFinishExPopup(id);
-}
-window._maybeCloseExDetail = _maybeCloseExDetail;
-
-function _showFinishExPopup(id) {
-  let pop = document.getElementById('_finish-ex-popup');
-  if (!pop) {
-    pop = document.createElement('div');
-    pop.id = '_finish-ex-popup';
-    pop.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0.6);-webkit-tap-highlight-color:transparent;';
-    pop.innerHTML = `<div style="width:100%;max-width:430px;background:#141414;border-radius:20px 20px 0 0;border:1px solid #2a2a2a;border-bottom:none;padding:24px 20px calc(env(safe-area-inset-bottom) + 32px);box-sizing:border-box;"><div style="font-family:'DM Sans';font-size:17px;font-weight:700;color:#fff;text-align:center;margin-bottom:8px;">Finish exercise?</div><div style="font-family:'DM Sans';font-size:13px;font-weight:400;color:#888;text-align:center;margin-bottom:24px;">You have sets marked as done.</div><div style="display:flex;flex-direction:column;gap:10px;"><button onclick="_finishExAndClose()" style="width:100%;background:var(--accent,#e8ff47);border:none;border-radius:12px;color:#000;font-family:'DM Sans';font-size:16px;font-weight:700;padding:16px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Finish Exercise</button><button onclick="_dismissFinishExPopup()" style="width:100%;background:transparent;border:1px solid #333;border-radius:12px;color:#fff;font-family:'DM Sans';font-size:16px;font-weight:700;padding:16px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Cancel</button></div></div>`;
-    document.body.appendChild(pop);
-  }
-  pop._popExId = id;
-  pop.style.display = 'flex';
-}
-window._showFinishExPopup = _showFinishExPopup;
-
-function _dismissFinishExPopup() {
-  const pop = document.getElementById('_finish-ex-popup');
-  if (pop) pop.style.display = 'none';
-}
-window._dismissFinishExPopup = _dismissFinishExPopup;
-
-function _finishExAndClose() {
-  const pop = document.getElementById('_finish-ex-popup');
-  const id = pop?._popExId || window._exDetailCardId;
-  _dismissFinishExPopup();
-  if (id) {
-    const card = document.getElementById(id);
-    if (card && !card.classList.contains('completed')) toggleDone(id);
-  }
-  window._exDetailFinishTapped = true;
+  // Back always navigates straight to the list view. closeExDetailOverlay() already
+  // re-evaluates completion state on every close: auto-completes when every set is done,
+  // and otherwise leaves the exercise's list-card showing its in-progress/not-started state
+  // via _updatePartialDoneIndicator — no confirmation popup needed.
   closeExDetailOverlay();
 }
-window._finishExAndClose = _finishExAndClose;
+window._maybeCloseExDetail = _maybeCloseExDetail;
 
 function _attachExDetailSwipe() {
   const detail = document.getElementById('ex-nav-detail');
@@ -9158,15 +9136,39 @@ function _updateExSetCount(exId, warnIfNoneDone = false) {
 
 
 function _updatePartialDoneIndicator(exId) {
-  const noDoneCheck = document.getElementById(`no-done-check-${exId}`);
-  const doneCheck   = document.getElementById(`done-check-${exId}`);
-  if (!noDoneCheck && !doneCheck) return;
+  const noDoneCheck  = document.getElementById(`no-done-check-${exId}`);
+  const doneCheck    = document.getElementById(`done-check-${exId}`);
+  const inProgCheck  = document.getElementById(`in-progress-check-${exId}`);
+  const setsRow      = document.getElementById(`ex-sets-count-row-${exId}`);
+  if (!noDoneCheck && !doneCheck && !inProgCheck) return;
 
   const card = document.getElementById(exId);
   const isCompleted = !!card?.classList.contains('completed');
+  const rows = card ? [...card.querySelectorAll('.set-row:not(.ignored)')] : [];
+  const doneCount = rows.filter(r => r.querySelector('.set-done-btn.done')).length;
+  const totalCount = rows.length;
+  const isPartial = !isCompleted && doneCount > 0 && doneCount < totalCount;
 
-  if (noDoneCheck) noDoneCheck.style.display = isCompleted ? 'none' : 'flex';
+  if (noDoneCheck) noDoneCheck.style.display = (!isCompleted && !isPartial) ? 'flex' : 'none';
   if (doneCheck)   doneCheck.style.display   = isCompleted ? 'flex' : 'none';
+  if (inProgCheck) {
+    inProgCheck.style.display = isPartial ? 'block' : 'none';
+    if (isPartial) {
+      const frac = inProgCheck.querySelector('.in-progress-frac');
+      if (frac) frac.textContent = `${doneCount}/${totalCount}`;
+      const ring = inProgCheck.querySelector('.in-progress-ring-fg');
+      if (ring) {
+        const circumference = 2 * Math.PI * 11;
+        ring.style.strokeDasharray = `${circumference}`;
+        ring.style.strokeDashoffset = `${circumference * (1 - doneCount / totalCount)}`;
+      }
+    }
+  }
+  if (setsRow) {
+    setsRow.innerHTML = isPartial
+      ? `<span style="font-family:'DM Sans';font-size:13px;font-weight:700;color:#f5a623;">${doneCount}/${totalCount} sets · In Progress</span>`
+      : (setsRow.dataset.defaultHtml || setsRow.innerHTML);
+  }
 }
 window._updatePartialDoneIndicator = _updatePartialDoneIndicator;
 
