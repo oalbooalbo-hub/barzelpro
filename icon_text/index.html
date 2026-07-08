@@ -232,12 +232,15 @@ body.desktop-mode .pages-wrap {
 .set-row td:first-child{padding-left:8px;padding-right:8px;width:40px;text-align:center;}
 .reps-spinner{display:inline-flex;align-items:center;justify-content:center;gap:2px;}
 .set-row td{padding:6px 4px;text-align:center;border-top:1px solid var(--border);}
+.set-row:first-child td{border-top:none;}
 .set-row td:first-child{position:relative;}
 .set-row td:first-child::before{content:'';position:absolute;left:26px;top:0;bottom:0;width:1.5px;background:#2a2a2a;z-index:0;}
 .set-row:first-child td:first-child::before{top:50%;}
 .set-num{font-size:14px;color:#aaa;font-weight:700;width:28px;height:28px;border-radius:50%;border:1.5px solid #555;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;-webkit-tap-highlight-color:transparent;background:#1a1a1a;position:relative;z-index:1;}
-.kg-pad-btn{background:#141414;border:1px solid #2a2a2a;border-radius:10px;color:var(--text);font-family:'DM Sans';font-size:22px;font-weight:700;padding:14px 0;cursor:pointer;transition:background .1s;}
+.kg-pad-btn{background:#141414;border:1px solid #2a2a2a;border-radius:10px;color:var(--text);font-family:'DM Sans';font-size:22px;font-weight:700;padding:14px 0;cursor:pointer;transition:background .1s;height:56px;box-sizing:border-box;}
 .kg-pad-btn:active{background:var(--accent);color:#000;}
+/* Cancel/Done buttons in the inline KG/Reps editors — same height as the number pad buttons above */
+.editor-action-btn{height:56px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;}
 .set-row.ignored .set-num { text-decoration: line-through; }
 .set-row.done { background: rgba(52,211,153,0.35); }
 .btn-ignore-set { background: transparent; border: 1px solid var(--border); border-radius: 5px; color: var(--muted); font-size: 9px; font-weight: 700; padding: 2px 5px; cursor: pointer; letter-spacing: .4px; white-space: nowrap; transition: all .15s; }
@@ -296,7 +299,7 @@ body.desktop-mode .pages-wrap {
 /* ── EXERCISE FOOTER ───────────────────────────── */
 .ex-footer{padding:0 12px;display:flex;flex-direction:column;gap:0;}
 .ex-footer-row{display:flex;gap:6px;align-items:center;padding:0;}
-.add-set-outer{display:none;align-items:center;padding:15px 0 10px 12px;background:var(--bg);position:relative;}
+.add-set-outer{display:none;align-items:center;padding:15px 0 10px 12px;background:var(--bg);position:relative;border-radius:0 0 var(--radius) var(--radius);}
 .add-set-outer.open{display:flex;}
 .add-set-outer::before{content:'';position:absolute;left:26px;top:0;height:29px;width:1.5px;background:#2a2a2a;z-index:0;}
 .btn-small{background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:'DM Sans';font-size:12px;font-weight:600;padding:6px 12px;cursor:pointer;transition:all .2s;white-space:normal;text-align:center;}
@@ -705,7 +708,10 @@ body.ex-tab-detail-open #ex-float-bar{display:none !important;}
 .cal-day.today.selected{border-color:transparent;}
 .cal-day.selected{outline:2px solid #ff8c42;outline-offset:1px;border-radius:50%;}
 .cal-day.empty{opacity:0;}
-.cal-day.future{opacity:.6;cursor:pointer;}
+.cal-day.future{cursor:pointer;}
+.cal-day.past{opacity:.55;}
+/* Completed workout/cardio days stay fully bright even in the past — they should stand out, not fade. */
+.cal-day.past.has-workout,.cal-day.past.has-cardio-only,.cal-day.past.has-both{opacity:1;}
 .cal-day-cardio-dot{width:5px;height:5px;border-radius:50%;background:#7ec8e3;margin-top:2px;}
 .cal-day-dots{display:flex;gap:2px;margin-top:2px;}
 
@@ -1695,7 +1701,7 @@ function hidAuthScreen() {
         <div id="newExMusclePills" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;"></div>
         <!-- Body SVG diagram -->
         <div id="nex-body-container" style="display:flex;gap:18px;width:100%;box-sizing:border-box;margin-top:-26px;transform:scale(0.770) translateZ(0);transform-origin:top center;pointer-events:none;backface-visibility:hidden;"></div>
-        <div style="font-family:'DM Sans';font-size:15px;font-weight:700;color:#fff;letter-spacing:.5px;margin-top:-77px;margin-bottom:6px;">Muscles <span style="color:#888;font-weight:500;">(optional)</span></div>
+        <div style="font-family:'DM Sans';font-size:15px;font-weight:700;color:#fff;letter-spacing:.5px;margin-top:-67px;margin-bottom:6px;">Muscles <span style="color:#888;font-weight:500;">(optional)</span></div>
         <!-- Muscle slider -->
         <div id="nex-slider-wrap" style="display:none;margin-top:-4px;">
           <div id="nex-slider-label-row" style="width:60%;margin:0 auto;">
@@ -4798,6 +4804,8 @@ function openNewExModal(muscle) {
   window._newExMuscle = muscle || 'Chest';
   window._newExCompoundMuscles = [];
   window._newExPhoto = null;
+  window._newExPhoto32 = null;
+  window._newExPhotoThumb = null;
   const input = document.getElementById('newExInput');
   if (input) input.value = '';
   const _nsb = document.getElementById('newExSaveBtn');
@@ -5126,6 +5134,8 @@ function closeNewExModal() {
   if (inp) inp.style.borderColor = 'var(--border)';
   window._newExPhotoMode = false;
   window._newExPhoto = null;
+  window._newExPhoto32 = null;
+  window._newExPhotoThumb = null;
   window._newExCompoundMuscles = [];
   const _vInp = document.getElementById('newExVideoUrl');
   if (_vInp) _vInp.value = '';
@@ -5875,7 +5885,7 @@ function openExtabExOverlay(exName, musclesOnly) {
     const progXAxisRow = document.createElement('div');
     progXAxisRow.style.cssText = 'position:relative;display:flex;align-items:center;justify-content:flex-end;min-height:24px;padding:6px 14px 2px;';
     const progScrubWrap = document.createElement('div');
-    progScrubWrap.style.cssText = 'display:none;padding:4px 0 4px;';
+    progScrubWrap.style.cssText = 'display:none;padding:0 14px;';
     const _chevSvg = `<svg style="vertical-align:middle;margin-left:3px;" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
     const periodWrap = document.createElement('div');
     periodWrap.style.cssText = 'position:relative;';
@@ -5939,9 +5949,6 @@ function openExtabExOverlay(exName, musclesOnly) {
       };
       animateTo(target, nudgeTo, 320, () => animateTo(nudgeTo, target, 380));
     }
-    const scrubSection = document.createElement('div');
-    scrubSection.style.cssText = 'background:#161616;border-radius:14px;padding:10px 14px 12px;margin-top:10px;';
-    scrubSection.appendChild(progScrubWrap);
     progXAxisRow.appendChild(selectedDayEl);
     progXAxisRow.appendChild(periodWrap);
     const chartCard = document.createElement('div');
@@ -5950,9 +5957,9 @@ function openExtabExOverlay(exName, musclesOnly) {
     chartCard.appendChild(progNoData);
     chartCard.appendChild(progCanvasWrap);
     chartCard.appendChild(progXAxisRow);
+    chartCard.appendChild(progScrubWrap);
     progPane.appendChild(metricBar);
     progPane.appendChild(chartCard);
-    progPane.appendChild(scrubSection);
 
     // ── Stats table pane ──────────────────────────────────────────────────────
     const tablePane = document.createElement('div');
@@ -5960,7 +5967,7 @@ function openExtabExOverlay(exName, musclesOnly) {
     tablePane.style.cssText = 'display:none;padding:16px 16px 0;';
     const _fn = n => n % 1 === 0 ? String(n) : n.toFixed(1);
     const _uSm = `<span style="font-family:'Bebas Neue';font-size:18px;opacity:.65;margin-left:2px;">kg</span>`;
-    const _bKg = _best1RMSet ? _fn(_best1RMSet.kg) : '–';
+    const _bKg = _best1RMSet ? String(_best1RMSet.kg) : '–';
     const _bRp = _best1RMSet ? _best1RMSet.reps : '';
     const _mkCell = (lbl, bigHtml, sub) =>
       `<div style="background:#111;border:1px solid #1e1e1e;border-radius:14px;padding:14px 10px 12px;display:flex;flex-direction:column;align-items:center;gap:2px;">` +
@@ -5972,7 +5979,7 @@ function openExtabExOverlay(exName, musclesOnly) {
       `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">` +
       _mkCell('MAX',   `${_fn(_maxKg)}${_uSm}`,  'Heaviest lifted') +
       _mkCell('1RM',   `${_fn(_max1RM)}${_uSm}`, 'Est. max') +
-      _mkCell('B.SET', `${_bKg}${_uSm}<span style="font-family:'DM Sans';font-size:18px;font-weight:700;color:#888;"> × ${_bRp}</span>`, 'Best set') +
+      _mkCell('B.SET', `${_bKg}${_uSm}<span style="font-family:'DM Sans';font-size:18px;font-weight:700;color:${muscleColor};"> × ${_bRp}</span>`, 'Best set') +
       _mkCell('VOL',   `${_volStr}${_uSm}`,      'Best session') +
       `</div>`;
 
@@ -6148,7 +6155,7 @@ function openExtabExOverlay(exName, musclesOnly) {
     body.addEventListener('touchstart', e => {
       _tx = e.touches[0].clientX;
       _ty = e.touches[0].clientY;
-      _swipeBlocked = scrubSection.contains(e.target);
+      _swipeBlocked = progScrubWrap.contains(e.target);
     }, {passive:true, signal:_swipeAC.signal});
     body.addEventListener('touchend', e => {
       if (_swipeBlocked) return;
@@ -7455,7 +7462,7 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
           <div class="timer-controls">
             <button class="timer-ctrl-btn" id="timer-start-${id}" onclick="timerStartStop('${id}')" style="position:relative;overflow:hidden;">
               <div id="timer-start-fill-${id}" style="position:absolute;top:0;left:0;bottom:0;width:0%;background:var(--accent);pointer-events:none;z-index:0;transition:none;"></div>
-              <span id="timer-start-label-${id}" style="position:relative;z-index:1;background:var(--accent);padding:2px 12px;border-radius:6px;">Start</span>
+              <span id="timer-start-label-${id}" style="position:relative;z-index:1;background:var(--accent);color:#000;padding:2px 12px;border-radius:6px;">Start</span>
             </button>
           </div>
           <div style="display:flex;justify-content:center;margin-top:14px;">
@@ -13886,6 +13893,7 @@ function renderCalendar() {
     const isSelected = selectedCalDay === key;
     const isPlanSelected = window._wtabPlanMode && (window._wtabPlanSelectedDays||new Set()).has(key);
     const isPast = !isToday && !isFuture;
+    if(isPast) cls += ' past';
     const isPlanPast = window._wtabPlanMode && isPast;
 if(isSelected) cls += ' selected';
 const onclick = isPlanPast ? '' : `onclick="selectCalDay('${key}')"`;
@@ -21506,8 +21514,8 @@ function openRepsPopup(span, exId) {
         <button class="kg-pad-btn" onclick="repsEditorBack()">⌫</button>
       </div>
       <div style="display:flex;gap:8px;">
-        <button onclick="cancelRepsEditor()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:18px;font-weight:700;padding:11px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Cancel</button>
-        <button onclick="confirmRepsEditor()" style="flex:2;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:18px;font-weight:700;padding:11px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Done</button>
+        <button class="editor-action-btn" onclick="cancelRepsEditor()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:18px;font-weight:700;padding:0 11px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Cancel</button>
+        <button class="editor-action-btn" onclick="confirmRepsEditor()" style="flex:2;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:18px;font-weight:700;padding:0 11px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Done</button>
       </div>
     </div>`;
 
@@ -22273,8 +22281,8 @@ closeInlineKgEditor(false);
         <button class="kg-pad-btn" onclick="kgPadBack()" style="font-size:18px;">⌫</button>
       </div>
       <div style="display:flex;gap:8px;">
-        <button onclick="cancelInlineKgEditor()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:18px;font-weight:700;padding:11px;cursor:pointer;">Cancel</button>
-        <button onclick="confirmKgEditor()" style="flex:2;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:18px;font-weight:700;padding:11px;cursor:pointer;">Done</button>
+        <button class="editor-action-btn" onclick="cancelInlineKgEditor()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:18px;font-weight:700;padding:0 11px;cursor:pointer;">Cancel</button>
+        <button class="editor-action-btn" onclick="confirmKgEditor()" style="flex:2;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:18px;font-weight:700;padding:0 11px;cursor:pointer;">Done</button>
       </div>
     </div>`;
 
@@ -23184,6 +23192,8 @@ function editExerciseDetail() {
   const exData = customExercises.find(e => e.name === name) || { name, muscle: 'Chest' };
   // Set up edit mode
   window._editExName = name;
+  window._newExPhoto32 = null;
+  window._newExPhotoThumb = null;
   window._newExMuscle = exData.muscle || 'Chest';
   window._newExCompoundMuscles = exData.compoundMuscles || [];
   window._newExSelectedSubMuscles = exData.subMuscles || [];
@@ -24442,18 +24452,15 @@ function _updateTimerFill() {
   const id = _timerFillId;
   const t = id ? window._timers?.[id] : null;
   const fill = id ? document.getElementById(`timer-start-fill-${id}`) : null;
-  const lbl = id ? document.getElementById(`timer-start-label-${id}`) : null;
   if (fill && t?.running && t.target > 0) {
     // Smooth interpolation using elapsed time since last start
     const elapsed = (Date.now() - t.startedAt) / 1000;
     const smoothRemaining = Math.max(0, t.remainingAtStart - elapsed);
     const pct = Math.max(0, Math.min(100, (smoothRemaining / t.target) * 100));
     fill.style.width = pct + '%';
-    if (lbl) lbl.style.color = pct > 30 ? '#000' : 'var(--accent)';
     _timerFillRaf = requestAnimationFrame(_updateTimerFill);
   } else {
     if (fill) fill.style.width = '0%';
-    if (lbl) lbl.style.color = '';
     if (_timerFillRaf) { cancelAnimationFrame(_timerFillRaf); _timerFillRaf = null; }
   }
 }
@@ -24466,17 +24473,13 @@ function _stopTimerFill(id) {
   if (_timerFillRaf) { cancelAnimationFrame(_timerFillRaf); _timerFillRaf = null; }
   const _id = id || _timerFillId;
   const fill = _id ? document.getElementById(`timer-start-fill-${_id}`) : null;
-  const lbl = _id ? document.getElementById(`timer-start-label-${_id}`) : null;
   if (fill) fill.style.width = '0%';
-  if (lbl) lbl.style.color = '';
   _timerFillId = null;
 }
 function _stopTimerFill(id) {
   if (_timerFillRaf) { cancelAnimationFrame(_timerFillRaf); _timerFillRaf = null; }
   const fill = id ? document.getElementById(`timer-start-fill-${id}`) : null;
-  const lbl = id ? document.getElementById(`timer-start-label-${id}`) : null;
   if (fill) fill.style.width = '0%';
-  if (lbl) lbl.style.color = '';
   _timerFillId = null;
 }
 window._startTimerFill = _startTimerFill;
