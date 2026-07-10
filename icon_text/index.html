@@ -541,6 +541,8 @@ body.ex-tab-detail-open #ex-float-bar{display:none !important;}
 .prog-accordion.open .prog-acc-info-btn{display:inline-flex;}
 .prog-acc-placeholder{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:14px;opacity:0;pointer-events:none;height:49px;}
 @keyframes workoutEnter{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes setRowFadeIn{from{opacity:0}to{opacity:1}}
+@keyframes exTabContentFadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes accSlideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes accSlideUp{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-8px)}}
 #acc-active-slot .prog-accordion{animation:accSlideDown .28s cubic-bezier(.4,0,.2,1) both;}
@@ -4230,7 +4232,8 @@ function renderExercisesTab() {
   const pillMuscles = MUSCLE_ORDER;
 
   // Build pill bar
-  let pillsHtml = '<div style="display:flex;gap:0;margin-top:5px;border-bottom:1px solid var(--border);">';
+  const _muscleIdx = Math.max(0, pillMuscles.indexOf(selected));
+  let pillsHtml = `<div style="display:flex;gap:0;border-bottom:1px solid var(--border);"><div id="exTab-muscle-wrap" data-views="${pillMuscles.join(',')}" style="position:relative;display:flex;flex:1;margin-top:5px;">`;
   pillMuscles.forEach(muscle => {
     const hasData = !!byMuscle[muscle]?.length;
     const color = MUSCLE_COLORS[muscle];
@@ -4239,11 +4242,10 @@ function renderExercisesTab() {
       flex:1;text-align:center;padding:8px 4px;cursor:pointer;
       font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;
       color:${isActive ? color : '#444'};
-      border-bottom:2px solid ${isActive ? color : 'transparent'};
-      transition:all .15s;
+      transition:color .15s;
     ">${MUSCLE_LABELS[muscle]}</div>`;
   });
-  pillsHtml += '</div>';
+  pillsHtml += `<div id="exTab-muscle-indicator" style="position:absolute;bottom:0;height:2px;left:calc(100%/${pillMuscles.length}*${_muscleIdx});width:calc(100%/${pillMuscles.length});background:${MUSCLE_COLORS[selected]};transition:none;"></div></div></div>`;
 
   // SVG fallback icons per muscle (shared by Favorites and All views)
   const _svgFallbacks = {
@@ -4431,10 +4433,16 @@ function renderExercisesTab() {
     if (_exTabView === 'library') return '';
     return '';
   };
+  const _segViews = _hasCoach ? ['all','custom','coach'] : ['all','custom'];
+  const _segIdx = Math.max(0, _segViews.indexOf(_exTabView));
+  const _segIndicatorColor = _exTabView === 'coach' ? '#7ec8e3' : 'var(--accent)';
   const toggleHtml = `<div style="font-family:'DM Sans';font-size:20px;font-weight:700;color:var(--text);padding:10px 0 6px;">Exercises</div><div style="display:flex;gap:0;margin-bottom:0;align-items:center;">
-    <button onclick="switchExTabView('all')" id="exTab-seg-all" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_exTabView==='all'?'var(--accent)':'#555'};border-bottom:2px solid ${_exTabView==='all'?'var(--accent)':'transparent'};transition:all .15s;">ALL</button>
-    <button onclick="switchExTabView('custom')" id="exTab-seg-custom" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_exTabView==='custom'?'var(--accent)':'#555'};border-bottom:2px solid ${_exTabView==='custom'?'var(--accent)':'transparent'};transition:all .15s;">CUSTOM</button>
-    ${_hasCoach ? `<button onclick="switchExTabView('coach')" id="exTab-seg-coach" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_exTabView==='coach'?'#7ec8e3':'#555'};border-bottom:2px solid ${_exTabView==='coach'?'#7ec8e3':'transparent'};transition:all .15s;">COACH</button>` : ''}
+    <div id="exTab-seg-wrap" data-views="${_segViews.join(',')}" style="position:relative;display:flex;flex:1;">
+      <button onclick="switchExTabView('all')" id="exTab-seg-all" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_exTabView==='all'?'var(--accent)':'#555'};transition:color .15s;">ALL</button>
+      <button onclick="switchExTabView('custom')" id="exTab-seg-custom" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_exTabView==='custom'?'var(--accent)':'#555'};transition:color .15s;">CUSTOM</button>
+      ${_hasCoach ? `<button onclick="switchExTabView('coach')" id="exTab-seg-coach" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_exTabView==='coach'?'#7ec8e3':'#555'};transition:color .15s;">COACH</button>` : ''}
+      <div id="exTab-seg-indicator" style="position:absolute;bottom:0;height:2px;left:calc(100%/${_segViews.length}*${_segIdx});width:calc(100%/${_segViews.length});background:${_segIndicatorColor};transition:none;"></div>
+    </div>
     <button id="ex-add-btn" onclick="openNewExModal(window._exTabMuscle||'Chest')" style="flex-shrink:0;padding:4px 8px 4px 12px;border:none;background:transparent;color:${_exTabView==='custom'?'var(--accent)':'#555'};cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;"><svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></button>
   </div>${_exSubtitle()}`;
   const exToggleBar = document.getElementById('exercisesToggleBar');
@@ -4524,9 +4532,41 @@ function switchCoachPickView(view) {
 }
 
 function switchWTabView(view) {
+  // Capture the currently active segment's index/count (from the pre-switch
+  // render) so the shared underline indicator can slide (FLIP-style) from its
+  // old position to the new one instead of just snapping there.
+  const _oldWrap = document.getElementById('wTab-seg-wrap');
+  const _oldViews = (_oldWrap?.dataset.views || '').split(',').filter(Boolean);
+  const _oldIdx = _oldViews.indexOf(_wTabView);
+  const _oldCount = _oldViews.length;
+
   _wTabView = view;
   window._keepWorkoutsTabState = true;
   renderWorkoutsTab2();
+
+  const indicator = document.getElementById('wTab-seg-indicator');
+  if (indicator && _oldIdx >= 0 && _oldCount > 0) {
+    const _newWrap = document.getElementById('wTab-seg-wrap');
+    const _newViews = (_newWrap?.dataset.views || '').split(',').filter(Boolean);
+    const _newIdx = _newViews.indexOf(_wTabView);
+    const _newCount = _newViews.length;
+    indicator.style.transition = 'none';
+    indicator.style.left = `calc(100%/${_oldCount}*${_oldIdx})`;
+    indicator.style.width = `calc(100%/${_oldCount})`;
+    void indicator.offsetHeight; // flush the old position before transitioning
+    indicator.style.transition = 'left .25s cubic-bezier(.4,0,.2,1), width .25s cubic-bezier(.4,0,.2,1)';
+    indicator.style.left = `calc(100%/${_newCount}*${_newIdx})`;
+    indicator.style.width = `calc(100%/${_newCount})`;
+  }
+
+  // Retrigger the content fade-in for the freshly filtered list.
+  const _content = document.getElementById('workouts2TabContent') || document.getElementById('workoutsTabContent');
+  if (_content) {
+    _content.style.animation = 'none';
+    void _content.offsetHeight; // flush before re-applying the animation
+    _content.style.animation = 'exTabContentFadeIn .28s cubic-bezier(.4,0,.2,1) both';
+  }
+
   requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'instant' }));
 }
 
@@ -4535,14 +4575,85 @@ function _initWTabView() {
 }
 
 function switchExTabView(view) {
+  // Capture the currently active segment's index/count (from the pre-switch
+  // render) so the shared underline indicator can slide (FLIP-style) from its
+  // old position to the new one instead of just snapping there.
+  const _oldWrap = document.getElementById('exTab-seg-wrap');
+  const _oldViews = (_oldWrap?.dataset.views || '').split(',').filter(Boolean);
+  const _oldIdx = _oldViews.indexOf(_exTabView);
+  const _oldCount = _oldViews.length;
+
   _exTabView = view;
   renderExercisesTab();
+
+  const indicator = document.getElementById('exTab-seg-indicator');
+  if (indicator && _oldIdx >= 0 && _oldCount > 0) {
+    const _newWrap = document.getElementById('exTab-seg-wrap');
+    const _newViews = (_newWrap?.dataset.views || '').split(',').filter(Boolean);
+    const _newIdx = _newViews.indexOf(_exTabView);
+    const _newCount = _newViews.length;
+    indicator.style.transition = 'none';
+    indicator.style.left = `calc(100%/${_oldCount}*${_oldIdx})`;
+    indicator.style.width = `calc(100%/${_oldCount})`;
+    void indicator.offsetHeight; // flush the old position before transitioning
+    indicator.style.transition = 'left .25s cubic-bezier(.4,0,.2,1), width .25s cubic-bezier(.4,0,.2,1)';
+    indicator.style.left = `calc(100%/${_newCount}*${_newIdx})`;
+    indicator.style.width = `calc(100%/${_newCount})`;
+  }
+
+  // Retrigger the content fade-in for the freshly filtered list.
+  const _content = document.getElementById('exercisesTabContent');
+  if (_content) {
+    _content.style.animation = 'none';
+    void _content.offsetHeight; // flush before re-applying the animation
+    _content.style.animation = 'exTabContentFadeIn .28s cubic-bezier(.4,0,.2,1) both';
+  }
+
   requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'instant' }));
 }
 
 function selectExTabMuscle(muscle) {
+  // Capture the currently active pill's index/count/color (from the
+  // pre-switch render) so the shared underline indicator can slide
+  // (FLIP-style) from its old position to the new one, crossfading color too
+  // since each body part has its own distinct color (unlike the 2-color
+  // ALL/CUSTOM toggle), instead of just snapping there.
+  const _oldWrap = document.getElementById('exTab-muscle-wrap');
+  const _oldIndicator = document.getElementById('exTab-muscle-indicator');
+  const _oldViews = (_oldWrap?.dataset.views || '').split(',').filter(Boolean);
+  const _oldIdx = _oldViews.indexOf(window._exTabMuscle);
+  const _oldCount = _oldViews.length;
+  const _oldColor = _oldIndicator ? getComputedStyle(_oldIndicator).backgroundColor : null;
+
   window._exTabMuscle = muscle;
   renderExercisesTab();
+
+  const indicator = document.getElementById('exTab-muscle-indicator');
+  if (indicator && _oldIdx >= 0 && _oldCount > 0) {
+    const _newWrap = document.getElementById('exTab-muscle-wrap');
+    const _newViews = (_newWrap?.dataset.views || '').split(',').filter(Boolean);
+    const _newIdx = _newViews.indexOf(window._exTabMuscle);
+    const _newCount = _newViews.length;
+    const _newColor = indicator.style.background; // already the fresh render's target color
+    indicator.style.transition = 'none';
+    indicator.style.left = `calc(100%/${_oldCount}*${_oldIdx})`;
+    indicator.style.width = `calc(100%/${_oldCount})`;
+    if (_oldColor) indicator.style.background = _oldColor;
+    void indicator.offsetHeight; // flush the old position/color before transitioning
+    indicator.style.transition = 'left .25s cubic-bezier(.4,0,.2,1), width .25s cubic-bezier(.4,0,.2,1), background .25s ease';
+    indicator.style.left = `calc(100%/${_newCount}*${_newIdx})`;
+    indicator.style.width = `calc(100%/${_newCount})`;
+    if (_newColor) indicator.style.background = _newColor;
+  }
+
+  // Retrigger the content fade-in for the freshly filtered list.
+  const _content = document.getElementById('exercisesTabContent');
+  if (_content) {
+    _content.style.animation = 'none';
+    void _content.offsetHeight; // flush before re-applying the animation
+    _content.style.animation = 'exTabContentFadeIn .28s cubic-bezier(.4,0,.2,1) both';
+  }
+
   requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'instant' }));
 }
 
@@ -6592,10 +6703,16 @@ function renderWorkoutsTab2() {
 
   // ── Toggle bar ────────────────────────────────────────
   const _wHasCoach = window._currentUserData?.coachId && window._currentUserData?.coachingExpires && new Date(window._currentUserData.coachingExpires) >= new Date();
+  const _wSegViews = _wHasCoach ? ['all','custom','coach'] : ['all','custom'];
+  const _wSegIdx = Math.max(0, _wSegViews.indexOf(_wTabView));
+  const _wSegIndicatorColor = _wTabView === 'coach' ? '#7ec8e3' : 'var(--accent)';
   const _wToggleHtml = `<div style="display:flex;align-items:center;padding:10px 0 6px;"><span style="font-family:'DM Sans';font-size:20px;font-weight:700;color:var(--text);">Workouts</span></div><div style="display:flex;gap:0;align-items:center;">
-    <button onclick="switchWTabView('all')" id="wTab-seg-all" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_wTabView==='all'?'var(--accent)':'#555'};border-bottom:2px solid ${_wTabView==='all'?'var(--accent)':'transparent'};transition:all .15s;">ALL</button>
-    <button onclick="switchWTabView('custom')" id="wTab-seg-custom" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_wTabView==='custom'?'var(--accent)':'#555'};border-bottom:2px solid ${_wTabView==='custom'?'var(--accent)':'transparent'};transition:all .15s;">CUSTOM</button>
-    ${_wHasCoach ? `<button onclick="switchWTabView('coach')" id="wTab-seg-coach" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_wTabView==='coach'?'#7ec8e3':'#555'};border-bottom:2px solid ${_wTabView==='coach'?'#7ec8e3':'transparent'};transition:all .15s;">COACH</button>` : ''}
+    <div id="wTab-seg-wrap" data-views="${_wSegViews.join(',')}" style="position:relative;display:flex;flex:1;">
+      <button onclick="switchWTabView('all')" id="wTab-seg-all" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_wTabView==='all'?'var(--accent)':'#555'};transition:color .15s;">ALL</button>
+      <button onclick="switchWTabView('custom')" id="wTab-seg-custom" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_wTabView==='custom'?'var(--accent)':'#555'};transition:color .15s;">CUSTOM</button>
+      ${_wHasCoach ? `<button onclick="switchWTabView('coach')" id="wTab-seg-coach" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_wTabView==='coach'?'#7ec8e3':'#555'};transition:color .15s;">COACH</button>` : ''}
+      <div id="wTab-seg-indicator" style="position:absolute;bottom:0;height:2px;left:calc(100%/${_wSegViews.length}*${_wSegIdx});width:calc(100%/${_wSegViews.length});background:${_wSegIndicatorColor};transition:none;"></div>
+    </div>
     <button id="w2-add-btn" onclick="startNewWorkout(true)" style="flex-shrink:0;padding:4px 8px 4px 12px;border:none;background:transparent;color:${_wTabView==='custom'?'var(--accent)':'#555'};cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;"><svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></button>
   </div>`;
   if (toggleBar) {
@@ -7042,10 +7159,60 @@ function renderWorkoutsTab() {
 let _todayMuscleFilter = null;
 let _todayHideDone = false;
 
+function _animateFilterShow(card, delay) {
+  clearTimeout(card._filterAnimTimer);
+  card.dataset.filterState = 'visible';
+  card.style.transition = 'none';
+  card.style.display = '';
+  card.style.overflow = 'hidden';
+  card.style.height = 'auto';
+  card.style.opacity = '';
+  card.style.transform = '';
+  card.style.marginBottom = '';
+  const targetH = card.offsetHeight;
+  card.style.height = '0px';
+  card.style.opacity = '0';
+  card.style.transform = 'translateY(-6px) scale(.97)';
+  card.style.marginBottom = '0px';
+  void card.offsetHeight; // flush the collapsed state before transitioning
+  card.style.transition = `height .38s cubic-bezier(.4,0,.2,1) ${delay}ms, opacity .3s ease ${delay}ms, transform .32s cubic-bezier(.4,0,.2,1) ${delay}ms, margin-bottom .38s cubic-bezier(.4,0,.2,1) ${delay}ms`;
+  card.style.height = targetH + 'px';
+  card.style.opacity = '1';
+  card.style.transform = 'translateY(0) scale(1)';
+  card.style.marginBottom = '';
+  card._filterAnimTimer = setTimeout(() => {
+    card.style.transition = '';
+    card.style.height = '';
+    card.style.overflow = '';
+    card.style.opacity = '';
+    card.style.transform = '';
+    card.style.marginBottom = '';
+  }, delay + 400);
+}
+
+function _animateFilterHide(card, delay) {
+  clearTimeout(card._filterAnimTimer);
+  card.dataset.filterState = 'hidden';
+  const currentH = card.offsetHeight;
+  card.style.transition = 'none';
+  card.style.height = currentH + 'px';
+  card.style.overflow = 'hidden';
+  card.style.opacity = '1';
+  card.style.transform = 'translateY(0) scale(1)';
+  void card.offsetHeight; // flush the expanded state before transitioning
+  card.style.transition = `height .3s cubic-bezier(.4,0,.2,1) ${delay}ms, opacity .22s ease ${delay}ms, transform .26s cubic-bezier(.4,0,.2,1) ${delay}ms, margin-bottom .3s cubic-bezier(.4,0,.2,1) ${delay}ms`;
+  card.style.height = '0px';
+  card.style.opacity = '0';
+  card.style.transform = 'translateY(-6px) scale(.97)';
+  card.style.marginBottom = '0px';
+  card._filterAnimTimer = setTimeout(() => { card.style.display = 'none'; }, delay + 310);
+}
+
 function applyTodayFilters() {
   let visibleCount = 0;
   // Check if any card is currently expanded — if so, don't restore hidden cards
   const expandedCard = document.querySelector('#exerciseList .exercise-card[data-open="true"]');
+  let _staggerIdx = 0;
   document.querySelectorAll('#exerciseList .exercise-card').forEach(card => {
     // Don't touch cards hidden by KG editor focus mode
     if (card.dataset.kgHide !== undefined) return;
@@ -7061,17 +7228,16 @@ function applyTodayFilters() {
       return;
     }
     if (show) {
-      card.style.display = '';
-      card.style.height = '';
-      card.style.opacity = '';
-      card.style.overflow = '';
-      card.style.marginBottom = '';
-      card.style.transition = '';
+      visibleCount++;
       delete card.dataset.hiddenByExpand;
       delete card.dataset.expandedHeight;
-      visibleCount++;
+      if (card.style.display === 'none' || card.dataset.filterState === 'hidden') {
+        _animateFilterShow(card, Math.min(_staggerIdx++, 8) * 25);
+      }
     } else {
-      card.style.display = 'none';
+      if (card.style.display !== 'none' && card.dataset.filterState !== 'hidden') {
+        _animateFilterHide(card, Math.min(_staggerIdx++, 8) * 25);
+      }
     }
   });
 
@@ -7119,7 +7285,9 @@ function filterTodayByMuscle(muscle) {
   applyTodayFilters();
   updateTodayMuscleChips();
   _updateAllExCircleColors();
-  _scrollToNextExercise();
+  // Wait for the filter show/hide animations (up to ~200ms stagger + 380ms) to
+  // fully settle before scrolling — see _scrollToNextExercise for why.
+  _scrollToNextExercise(620);
 }
 
 function toggleTodayHideDone() {
@@ -8853,15 +9021,20 @@ function _refreshExPRSlots(id) {
 window._refreshExPRSlots = _refreshExPRSlots;
 
 let _scrollToNextExerciseTimer = null;
-function _scrollToNextExercise() {
+function _scrollToNextExercise(wait = 80) {
   // toggleDone() and closeExDetailOverlay() both call this after finishing an exercise —
   // debounce so the two calls don't fire competing scrollIntoView animations against
   // each other (which stretched the transition and let the just-finished card linger
   // near/under the fixed header for far longer than intended).
+  // `wait` can be raised by callers (e.g. filterTodayByMuscle) that just kicked off the
+  // async filter show/hide animations in applyTodayFilters — scrollIntoView must run
+  // AFTER cards finish collapsing/expanding, not while their height is still mid-transition,
+  // otherwise the card keeps drifting under the scroll target and the landing position ends
+  // up wrong (leaving still-pending exercises stranded off-screen).
   clearTimeout(_scrollToNextExerciseTimer);
   _scrollToNextExerciseTimer = setTimeout(() => {
     const all = [...document.querySelectorAll('.exercise-card:not(.completed)')];
-    const visible = all.filter(c => c.offsetParent !== null);
+    const visible = all.filter(c => c.offsetParent !== null && c.dataset.filterState !== 'hidden');
     const nextCard = _todayMuscleFilter
       ? visible.find(c => c.dataset.exmuscle === _todayMuscleFilter || c.dataset.muscle === _todayMuscleFilter)
       : visible[0];
@@ -8870,7 +9043,7 @@ function _scrollToNextExercise() {
     const margin = hdr ? hdr.offsetHeight + 8 : 78;
     nextCard.style.scrollMarginTop = margin + 'px';
     nextCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, 80);
+  }, wait);
 }
 window._scrollToNextExercise = _scrollToNextExercise;
 
@@ -9399,6 +9572,7 @@ function addSet(exId, defaultKg=null, defaultReps=null, defaultDone=false) {
   const tbody = document.getElementById(`set-body-${exId}`);
   const tr = document.createElement('tr');
   tr.className = defaultDone ? 'set-row done' : 'set-row';
+  tr.style.animation = 'setRowFadeIn .3s ease both';
   const kg = defaultKg!==null ? `value="${defaultKg}"` : '';
   const rp = defaultReps!==null ? `value="${defaultReps}"` : '';
   const kgClass = defaultKg!==null ? 'set-input prefilled' : 'set-input';
@@ -19524,13 +19698,14 @@ function _renderCoachExercisesTab(el) {
   const selected = window._exTabMuscle;
   const coachExes = (_coachExercises || []).filter(e => e.muscle === selected);
 
-  let pillsHtml = '<div style="display:flex;gap:0;margin-bottom:16px;border-bottom:1px solid var(--border);">';
+  const _muscleIdx = Math.max(0, MUSCLE_ORDER.indexOf(selected));
+  let pillsHtml = `<div style="display:flex;gap:0;margin-bottom:16px;border-bottom:1px solid var(--border);"><div id="exTab-muscle-wrap" data-views="${MUSCLE_ORDER.join(',')}" style="position:relative;display:flex;flex:1;">`;
   MUSCLE_ORDER.forEach(muscle => {
     const color = MUSCLE_COLORS[muscle];
     const isActive = muscle === selected;
-    pillsHtml += `<div onclick="selectExTabMuscle('${muscle}')" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;font-family:'DM Sans';font-size:13px;font-weight:700;color:${isActive ? color : '#444'};border-bottom:2px solid ${isActive ? color : 'transparent'};transition:all .15s;">${MUSCLE_LABELS[muscle]}</div>`;
+    pillsHtml += `<div onclick="selectExTabMuscle('${muscle}')" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;font-family:'DM Sans';font-size:13px;font-weight:700;color:${isActive ? color : '#444'};transition:color .15s;">${MUSCLE_LABELS[muscle]}</div>`;
   });
-  pillsHtml += '</div>';
+  pillsHtml += `<div id="exTab-muscle-indicator" style="position:absolute;bottom:0;height:2px;left:calc(100%/${MUSCLE_ORDER.length}*${_muscleIdx});width:calc(100%/${MUSCLE_ORDER.length});background:${MUSCLE_COLORS[selected]};transition:none;"></div></div></div>`;
 
   let listHtml = '';
   coachExes.forEach(ex => {
@@ -20422,7 +20597,7 @@ function deleteCoachWorkout(id) {
 </div>
 
 <!-- Workout loading overlay — must be outside w2-sheet (which has will-change:transform) -->
-<div id="workout-loading-overlay" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,0.72);align-items:center;justify-content:center;flex-direction:column;opacity:0;transition:opacity .35s ease,background .7s cubic-bezier(.4,0,.2,1);">
+<div id="workout-loading-overlay" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,1);align-items:center;justify-content:center;flex-direction:column;opacity:0;transition:opacity .8s ease;">
   <div id="workout-loading-ring" style="width:90px;height:90px;border-radius:50%;-webkit-mask:radial-gradient(transparent 56%,#000 56%);mask:radial-gradient(transparent 56%,#000 56%);"></div>
   <div style="margin-top:18px;font-family:'DM Sans';font-size:16px;font-weight:700;color:#fff;letter-spacing:.9px;">LOADING WORKOUT</div>
 </div>
@@ -24370,11 +24545,11 @@ function _runWorkoutLoadingAnim(onDone) {
   const _ring = document.getElementById('workout-loading-ring');
   if (!_ov || !_ring) { if (onDone) setTimeout(onDone, 200); return; }
   const _accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#e8ff47';
-  _ov.style.background = 'rgba(0,0,0,0.72)';
+  _ov.style.background = 'rgba(0,0,0,1)';
+  _ov.style.transition = 'opacity .8s ease';
   _ov.style.opacity = '0';
   _ov.style.display = 'flex';
   requestAnimationFrame(() => requestAnimationFrame(() => { _ov.style.opacity = '1'; }));
-  setTimeout(() => { _ov.style.background = 'rgba(0,0,0,1)'; }, 800);
   let _t0 = null;
   const DURATION = 2000;
   function _step(ts) {
@@ -24391,6 +24566,7 @@ function _runWorkoutLoadingAnim(onDone) {
     } else {
       if (onDone) onDone();
       setTimeout(() => {
+        _ov.style.transition = 'opacity .35s ease';
         _ov.style.opacity = '0';
         setTimeout(() => { _ov.style.display = 'none'; }, 350);
       }, 250);
