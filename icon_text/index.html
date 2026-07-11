@@ -3438,6 +3438,27 @@ function _nwfUpdateNextBtn() {
   if (btn)  btn.style.opacity = hasName ? '1' : '0.35';
   if (btn2) { btn2.style.background = hasName ? 'var(--accent)' : '#444'; btn2.style.color = hasName ? '#000' : '#fff'; }
 }
+const _NWF_FIELD_IDS = ['nwf-name-input', 'nwf-description', 'nwf-video-link'];
+function _nwfFieldFocus(titleId, boxId, on) {
+  const title = document.getElementById(titleId);
+  const box = document.getElementById(boxId);
+  if (title) title.style.color = on ? 'var(--accent)' : '#fff';
+  if (box) box.style.borderColor = on ? 'var(--accent)' : '#444';
+
+  const btns = document.getElementById('nwf-bottom-btns');
+  if (!btns) return;
+  if (on) {
+    btns.style.display = 'none';
+  } else {
+    // Defer so a blur immediately followed by another field's focus (e.g.
+    // tabbing between fields) doesn't flash the buttons back on in between.
+    setTimeout(() => {
+      const stillEditing = _NWF_FIELD_IDS.includes(document.activeElement?.id);
+      if (!stillEditing) btns.style.display = 'flex';
+    }, 0);
+  }
+}
+window._nwfFieldFocus = _nwfFieldFocus;
 function _openNwfNamePage() {
   const nameEl = document.getElementById('nwf-hero-name');
   const cur = (document.getElementById('workoutName')?.value || '').trim();
@@ -4259,21 +4280,53 @@ function renderExercisesTab() {
   };
   const _defaultSvgIcon = '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M8 12h8"/></svg>';
 
+  // In-memory cache of localforage photo lookups, keyed by the same key
+  // used to store them. Populated once per exercise per page session (see
+  // _updateExTabThumbs). Without this, every re-render of the list (e.g.
+  // switching muscle filters, reopening the tab) redid the async lookup from
+  // scratch for every exercise, replaying the default-then-swap flash again
+  // and again — and for exercises with no photo at all, there was nothing to
+  // "not blink" against, so leaving the cell blank until resolved (the
+  // previous fix) introduced a NEW blank-then-default flash for them too.
+  window._exPhotoMemCache = window._exPhotoMemCache || {};
+
   function _makeExThumbHtml(name, muscle) {
-    const mc = MUSCLE_COLORS[muscle] || '#888';
     const photo = localStorage.getItem(`ironlog_ex_photo_thumb_${name}`) || localStorage.getItem(`ironlog_ex_photo_${name}`);
-    const defaultSrc = _EX_DEFAULT_PHOTOS[muscle];
-    const _svgFb = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:${mc};">${_svgFallbacks[muscle] || _defaultSvgIcon}</div>`;
-    const inner = photo
-      ? `<img src="${photo}" style="width:100%;height:100%;object-fit:cover;display:block;">`
-      : defaultSrc
-        ? `<img src="${defaultSrc}" style="width:100%;height:100%;object-fit:cover;display:block;filter:brightness(0.75);" onerror="this.style.display='none'">`
-        : _svgFb;
     const safeKey = name.replace(/"/g, '&quot;');
-    const noPhotoAttr = photo ? '' : ` data-photo-key="ironlog_ex_photo_${safeKey}"`;
+    const memKey = `ironlog_ex_photo_${safeKey}`;
+    let inner, noPhotoAttr = '';
+    if (photo) {
+      inner = `<img src="${photo}" style="width:100%;height:100%;object-fit:cover;display:block;">`;
+    } else if (memKey in window._exPhotoMemCache) {
+      // Already resolved earlier this session — render the final state
+      // synchronously and skip the async lookup entirely. No flash.
+      const cached = window._exPhotoMemCache[memKey];
+      inner = cached
+        ? `<img src="${cached}" style="width:100%;height:100%;object-fit:cover;display:block;">`
+        : _exThumbDefaultHtml(muscle);
+    } else if (window.localforage) {
+      // Never looked up before this session. Show the default immediately
+      // (matches pre-existing, no-flash behavior for the common no-photo
+      // case) and upgrade to the real photo in the background if one turns
+      // up — a one-time flash at worst, for this exercise, this session; see
+      // _updateExTabThumbs, which caches the result so every later render
+      // (including switching back to this muscle/tab) is instant.
+      inner = _exThumbDefaultHtml(muscle);
+      noPhotoAttr = ` data-photo-key="${memKey}" data-photo-muscle="${muscle}"`;
+    } else {
+      inner = _exThumbDefaultHtml(muscle);
+    }
     return `<div style="position:relative;width:80px;height:80px;flex-shrink:0;margin:8px 12px 8px 10px;">
       <div${noPhotoAttr} style="width:100%;height:100%;border:1px solid #1e1e1e;border-radius:8px;overflow:hidden;background:#0d0d0d;">${inner}</div>
     </div>`;
+  }
+
+  function _exThumbDefaultHtml(muscle) {
+    const mc = MUSCLE_COLORS[muscle] || '#888';
+    const defaultSrc = _EX_DEFAULT_PHOTOS[muscle];
+    return defaultSrc
+      ? `<img src="${defaultSrc}" style="width:100%;height:100%;object-fit:cover;display:block;filter:brightness(0.75);" onerror="this.style.display='none'">`
+      : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:${mc};">${_svgFallbacks[muscle] || _defaultSvgIcon}</div>`;
   }
 
   function _updateExTabThumbs() {
@@ -4281,9 +4334,16 @@ function renderExercisesTab() {
     document.querySelectorAll('#exercisesTabContent [data-photo-key]').forEach(el => {
       const key = el.getAttribute('data-photo-key');
       if (!key) return;
+      const muscle = el.getAttribute('data-photo-muscle');
       window.localforage.getItem(key).then(p => {
+        window._exPhotoMemCache[key] = p || null;
+        el.removeAttribute('data-photo-key');
+        el.removeAttribute('data-photo-muscle');
+        // Only touch the DOM if a photo actually turned up — the element is
+        // already showing the correct default from the initial render, so
+        // leaving it alone in the (common) no-photo case means zero visual
+        // change at all, not just a fast one.
         if (p) {
-          el.removeAttribute('data-photo-key');
           el.innerHTML = `<img src="${p}" style="width:100%;height:100%;object-fit:cover;display:block;">`;
         }
       });
@@ -7492,20 +7552,29 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
   photoBox.onclick = () => openExDetail(id);
   const _defaultExImgs = { Chest:'chest', Back:'back', Legs:'legs', Shoulders:'shoulders', Arms:'arms', Core:'core', Mix:'mix' };
   const _defMusKey = _defaultExImgs[_exMuscle];
-  if (_savedPhoto) {
-    photoBox.innerHTML = `<img src="${_savedPhoto}" style="width:100%;height:100%;object-fit:cover;display:block;">`;
-  } else {
+  const _showDefaultPhoto = () => {
     if (_defMusKey) {
       photoBox.innerHTML = `<img src="images/${_defMusKey}_exercise_default.webp" style="width:100%;height:100%;object-fit:cover;display:block;filter:brightness(0.65);">`;
       photoBox.querySelector('img').onerror = () => { photoBox.innerHTML = `<div style="color:${muscleColor};opacity:0.4;">${_svgIcon}</div>`; };
     } else {
       photoBox.innerHTML = `<div style="color:${muscleColor};opacity:0.4;">${_svgIcon}</div>`;
     }
-    if (window.localforage) {
-      window.localforage.getItem(_exPhotoKey).then(p => {
-        if (p) photoBox.innerHTML = `<img src="${p}" style="width:100%;height:100%;object-fit:cover;display:block;">`;
-      });
-    }
+  };
+  if (_savedPhoto) {
+    photoBox.innerHTML = `<img src="${_savedPhoto}" style="width:100%;height:100%;object-fit:cover;display:block;">`;
+  } else if (window.localforage) {
+    // Don't render the default muscle image yet — a saved photo may still be
+    // sitting in localforage (IndexedDB) under a key the synchronous
+    // localStorage checks above don't cover. Rendering the default first and
+    // then swapping to the real photo once this resolves is exactly the
+    // "default image blinks over the user's photo" flash. Leave the box
+    // empty (its own #0d0d0d background) until we know for sure.
+    window.localforage.getItem(_exPhotoKey).then(p => {
+      if (p) photoBox.innerHTML = `<img src="${p}" style="width:100%;height:100%;object-fit:cover;display:block;">`;
+      else _showDefaultPhoto();
+    });
+  } else {
+    _showDefaultPhoto();
   }
 
   // 3. Right content: name + sets
@@ -9273,7 +9342,14 @@ function kgPadReset() {
   const wasBW = input?.dataset.origBw === '1';
   _kgBWMode = wasBW;
   window._kgEditorBWMode = wasBW;
-  _refreshBWCell();
+  const btn = document.getElementById('kgBWBtnInline');
+  if (wasBW) {
+    btn?.classList.add('kg-bw-btn-active');
+    _refreshBWCell();
+  } else {
+    btn?.classList.remove('kg-bw-btn-active');
+    _removeBWCell();
+  }
   _setKgVal(prev);
 }
 
@@ -15689,24 +15765,29 @@ window.addEventListener('load', function() {
         <div style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:rgba(255,255,255,0.45);letter-spacing:1px;text-transform:uppercase;">preview</div>
       </div>
     </div>
-    <div style="font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;color:#fff;letter-spacing:0;margin-top:14px;margin-bottom:6px;padding:0 2px;">Workout Name</div>
-    <div style="background:#111;border:1px solid #444;border-radius:12px;padding:10px 14px;">
+    <div id="nwf-name-title" style="font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;color:#fff;letter-spacing:0;margin-top:14px;margin-bottom:6px;padding:0 2px;transition:color .2s;">Workout Name</div>
+    <div id="nwf-name-box" style="background:#111;border:1px solid #444;border-radius:12px;padding:10px 14px;transition:border-color .2s;">
       <input id="nwf-name-input" type="text" autocomplete="off" enterkeyhint="done" spellcheck="false" placeholder="Name your workout..."
              style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;caret-color:#34d399;-webkit-text-fill-color:#fff;box-sizing:border-box;"
+             onfocus="_nwfFieldFocus('nwf-name-title','nwf-name-box',true)"
              oninput="(function(v){const _hb=/[֐-׿]/.test(v);const _ni=document.getElementById('nwf-name-input');_ni.style.direction=_hb?'rtl':'ltr';_ni.style.textAlign=_hb?'right':'left';const wn=document.getElementById('workoutName');if(wn)wn.value=v.trim();const ne=document.getElementById('nwf-hero-name');if(ne){ne.dataset.name=v.trim();ne.innerHTML=v.trim()?_heroNameHtml(v.trim()):'';ne.style.direction=_hb?'rtl':'';}if(typeof _nwfUpdateNextBtn==='function')_nwfUpdateNextBtn();})(this.value)"
-             onblur="(function(inp){const v=inp.value.trim();if(!v)return;const nl=v.toLowerCase();const isDup=(workouts||[]).some((w,i)=>!w._draft&&(window._editingWorkoutIdx!=null&&i===window._editingWorkoutIdx?false:(w.name||'').trim().toLowerCase()===nl));if(isDup){inp.style.color='#ff4747';setTimeout(()=>{inp.style.color='';},1500);if(typeof _showAddSetMsg==='function')_showAddSetMsg('A workout with this name already exists');const wn=document.getElementById('workoutName');if(wn)wn.value='';const ne=document.getElementById('nwf-hero-name');if(ne){ne.dataset.name='';ne.innerHTML='';}if(typeof _nwfUpdateNextBtn==='function')_nwfUpdateNextBtn();}})(this)"
+             onblur="_nwfFieldFocus('nwf-name-title','nwf-name-box',false);(function(inp){const v=inp.value.trim();if(!v)return;const nl=v.toLowerCase();const isDup=(workouts||[]).some((w,i)=>!w._draft&&(window._editingWorkoutIdx!=null&&i===window._editingWorkoutIdx?false:(w.name||'').trim().toLowerCase()===nl));if(isDup){inp.style.color='#ff4747';setTimeout(()=>{inp.style.color='';},1500);if(typeof _showAddSetMsg==='function')_showAddSetMsg('A workout with this name already exists');const wn=document.getElementById('workoutName');if(wn)wn.value='';const ne=document.getElementById('nwf-hero-name');if(ne){ne.dataset.name='';ne.innerHTML='';}if(typeof _nwfUpdateNextBtn==='function')_nwfUpdateNextBtn();}})(this)"
              onkeydown="if(event.key==='Enter')this.blur()">
     </div>
-    <div style="font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;color:#fff;letter-spacing:0;margin-top:14px;margin-bottom:6px;padding:0 2px;">Description <span style="color:#888;font-weight:500;">(optional)</span></div>
-    <div style="background:#111;border:1px solid #444;border-radius:12px;padding:10px 14px 12px;">
+    <div id="nwf-desc-title" style="font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;color:#fff;letter-spacing:0;margin-top:14px;margin-bottom:6px;padding:0 2px;transition:color .2s;">Description <span style="color:#888;font-weight:500;">(optional)</span></div>
+    <div id="nwf-desc-box" style="background:#111;border:1px solid #444;border-radius:12px;padding:10px 14px 12px;transition:border-color .2s;">
       <textarea id="nwf-description" placeholder="Add details about the workout focus..." rows="2" spellcheck="false"
                 style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:400;line-height:1.5;resize:none;overflow:hidden;caret-color:#34d399;-webkit-text-fill-color:#fff;box-sizing:border-box;"
+                onfocus="_nwfFieldFocus('nwf-desc-title','nwf-desc-box',true)"
+                onblur="_nwfFieldFocus('nwf-desc-title','nwf-desc-box',false)"
                 oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px';var _rtl=/[֐-׿]/.test(this.value);this.style.direction=_rtl?'rtl':'ltr';this.style.textAlign=_rtl?'right':'left';"></textarea>
     </div>
-    <div style="font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;color:#fff;letter-spacing:0;margin-top:14px;margin-bottom:6px;padding:0 2px;">Video link <span style="color:#888;font-weight:500;">(optional)</span></div>
-    <div style="background:#111;border:1px solid #444;border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:8px;">
+    <div id="nwf-video-title" style="font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;color:#fff;letter-spacing:0;margin-top:14px;margin-bottom:6px;padding:0 2px;transition:color .2s;">Video link <span style="color:#888;font-weight:500;">(optional)</span></div>
+    <div id="nwf-video-box" style="background:#111;border:1px solid #444;border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:8px;transition:border-color .2s;">
       <input id="nwf-video-link" type="url" inputmode="url" placeholder="https://..." spellcheck="false" autocomplete="off"
-             style="flex:1;background:transparent;border:none;outline:none;color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:400;caret-color:#34d399;-webkit-text-fill-color:#fff;box-sizing:border-box;min-width:0;">
+             style="flex:1;background:transparent;border:none;outline:none;color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:400;caret-color:#34d399;-webkit-text-fill-color:#fff;box-sizing:border-box;min-width:0;"
+             onfocus="_nwfFieldFocus('nwf-video-title','nwf-video-box',true)"
+             onblur="_nwfFieldFocus('nwf-video-title','nwf-video-box',false)">
       <button onclick="navigator.clipboard.readText().then(t=>{const i=document.getElementById('nwf-video-link');if(i)i.value=t;}).catch(()=>{})" style="background:transparent;border:none;padding:2px;cursor:pointer;flex-shrink:0;-webkit-tap-highlight-color:transparent;display:flex;align-items:center;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
@@ -21633,6 +21714,16 @@ function openRepsPopup(span, exId) {
   _repsEditorOrigDisplay = span.textContent;
   _repsEditorVal = String(_repsEditorOrigVal);
 
+  // prevReps = the original prefilled value for this set position from defaultSets
+  // (set once when the exercise card loads, never changes regardless of edits) —
+  // mirrors how the KG editor's prevKg is derived.
+  const _repsCard = document.getElementById(exId);
+  const _repsSetIndex = _repsSetNum ? (parseInt(_repsSetNum.textContent) - 1) : -1; // 0-based
+  const _repsDefaults = _repsCard ? JSON.parse(_repsCard.dataset.defaultSets || '[]') : [];
+  const _repsDefaultSet = _repsSetIndex >= 0 ? _repsDefaults[_repsSetIndex] : null;
+  const prevReps = (_repsDefaultSet?.reps > 0) ? _repsDefaultSet.reps : null;
+  window._repsEditorPrevReps = prevReps;
+
   // Hide float bar while reps editor is open (mirrors KG editor behavior)
   const _repsFloatBar = document.getElementById('ex-float-bar');
   if (_repsFloatBar) {
@@ -21690,6 +21781,7 @@ function openRepsPopup(span, exId) {
       </div>
       <div style="display:flex;gap:8px;">
         <button class="editor-action-btn" onclick="cancelRepsEditor()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:18px;font-weight:700;padding:0 11px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Cancel</button>
+        <button class="editor-action-btn" onclick="repsEditorReset()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:18px;font-weight:700;padding:0 11px;cursor:pointer;-webkit-tap-highlight-color:transparent;opacity:${prevReps>0?'1':'0.35'};pointer-events:${prevReps>0?'auto':'none'};">Prev</button>
         <button class="editor-action-btn" onclick="confirmRepsEditor()" style="flex:2;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:18px;font-weight:700;padding:0 11px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Done</button>
       </div>
     </div>`;
@@ -21767,6 +21859,13 @@ function repsEditorDelta(d) {
   let val = parseInt(_repsEditorVal) || 0;
   val = Math.max(0, val + d);
   _repsEditorVal = String(val);
+  _repsUpdateBox();
+}
+
+function repsEditorReset() {
+  const prev = window._repsEditorPrevReps;
+  if (!prev || prev <= 0) return;
+  _repsEditorVal = String(prev);
   _repsUpdateBox();
 }
 
@@ -22433,7 +22532,6 @@ closeInlineKgEditor(false);
     <div style="display:flex;flex-direction:column;gap:10px;">
       <div style="display:flex;gap:8px;">
         <button onclick="kgPadBW()" id="kgBWBtnInline" class="${bwActiveClass}" style="flex:1;background:transparent;border:1px solid #555;border-radius:8px;color:#aaa;font-family:'DM Sans';font-size:12px;font-weight:700;padding:8px 10px;cursor:pointer;transition:all .2s;">Add Body Weight (BW)</button>
-        <button onclick="kgPadReset()" style="flex:0 0 auto;background:transparent;border:1px solid #555;border-radius:8px;color:#aaa;padding:8px 12px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
       </div>
       <div style="display:flex;gap:6px;">
         <button onclick="kgPadToggleSign()" id="kgSignToggle" style="flex:0 0 auto;width:40px;background:transparent;border:1px solid #333;border-radius:8px;font-family:'DM Sans';font-size:14px;font-weight:700;padding:8px 0;cursor:pointer;text-align:center;"><span style="color:#f87171;">-</span><span style="color:#555;">/</span><span style="color:var(--accent);">+</span></button>
@@ -22457,6 +22555,7 @@ closeInlineKgEditor(false);
       </div>
       <div style="display:flex;gap:8px;">
         <button class="editor-action-btn" onclick="cancelInlineKgEditor()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:18px;font-weight:700;padding:0 11px;cursor:pointer;">Cancel</button>
+        <button class="editor-action-btn" onclick="kgPadReset()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:18px;font-weight:700;padding:0 11px;cursor:pointer;opacity:${prevKg>0?'1':'0.35'};pointer-events:${prevKg>0?'auto':'none'};">Prev</button>
         <button class="editor-action-btn" onclick="confirmKgEditor()" style="flex:2;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:18px;font-weight:700;padding:0 11px;cursor:pointer;">Done</button>
       </div>
     </div>`;
