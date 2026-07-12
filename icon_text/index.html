@@ -237,8 +237,8 @@ body.desktop-mode .pages-wrap {
 .set-row td:first-child::before{content:'';position:absolute;left:26px;top:0;bottom:0;width:1.5px;background:#2a2a2a;z-index:0;}
 .set-row:first-child td:first-child::before{top:50%;}
 .set-num{font-size:14px;color:#aaa;font-weight:700;width:28px;height:28px;border-radius:50%;border:1.5px solid #555;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;-webkit-tap-highlight-color:transparent;background:#1a1a1a;position:relative;z-index:1;}
-.kg-pad-btn{background:#141414;border:1px solid #2a2a2a;border-radius:10px;color:var(--text);font-family:'DM Sans';font-size:22px;font-weight:700;padding:14px 0;cursor:pointer;transition:background .1s;height:56px;box-sizing:border-box;}
-.kg-pad-btn:active{background:var(--accent);color:#000;}
+.kg-pad-btn{background:#141414;border:1px solid #2a2a2a;border-radius:10px;color:var(--text);font-family:'DM Sans';font-size:22px;font-weight:700;padding:14px 0;cursor:pointer;transition:transform .1s ease-out;height:56px;box-sizing:border-box;}
+.kg-pad-btn:active{transform:scale(.92);}
 /* Cancel/Done buttons in the inline KG/Reps editors — same height as the number pad buttons above */
 .editor-action-btn{height:56px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;}
 .set-row.ignored .set-num { text-decoration: line-through; }
@@ -571,6 +571,8 @@ body.ex-tab-detail-open #ex-float-bar{display:none !important;}
 @keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 @keyframes prStarPop{0%{transform:scale(0) rotate(-25deg);opacity:0}55%{transform:scale(1.5) rotate(10deg);opacity:1}78%{transform:scale(0.85) rotate(-5deg)}100%{transform:scale(1) rotate(0deg);opacity:1}}
 .pr-star-new{animation:prStarPop 1s cubic-bezier(.34,1.56,.64,1) forwards;display:block;}
+@keyframes tapPopScale{0%{transform:scale(.8)}60%{transform:scale(1.12)}100%{transform:scale(1)}}
+.wsd-circle{transition:border-color .2s ease;}
 @keyframes modalFadeIn{from{opacity:0}to{opacity:1}}
 @keyframes calSlideInRight{from{opacity:0;transform:translateX(32px)}to{opacity:1;transform:translateX(0)}}
 @keyframes calSlideInLeft{from{opacity:0;transform:translateX(-32px)}to{opacity:1;transform:translateX(0)}}
@@ -2914,22 +2916,101 @@ function _fireCoachBtn() {
 }
 window.renderTodayWeekProgress = renderTodayWeekProgress;
 
+function _getWeekStatusData() {
+  const now = new Date();
+  const dayOfWeek = now.getDay(); // 0=Sun
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - dayOfWeek);
+  weekStart.setHours(0, 0, 0, 0);
+  const deletedIds = new Set((deletedWorkouts || []).map(dw => dw.id));
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(weekStart);
+    d.setDate(weekStart.getDate() + i);
+    const dayWorkouts = (workouts || []).filter(w => {
+      if (w._draft || w._template || deletedIds.has(w.id)) return false;
+      if (!w.exercises || !w.exercises.length) return false;
+      const wd = new Date(w.date);
+      return wd.getFullYear() === d.getFullYear() && wd.getMonth() === d.getMonth() && wd.getDate() === d.getDate();
+    });
+    days.push({
+      completed: dayWorkouts.length > 0,
+      name: dayWorkouts.length ? (dayWorkouts[dayWorkouts.length - 1].name || 'Workout') : null,
+      isToday: i === dayOfWeek
+    });
+  }
+  return days;
+}
+
+function renderWeekStatus() {
+  const wrap = document.getElementById('week-status-days');
+  if (!wrap) return;
+  const days = _getWeekStatusData();
+  window._weekStatusData = days;
+  const labels = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+  wrap.innerHTML = days.map((d, i) => `
+    <div class="week-status-day" onclick="event.stopPropagation();selectWeekStatusDay(${i})" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:5px 0;border-radius:10px;cursor:pointer;-webkit-tap-highlight-color:transparent;">
+      <div style="height:20px;display:flex;align-items:center;justify-content:center;">${d.completed ? `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>` : ''}</div>
+      <div class="wsd-circle" style="width:46px;height:46px;border-radius:50%;border:1px solid transparent;display:flex;align-items:center;justify-content:center;box-sizing:border-box;">
+        <span class="wsd-label" style="font-family:'DM Sans';font-size:14px;font-weight:700;color:var(--muted);letter-spacing:.5px;">${labels[i]}</span>
+      </div>
+    </div>`).join('');
+  const todayIdx = days.findIndex(d => d.isToday);
+  selectWeekStatusDay(todayIdx >= 0 ? todayIdx : 0);
+}
+window.renderWeekStatus = renderWeekStatus;
+
+function selectWeekStatusDay(idx) {
+  const days = window._weekStatusData || [];
+  const d = days[idx];
+  const wrap = document.getElementById('week-status-days');
+  if (wrap) {
+    wrap.querySelectorAll('.week-status-day').forEach((el, i) => {
+      const circle = el.querySelector('.wsd-circle');
+      if (circle) {
+        circle.style.borderColor = i === idx ? '#ccc' : 'transparent';
+        if (i === idx) {
+          circle.style.animation = 'none';
+          requestAnimationFrame(() => requestAnimationFrame(() => {
+            circle.style.animation = 'tapPopScale .3s cubic-bezier(.175,.885,.32,1.275)';
+          }));
+        }
+      }
+      const label = el.querySelector('.wsd-label');
+      if (label) label.style.color = i === idx ? 'var(--text)' : 'var(--muted)';
+    });
+  }
+  const detail = document.getElementById('week-status-detail');
+  if (!detail || !d) return;
+  detail.textContent = d.completed ? d.name : 'No workout completed on this day';
+  detail.style.color = d.completed ? 'var(--text)' : '#999';
+  detail.style.fontSize = '15px';
+}
+window.selectWeekStatusDay = selectWeekStatusDay;
+
 function openStrengthTargetSheet() {
   const sheet = document.getElementById('strength-target-sheet');
   const overlay = document.getElementById('strength-target-overlay');
   if (!sheet) return;
   const val = document.getElementById('strength-target-val');
   if (val) val.textContent = workoutWeekTarget;
+  renderWeekStatus();
   overlay.style.display = 'block';
   sheet.style.display = 'block';
   sheet.style.animation = 'sheetUp .25s ease';
 }
 
-function _adjustStrengthTarget(delta) {
+function _adjustStrengthTarget(delta, btn) {
   const newVal = Math.max(1, Math.min(99, workoutWeekTarget + delta));
   workoutWeekTarget = newVal;
   const val = document.getElementById('strength-target-val');
   if (val) val.textContent = newVal;
+  if (btn) {
+    btn.style.animation = 'none';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      btn.style.animation = 'tapPopScale .3s cubic-bezier(.175,.885,.32,1.275)';
+    }));
+  }
 }
 
 function closeStrengthTargetSheet(save) {
@@ -3494,15 +3575,14 @@ function _openNwfNamePage() {
     _nwfPage.addEventListener('transitionend', () => { _nwfPage.style.transition = ''; }, { once: true });
   }));
   if (window._historyPush) window._historyPush('nwf-name');
-  if (window.visualViewport) {
-    window._nwfVpHandler = () => {
-      const btns = document.getElementById('nwf-bottom-btns');
-      if (!btns) return;
-      const keyboardOpen = window.visualViewport.height < window.innerHeight - 100;
-      btns.style.display = keyboardOpen ? 'none' : 'flex';
-    };
-    window.visualViewport.addEventListener('resize', window._nwfVpHandler);
-  }
+  // Note: Cancel/Next visibility while editing a field is handled by
+  // _nwfFieldFocus() (focus/blur on the fields themselves), not by guessing
+  // keyboard state from visualViewport resize — that heuristic
+  // (`visualViewport.height < window.innerHeight - 100`) is unreliable on
+  // real devices (notably Android, where window.innerHeight often shrinks
+  // along with visualViewport.height when the keyboard opens, making the
+  // check false-negative) and would fight with / override the focus-driven
+  // hide shortly after it correctly hides the buttons.
 }
 function _closeNwfNamePage() {
   const _p = document.getElementById('nwf-name-page');
@@ -3511,10 +3591,6 @@ function _closeNwfNamePage() {
   _p.style.transform = '';
   _p.style.opacity = '';
   _p.style.display = 'none';
-  if (window.visualViewport && window._nwfVpHandler) {
-    window.visualViewport.removeEventListener('resize', window._nwfVpHandler);
-    window._nwfVpHandler = null;
-  }
   const _nwfBtns = document.getElementById('nwf-bottom-btns');
   if (_nwfBtns) _nwfBtns.style.display = 'flex';
 }
@@ -20774,18 +20850,21 @@ function deleteCoachWorkout(id) {
 </div>
 
 <!-- Strength target sheet — body-level -->
-<div id="strength-target-overlay" onclick="closeStrengthTargetSheet()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:8999;"></div>
+<div id="strength-target-overlay" onclick="closeStrengthTargetSheet()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:8999;"></div>
 <div id="strength-target-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;z-index:9000;background:#1a1a1a;border-top:1px solid #2a2a2a;border-radius:20px 20px 0 0;padding:12px 20px calc(28px + env(safe-area-inset-bottom,0px));box-sizing:border-box;">
   <div style="width:36px;height:4px;border-radius:2px;background:#444;margin:0 auto 18px;"></div>
-  <div style="font-family:'DM Sans';font-size:18px;font-weight:800;color:var(--text);text-align:center;margin-bottom:4px;letter-spacing:.3px;">STRENGTH GOAL</div>
-  <div style="font-family:'DM Sans';font-size:13px;color:var(--muted);text-align:center;margin-bottom:28px;">How many workouts per week?</div>
+  <div style="font-family:'DM Sans';font-size:18px;font-weight:800;color:var(--text);text-align:center;margin-bottom:14px;letter-spacing:.3px;">COMPLETED WORKOUTS</div>
+  <div id="week-status-days" style="display:flex;justify-content:space-between;gap:2px;margin-bottom:6px;"></div>
+  <div id="week-status-detail" style="text-align:center;font-family:'DM Sans';font-size:13px;font-weight:600;color:var(--muted);min-height:18px;margin-bottom:18px;"></div>
+  <div style="border-top:1px solid #444;margin-bottom:18px;"></div>
+  <div style="font-family:'DM Sans';font-size:18px;font-weight:800;color:var(--text);text-align:center;margin-bottom:18px;letter-spacing:.3px;">MY WEEKLY GOAL</div>
   <div style="display:flex;align-items:center;justify-content:center;gap:0;margin-bottom:28px;">
-    <button onclick="event.stopPropagation();_adjustStrengthTarget(-1)" style="width:64px;height:64px;border-radius:16px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:28px;font-weight:300;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">−</button>
+    <button onclick="event.stopPropagation();_adjustStrengthTarget(-1,this)" style="width:64px;height:64px;border-radius:16px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:28px;font-weight:300;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">−</button>
     <div style="display:flex;flex-direction:column;align-items:center;min-width:120px;">
       <span id="strength-target-val" style="font-family:'DM Sans';font-size:64px;font-weight:800;color:var(--text);line-height:1;">3</span>
       <span style="font-family:'DM Sans';font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.5px;margin-top:2px;">WORKOUTS / WEEK</span>
     </div>
-    <button onclick="event.stopPropagation();_adjustStrengthTarget(1)" style="width:64px;height:64px;border-radius:16px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:28px;font-weight:300;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">+</button>
+    <button onclick="event.stopPropagation();_adjustStrengthTarget(1,this)" style="width:64px;height:64px;border-radius:16px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:28px;font-weight:300;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">+</button>
   </div>
   <button onclick="closeStrengthTargetSheet(true)" style="width:100%;padding:16px;background:var(--accent);color:#000;border:none;border-radius:14px;font-family:'DM Sans';font-size:17px;font-weight:900;cursor:pointer;-webkit-tap-highlight-color:transparent;">SAVE</button>
 </div>
