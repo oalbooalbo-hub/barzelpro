@@ -19512,12 +19512,13 @@ document.addEventListener('gesturestart', e => e.preventDefault(), {passive:fals
 document.addEventListener('gesturechange', e => e.preventDefault(), {passive:false});
 document.addEventListener('gestureend', e => e.preventDefault(), {passive:false});
 document.addEventListener('wheel', e => { if (e.ctrlKey) e.preventDefault(); }, {passive:false});
-let _lastTap = 0;
-document.addEventListener('touchend', e => {
-  const now = Date.now();
-  if (now - _lastTap < 300) e.preventDefault();
-  _lastTap = now;
-}, {passive:false});
+// Double-tap-zoom is already prevented natively via touch-action:manipulation
+// (see body{} rule) plus user-scalable=no in the viewport meta tag. A manual
+// touchend-based guard used to live here (preventDefault() on any touchend
+// within 300ms of the previous one, anywhere on the page) — it silenced the
+// click for every rapid tap after the first, everywhere in the app, which is
+// what made fast repeated tapping on the KG/REP keypad (and everything else)
+// feel unresponsive.
 
 document.addEventListener('DOMContentLoaded', () => {
   applyDeviceLayout();
