@@ -238,7 +238,7 @@ body.desktop-mode .pages-wrap {
 .set-row:first-child td:first-child::before{top:50%;}
 .set-num{font-size:14px;color:#aaa;font-weight:700;width:28px;height:28px;border-radius:50%;border:1.5px solid #555;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;-webkit-tap-highlight-color:transparent;background:#1a1a1a;position:relative;z-index:1;}
 .kg-pad-btn{background:#141414;border:1px solid #2a2a2a;border-radius:10px;color:var(--text);font-family:'DM Sans';font-size:22px;font-weight:700;padding:14px 0;cursor:pointer;transition:transform .1s ease-out;height:56px;box-sizing:border-box;}
-.kg-pad-btn:active{transform:scale(.92);}
+.kg-pad-btn:active{transform:scale(.92);transition:transform .01s ease-out;}
 /* Cancel/Done buttons in the inline KG/Reps editors — same height as the number pad buttons above */
 .editor-action-btn{height:56px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;}
 .set-row.ignored .set-num { text-decoration: line-through; }
@@ -9419,11 +9419,14 @@ function kgPadReset() {
   _kgBWMode = wasBW;
   window._kgEditorBWMode = wasBW;
   const btn = document.getElementById('kgBWBtnInline');
+  const btnLabel = btn?.querySelector('span');
   if (wasBW) {
     btn?.classList.add('kg-bw-btn-active');
+    if (btnLabel) btnLabel.textContent = 'Remove Body Weight (BW)';
     _refreshBWCell();
   } else {
     btn?.classList.remove('kg-bw-btn-active');
+    if (btnLabel) btnLabel.textContent = 'Add Body Weight (BW)';
     _removeBWCell();
   }
   _setKgVal(prev);
@@ -9444,7 +9447,9 @@ function kgPadToggleSign() {
     const vals = [1.25, 2.5, 5];
     const label = isMinus ? `-${vals[i]}` : `+${vals[i]}`;
     const color = isMinus ? '#f87171' : 'var(--accent)';
-    b.style.borderColor = isMinus ? 'rgba(248,113,113,.3)' : 'rgba(232,255,71,.3)';
+    // Border stays fixed at #555 (matching "Add Body Weight (BW)"'s
+    // default border) regardless of +/- sign — only the label color/text
+    // changes.
     const spans = b.querySelectorAll('span');
     if (spans.length) {
       spans[0].textContent = label;
@@ -9471,6 +9476,37 @@ function kgPadAdd(amount) {
   if (newVal < 0) return;
   _setKgVal(newVal);
 }
+// A trailing "." (e.g. "12.") can never be shown via input.value directly —
+// type="number" sanitizes any value that doesn't end in a digit back to ""
+// — so while one is pending we hide the real input and show its literal
+// text in an overlay instead, the same technique _refreshBWCell() uses for
+// BW mode. Cleared the moment a digit follows, or the editor is confirmed.
+function _showKgDotOverlay(input, val) {
+  input.style.cssText += ';opacity:0;pointer-events:none;width:0;height:0;padding:0;';
+  const wrapper = input.parentElement;
+  const kgLbl = wrapper.querySelector('.kg-unit-label');
+  if (kgLbl) kgLbl.style.display = 'none';
+  let lbl = wrapper.querySelector('.kg-dot-label');
+  if (!lbl) {
+    lbl = document.createElement('div');
+    lbl.className = 'kg-dot-label';
+    lbl.style.cssText = 'display:inline-flex;align-items:center;justify-content:space-between;width:100%;gap:4px;';
+    wrapper.appendChild(lbl);
+  }
+  lbl.innerHTML = `<span style="flex:1;text-align:center;font-size:20px;font-weight:700;color:var(--text);">${val}</span><span style="color:#fff;font-size:14px;font-weight:300;flex-shrink:0;">Kg</span>`;
+}
+function _clearKgDotOverlay(input) {
+  const wrapper = input.parentElement;
+  if (!wrapper.querySelector('.kg-dot-label')) return;
+  wrapper.querySelector('.kg-dot-label').remove();
+  const kgLbl = wrapper.querySelector('.kg-unit-label');
+  if (kgLbl) kgLbl.style.display = '';
+  input.style.opacity = '';
+  input.style.pointerEvents = '';
+  input.style.width = '100%';
+  input.style.height = '';
+  input.style.padding = '';
+}
 function kgPadPress(char) {
   let val = window._kgEditorVal || '';
   if (char === '.' && val.includes('.')) return;
@@ -9482,7 +9518,16 @@ function kgPadPress(char) {
   const input = window._kgEditorInput;
   if (input && !window._kgEditorBWMode) {
     const num = parseFloat(val);
-    if (!isNaN(num) && !val.endsWith('.')) input.value = num;
+    if (!isNaN(num) && !val.endsWith('.')) {
+      _clearKgDotOverlay(input);
+      // Show the literal typed string, not parseFloat(val) — a number
+      // input preserves a raw string like "12.0" or "007" verbatim, but
+      // reassigning the *parsed* number would silently drop trailing zeros
+      // (and the ".0" entirely) while the user is still mid-edit.
+      input.value = val;
+    } else if (val.endsWith('.')) {
+      _showKgDotOverlay(input, val);
+    }
   }
   _updateKgDisplay(val, window._kgEditorBWMode);
 }
@@ -9493,8 +9538,23 @@ function kgPadBack() {
   const input = window._kgEditorInput;
   if (input && !window._kgEditorBWMode) {
     const num = parseFloat(val);
-    if (val === '' || val === '0') input.value = '';
-    else if (!isNaN(num) && !val.endsWith('.')) input.value = num;
+    if (val === '' || val === '0') {
+      _clearKgDotOverlay(input);
+      input.value = '';
+    } else if (val.endsWith('.')) {
+      // e.g. "12.5" -> backspace -> "12." — the user is still mid-decimal-
+      // entry (still "in edit mode"), so the dot itself must stay visible
+      // via the overlay, not be silently dropped along with the digit.
+      _showKgDotOverlay(input, val);
+    } else if (!isNaN(num)) {
+      // Deleting must always show immediate feedback — skipping the update
+      // here (e.g. while resolving a completed decimal) previously made
+      // one digit take two backspace taps to actually disappear. Show the
+      // literal string (not the parsed number) so trailing zeros aren't
+      // silently dropped while still mid-edit — see kgPadPress.
+      _clearKgDotOverlay(input);
+      input.value = val;
+    }
   }
   _updateKgDisplay(val, window._kgEditorBWMode);
 }
@@ -9514,6 +9574,7 @@ function confirmKgEditor() {
     updateIgnoreButtons(exId);
   } else if (input) {
     // Normal mode
+    _clearKgDotOverlay(input); // in case Done is tapped right after a trailing "."
     const val = parseFloat(window._kgEditorVal);
     if (!isNaN(val) && val > 0) {
       input.value = val;
@@ -21841,9 +21902,9 @@ function openRepsPopup(span, exId) {
   // Populate body-level sheet (avoids stacking-context trap)
   document.getElementById('kg-editor-sheet-inner').innerHTML = `
     <div style="display:flex;flex-direction:column;gap:10px;">
-      <div style="display:flex;gap:8px;">
-        <button onclick="repsEditorDelta(-1)" style="flex:1;background:transparent;border:1px solid #555;border-radius:8px;color:#f87171;font-size:42px;font-weight:300;padding:18px 0;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;-webkit-tap-highlight-color:transparent;">−</button>
-        <button onclick="repsEditorDelta(1)" style="flex:1;background:transparent;border:1px solid #555;border-radius:8px;color:var(--accent);font-size:42px;font-weight:300;padding:18px 0;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;-webkit-tap-highlight-color:transparent;">+</button>
+      <div style="display:flex;gap:8px;margin-top:6px;">
+        <button onclick="repsEditorDelta(-1)" style="flex:1;background:transparent;border:1px solid #555;border-radius:8px;color:#f87171;font-size:68px;font-weight:300;height:82px;padding:0;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;-webkit-tap-highlight-color:transparent;">−</button>
+        <button onclick="repsEditorDelta(1)" style="flex:1;background:transparent;border:1px solid #555;border-radius:8px;color:var(--accent);font-size:68px;font-weight:300;height:82px;padding:0;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;-webkit-tap-highlight-color:transparent;">+</button>
       </div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
         <button class="kg-pad-btn" onclick="repsEditorPress('1')">1</button>
@@ -22141,13 +22202,16 @@ function kgPadBW() {
   _kgBWMode = !_kgBWMode;
   window._kgEditorBWMode = _kgBWMode;
   const btn = document.getElementById('kgBWBtnInline');
+  const btnLabel = btn?.querySelector('span');
   if (_kgBWMode) {
     btn?.classList.add('kg-bw-btn-active');
+    if (btnLabel) btnLabel.textContent = 'Remove Body Weight (BW)';
     // Reset numpad val to 0 (extra weight)
     window._kgEditorVal = '0';
     _refreshBWCell();
   } else {
     btn?.classList.remove('kg-bw-btn-active');
+    if (btnLabel) btnLabel.textContent = 'Add Body Weight (BW)';
     _removeBWCell();
   }
 }
@@ -22617,13 +22681,13 @@ closeInlineKgEditor(false);
   document.getElementById('kg-editor-sheet-inner').innerHTML = `
     <div style="display:flex;flex-direction:column;gap:10px;">
       <div style="display:flex;gap:8px;">
-        <button onclick="kgPadBW()" id="kgBWBtnInline" class="${bwActiveClass}" style="flex:1;background:transparent;border:1px solid #555;border-radius:8px;color:#aaa;font-family:'DM Sans';font-size:12px;font-weight:700;padding:8px 10px;cursor:pointer;transition:all .2s;">Add Body Weight (BW)</button>
+        <button onclick="kgPadBW()" id="kgBWBtnInline" class="${bwActiveClass}" style="flex:1;background:transparent;border:none;border-radius:8px;color:#aaa;font-family:'DM Sans';font-size:14px;font-weight:700;padding:8px 10px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:6px;"><svg width="20" height="20" viewBox="0 0 512 512" style="display:block;flex-shrink:0;"><style>.st0{fill:currentColor;}</style><g><path class="st0" d="M455.998,0.004H56.002C25.063,0.011,0.008,25.067,0,56.006v399.989c0.008,30.938,25.063,55.994,56.002,56.002h399.997c30.938-0.008,55.994-25.063,56.002-56.002V56.006C511.993,25.067,486.937,0.011,455.998,0.004z M479.999,455.994c-0.007,6.68-2.664,12.579-7.032,16.969c-4.39,4.367-10.289,7.024-16.969,7.032H56.002c-6.68-0.008-12.579-2.664-16.969-7.032c-4.367-4.39-7.023-10.289-7.031-16.969V56.006c0.008-6.68,2.664-12.579,7.031-16.977c4.39-4.359,10.289-7.016,16.969-7.023h399.997c6.68,0.007,12.579,2.664,16.969,7.023,4.367,4.398,7.024,10.297,7.032,16.977V455.994z"/><path class="st0" d="M128.012,119.101l26.391,76.783H270.86l16.352-67.947l9.938,2.031l9.93,2.015l-10.696,63.9h61.212l26.392-76.783C346.612,96.577,302.83,83.6,256.008,83.6C209.178,83.6,165.388,96.577,128.012,119.101z"/></g></svg><span>${isBW ? 'Remove Body Weight (BW)' : 'Add Body Weight (BW)'}</span></button>
       </div>
       <div style="display:flex;gap:6px;">
-        <button onclick="kgPadToggleSign()" id="kgSignToggle" style="flex:0 0 auto;width:40px;background:transparent;border:1px solid #333;border-radius:8px;font-family:'DM Sans';font-size:14px;font-weight:700;padding:8px 0;cursor:pointer;text-align:center;"><span style="color:#f87171;">-</span><span style="color:#555;">/</span><span style="color:var(--accent);">+</span></button>
-        <button onclick="kgPadAdd(1.25)" id="kgAddBtn1" style="flex:1;background:transparent;border:1px solid rgba(232,255,71,.3);border-radius:8px;font-family:'DM Sans';padding:10px 0;cursor:pointer;display:flex;align-items:baseline;justify-content:center;gap:2px;"><span style="color:var(--accent);font-size:16px;font-weight:700;">+1.25</span><span style="color:var(--accent);font-size:14px;font-weight:300;">Kg</span></button>
-        <button onclick="kgPadAdd(2.5)"  id="kgAddBtn2" style="flex:1;background:transparent;border:1px solid rgba(232,255,71,.3);border-radius:8px;font-family:'DM Sans';padding:10px 0;cursor:pointer;display:flex;align-items:baseline;justify-content:center;gap:2px;"><span style="color:var(--accent);font-size:16px;font-weight:700;">+2.5</span><span style="color:var(--accent);font-size:14px;font-weight:300;">Kg</span></button>
-        <button onclick="kgPadAdd(5)"    id="kgAddBtn3" style="flex:1;background:transparent;border:1px solid rgba(232,255,71,.3);border-radius:8px;font-family:'DM Sans';padding:10px 0;cursor:pointer;display:flex;align-items:baseline;justify-content:center;gap:2px;"><span style="color:var(--accent);font-size:16px;font-weight:700;">+5</span><span style="color:var(--accent);font-size:14px;font-weight:300;">Kg</span></button>
+        <button onclick="kgPadToggleSign()" id="kgSignToggle" style="flex:0 0 auto;width:40px;background:transparent;border:1px solid #333;border-radius:8px;font-family:'DM Sans';font-size:16px;font-weight:700;padding:8px 0;cursor:pointer;text-align:center;"><span style="color:#555;">-/</span><span style="color:var(--accent);">+</span></button>
+        <button onclick="kgPadAdd(1.25)" id="kgAddBtn1" style="flex:1;background:transparent;border:1px solid #555;border-radius:8px;font-family:'DM Sans';padding:10px 0;cursor:pointer;display:flex;align-items:baseline;justify-content:center;gap:2px;"><span style="color:var(--accent);font-size:16px;font-weight:700;">+1.25</span><span style="color:var(--accent);font-size:14px;font-weight:300;">Kg</span></button>
+        <button onclick="kgPadAdd(2.5)"  id="kgAddBtn2" style="flex:1;background:transparent;border:1px solid #555;border-radius:8px;font-family:'DM Sans';padding:10px 0;cursor:pointer;display:flex;align-items:baseline;justify-content:center;gap:2px;"><span style="color:var(--accent);font-size:16px;font-weight:700;">+2.5</span><span style="color:var(--accent);font-size:14px;font-weight:300;">Kg</span></button>
+        <button onclick="kgPadAdd(5)"    id="kgAddBtn3" style="flex:1;background:transparent;border:1px solid #555;border-radius:8px;font-family:'DM Sans';padding:10px 0;cursor:pointer;display:flex;align-items:baseline;justify-content:center;gap:2px;"><span style="color:var(--accent);font-size:16px;font-weight:700;">+5</span><span style="color:var(--accent);font-size:14px;font-weight:300;">Kg</span></button>
       </div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
         <button class="kg-pad-btn" onclick="kgPadPress('1')">1</button>
@@ -22679,6 +22743,7 @@ function cancelInlineKgEditor() {
 
   // Always remove BW cell to reset input visibility before restoring original state
   _removeBWCell();
+  if (input) _clearKgDotOverlay(input);
   _kgBWMode = false;
   window._kgEditorBWMode = false;
   closeInlineKgEditor();
