@@ -105,9 +105,9 @@ body.desktop-mode .pages-wrap {
 #header-chevron-hint:hover svg{transform:translateY(2px);}
 .logo{font-family:'Bebas Neue';font-size:34px;color:var(--accent);display:flex;flex-direction:column;align-items:flex-start;}
 .logo span{color:var(--muted);font-size:9px;font-family:'DM Sans';display:block;margin-top:-4px;letter-spacing:3px;}
-.date-badge{padding:6px 4px;font-size:12px;color:#fff;font-weight:600;}
-.tabs{display:flex;gap:0;padding:0 0 env(safe-area-inset-bottom);border-top:1px solid var(--border);border-bottom:none;position:fixed;bottom:0;left:0;right:0;z-index:29;background:var(--bg);max-width:430px;margin:0 auto;}
-.tab{flex:1;padding:12px 4px 10px;border-radius:0;border:none;background:transparent;color:var(--muted);font-family:'DM Sans';font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;outline:none;-webkit-tap-highlight-color:transparent;text-align:center;}
+.date-badge{padding:6px 4px;font-size:12px;color:#999;font-weight:600;}
+.tabs{display:flex;justify-content:center;gap:20px;padding:0 0 env(safe-area-inset-bottom);border-top:1px solid var(--border);border-bottom:none;position:fixed;bottom:0;left:0;right:0;z-index:29;background:var(--bg);max-width:430px;margin:0 auto;}
+.tab{flex:0 0 auto;width:66px;padding:12px 4px 10px;border-radius:0;border:none;background:transparent;color:var(--muted);font-family:'DM Sans';font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;outline:none;-webkit-tap-highlight-color:transparent;text-align:center;}
 .tab:focus,.tab:focus-visible{outline:none;border-color:var(--border);}
 .tab.active{background:transparent;color:var(--accent);border:none;font-weight:700;}.tab#tab-progress-btn.active,.tab#tab-progress-btn2.active{color:#34d399;border:none;}#tab-progress-btn,#tab-progress-btn2{flex:1;}
 .page{display:none;padding:14px 10px;padding-bottom:calc(130px + env(safe-area-inset-bottom));box-sizing:border-box;}.page.active.delayed-reveal{animation:pageFadeIn .15s ease .3s both;}@keyframes pageFadeIn{from{opacity:0}to{opacity:1}}@keyframes tabSlideUp{from{transform:translateY(48px);opacity:0}to{transform:translateY(0);opacity:1}}.page.active:not(.delayed-reveal):not(#page-log){animation:tabSlideUp .4s cubic-bezier(0.2,0.8,0.3,1);}
@@ -693,8 +693,8 @@ body.ex-tab-detail-open #ex-float-bar{display:none !important;}
 .cal-target-badge-cardio{color:#7ec8e3;}
 .cal-target-badge-workout{color:var(--accent);}
 .cal-day{position:relative;aspect-ratio:1;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:13px;font-weight:600;cursor:default;color:var(--muted);}
-.cal-day-check{position:absolute;top:-5px;right:-5px;width:16px;height:16px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px var(--surface2);}
-.cal-day-check svg{width:10px;height:10px;}
+.cal-day-check{position:absolute;top:-5px;right:-5px;width:16px;height:16px;border-radius:50%;background:#000;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px var(--surface2);}
+.cal-day-check svg{width:12px;height:12px;}
 .cal-day.has-workout{background:transparent;border:2px solid var(--accent);border-radius:50%;color:var(--accent);cursor:pointer;font-size:13px;}
 .cal-day.has-cardio-only{background:transparent;border:2px solid #7ec8e3;color:#7ec8e3;cursor:pointer;font-size:13px;}
 .cal-day.has-cardio-only:hover{background:rgba(126,200,227,.08);}
@@ -1183,12 +1183,6 @@ function hidAuthScreen() {
   <div style="display:flex;align-items:center;gap:8px;">
     <!-- Debug role badge — visible only when super_admin is viewing as another role -->
     <div id="debugRoleBadge" onclick="exitDebugRole()" style="display:none;cursor:pointer;padding:4px 10px;border-radius:20px;font-family:'DM Sans';font-size:11px;font-weight:700;letter-spacing:.5px;border:1px solid currentColor;transition:opacity .2s;" title="Tap to exit view mode"></div>
-    <div id="userIconBtn" onclick="toggleUserMenu()" style="display:none;cursor:pointer;position:relative;">
-      <svg id="userIconSvg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="8" r="4"/>
-        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-      </svg>
-    </div>
     <div class="date-badge" id="dateBadge" onclick="if(!window._isNewWorkoutFlow && !window._loadFromToday && !_pickMode)openCalendar()" style="cursor:pointer;user-select:none;display:flex;flex-direction:column;align-items:center;gap:2px;">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
       <span id="dateBadgeText"></span>
@@ -1204,47 +1198,28 @@ function hidAuthScreen() {
   </svg>
 </div>
 
-<!-- User menu dropdown -->
-<div id="userMenuDropdown" style="display:none;position:fixed;top:56px;right:12px;z-index:8000;background:#141414;border:1px solid #2a2a2a;border-radius:14px;padding:8px;min-width:200px;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.6);">
-  <div id="userMenuName" style="padding:8px 12px 12px;border-bottom:1px solid #2a2a2a;margin-bottom:6px;">
-    <div id="userMenuDisplayName" style="font-weight:700;font-size:14px;color:#f0f0f0;"></div>
-    <div id="userMenuEmail" style="font-size:11px;color:#555;margin-top:2px;"></div>
-    <div id="userMenuRole" style="font-size:11px;font-weight:700;margin-top:4px;"></div>
-  </div>
-  <button id="userMenuAdminBtn" onclick="toggleUserMenu();openAdminPanel()" style="display:none;width:100%;background:transparent;border:none;border-radius:8px;color:#a78bfa;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;text-align:left;transition:background .15s;" onmouseover="this.style.background='#1e1e1e'" onmouseout="this.style.background='transparent'">⚙️ Admin Panel</button>
-  <button id="userMenuSuperBtn" onclick="toggleUserMenu();openSuperDashboard()" style="display:none;width:100%;background:transparent;border:none;border-radius:8px;color:#ff4747;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;text-align:left;transition:background .15s;" onmouseover="this.style.background='#1e1e1e'" onmouseout="this.style.background='transparent'">🌐 Super Dashboard</button>
-  <button id="userMenuViewAsBtn" onclick="toggleUserMenu();openViewAsRolePicker()" style="display:none;width:100%;background:transparent;border:none;border-radius:8px;color:#f59e0b;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;text-align:left;transition:background .15s;" onmouseover="this.style.background='#1e1e1e'" onmouseout="this.style.background='transparent'">👁️ View As Role</button>
-  <button id="userMenuExitViewBtn" onclick="toggleUserMenu();exitDebugRole()" style="display:none;width:100%;background:#f59e0b22;border:1px solid #f59e0b55;border-radius:8px;color:#f59e0b;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;text-align:left;" >✕ Exit View Mode</button>
-  <button id="userMenuSiteManagerBtn" onclick="toggleUserMenu();openSiteManagerPanel()" style="display:none;width:100%;background:transparent;border:none;border-radius:8px;color:#a78bfa;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;text-align:left;transition:background .15s;" onmouseover="this.style.background='#1e1e1e'" onmouseout="this.style.background='transparent'">🏢 Site Manager <span id="siteManagerBadge" style="display:none;background:#ff4747;color:#fff;border-radius:10px;font-size:10px;padding:2px 6px;margin-left:4px;">0</span></button>
-  <button id="userMenuCoachModeBtn" onclick="toggleUserMenu();enterCoachMode()" style="display:none;width:100%;background:rgba(126,200,227,.1);border:1px solid rgba(126,200,227,.3);border-radius:8px;color:#7ec8e3;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;text-align:left;margin-bottom:4px;">🎯 Coach Mode</button>
-  <button id="userMenuExitCoachModeBtn" onclick="toggleUserMenu();exitCoachMode()" style="display:none;width:100%;background:rgba(126,200,227,.15);border:1px solid rgba(126,200,227,.5);border-radius:8px;color:#7ec8e3;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;text-align:left;margin-bottom:4px;">✕ Exit Coach Mode</button>
-  <button id="userMenuFindCoachBtn" onclick="toggleUserMenu();openFindCoach()" style="display:none;width:100%;background:transparent;border:none;border-radius:8px;color:#7ec8e3;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;text-align:left;transition:background .15s;" onmouseover="this.style.background='#1e1e1e'" onmouseout="this.style.background='transparent'">🔍 Find a Coach</button>
-  <div style="height:1px;background:#2a2a2a;margin:6px 0;"></div>
-  <button id="userMenuDeviceBtn" onclick="toggleUserMenu();toggleDesktopOverride()" style="display:block;width:100%;background:transparent;border:none;border-radius:8px;color:#7ec8e3;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;text-align:left;transition:background .15s;" onmouseover="this.style.background='#1e1e1e'" onmouseout="this.style.background='transparent'">🖥️ <span id="deviceOverrideLabel">Switch to Desktop View</span></button>
-  <button onclick="toggleUserMenu();closeDataModal();openDataModal()" style="width:100%;background:transparent;border:none;border-radius:8px;color:#f0f0f0;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;text-align:left;transition:background .15s;" onmouseover="this.style.background='#1e1e1e'" onmouseout="this.style.background='transparent'">📦 My Data</button>
-  <button onclick="toggleUserMenu();openBWModal()" style="width:100%;background:transparent;border:none;border-radius:8px;color:#34d399;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;text-align:left;transition:background .15s;" onmouseover="this.style.background='#1e1e1e'" onmouseout="this.style.background='transparent'">⚖️ Body Weight <span id="userMenuBWVal" style="color:#aaa;font-size:11px;"></span></button>
-  <div id="userMenuNotifications" style="display:none;border-top:1px solid #2a2a2a;margin:6px 0;padding-top:6px;">
-    <div style="font-size:10px;color:#555;font-weight:600;letter-spacing:1px;padding:4px 12px 6px;">NOTIFICATIONS</div>
-    <div id="userMenuNotifList"></div>
-  </div>
-  <div style="height:1px;background:#2a2a2a;margin:6px 0;"></div>
-  <button onclick="toggleUserMenu();window._fbSignOut&&window._fbSignOut()" style="width:100%;background:transparent;border:none;border-radius:8px;color:#ff4747;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px 12px;cursor:pointer;text-align:left;transition:background .15s;" onmouseover="this.style.background='#1e1e1e'" onmouseout="this.style.background='transparent'">Sign Out</button>
-</div>
 <div class="tabs">
   <button class="tab active" id="tab-log-btn" onclick="switchTab('log')">
   <svg class="tab-icon" width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" id="House-Chimney--Streamline-Ultimate" height="22" width="22" style="display:block;flex-shrink:0;"> <path d="M19.5 8.4V3.5A0.5 0.5 0 0 0 19 3h-2a0.5 0.5 0 0 0 -0.5 0.5v2.14l-4.162 -3.829a0.5 0.5 0 0 0 -0.678 0l-11 10.321A0.5 0.5 0 0 0 1 13h2.5v9.5a1 1 0 0 0 1 1h15a1 1 0 0 0 1 -1V13H23a0.5 0.5 0 0 0 0.339 -0.868Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> </svg>
   <span class="tab-label">Home</span>
 </button>
-  <button class="tab" id="tab-exercises-btn" onclick="switchTab('exercises')">
+  <button class="tab" id="tab-exercises-btn" onclick="switchTab('exercises')" style="display:none;">
   <svg class="tab-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" style="display:block;flex-shrink:0;"><path fill="currentColor" d="M21.435 11.5h-.38V8.12a1.626 1.626 0 0 0-1.62-1.62h-.63v-.38a1.625 1.625 0 0 0-3.25 0v5.38h-7.11V6.12a1.625 1.625 0 0 0-3.25 0v.38h-.63a1.62 1.62 0 0 0-1.62 1.62v3.38h-.38a.5.5 0 1 0 0 1h.38v3.37a1.622 1.622 0 0 0 1.62 1.63H5.2v.37a1.625 1.625 0 1 0 3.25 0V12.5h7.11v5.37a1.625 1.625 0 1 0 3.25 0v-.37h.63a1.628 1.628 0 0 0 1.62-1.63V12.5h.38a.5.5 0 1 0 0-1ZM5.2 16.5h-.63a.625.625 0 0 1-.62-.63V8.12a.623.623 0 0 1 .62-.62h.63Zm2.25 1.37a.634.634 0 0 1-.63.63a.625.625 0 0 1-.62-.63V6.12a.623.623 0 0 1 .62-.62a.632.632 0 0 1 .63.62Zm10.36 0a.625.625 0 1 1-1.25 0V6.12a.625.625 0 0 1 1.25 0Zm2.25-2a.625.625 0 0 1-.62.63h-.63v-9h.63a.623.623 0 0 1 .62.62Z"/></svg>
   <span class="tab-label">Exercises</span>
 </button>
-  <button class="tab" id="tab-progress-btn" onclick="switchTab('progress')"><span>PRO</span></button>
-  <button class="tab" id="tab-workouts2-btn" onclick="switchTab('workouts2')"><svg class="tab-icon" width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display:block;flex-shrink:0;"> <path d="M18.5 19v3.5a1 1 0 0 1 -1 1h-16a1 1 0 0 1 -1 -1v-18a1 1 0 0 1 1 -1h3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="M14.5 3.5h3a1 1 0 0 1 1 1V8" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="M8 1.999a1.5 1.5 0 1 0 3 0 1.5 1.5 0 1 0 -3 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="M10.915 2.5H13.5a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-8a1 1 0 0 1 -1 -1v-1a1 1 0 0 1 1 -1h2.585" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="m3.5 9.499 12 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="m3.5 13.499 9.466 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="m3.5 17.499 7.983 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="m17 17.5 -3.5 1 1 -3.5 5.982 -5.982a1.768 1.768 0 0 1 2.5 2.5Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> </svg><span class="tab-label">W2</span></button>
+  <button class="tab" id="tab-progress-btn" onclick="switchTab('progress')" style="display:none;"><span>PRO</span></button>
+  <button class="tab" id="tab-workouts2-btn" onclick="switchTab('workouts2')"><svg class="tab-icon" width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display:block;flex-shrink:0;"> <path d="M18.5 19v3.5a1 1 0 0 1 -1 1h-16a1 1 0 0 1 -1 -1v-18a1 1 0 0 1 1 -1h3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="M14.5 3.5h3a1 1 0 0 1 1 1V8" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="M8 1.999a1.5 1.5 0 1 0 3 0 1.5 1.5 0 1 0 -3 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="M10.915 2.5H13.5a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-8a1 1 0 0 1 -1 -1v-1a1 1 0 0 1 1 -1h2.585" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="m3.5 9.499 12 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="m3.5 13.499 9.466 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="m3.5 17.499 7.983 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="m17 17.5 -3.5 1 1 -3.5 5.982 -5.982a1.768 1.768 0 0 1 2.5 2.5Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> </svg><span class="tab-label">Workouts</span></button>
+  <button class="tab" id="tab-profile-btn" onclick="switchTab('profile')">
+  <svg class="tab-icon" width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex-shrink:0;"><circle cx="12" cy="7" r="5"/><path d="M3 21c0-5 4-8 9-8s9 3 9 8"/></svg>
+  <span class="tab-label">Profile</span>
+</button>
 </div>
 <div id="workoutsToggleBar" style="display:none;position:fixed;bottom:calc(56px + env(safe-area-inset-bottom));left:0;right:0;z-index:28;background:var(--bg);padding:8px 16px;border-top:1px solid var(--border);max-width:430px;margin:0 auto;box-sizing:border-box;"></div>
 <div id="exercisesToggleBar" style="display:none;position:fixed;top:env(safe-area-inset-top,0px);left:0;right:0;z-index:28;background:var(--bg);padding:8px 16px;border-bottom:1px solid var(--border);max-width:430px;margin:0 auto;box-sizing:border-box;"></div>
 <div id="w2ToggleBar" style="display:none;position:fixed;top:env(safe-area-inset-top,0px);left:0;right:0;z-index:28;background:var(--bg);padding:8px 16px;border-bottom:1px solid var(--border);max-width:430px;margin:0 auto;box-sizing:border-box;"></div>
+<div id="profileToggleBar" style="display:none;position:fixed;top:env(safe-area-inset-top,0px);left:0;right:0;z-index:28;background:var(--bg);padding:8px 16px;border-bottom:1px solid var(--border);max-width:430px;margin:0 auto;box-sizing:border-box;">
+  <div style="font-family:'DM Sans';font-size:20px;font-weight:700;color:var(--text);padding:10px 0 6px;">Profile</div>
+</div>
 <div id="progressToggleBar" style="display:none;position:sticky;top:0;z-index:20;background:var(--bg);padding:8px 16px 0;">
   <div style="display:flex;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
     <button id="progress-seg-graphs" onclick="switchProgressView('graphs')" style="flex:1;padding:10px 16px;cursor:pointer;border:none;background:var(--accent);color:#000;font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;transition:all .2s;">MY PROGRESS</button>
@@ -1264,24 +1239,26 @@ function hidAuthScreen() {
   <div id="today-start-screen" style="display:flex;flex-direction:column;align-items:center;justify-content:center;position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom));padding:44px 16px 4px;gap:12px;background:var(--bg);z-index:5;">
     <!-- Weekly strength progress ring -->
     <div id="today-week-progress" onclick="openStrengthTargetSheet()" style="display:none;width:100%;max-width:380px;flex-direction:column;align-items:center;gap:6px;cursor:pointer;-webkit-tap-highlight-color:transparent;">
-      <div style="position:relative;width:140px;height:140px;">
-        <svg width="140" height="140" viewBox="0 0 140 140" style="display:block;">
-          <circle cx="70" cy="70" r="55" fill="none" stroke="#1e1e1e" stroke-width="12"/>
-          <circle id="today-progress-ring" cx="70" cy="70" r="55" fill="none" stroke="#7ec8e3" stroke-width="12" stroke-linecap="round" stroke-dasharray="345.58" stroke-dashoffset="345.58" transform="rotate(-90 70 70)" style="transition:stroke-dashoffset .6s ease,stroke .4s ease;"/>
+      <div style="position:relative;width:300px;height:300px;">
+        <svg width="300" height="300" viewBox="0 0 300 300" style="display:block;">
+          <circle cx="150" cy="150" r="117.86" fill="none" stroke="#1e1e1e" stroke-width="25.71"/>
+          <circle id="today-progress-ring" cx="150" cy="150" r="117.86" fill="none" stroke="#7ec8e3" stroke-width="25.71" stroke-linecap="round" stroke-dasharray="740.52" stroke-dashoffset="740.52" transform="rotate(-90 150 150)" style="transition:stroke-dashoffset .6s ease,stroke .4s ease;"/>
+          <circle id="today-progress-goal-ring" cx="150" cy="150" r="90" fill="none" stroke="#7ec8e3" stroke-opacity="0.55" stroke-width="6" stroke-linecap="round" transform="rotate(-90 150 150)"/>
         </svg>
         <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;">
-          <span style="font-family:'DM Sans';font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;">This Week:</span>
+          <span style="font-family:'DM Sans';font-size:14px;font-weight:700;color:#ccc;letter-spacing:.5px;text-transform:uppercase;">This Week</span>
           <span id="today-progress-count" style="font-family:'DM Sans';font-size:32px;font-weight:800;color:var(--text);line-height:1;">0/3</span>
+          <span style="font-family:'DM Sans';font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.3px;">workouts</span>
         </div>
         <div id="today-progress-overflow" style="display:none;position:absolute;top:-8px;right:-4px;color:#4caf50;font-family:'DM Sans';font-size:26px;font-weight:800;line-height:1;white-space:nowrap;"></div>
       </div>
     </div>
     <div id="today-plan-card" style="width:100%;max-width:380px;display:none;"></div>
     <div style="width:100%;max-width:380px;">
-      <button id="today-coach-btn" onclick="switchTab('coach-profile')" style="width:100%;height:55px;display:flex;align-items:center;justify-content:center;background:transparent;color:#7ec8e3;border:1px solid #7ec8e3;border-radius:26px;font-family:'DM Sans';font-size:14px;letter-spacing:0;cursor:pointer;box-sizing:border-box;line-height:1;font-weight:700;opacity:0;transform:translateY(24px);">GET A COACH</button>
+      <button id="today-coach-btn" onclick="switchTab('coach-profile')" style="width:100%;height:55px;display:flex;align-items:center;justify-content:center;background:transparent;color:#ccc;border:1px solid #ccc;border-radius:26px;font-family:'DM Sans';font-size:14px;letter-spacing:0;cursor:pointer;box-sizing:border-box;line-height:1;font-weight:700;opacity:0;transform:translateY(24px);">GET A COACH</button>
     </div>
     <div id="today-load-btn-wrap" style="width:100%;max-width:380px;display:none;">
-      <button onclick="window._isNewWorkoutFlow=false;window._loadFromToday=true;loadOrSwitchWorkouts()" style="width:100%;height:160px;display:flex;align-items:center;justify-content:center;background:var(--accent);color:#000;border:1px solid var(--accent);border-radius:26px;font-family:'DM Sans';font-size:22px;letter-spacing:0;cursor:pointer;box-sizing:border-box;line-height:1;font-weight:700;">START WORKOUT</button>
+      <button onclick="window._isNewWorkoutFlow=false;window._loadFromToday=true;loadOrSwitchWorkouts()" style="width:100%;height:100px;display:flex;align-items:center;justify-content:center;background:var(--accent);color:#000;border:1px solid var(--accent);border-radius:26px;font-family:'DM Sans';font-size:22px;letter-spacing:0;cursor:pointer;box-sizing:border-box;line-height:1;font-weight:700;">START WORKOUT</button>
     </div>
     <div style="width:100%;max-width:380px;display:flex;gap:8px;">
       <button id="today-replace-btn" onclick="replaceTodayPlan()" style="display:none;padding:16px 20px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:12px;font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;letter-spacing:0;cursor:pointer;box-sizing:border-box;line-height:1;">REPLACE</button>
@@ -1469,6 +1446,41 @@ function hidAuthScreen() {
     <button onclick="exitPickMode()" style="flex:1;background:transparent;border:1px solid rgba(255,255,255,0.18);border-radius:12px;color:rgba(255,255,255,0.65);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Back</button>
     <button id="pick-mode-done-btn" onclick="donePickMode()" style="flex:1;background:var(--accent);border:none;border-radius:12px;color:#000;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Done</button>
   </div>
+</div>
+
+<!-- PROFILE -->
+<div class="page" id="page-profile" style="padding-top:calc(60px + env(safe-area-inset-top));padding-bottom:calc(120px + env(safe-area-inset-bottom));padding-left:16px;padding-right:16px;">
+  <div id="userMenuName" style="padding:12px 4px 16px;border-bottom:1px solid #2a2a2a;margin-bottom:10px;">
+    <div id="userMenuDisplayName" style="font-weight:700;font-size:17px;color:#f0f0f0;"></div>
+    <div id="userMenuEmail" style="font-size:13px;color:#555;margin-top:2px;"></div>
+    <div id="userMenuRole" style="font-size:12px;font-weight:700;margin-top:6px;"></div>
+  </div>
+
+  <button id="userMenuAdminBtn" onclick="openAdminPanel()" style="display:none;width:100%;background:transparent;border:none;border-radius:10px;color:#a78bfa;font-family:'DM Sans';font-size:15px;font-weight:600;padding:14px 12px;cursor:pointer;text-align:left;">⚙️ Admin Panel</button>
+  <button id="userMenuSuperBtn" onclick="openSuperDashboard()" style="display:none;width:100%;background:transparent;border:none;border-radius:10px;color:#ff4747;font-family:'DM Sans';font-size:15px;font-weight:600;padding:14px 12px;cursor:pointer;text-align:left;">🌐 Super Dashboard</button>
+  <button id="userMenuViewAsBtn" onclick="openViewAsRolePicker()" style="display:none;width:100%;background:transparent;border:none;border-radius:10px;color:#f59e0b;font-family:'DM Sans';font-size:15px;font-weight:600;padding:14px 12px;cursor:pointer;text-align:left;">👁️ View As Role</button>
+  <button id="userMenuExitViewBtn" onclick="exitDebugRole()" style="display:none;width:100%;background:#f59e0b22;border:1px solid #f59e0b55;border-radius:10px;color:#f59e0b;font-family:'DM Sans';font-size:15px;font-weight:600;padding:14px 12px;cursor:pointer;text-align:left;margin-bottom:8px;">✕ Exit View Mode</button>
+  <button id="userMenuSiteManagerBtn" onclick="openSiteManagerPanel()" style="display:none;width:100%;background:transparent;border:none;border-radius:10px;color:#a78bfa;font-family:'DM Sans';font-size:15px;font-weight:600;padding:14px 12px;cursor:pointer;text-align:left;">🏢 Site Manager <span id="siteManagerBadge" style="display:none;background:#ff4747;color:#fff;border-radius:10px;font-size:10px;padding:2px 6px;margin-left:4px;">0</span></button>
+  <button id="userMenuCoachModeBtn" onclick="enterCoachMode()" style="display:none;width:100%;background:rgba(126,200,227,.1);border:1px solid rgba(126,200,227,.3);border-radius:10px;color:#7ec8e3;font-family:'DM Sans';font-size:15px;font-weight:600;padding:14px 12px;cursor:pointer;text-align:left;margin-bottom:8px;">🎯 Coach Mode</button>
+  <button id="userMenuExitCoachModeBtn" onclick="exitCoachMode()" style="display:none;width:100%;background:rgba(126,200,227,.15);border:1px solid rgba(126,200,227,.5);border-radius:10px;color:#7ec8e3;font-family:'DM Sans';font-size:15px;font-weight:600;padding:14px 12px;cursor:pointer;text-align:left;margin-bottom:8px;">✕ Exit Coach Mode</button>
+  <button id="userMenuFindCoachBtn" onclick="openFindCoach()" style="display:none;width:100%;background:transparent;border:none;border-radius:10px;color:#7ec8e3;font-family:'DM Sans';font-size:15px;font-weight:600;padding:14px 12px;cursor:pointer;text-align:left;">🔍 Find a Coach</button>
+
+  <div style="height:1px;background:#2a2a2a;margin:10px 0;"></div>
+
+  <button id="userMenuDeviceBtn" onclick="toggleDesktopOverride()" style="display:block;width:100%;background:transparent;border:none;border-radius:10px;color:#7ec8e3;font-family:'DM Sans';font-size:15px;font-weight:600;padding:14px 12px;cursor:pointer;text-align:left;">🖥️ <span id="deviceOverrideLabel">Switch to Desktop View</span></button>
+  <button onclick="switchTab('progress')" style="width:100%;background:transparent;border:none;border-radius:10px;color:#34d399;font-family:'DM Sans';font-size:15px;font-weight:600;padding:14px 12px;cursor:pointer;text-align:left;">📊 Progress</button>
+  <button onclick="switchTab('exercises')" style="width:100%;background:transparent;border:none;border-radius:10px;color:var(--accent);font-family:'DM Sans';font-size:15px;font-weight:600;padding:14px 12px;cursor:pointer;text-align:left;">🏋️ Exercises</button>
+  <button onclick="closeDataModal();openDataModal()" style="width:100%;background:transparent;border:none;border-radius:10px;color:#f0f0f0;font-family:'DM Sans';font-size:15px;font-weight:600;padding:14px 12px;cursor:pointer;text-align:left;">📦 My Data</button>
+  <button onclick="openBWModal()" style="width:100%;background:transparent;border:none;border-radius:10px;color:#34d399;font-family:'DM Sans';font-size:15px;font-weight:600;padding:14px 12px;cursor:pointer;text-align:left;">⚖️ Body Weight <span id="userMenuBWVal" style="color:#aaa;font-size:11px;"></span></button>
+
+  <div id="userMenuNotifications" style="display:none;border-top:1px solid #2a2a2a;margin:10px 0 0;padding-top:10px;">
+    <div style="font-size:11px;color:#555;font-weight:600;letter-spacing:1px;padding:4px 12px 8px;">NOTIFICATIONS</div>
+    <div id="userMenuNotifList"></div>
+  </div>
+
+  <div style="height:1px;background:#2a2a2a;margin:10px 0;"></div>
+
+  <button onclick="window._fbSignOut&&window._fbSignOut()" style="width:100%;background:transparent;border:none;border-radius:10px;color:#ff4747;font-family:'DM Sans';font-size:15px;font-weight:600;padding:14px 12px;cursor:pointer;text-align:left;">Sign Out</button>
 </div>
 
 <!-- PROGRESS -->
@@ -2767,7 +2779,7 @@ function showTodayStartScreen() {
   // Restore tab bar
   const _tabsEl2 = document.querySelector('.tabs');
   if (_tabsEl2) _tabsEl2.style.display = '';
-  ['workoutsToggleBar','exercisesToggleBar','progressToggleBar','w2ToggleBar'].forEach(id=>{const b=document.getElementById(id);if(b)b.style.display='none';});
+  ['workoutsToggleBar','exercisesToggleBar','progressToggleBar','w2ToggleBar','profileToggleBar'].forEach(id=>{const b=document.getElementById(id);if(b)b.style.display='none';});
   // Hide PICK if no saved workouts exist
   const hasWorkouts = (() => {
     const _dn = JSON.parse(_LS.get('ironlog_deleted_tab_names')||'[]');
@@ -2888,9 +2900,18 @@ function renderTodayWeekProgress(withAnim) {
     overflowEl.style.transform = withAnim && _showBadge ? 'scale(0.5)' : '';
     overflowEl.style.transition = '';
   }
+  const goalRing = document.getElementById('today-progress-goal-ring');
+  if (goalRing) {
+    const n = Math.max(1, target);
+    const gCirc = 2 * Math.PI * 90;
+    const gap = 16;
+    const dash = Math.max(1, (gCirc - gap * n) / n);
+    goalRing.setAttribute('stroke-dasharray', `${dash.toFixed(2)} ${gap}`);
+    goalRing.setAttribute('stroke-dashoffset', (dash + gap / 2).toFixed(2));
+  }
   const ring = document.getElementById('today-progress-ring');
   if (ring) {
-    const circ = 2 * Math.PI * 55;
+    const circ = 2 * Math.PI * 117.86;
     const achieved = count >= target;
     const targetOffset = (circ * (1 - Math.min(count / target, 1))).toFixed(2);
     ring.setAttribute('stroke-dasharray', circ.toFixed(2));
@@ -2966,6 +2987,8 @@ function renderWeekStatus() {
   if (!wrap) return;
   const days = _getWeekStatusData();
   window._weekStatusData = days;
+  const countEl = document.getElementById('week-status-completed-count');
+  if (countEl) countEl.textContent = days.filter(d => d.completed).length;
   const labels = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
   wrap.innerHTML = days.map((d, i) => `
     <div class="week-status-day" onclick="event.stopPropagation();selectWeekStatusDay(${i})" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:5px 0;border-radius:10px;cursor:pointer;-webkit-tap-highlight-color:transparent;">
@@ -3257,9 +3280,9 @@ function showTodayWorkoutArea(isNew=false) {
   // Ensure log page is shown with correct tab highlight
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-log').classList.add('active');
-  ['workoutsToggleBar','exercisesToggleBar','progressToggleBar','w2ToggleBar'].forEach(id=>{const b=document.getElementById(id);if(b)b.style.display='none';});
+  ['workoutsToggleBar','exercisesToggleBar','progressToggleBar','w2ToggleBar','profileToggleBar'].forEach(id=>{const b=document.getElementById(id);if(b)b.style.display='none';});
   const _hl = (window._activeTabHighlight && window._activeTabHighlight !== 'log') ? window._activeTabHighlight : 'log';
-  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active',['log','exercises','progress','workouts2'][i]===_hl));
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active',['log','exercises','progress','workouts2','profile'][i]===_hl));
   updatePickModeTabs();
   const _pageLog = document.getElementById('page-log');
   if (_pageLog) _pageLog.style.paddingTop = '0';
@@ -7416,7 +7439,7 @@ function switchTab(tab) {
     bar.classList.toggle('visible', tab === 'log' && workoutAreaActive);
   }
   const _highlightTab = (tab === 'log' && window._activeTabHighlight && window._activeTabHighlight !== 'log') ? window._activeTabHighlight : tab;
-  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active',['log','exercises','progress','workouts2'][i]===_highlightTab));
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active',['log','exercises','progress','workouts2','profile'][i]===_highlightTab));
   if (tab==='history') {
     tab = 'progress';
     switchProgressView('history');
@@ -7430,11 +7453,13 @@ function switchTab(tab) {
   const _etoggleBar = document.getElementById('exercisesToggleBar');
   const _ptoggleBar = document.getElementById('progressToggleBar');
   const _w2toggleBar = document.getElementById('w2ToggleBar');
-  [_wtoggleBar, _etoggleBar, _ptoggleBar, _w2toggleBar].forEach(b => { if (b) b.style.display = 'none'; });
+  const _profiletoggleBar = document.getElementById('profileToggleBar');
+  [_wtoggleBar, _etoggleBar, _ptoggleBar, _w2toggleBar, _profiletoggleBar].forEach(b => { if (b) b.style.display = 'none'; });
   if (tab === 'workouts' && _wtoggleBar) _wtoggleBar.style.display = '';
   if (tab === 'exercises' && _etoggleBar && !_pickMode) _etoggleBar.style.display = '';
   if (tab === 'progress' && _ptoggleBar) _ptoggleBar.style.display = '';
   if (tab === 'workouts2' && _w2toggleBar) _w2toggleBar.style.display = '';
+  if (tab === 'profile' && _profiletoggleBar) _profiletoggleBar.style.display = '';
   _syncShareBtn();
   // Check if header is visible — if so, delay page reveal to sync with header collapse
   const _hdrVisible = !document.querySelector('.header')?.classList.contains('collapsed');
@@ -7464,6 +7489,9 @@ function switchTab(tab) {
   if (tab==='workouts2') {
     _initWTabView();
     renderWorkoutsTab2();
+  }
+  if (tab==='profile' && typeof renderUserMenuNotifications === 'function') {
+    renderUserMenuNotifications();
   }
   if (tab==='exercises') {
     _exTabView = 'all';
@@ -7501,7 +7529,7 @@ function updatePickModeTabs() {
   const isExPickMode = !!_pickMode;
   const isCreateNewMode = !!window._createNewMode;
   document.querySelectorAll('.tab').forEach((t, i) => {
-    const tabName = ['log','exercises','progress','workouts2'][i];
+    const tabName = ['log','exercises','progress','workouts2','profile'][i];
     if (isExPickMode) {
       t.style.opacity = tabName === 'exercises' ? '' : '0.25';
       t.style.pointerEvents = tabName === 'exercises' ? '' : 'none';
@@ -11282,7 +11310,7 @@ function saveWorkoutToList() {
     document.getElementById('workoutNameBar')?.classList.remove('visible');
     // Re-apply workouts highlight if came from workouts
     if (_wasFromWorkouts) {
-      document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active',['log','exercises','progress','workouts2'][i]==='workouts2'));
+      document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active',['log','exercises','progress','workouts2','profile'][i]==='workouts2'));
     }
     setTimeout(() => {
       const actionsRow = document.querySelector('.today-actions');
@@ -11313,7 +11341,7 @@ function saveWorkoutToList() {
         const _backBtnPso = document.getElementById('_nwf-back-btn');
         if (_backBtnPso) _backBtnPso.onclick = () => { document.getElementById('postSaveOptions')?.remove(); document.getElementById('_saveBlackScreen')?.remove(); document.getElementById('_nwf-back-wrapper')?.remove(); _nwfResetHeaderPadding(); document.querySelectorAll('.tab').forEach(t=>{t.style.opacity='';t.style.pointerEvents='';}); const _db2=document.getElementById('dateBadge'); if(_db2){_db2.style.opacity='';_db2.style.cursor='';} actionsRowRestore(); resetWorkoutState(); document.getElementById('workoutName').value=''; showTodayStartScreen(); checkFinishReady(); if(_wasFromWorkouts) switchTab('workouts2'); };
         document.querySelectorAll('.tab').forEach((t, i) => {
-          const tabName = ['log','exercises','progress','workouts2'][i];
+          const tabName = ['log','exercises','progress','workouts2','profile'][i];
           const isActive = _wasFromWorkouts ? tabName === 'workouts2' : false;
           t.style.opacity = isActive ? '' : '0.25';
           t.style.pointerEvents = isActive ? '' : 'none';
@@ -14824,8 +14852,10 @@ function openCalendar() {
     window._calSwipeInit = true;
     const cb = document.getElementById('calBody');
     let _swX = 0;
-    cb.addEventListener('touchstart', e => { _swX = e.touches[0].clientX; }, {passive:true});
+    let _swOnGrid = false;
+    cb.addEventListener('touchstart', e => { _swX = e.touches[0].clientX; _swOnGrid = !!e.target.closest('.cal-grid'); }, {passive:true});
     cb.addEventListener('touchend', e => {
+      if (!_swOnGrid) return;
       const dx = e.changedTouches[0].clientX - _swX;
       if (Math.abs(dx) > 40) calNav(dx < 0 ? 1 : -1);
     }, {passive:true});
@@ -15022,7 +15052,7 @@ const onclick = isPlanPast ? '' : `onclick="selectCalDay('${key}')"`;
     const showDots = isPlanSelected || (!hasRealW && !hasC);
     // Same bare-checkmark shape used for a finished exercise (done-check), scaled down
     // into a small circular badge on the day cell instead of replacing the day number.
-    const checkBadge = hasRealW ? `<span class="cal-day-check"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>` : '';
+    const checkBadge = hasRealW ? `<span class="cal-day-check"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>` : '';
     html += `<div class="${cls}" style="${hasAny?'cursor:pointer':''}${planHighlight}${pastStyle}" ${onclick}>${checkBadge}${d}${isPlanSelected ? '<div style="width:5px;height:5px;border-radius:50%;background:var(--accent);margin:1px auto 0;"></div>' : (isPlannedOnly || isPlannedCardio ? dots : '')}</div>`;
 
     // After Saturday (dayOfWeek===6), insert badge column cell for this week
@@ -15122,44 +15152,6 @@ function showCalDay(key) {
   const ws = window._calWorkoutDays?.get(key)||[];
   const cs = window._calCardioDays?.get(key)||[];
   document.getElementById('calWorkoutList').innerHTML = renderCalDayContent(key, ws, cs);
-  // Render body part chart if applicable
-  setTimeout(() => renderCalBodyPartChart(ws), 50);
-}
-
-function renderCalBodyPartChart(ws) {
-  const canvas = document.getElementById('calBodyPartChart');
-  if (!canvas) return;
-  const BODY_ORDER = ['Chest','Back','Legs','Shoulders','Arms','Core','Mix'];
-  const muscleSets = {};
-  ws.forEach(w => (w.exercises||[]).forEach(e => {
-    const m = e.muscle || 'Other';
-    const doneSets = (e.sets||[]).filter(s=>s.done&&!s.ignored);
-    const useSets = doneSets.length > 0 ? doneSets : (e.sets||[]).filter(s=>!s.ignored);
-    muscleSets[m] = (muscleSets[m]||0) + useSets.length;
-  }));
-  const totalSets = Object.values(muscleSets).reduce((a,b)=>a+b,0);
-  const labels = BODY_ORDER.map(m=>displayMuscle(m));
-  const data = BODY_ORDER.map(m=>muscleSets[m]||0);
-  const pcts = data.map(v=>totalSets?Math.round(v/totalSets*100):0);
-  const colors = ['#e8ff47','#7ec8e3','#ff8c42','#a78bfa','#34d399','#f87171','#20d4c8'];
-  if (window._calBodyPartChartInst) window._calBodyPartChartInst.destroy();
-  window._calBodyPartChartInst = new Chart(canvas.getContext('2d'), {
-    type:'bar',
-    data:{labels,datasets:[{data,backgroundColor:colors.map(c=>c+'99'),borderColor:colors,borderWidth:2,borderRadius:5}]},
-    options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:16}},plugins:{legend:{display:false},tooltip:{enabled:false}},
-      scales:{x:{ticks:{color:'#888',font:{size:9}},grid:{color:'#1a1a1a'}},y:{ticks:{color:'#666',font:{size:8},stepSize:1,callback:v=>Number.isInteger(v)?v:''},grid:{color:'#1a1a1a'}}}},
-    plugins:[{id:'calBarLabels',afterDraw(chart){
-      const ctx=chart.ctx;
-      chart.data.datasets.forEach((ds,i)=>{
-        chart.getDatasetMeta(i).data.forEach((bar,idx)=>{
-          const val=ds.data[idx]; if(!val) return;
-          ctx.save(); ctx.fillStyle='#fff'; ctx.font='bold 9px DM Sans,sans-serif';
-          ctx.textAlign='center'; ctx.textBaseline='bottom';
-          ctx.fillText(val,bar.x,bar.y-2); ctx.restore();
-        });
-      });
-    }}]
-  });
 }
 
 function showCalDayEmpty(key) {
@@ -15196,14 +15188,6 @@ function renderCalDayContent(key, ws, cs) {
   let html = '';
   // Render workout items (real only)
   if (realWs.length) html += renderCalDayWorkouts(realWs);
-  // Body part chart directly below strength workout
-  const allExsForDay = realWs.flatMap(w=>w.exercises||[]);
-  if (allExsForDay.length) {
-    html += `<div id="cal-bodypart-chart-wrap" style="display:none;margin-top:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;">
-      <div style="font-family:'Bebas Neue';font-size:14px;letter-spacing:1px;color:var(--muted);margin-bottom:6px;">SETS BY BODY PART</div>
-      <div style="position:relative;height:120px;"><canvas id="calBodyPartChart"></canvas></div>
-    </div>`;
-  }
   // Render cardio items
   if (cs.length && allExsForDay.length) html += '<div style="margin-top:25px;"></div>';
   cs.forEach((c, ci) => {
@@ -15680,20 +15664,20 @@ function renderCalDayWorkouts(ws) {
       </div>` : '';
 
     const isFinished = !w._draft && !w._template;
-    const completedBadge = isFinished ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:rgba(232,255,71,.12);border:1px solid rgba(232,255,71,.35);flex-shrink:0;margin-left:6px;"><svg width="16" height="16" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#e8ff47" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>` : '';
+    const completedBadge = isFinished ? `<span style="display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;margin-left:6px;"><svg width="18" height="18" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>` : '';
 
     return `<div class="history-card" id="cal-hcard-${wi}" style="margin-bottom:8px;">
       <div class="hcard-header" onclick="toggleCalHistCard('cal-hbody-${wi}','cal-hchev-${wi}',${wi})">
         <div style="flex:1;display:flex;align-items:center;">
-          <div class="hcard-name" style="color:var(--accent);">${w.name}${w._draft?` <span style="font-family:'DM Sans';font-size:11px;font-weight:700;background:rgba(126,200,227,.12);border:1px solid rgba(126,200,227,.4);color:#7ec8e3;border-radius:4px;padding:1px 6px;vertical-align:middle;letter-spacing:.3px;text-transform:uppercase;">DRAFT</span>`:''}</div>
+          <div class="hcard-name" style="font-family:'DM Sans';color:#fff;">${w.name}${w._draft?` <span style="font-family:'DM Sans';font-size:11px;font-weight:700;background:rgba(126,200,227,.12);border:1px solid rgba(126,200,227,.4);color:#7ec8e3;border-radius:4px;padding:1px 6px;vertical-align:middle;letter-spacing:.3px;text-transform:uppercase;">DRAFT</span>`:''}</div>
         </div>
-        ${w.durationMins > 0 ? `<div style="display:flex;align-items:center;gap:4px;margin-right:8px;flex-shrink:0;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7ec8e3" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg><span style="font-size:11px;color:#7ec8e3;font-weight:600;">${w.durationMins}m</span></div>` : ''}
+        ${w.durationMins > 0 ? `<div style="display:flex;align-items:center;gap:4px;margin-right:8px;flex-shrink:0;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg><span style="font-family:'DM Sans';font-size:16px;color:#ccc;font-weight:600;">${w.durationMins}m</span></div>` : ''}
         ${completedBadge}
         <span class="hcard-chevron" id="cal-hchev-${wi}" style="display:none;">▾</span>
       </div>
-      ${prSummary}
       <div class="hcard-muscles" style="display:none;">${muscleChips}</div>
       <div class="hcard-body collapsed" id="cal-hbody-${wi}" style="max-height:0;">
+        ${prSummary}
         <div class="hcard-stats">
           <div class="hcard-stat"><div class="hcard-stat-val" style="${draftColor}">${exStat}</div><div class="hcard-stat-label">Exercises</div></div>
           <div class="hcard-stat"><div class="hcard-stat-val" style="${draftColor}">${ts}</div><div class="hcard-stat-label">Sets</div></div>
@@ -15721,7 +15705,7 @@ function renderCalDayWorkouts(ws) {
         <div class="hcard-actions">
           <button class="btn-delete-workout" onclick="calDeleteWorkout(${wi}, this)">Delete</button>
           <button class="btn-edit-workout" onclick="openEditHistory(${wi})">Edit</button>
-          <button class="btn-restore" onclick="calLoadWorkout(${wi})">Load Workout</button>
+          <button class="btn-restore" style="background:var(--accent);border-color:var(--accent);color:#000;" onclick="calLoadWorkout(${wi})">Load Workout</button>
         </div>
       </div>
     </div>`;
@@ -15735,19 +15719,16 @@ function toggleCalHistCard(bodyId, chevId, wi) {
   if (!body) return;
   const isCollapsed = body.classList.contains('collapsed');
   const musclesEl = card?.querySelector('.hcard-muscles');
-  const chartWrap = document.getElementById('cal-bodypart-chart-wrap');
   if (isCollapsed) {
     body.classList.remove('collapsed');
     body.style.maxHeight = body.scrollHeight + 500 + 'px';
     chev?.classList.add('open');
     if (musclesEl) musclesEl.style.display = '';
-    if (chartWrap) chartWrap.style.display = '';
   } else {
     body.style.maxHeight = '0';
     body.classList.add('collapsed');
     chev?.classList.remove('open');
     if (musclesEl) musclesEl.style.display = 'none';
-    if (chartWrap) chartWrap.style.display = 'none';
     document.querySelectorAll(`#cal-hcard-${wi} .hcard-muscle-chip`).forEach(c => { c.classList.remove('active'); c.style.cssText = ''; });
     document.querySelectorAll(`#cal-hcard-${wi} .hcard-pr-chip`).forEach(c => c.classList.remove('pr-active'));
     body.querySelectorAll('.hcard-ex-item').forEach(item => { item.style.display = ''; item.classList.remove('muscle-filtered','muscle-match'); });
@@ -17295,21 +17276,6 @@ function dismissNotification(notifId) {
   });
 }
 
-function toggleUserMenu() {
-  const menu = document.getElementById('userMenuDropdown');
-  const isOpening = menu.style.display === 'none';
-  menu.style.display = isOpening ? 'block' : 'none';
-  if (isOpening) renderUserMenuNotifications();
-}
-
-// Close menu when clicking outside
-document.addEventListener('click', e => {
-  if (!e.target.closest('#userIconBtn') && !e.target.closest('#userMenuDropdown')) {
-    const menu = document.getElementById('userMenuDropdown');
-    if (menu) menu.style.display = 'none';
-  }
-});
-
 window._onAuthReady = (user) => {
   const _LS = window._LS || { get: (k) => localStorage.getItem(k), set: (k,v) => { try { localStorage.setItem(k,v); } catch(_){} }, remove: (k) => localStorage.removeItem(k) };
   const roleColors = { super_admin: '#ff4747', ops_admin: '#ff8c42', brand_admin: '#f472b6', site_manager: '#a78bfa', coach: '#7ec8e3', client: '#e8ff47' };
@@ -17317,12 +17283,6 @@ window._onAuthReady = (user) => {
   const role = window._currentUserData?.role || 'client';
   const color = roleColors[role] || '#888';
   const now = new Date();
-
-  // Show and color user icon
-  const iconBtn = document.getElementById('userIconBtn');
-  const iconSvg = document.getElementById('userIconSvg');
-  if (iconBtn) iconBtn.style.display = 'flex';
-  if (iconSvg) iconSvg.setAttribute('stroke', color);
 
   // Populate menu
   const nameEl = document.getElementById('userMenuDisplayName');
@@ -20174,11 +20134,11 @@ function loadClientNotifications() {
 function updateNotificationBadge(count) {
   let badge = document.getElementById('notificationBadge');
   if (!badge) {
-    const iconBtn = document.getElementById('userIconBtn');
+    const iconBtn = document.getElementById('tab-profile-btn');
     if (iconBtn) {
       badge = document.createElement('span');
       badge.id = 'notificationBadge';
-      badge.style.cssText = 'position:absolute;top:-4px;right:-4px;background:#ff4747;color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:2px 5px;min-width:16px;text-align:center;display:none;';
+      badge.style.cssText = 'position:absolute;top:2px;right:calc(50% - 22px);background:#ff4747;color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:2px 5px;min-width:16px;text-align:center;display:none;';
       iconBtn.style.position = 'relative';
       iconBtn.appendChild(badge);
     }
@@ -20409,9 +20369,6 @@ function _refreshUserMenuForRole(role) {
   // Update role label in menu
   const roleEl = document.getElementById('userMenuRole');
   if (roleEl) { roleEl.textContent = ROLE_LABELS[role] || role; roleEl.style.color = color; }
-  // Update icon color
-  const iconSvg = document.getElementById('userIconSvg');
-  if (iconSvg) iconSvg.setAttribute('stroke', color);
   // Show/hide role-gated buttons
   const adminBtn = document.getElementById('userMenuAdminBtn');
   const superBtn = document.getElementById('userMenuSuperBtn');
@@ -21648,17 +21605,18 @@ function deleteCoachWorkout(id) {
 <div id="strength-target-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;z-index:9000;background:#1a1a1a;border-top:1px solid #2a2a2a;border-radius:20px 20px 0 0;padding:12px 20px calc(28px + env(safe-area-inset-bottom,0px));box-sizing:border-box;">
   <div style="width:36px;height:4px;border-radius:2px;background:#444;margin:0 auto 18px;"></div>
   <div style="font-family:'DM Sans';font-size:18px;font-weight:800;color:var(--text);text-align:center;margin-bottom:14px;letter-spacing:.3px;">COMPLETED WORKOUTS</div>
+  <div id="week-status-completed-count" style="font-family:'DM Sans';font-size:54px;font-weight:800;color:var(--text);text-align:center;line-height:1;margin-bottom:10px;"></div>
   <div id="week-status-days" style="display:flex;justify-content:space-between;gap:2px;margin-bottom:6px;"></div>
-  <div id="week-status-detail" style="text-align:center;font-family:'DM Sans';font-size:13px;font-weight:600;color:var(--muted);min-height:18px;margin-bottom:18px;"></div>
-  <div style="border-top:1px solid #444;margin-bottom:18px;"></div>
+  <div id="week-status-detail" style="text-align:center;font-family:'DM Sans';font-size:13px;font-weight:600;color:var(--muted);min-height:18px;padding-bottom:30px;"></div>
+  <div style="border-top:1px solid #444;padding-bottom:69px;"></div>
   <div style="font-family:'DM Sans';font-size:18px;font-weight:800;color:var(--text);text-align:center;margin-bottom:18px;letter-spacing:.3px;">MY WEEKLY GOAL</div>
   <div style="display:flex;align-items:center;justify-content:center;gap:0;margin-bottom:28px;">
-    <button onclick="event.stopPropagation();_adjustStrengthTarget(-1,this)" style="width:64px;height:64px;border-radius:16px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:28px;font-weight:300;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">−</button>
+    <button onclick="event.stopPropagation();_adjustStrengthTarget(-1,this)" style="width:64px;height:64px;border-radius:16px;border:1px solid var(--border);background:#333;color:var(--text);font-size:46px;font-weight:300;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">−</button>
     <div style="display:flex;flex-direction:column;align-items:center;min-width:120px;">
-      <span id="strength-target-val" style="font-family:'DM Sans';font-size:64px;font-weight:800;color:var(--text);line-height:1;">3</span>
+      <span id="strength-target-val" style="font-family:'DM Sans';font-size:54px;font-weight:800;color:var(--text);line-height:1;">3</span>
       <span style="font-family:'DM Sans';font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.5px;margin-top:2px;">WORKOUTS / WEEK</span>
     </div>
-    <button onclick="event.stopPropagation();_adjustStrengthTarget(1,this)" style="width:64px;height:64px;border-radius:16px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:28px;font-weight:300;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">+</button>
+    <button onclick="event.stopPropagation();_adjustStrengthTarget(1,this)" style="width:64px;height:64px;border-radius:16px;border:1px solid var(--border);background:#333;color:var(--text);font-size:46px;font-weight:300;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">+</button>
   </div>
   <button onclick="closeStrengthTargetSheet(true)" style="width:100%;padding:16px;background:var(--accent);color:#000;border:none;border-radius:14px;font-family:'DM Sans';font-size:17px;font-weight:900;cursor:pointer;-webkit-tap-highlight-color:transparent;">SAVE</button>
 </div>
