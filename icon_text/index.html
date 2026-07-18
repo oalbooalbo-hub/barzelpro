@@ -6159,7 +6159,7 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
   const _mKeys = ['wt','rm','vol'], _mLabels = ['MAX','1RM','VOL'], _mColors = ['#e8ff47','#ff8c42','#a78bfa'];
   const progPane = document.createElement('div');
   progPane.id = 'ex-detail-stats-prog-pane';
-  progPane.style.cssText = 'display:block;padding:8px 16px 0;';
+  progPane.style.cssText = 'display:block;padding:2px 16px 0;';
   const metricBtns = [];
   const metricBar = document.createElement('div');
   metricBar.style.cssText = 'position:relative;display:flex;gap:0;margin-bottom:10px;border-bottom:1px solid var(--border);';
@@ -6171,7 +6171,7 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
   metricIndicator.style.cssText = `position:absolute;bottom:-1px;left:0;height:2px;width:calc(100%/3);background:${_mColors[0]};transition:left .25s cubic-bezier(.4,0,.2,1),background .25s ease;`;
   _mLabels.forEach((lbl, i) => {
     const btn = document.createElement('button');
-    btn.style.cssText = `flex:1;border:none;background:transparent;font-family:'DM Sans';font-size:16px;font-weight:700;padding:8px 0;cursor:pointer;color:${i===0?_mColors[0]:'#555'};transition:color .15s;`;
+    btn.style.cssText = `flex:1;border:none;background:transparent;font-family:'DM Sans';font-size:14px;font-weight:700;padding:8px 0;cursor:pointer;color:${i===0?_mColors[0]:'#555'};transition:color .15s;`;
     btn.textContent = lbl;
     btn.onclick = () => {
       if (_mKeys[i] === _progMetric) return;
@@ -6190,12 +6190,12 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
   const _rangeKeys = ['1Y','6M','3M','1M','2W'];
   const progBigVal = document.createElement('div');
   progBigVal.id = 'ex-detail-stats-bigval';
-  progBigVal.style.cssText = "font-family:'DM Sans';font-size:18px;font-weight:700;min-height:22px;padding:2px 0 4px;display:none;text-align:center;position:relative;";
+  progBigVal.style.cssText = "font-family:'DM Sans';font-size:18px;font-weight:700;min-height:22px;padding:2px 0 1px;display:none;text-align:center;position:relative;";
   const progNoData = document.createElement('div');
   progNoData.style.cssText = "display:none;text-align:center;padding:30px 0;font-family:'DM Sans';font-size:12px;color:var(--muted);";
   progNoData.textContent = 'Not enough data for this range';
   const progCanvasWrap = document.createElement('div');
-  progCanvasWrap.style.cssText = 'position:relative;height:150px;';
+  progCanvasWrap.style.cssText = 'position:relative;height:135px;';
   const progCanvas = document.createElement('canvas');
   progCanvas.id = 'ex-detail-stats-canvas';
   progCanvasWrap.appendChild(progCanvas);
@@ -6205,7 +6205,7 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
   const progXAxisRow = document.createElement('div');
   progXAxisRow.style.cssText = 'position:relative;display:flex;align-items:center;justify-content:flex-end;min-height:24px;padding:6px 14px 2px;';
   const progScrubWrap = document.createElement('div');
-  progScrubWrap.style.cssText = 'display:none;padding:0 14px;';
+  progScrubWrap.style.cssText = 'display:none;padding:0 14px;margin-top:-5px;';
   const _chevSvg = `<svg style="vertical-align:middle;margin-left:3px;" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
   const periodWrap = document.createElement('div');
   periodWrap.style.cssText = 'position:relative;';
@@ -6596,7 +6596,7 @@ function _toggleExDetailStats() {
   titleRow.style.cssText = 'position:relative;';
   const title = document.createElement('div');
   title.id = 'ex-detail-stats-title';
-  title.style.cssText = "font-family:'Bebas Neue';font-size:26px;letter-spacing:1px;text-align:center;padding:4px 10px 6px;";
+  title.style.cssText = "font-family:'Bebas Neue';font-size:26px;letter-spacing:1px;text-align:center;padding:4px 10px 2px;";
   titleRow.appendChild(title);
   const { dots, panesContainer, periodWrap } = _buildExDetailStatsCarousel(exDef, exName, title);
   periodWrap.style.position  = 'absolute';
@@ -6626,6 +6626,7 @@ function _toggleExDetailStats() {
   // Pinned to the box's bottom edge (flex column + margin-top:auto) — inside the
   // border, so the "Stats" boundary box visually wraps the dots too.
   dots.style.marginTop = 'auto';
+  dots.style.transform = 'translateY(40px)';
   statsBox.appendChild(dots);
 
   // Slide up 48px + fade in — same enter transition as _toggleExDetailMuscles/openShareQR().
