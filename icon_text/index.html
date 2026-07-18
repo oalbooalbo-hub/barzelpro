@@ -122,7 +122,8 @@ body.desktop-mode .pages-wrap {
 #nwf-hero-name:empty::before{content:'Workout name';color:rgba(255,255,255,0.3);pointer-events:none;}
 #nwf-description::placeholder,#nwf-video-link::placeholder,#nwf-name-input::placeholder{color:#888;-webkit-text-fill-color:#888;opacity:1;}
 .ex-editor-open #ex-detail-finish-btn{opacity:0.3;pointer-events:none;filter:grayscale(1);}
-.ex-editor-open #ex-detail-back-btn,.ex-editor-open #ex-detail-back-btn-nophoto,.ex-editor-open #ex-detail-menu-btn,.ex-editor-open #ex-detail-menu-btn-nophoto,.ex-editor-open #ex-detail-info-btn{display:none!important;}
+.ex-editor-open #ex-detail-back-btn,.ex-editor-open #ex-detail-back-btn-nophoto,.ex-editor-open #ex-detail-menu-btn,.ex-editor-open #ex-detail-menu-btn-nophoto{display:none!important;}
+.ex-editor-open #ex-detail-photo-tap-wrap,.ex-detail-stats-open #ex-detail-photo-tap-wrap{pointer-events:none!important;}
 .workouts-flow-card .btn-done,.workouts-flow-card .cancel-done-btn,.workouts-flow-card .btn-timer,.workouts-flow-card .timer-panel{display:none!important;}
 .workouts-flow-card .workouts-flow-only{display:inline-flex!important;}
 .empty-state .big{font-family:'Bebas Neue';font-size:48px;color:var(--surface2);display:block;}
@@ -180,8 +181,12 @@ body.desktop-mode .pages-wrap {
 .btn-chevron .chev{display:none;}/* arrow via transform, no extra span needed */
 #ex-float-bar{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:calc(min(430px,100%) - 32px);background:var(--surface);border:1px solid var(--border);border-radius:16px;display:none;gap:0;z-index:210 !important;box-shadow:0 8px 32px rgba(0,0,0,.5);overflow:hidden;}
 #ex-float-bar-block{display:none;position:fixed;bottom:0;left:0;right:0;height:calc(16px + env(safe-area-inset-bottom));background:var(--bg);z-index:49;}
-#ex-float-bar button{flex:1;background:transparent;border:none;border-right:1px solid var(--border);color:var(--muted);padding:14px 0;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;transition:color .2s,background .15s;font-family:'DM Sans';font-size:10px;font-weight:700;letter-spacing:.3px;}
+#ex-float-bar button{flex:1;background:transparent;border:none;border-right:1px solid var(--border);color:var(--muted);padding:14px 0;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:color .2s,background .15s;font-family:'DM Sans';font-size:10px;font-weight:700;letter-spacing:.3px;}
 #ex-float-bar button:last-child{border-right:none;}
+#ex-float-bar button .ex-float-icon{transition:transform .28s cubic-bezier(.2,.8,.3,1);}
+#ex-float-bar button .ex-float-label{display:block;overflow:hidden;max-height:14px;margin-top:5px;opacity:1;transition:max-height .22s ease,margin-top .22s ease,opacity .16s ease;}
+#ex-float-bar button.active .ex-float-icon{transform:scale(1.45);color:var(--accent);}
+#ex-float-bar button.active .ex-float-label{max-height:0;margin-top:0;opacity:0;}
 @keyframes timerDotBlink{0%,100%{opacity:1;}50%{opacity:0;}}
 .timer-float-dot{position:absolute;top:4px;right:4px;width:7px;height:7px;border-radius:50%;display:none;pointer-events:none;}
 .timer-float-dot.running{display:block;background:var(--accent);animation:timerDotBlink 1s ease-in-out infinite;}
@@ -238,7 +243,13 @@ body.desktop-mode .pages-wrap {
 .set-row:first-child td:first-child::before{top:50%;}
 .set-num{font-size:14px;color:#aaa;font-weight:700;width:28px;height:28px;border-radius:50%;border:1.5px solid #555;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;-webkit-tap-highlight-color:transparent;background:#1a1a1a;position:relative;z-index:1;}
 .kg-pad-btn{background:#141414;border:1px solid #2a2a2a;border-radius:10px;color:var(--text);font-family:'DM Sans';font-size:22px;font-weight:700;padding:14px 0;cursor:pointer;transition:transform .1s ease-out;height:56px;box-sizing:border-box;}
-.kg-pad-btn:active{transform:scale(.92);transition:transform .01s ease-out;}
+.kg-pad-btn:active{transform:scale(.92);transition:none;}
+/* select_animation_skill — shared tap micro-interaction for every other
+   button in the KG/REP inline editors (BW toggle, sign toggle, quick-add,
+   Cancel/Prev/Done, REP +/- delta): instant shrink on press, animated
+   grow-back on release. See .claude/skills/select_animation_skill. */
+.editor-tap-btn{transition:transform .1s ease-out;}
+.editor-tap-btn:active{transform:scale(.92);transition:none;}
 /* Cancel/Done buttons in the inline KG/Reps editors — same height as the number pad buttons above */
 .editor-action-btn{height:56px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;}
 .set-row.ignored .set-num { text-decoration: line-through; }
@@ -258,7 +269,8 @@ body.desktop-mode .pages-wrap {
 .rep-box-wrap.editing{background:var(--surface2) !important;border-radius:8px !important;}
 /* Inline KG editor row */
 .kg-bw-btn-active{border-color:var(--accent) !important;color:var(--accent) !important;}
-#kgBWBtnInline{will-change:color,border-color;-webkit-transform:translateZ(0);transform:translateZ(0);}
+#kgBWBtnInline{will-change:color,border-color;-webkit-transform:translateZ(0);transform:translateZ(0);transition:color .2s,transform .1s ease-out;}
+#kgBWBtnInline:active{transition:none;}
 #kgEditorDisplay{will-change:contents;-webkit-transform:translateZ(0);transform:translateZ(0);display:inline-block;}
 .kg-inline-editor{height:0;overflow:hidden;}
 /* Exercise slide nav */
@@ -794,8 +806,15 @@ body.ex-tab-detail-open #ex-float-bar{display:none !important;}
 .trash-select-check.selected{background:var(--accent);border-color:var(--accent);background-image:url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 6l3 3 5-5' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:center;}
 
 /* Tab icon styles — injected by inject-icons.js */
-.tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;}
+.tab{display:flex;flex-direction:column;align-items:center;justify-content:center;}
 .tab svg{flex-shrink:0;}
+/* Select animation (Home/Exercises/W2 — PRO has no icon, so it's excluded and keeps
+   its text always visible): icon enlarges, label collapses. Same pattern as the
+   Note/Timer/Stats float bar (#ex-float-bar button.active). */
+.tab .tab-icon{transition:transform .28s cubic-bezier(.2,.8,.3,1);}
+.tab .tab-label{display:block;overflow:hidden;max-height:14px;margin-top:3px;opacity:1;transition:max-height .22s ease,margin-top .22s ease,opacity .16s ease;}
+.tab.active .tab-icon{transform:scale(1.45);}
+.tab.active .tab-label{max-height:0;margin-top:0;opacity:0;}
 </style>
 <script src="config.js"></script>
 <script>
@@ -1213,15 +1232,15 @@ function hidAuthScreen() {
 </div>
 <div class="tabs">
   <button class="tab active" id="tab-log-btn" onclick="switchTab('log')">
-  <svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" id="House-Chimney--Streamline-Ultimate" height="22" width="22" style="display:block;flex-shrink:0;"> <path d="M19.5 8.4V3.5A0.5 0.5 0 0 0 19 3h-2a0.5 0.5 0 0 0 -0.5 0.5v2.14l-4.162 -3.829a0.5 0.5 0 0 0 -0.678 0l-11 10.321A0.5 0.5 0 0 0 1 13h2.5v9.5a1 1 0 0 0 1 1h15a1 1 0 0 0 1 -1V13H23a0.5 0.5 0 0 0 0.339 -0.868Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> </svg>
-  <span>Home</span>
+  <svg class="tab-icon" width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" id="House-Chimney--Streamline-Ultimate" height="22" width="22" style="display:block;flex-shrink:0;"> <path d="M19.5 8.4V3.5A0.5 0.5 0 0 0 19 3h-2a0.5 0.5 0 0 0 -0.5 0.5v2.14l-4.162 -3.829a0.5 0.5 0 0 0 -0.678 0l-11 10.321A0.5 0.5 0 0 0 1 13h2.5v9.5a1 1 0 0 0 1 1h15a1 1 0 0 0 1 -1V13H23a0.5 0.5 0 0 0 0.339 -0.868Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> </svg>
+  <span class="tab-label">Home</span>
 </button>
   <button class="tab" id="tab-exercises-btn" onclick="switchTab('exercises')">
-  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" style="display:block;flex-shrink:0;"><path fill="currentColor" d="M21.435 11.5h-.38V8.12a1.626 1.626 0 0 0-1.62-1.62h-.63v-.38a1.625 1.625 0 0 0-3.25 0v5.38h-7.11V6.12a1.625 1.625 0 0 0-3.25 0v.38h-.63a1.62 1.62 0 0 0-1.62 1.62v3.38h-.38a.5.5 0 1 0 0 1h.38v3.37a1.622 1.622 0 0 0 1.62 1.63H5.2v.37a1.625 1.625 0 1 0 3.25 0V12.5h7.11v5.37a1.625 1.625 0 1 0 3.25 0v-.37h.63a1.628 1.628 0 0 0 1.62-1.63V12.5h.38a.5.5 0 1 0 0-1ZM5.2 16.5h-.63a.625.625 0 0 1-.62-.63V8.12a.623.623 0 0 1 .62-.62h.63Zm2.25 1.37a.634.634 0 0 1-.63.63a.625.625 0 0 1-.62-.63V6.12a.623.623 0 0 1 .62-.62a.632.632 0 0 1 .63.62Zm10.36 0a.625.625 0 1 1-1.25 0V6.12a.625.625 0 0 1 1.25 0Zm2.25-2a.625.625 0 0 1-.62.63h-.63v-9h.63a.623.623 0 0 1 .62.62Z"/></svg>
-  <span>Exercises</span>
+  <svg class="tab-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" style="display:block;flex-shrink:0;"><path fill="currentColor" d="M21.435 11.5h-.38V8.12a1.626 1.626 0 0 0-1.62-1.62h-.63v-.38a1.625 1.625 0 0 0-3.25 0v5.38h-7.11V6.12a1.625 1.625 0 0 0-3.25 0v.38h-.63a1.62 1.62 0 0 0-1.62 1.62v3.38h-.38a.5.5 0 1 0 0 1h.38v3.37a1.622 1.622 0 0 0 1.62 1.63H5.2v.37a1.625 1.625 0 1 0 3.25 0V12.5h7.11v5.37a1.625 1.625 0 1 0 3.25 0v-.37h.63a1.628 1.628 0 0 0 1.62-1.63V12.5h.38a.5.5 0 1 0 0-1ZM5.2 16.5h-.63a.625.625 0 0 1-.62-.63V8.12a.623.623 0 0 1 .62-.62h.63Zm2.25 1.37a.634.634 0 0 1-.63.63a.625.625 0 0 1-.62-.63V6.12a.623.623 0 0 1 .62-.62a.632.632 0 0 1 .63.62Zm10.36 0a.625.625 0 1 1-1.25 0V6.12a.625.625 0 0 1 1.25 0Zm2.25-2a.625.625 0 0 1-.62.63h-.63v-9h.63a.623.623 0 0 1 .62.62Z"/></svg>
+  <span class="tab-label">Exercises</span>
 </button>
   <button class="tab" id="tab-progress-btn" onclick="switchTab('progress')"><span>PRO</span></button>
-  <button class="tab" id="tab-workouts2-btn" onclick="switchTab('workouts2')"><svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display:block;flex-shrink:0;"> <path d="M18.5 19v3.5a1 1 0 0 1 -1 1h-16a1 1 0 0 1 -1 -1v-18a1 1 0 0 1 1 -1h3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="M14.5 3.5h3a1 1 0 0 1 1 1V8" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="M8 1.999a1.5 1.5 0 1 0 3 0 1.5 1.5 0 1 0 -3 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="M10.915 2.5H13.5a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-8a1 1 0 0 1 -1 -1v-1a1 1 0 0 1 1 -1h2.585" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="m3.5 9.499 12 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="m3.5 13.499 9.466 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="m3.5 17.499 7.983 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="m17 17.5 -3.5 1 1 -3.5 5.982 -5.982a1.768 1.768 0 0 1 2.5 2.5Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> </svg><span>W2</span></button>
+  <button class="tab" id="tab-workouts2-btn" onclick="switchTab('workouts2')"><svg class="tab-icon" width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display:block;flex-shrink:0;"> <path d="M18.5 19v3.5a1 1 0 0 1 -1 1h-16a1 1 0 0 1 -1 -1v-18a1 1 0 0 1 1 -1h3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="M14.5 3.5h3a1 1 0 0 1 1 1V8" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="M8 1.999a1.5 1.5 0 1 0 3 0 1.5 1.5 0 1 0 -3 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="M10.915 2.5H13.5a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-8a1 1 0 0 1 -1 -1v-1a1 1 0 0 1 1 -1h2.585" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="m3.5 9.499 12 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="m3.5 13.499 9.466 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="m3.5 17.499 7.983 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="m17 17.5 -3.5 1 1 -3.5 5.982 -5.982a1.768 1.768 0 0 1 2.5 2.5Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> </svg><span class="tab-label">W2</span></button>
 </div>
 <div id="workoutsToggleBar" style="display:none;position:fixed;bottom:calc(56px + env(safe-area-inset-bottom));left:0;right:0;z-index:28;background:var(--bg);padding:8px 16px;border-top:1px solid var(--border);max-width:430px;margin:0 auto;box-sizing:border-box;"></div>
 <div id="exercisesToggleBar" style="display:none;position:fixed;top:env(safe-area-inset-top,0px);left:0;right:0;z-index:28;background:var(--bg);padding:8px 16px;border-bottom:1px solid var(--border);max-width:430px;margin:0 auto;box-sizing:border-box;"></div>
@@ -3856,6 +3875,12 @@ function _selfTestW2SubMuscleMapping() {
   return { issues };
 }
 window._selfTestW2SubMuscleMapping = _selfTestW2SubMuscleMapping;
+function _openWorkoutHeroMenu() {
+  const _n = document.getElementById('workout-hero-name')?.dataset?.name || '';
+  const _i = (typeof workouts !== 'undefined' ? workouts : []).findIndex(w => w.name === _n);
+  if (_i >= 0) { window._w2FromSession = true; openW2Sheet(_i); }
+}
+window._openWorkoutHeroMenu = _openWorkoutHeroMenu;
 function _setWorkoutHeroPhoto(name) {
   const el = document.getElementById('workout-hero-photo');
   if (!el) return;
@@ -3876,9 +3901,9 @@ function _setWorkoutHeroPhoto(name) {
       </button>
     </div>
     <div id="workout-hero-progress-wrap" style="height:6px;background:#222;overflow:hidden;display:none;width:80%;margin:-2px auto;border-radius:3px;"><div id="workout-progress-fill" style="height:100%;background:#39FF14;width:0%;transition:width .4s cubic-bezier(.4,0,.2,1);"></div></div>` : ''}
-    <div style="position:relative;margin:${window._isNewWorkoutFlow ? '0' : '4px'} 10px 0;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;">
+    <div style="position:relative;margin:${window._isNewWorkoutFlow ? '0' : '4px'} 10px 0;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;"${window._isNewWorkoutFlow ? '' : ` onclick="_openWorkoutHeroMenu()"`}>
       <img src="${photo}" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;filter:brightness(0.85);">
-      ${window._isNewWorkoutFlow ? `<button onclick="event.stopPropagation();_openPhotoModalFromHero()" style="position:absolute;top:8px;right:8px;z-index:4;background:rgba(0,0,0,0.55);border:none;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>` : `<button onclick="event.stopPropagation();const _n=document.getElementById('workout-hero-name')?.dataset?.name||'';const _i=(typeof workouts!=='undefined'?workouts:[]).findIndex(w=>w.name===_n);if(_i>=0){window._w2FromSession=true;openW2Sheet(_i);}" style="position:absolute;top:8px;right:8px;z-index:4;background:rgba(0,0,0,0.38);border:none;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;-webkit-tap-highlight-color:transparent;padding:0;font-family:Georgia,serif;font-style:italic;font-size:15px;font-weight:700;line-height:1;">i</button>`}
+      ${window._isNewWorkoutFlow ? `<button onclick="event.stopPropagation();_openPhotoModalFromHero()" style="position:absolute;top:8px;right:8px;z-index:4;background:rgba(0,0,0,0.55);border:none;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>` : ''}
       ${localStorage.getItem(`ironlog_workout_video_${name}`) ? `<button onclick="event.stopPropagation();const _v=localStorage.getItem('ironlog_workout_video_${name}');if(_v)window.open(_v,'_blank');" style="position:absolute;top:8px;left:10px;z-index:4;display:flex;align-items:center;gap:5px;background:transparent;border:none;padding:4px 6px;border-radius:4px;cursor:pointer;-webkit-tap-highlight-color:transparent;"><svg width="13" height="13" viewBox="0 0 24 24" fill="var(--accent)" stroke="none"><polygon points="5,3 19,12 5,21"/></svg><span style="color:var(--accent);font-family:'DM Sans';font-size:11px;font-weight:700;letter-spacing:.5px;">PLAY</span></button>` : ''}
       <div style="position:absolute;bottom:0;left:0;right:0;padding:10px 14px 12px;pointer-events:none;text-align:right;">
         <div id="workout-hero-name" data-name="${name||''}" onclick="if(window._isNewWorkoutFlow)_startHeroNameEdit(this)" style="font-family:'DM Sans';font-size:20px;font-weight:900;color:#fff;max-width:60%;margin-left:auto;line-height:1.2;pointer-events:${window._isNewWorkoutFlow?'auto':'none'};cursor:${window._isNewWorkoutFlow?'pointer':'default'};-webkit-tap-highlight-color:transparent;${_heroNameDir(name)}">${_heroNameHtml(name)}</div>
@@ -5834,6 +5859,788 @@ function closeExTabDetail() {
 }
 window.closeExTabDetail = closeExTabDetail;
 
+// Builds the muscle-highlight body diagram + sub-muscle list for a given exercise
+// definition. Returns { diagWrap, muscleColor } (diagWrap not yet attached to the
+// DOM) or null if the source body-map template isn't present. Shared by
+// openExtabExOverlay (Exercises-tab detail) and _toggleExDetailMuscles (in-workout
+// exercise detail) so the diagram-building logic isn't duplicated between them.
+function _buildMuscleDiagramWrap(exDef, alignLeft) {
+  const muscle = exDef?.muscle || 'Other';
+  const subs = exDef?.subMuscles || [];
+  const mainColor = W2_MUSCLE_COLORS[muscle];
+  const muscleColor = mainColor || '#aaa';
+  const w2Src = document.getElementById('w2-body-container');
+  if (!w2Src) return null;
+
+  const diagWrap = document.createElement('div');
+  diagWrap.style.cssText = 'padding:10px 16px 0;';
+  const bc = w2Src.cloneNode(true);
+  bc.removeAttribute('id');
+  bc.style.width = ''; bc.style.transform = ''; bc.style.transformOrigin = '';
+  if (bc.children[0]) bc.children[0].style.display = '';
+  if (bc.children[1]) bc.children[1].style.display = '';
+  bc.querySelectorAll('[id]').forEach(el => { el.id = 'etdov-' + el.id; });
+  bc.querySelectorAll('[clip-path]').forEach(el => {
+    el.setAttribute('clip-path', el.getAttribute('clip-path').replace(/url\(#([^)]+)\)/g, 'url(#etdov-$1)'));
+  });
+  const _etdovSvgs = bc.querySelectorAll('svg');
+  if (_etdovSvgs.length >= 2) _etdovSvgs[1].setAttribute('viewBox', '790 -160 820 1510');
+  W2_ALL_MUSCLE_IDS.forEach(id => {
+    const el = bc.querySelector('#etdov-' + id);
+    if (el) { el.setAttribute('fill','#2a2a2a'); el.setAttribute('opacity','1'); }
+  });
+  const hmap = {};
+  if (muscle === 'Mix') {
+    if (subs.length > 0) {
+      subs.forEach(sm => {
+        const bp = _COMP_SUBS.find(x => x.n === sm)?.bp;
+        const smColor = bp ? (W2_MUSCLE_COLORS[bp] || '#aaa') : (W2_MUSCLE_COLORS[sm] || '#aaa');
+        if (NEX_SUB_MUSCLE_IDS[sm]) {
+          NEX_SUB_MUSCLE_IDS[sm].forEach(id => { hmap[id] = smColor; });
+        } else {
+          (W2_BODY_IDS[sm] || []).forEach(id => { hmap[id] = smColor; });
+        }
+      });
+    } else {
+      // "All" selected — highlight every compound sub-muscle with its body part color
+      _COMP_SUBS.forEach(s => {
+        const c = W2_MUSCLE_COLORS[s.bp] || '#aaa';
+        (NEX_SUB_MUSCLE_IDS[s.n] || []).forEach(id => { hmap[id] = c; });
+      });
+    }
+  } else if (subs.length > 0) {
+    subs.forEach(sm => {
+      if (NEX_SUB_MUSCLE_IDS[sm]) {
+        NEX_SUB_MUSCLE_IDS[sm].forEach(id => { hmap[id] = mainColor || '#aaa'; });
+      } else {
+        const bpColor = W2_MUSCLE_COLORS[sm] || mainColor;
+        (W2_BODY_IDS[sm] || []).forEach(id => { hmap[id] = bpColor; });
+      }
+    });
+  } else if (mainColor) {
+    const _fallbackSubs = NEX_BODY_SUBMUSCLES[muscle] || [];
+    if (_fallbackSubs.length > 0) {
+      _fallbackSubs.forEach(sm => {
+        (NEX_SUB_MUSCLE_IDS[sm] || W2_BODY_IDS[sm] || []).forEach(id => { hmap[id] = mainColor; });
+      });
+    } else {
+      (W2_BODY_IDS[muscle] || []).forEach(id => { hmap[id] = mainColor; });
+    }
+  }
+  Object.entries(hmap).forEach(([id, color]) => {
+    const el = bc.querySelector('#etdov-' + id);
+    if (el) { el.setAttribute('fill', color); el.setAttribute('opacity','0.9'); }
+  });
+
+  // Hide unused body side
+  const hasFront = Object.keys(hmap).some(id => id.startsWith('bf-'));
+  const hasBack  = Object.keys(hmap).some(id => id.startsWith('bb-'));
+  const frontDiv = bc.children[0];
+  const backDiv  = bc.children[1];
+  const _oneSide = (hasFront && !hasBack) || (!hasFront && hasBack);
+  if (hasFront && !hasBack && backDiv) {
+    backDiv.style.display = 'none';
+  } else if (!hasFront && hasBack && frontDiv) {
+    frontDiv.style.display = 'none';
+  }
+
+  // Match new-exercise body size:
+  // — both sides visible → full width; one side → 50% width (same as one side in new exercise)
+  // — same scale(0.95) as nex-body-container
+  diagWrap.id = 'extab-diag-wrap';
+  // "MUSCLES only" mode left-aligns the list (to match the left-aligned title above it)
+  // instead of centering the list+diagram pair, so the list's position is fixed at
+  // 32px regardless of the diagram's width or the list's text content.
+  diagWrap.style.cssText = `padding:10px 0 10px;margin-top:10px;display:flex;justify-content:${alignLeft ? 'flex-start' : 'center'};position:relative;background:#161616;border-radius:14px;margin-left:16px;margin-right:16px;`;
+  const scaleWrap = document.createElement('div');
+  const _backOnly = !hasFront && hasBack;
+  const _frontOnly = hasFront && !hasBack;
+  const _oneSideShift = _backOnly ? 'translateX(23px) ' : _frontOnly ? 'translateX(-26px) ' : '';
+  scaleWrap.style.cssText = `width:${_oneSide ? '50%' : '100%'};transform:${_oneSide ? _oneSideShift + 'scale(0.855)' : 'translateX(30px) scale(0.94)'} translateZ(0);transform-origin:top center;backface-visibility:hidden;position:relative;`;
+  scaleWrap.appendChild(bc);
+
+  // Muscle list — flex sibling so it drives the card height
+  const muscleList = document.createElement('div');
+  muscleList.style.cssText = 'display:flex;flex-direction:column;gap:5px;align-items:flex-start;z-index:1;pointer-events:none;padding:10px 0 10px 16px;justify-content:center;';
+  const listItems = muscle === 'Mix'
+    ? (subs.length > 0 ? subs : _COMP_SUBS.map(s => s.n))
+    : (subs.length > 0 ? subs : (NEX_BODY_SUBMUSCLES[muscle] || []));
+  listItems.forEach(sm => {
+    let smColor;
+    if (muscle === 'Mix') {
+      const bp = _COMP_SUBS.find(x => x.n === sm)?.bp;
+      smColor = bp ? (W2_MUSCLE_COLORS[bp] || '#aaa') : (W2_MUSCLE_COLORS[sm] || '#aaa');
+    } else {
+      const isBodyPart = !NEX_SUB_MUSCLE_IDS[sm];
+      smColor = isBodyPart ? (W2_MUSCLE_COLORS[sm] || mainColor || '#aaa') : (mainColor || '#aaa');
+    }
+    const item = document.createElement('div');
+    item.style.cssText = `font-family:'DM Sans';font-size:12px;font-weight:700;color:${smColor};letter-spacing:.2px;text-shadow:0 1px 4px #000;white-space:nowrap;`;
+    item.textContent = sm;
+    muscleList.appendChild(item);
+  });
+  diagWrap.appendChild(muscleList);
+  diagWrap.appendChild(scaleWrap);
+
+  return { diagWrap, muscleColor };
+}
+window._buildMuscleDiagramWrap = _buildMuscleDiagramWrap;
+
+// Same slide-up + fade transition as openShareQR() (SHARE APP button, Today page).
+// Shared by both in-place ex-detail toggles (_toggleExDetailMuscles, _toggleExDetailStats).
+const _EX_DETAIL_TOGGLE_ENTER_T = 'transform 0.45s cubic-bezier(0.2,0.8,0.3,1), opacity 0.35s ease';
+const _EX_DETAIL_TOGGLE_EXIT_T  = 'transform 0.35s cubic-bezier(0.2,0.8,0.3,1), opacity 0.35s ease';
+
+// Tapping the in-workout exercise-detail photo toggles an in-place "MUSCLES" view:
+// FINISH EXERCISE and the sets table are swapped for the muscle diagram/list and a
+// CLOSE button, while the top bar (menu/timer/back), photo and exercise name stay
+// put. Tapping the photo again (or CLOSE) reverts back to the normal view.
+function _toggleExDetailMuscles() {
+  const overlayBody = document.getElementById('ex-detail-overlay-body');
+  const finishBtn   = document.getElementById('ex-detail-finish-btn');
+  const backBtn     = document.getElementById('ex-detail-back-btn');
+  const floatBar    = document.getElementById('ex-float-bar');
+  const floatBarBlk = document.getElementById('ex-float-bar-block');
+  const existing    = document.getElementById('ex-detail-muscles-section');
+
+  const _restoreUnderlyingView = () => {
+    overlayBody?.querySelectorAll(':scope > .exercise-card').forEach(c => { c.style.display = ''; });
+    if (finishBtn) finishBtn.style.visibility = '';
+    // Position:absolute — safe to display:none/'' without affecting sibling layout.
+    if (backBtn) backBtn.style.display = '';
+    if (floatBar && floatBar.dataset.musclesHide !== undefined) {
+      floatBar.style.display = floatBar.dataset.musclesHide;
+      delete floatBar.dataset.musclesHide;
+    }
+    if (floatBarBlk && floatBarBlk.dataset.musclesHide !== undefined) {
+      floatBarBlk.style.display = floatBarBlk.dataset.musclesHide;
+      delete floatBarBlk.dataset.musclesHide;
+    }
+  };
+
+  if (existing) {
+    const closeBtn = document.getElementById('ex-detail-close-btn');
+    existing.style.transition = _EX_DETAIL_TOGGLE_EXIT_T;
+    existing.style.transform  = 'translateY(48px)';
+    existing.style.opacity    = '0';
+    if (closeBtn) {
+      closeBtn.style.transition = _EX_DETAIL_TOGGLE_EXIT_T;
+      closeBtn.style.transform  = 'translateX(-50%) translateY(48px)';
+      closeBtn.style.opacity    = '0';
+    }
+    // setTimeout (not transitionend): if CLOSE is tapped before the enter animation's
+    // double-rAF has applied its target style, this exit assignment is a no-op (the
+    // section is already at translateY(48px)/opacity 0), so no transition — and no
+    // transitionend — ever fires, leaving the section stuck. A fixed timer matching
+    // the exit duration always fires regardless.
+    setTimeout(() => {
+      existing.remove();
+      closeBtn?.remove();
+      _restoreUnderlyingView();
+    }, 350);
+    return;
+  }
+
+  const exName = (document.getElementById('ex-detail-overlay-title')?.textContent || '').trim();
+  const exDef  = getAllExercises().find(x => x.name === exName || x.label === exName);
+
+  // visibility:hidden (not display:none) — keeps the button's box reserved in the
+  // flex row so the exercise name (its row sibling) doesn't shift position.
+  if (finishBtn) finishBtn.style.visibility = 'hidden';
+  // The top-right back chevron is redundant with (and confusable next to) the new
+  // CLOSE button, so hide it while the muscles view is open.
+  if (backBtn) backBtn.style.display = 'none';
+  overlayBody?.querySelectorAll(':scope > .exercise-card').forEach(c => { c.style.display = 'none'; });
+  if (floatBar) {
+    floatBar.dataset.musclesHide = floatBar.style.display || '';
+    floatBar.style.display = 'none';
+  }
+  if (floatBarBlk) {
+    floatBarBlk.dataset.musclesHide = floatBarBlk.style.display || '';
+    floatBarBlk.style.display = 'none';
+  }
+
+  const section = document.createElement('div');
+  section.id = 'ex-detail-muscles-section';
+  const title = document.createElement('div');
+  title.id = 'ex-detail-muscles-title';
+  title.textContent = 'MUSCLES';
+  title.style.cssText = "font-family:'Bebas Neue';font-size:26px;letter-spacing:1px;text-align:center;padding:4px 10px 6px;";
+  section.appendChild(title);
+  const built = _buildMuscleDiagramWrap(exDef, true);
+  if (built) {
+    title.style.color = built.muscleColor;
+    section.appendChild(built.diagWrap);
+  }
+
+  const closeBtn = document.createElement('button');
+  closeBtn.id = 'ex-detail-close-btn';
+  closeBtn.textContent = 'CLOSE';
+  closeBtn.onclick = () => _toggleExDetailMuscles();
+  closeBtn.style.cssText = "position:fixed;bottom:calc(16px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:calc(min(430px,100%) - 32px);padding:18px;background:transparent;color:var(--muted);border:1px solid #333;border-radius:100px;font-family:'DM Sans';font-size:16px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;z-index:210;";
+
+  // Slide up 48px + fade in — identical enter transition to openShareQR()'s modal.
+  section.style.transform  = 'translateY(48px)';
+  section.style.opacity    = '0';
+  section.style.transition = 'none';
+  closeBtn.style.transform  = 'translateX(-50%) translateY(48px)';
+  closeBtn.style.opacity    = '0';
+  closeBtn.style.transition = 'none';
+
+  overlayBody?.appendChild(section);
+  document.body.appendChild(closeBtn);
+
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    section.style.transition = _EX_DETAIL_TOGGLE_ENTER_T;
+    section.style.transform  = '';
+    section.style.opacity    = '';
+    closeBtn.style.transition = _EX_DETAIL_TOGGLE_ENTER_T;
+    closeBtn.style.transform  = 'translateX(-50%)';
+    closeBtn.style.opacity    = '';
+    section.addEventListener('transitionend', () => { section.style.transition = ''; }, { once: true });
+    closeBtn.addEventListener('transitionend', () => { closeBtn.style.transition = ''; }, { once: true });
+  }));
+}
+window._toggleExDetailMuscles = _toggleExDetailMuscles;
+
+// Builds the 2-slide PROGRESS / YOUR BEST stats carousel (dots + chart pane + stats
+// table pane) for the in-workout exercise-detail "STATS" toggle. Adapted from the
+// 'stats' branch of openExtabExOverlay (Exercises-tab detail overlay) — that function
+// is left untouched; this is a scoped copy (no diagram-slide state machine, no
+// touch-swipe between slides, no built-in CLOSE button) so _toggleExDetailStats can
+// mount it inline without depending on openExtabExOverlay's full-screen layout.
+function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
+  const muscle = exDef?.muscle || 'Other';
+  const mainColor = W2_MUSCLE_COLORS[muscle];
+  const muscleColor = mainColor || '#aaa';
+
+  let _maxKg = 0, _max1RM = 0, _best1RMSet = null, _maxVol = 0;
+  const _chartWtMap = new Map(), _chartRmMap = new Map(), _chartVolMap = new Map();
+  workouts.filter(w => !w._draft).forEach(w => {
+    w.exercises.filter(e => e.name === exName).forEach(e => {
+      const ds = doneSets(e.sets);
+      ds.forEach(s => {
+        if (s.kg > _maxKg) _maxKg = s.kg;
+        const rm = Math.round(s.kg * (1 + s.reps / 30) * 10) / 10;
+        if (rm > _max1RM) { _max1RM = rm; _best1RMSet = { kg: s.kg, reps: s.reps }; }
+      });
+      const sessionVol = ds.reduce((a, s) => a + s.kg * s.reps, 0);
+      if (sessionVol > _maxVol) _maxVol = sessionVol;
+      const dayKey = new Date(w.date).setHours(0, 0, 0, 0);
+      const wt  = ds.length ? Math.max(0, ...ds.map(s => s.kg)) : 0;
+      const rm1 = ds.length ? Math.max(...ds.map(s => Math.round(s.kg * (1 + s.reps / 30) * 10) / 10)) : 0;
+      if (wt  > (_chartWtMap.get(dayKey)  || 0)) _chartWtMap.set(dayKey, wt);
+      if (rm1 > (_chartRmMap.get(dayKey) || 0)) _chartRmMap.set(dayKey, rm1);
+      if (sessionVol > (_chartVolMap.get(dayKey) || 0)) _chartVolMap.set(dayKey, sessionVol);
+    });
+  });
+
+  const _volStr = _maxVol >= 1000 ? (_maxVol / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : String(Math.round(_maxVol));
+  const slides = [{ val: 'PROGRESS' }, { val: 'YOUR BEST' }];
+  const PROG_IDX = 0, TABLE_IDX = 1;
+  let _cur = 0;
+
+  if (titleEl) { titleEl.textContent = slides[0].val; titleEl.style.color = muscleColor; }
+
+  const dots = document.createElement('div');
+  dots.id = 'ex-detail-stats-dots';
+  dots.style.cssText = 'display:flex;gap:6px;justify-content:center;padding:2px 0 6px;';
+  const dotEls = slides.map((_, i) => {
+    const d = document.createElement('div');
+    d.style.cssText = `width:6px;height:6px;border-radius:50%;background:${i===0 ? 'var(--accent)' : 'rgba(255,255,255,0.25)'};transition:background .2s;cursor:pointer;display:inline-block;`;
+    d.onclick = () => goTo(i);
+    dots.appendChild(d);
+    return d;
+  });
+
+  // ── Progress chart pane (adapted verbatim from openExtabExOverlay's stats mode) ──
+  let _progMetric = 'wt', _progRange = '1Y', _scrubNudged = false;
+  const _PC = { wt:{line:'#e8ff47',fill:'rgba(232,255,71,.08)'}, rm:{line:'#ff8c42',fill:'rgba(255,140,66,.08)'}, vol:{line:'#a78bfa',fill:'rgba(167,139,250,.08)'} };
+  const _mKeys = ['wt','rm','vol'], _mLabels = ['MAX','1RM','VOL'], _mColors = ['#e8ff47','#ff8c42','#a78bfa'];
+  const progPane = document.createElement('div');
+  progPane.id = 'ex-detail-stats-prog-pane';
+  progPane.style.cssText = 'display:block;padding:8px 16px 0;';
+  const metricBtns = [];
+  const metricBar = document.createElement('div');
+  metricBar.style.cssText = 'position:relative;display:flex;gap:0;margin-bottom:10px;border-bottom:1px solid var(--border);';
+  // Shared sliding underline — same FLIP-style technique as the Exercises-tab
+  // body-part pill bar (#exTab-muscle-indicator / selectExTabMuscle()): one
+  // indicator slides + crossfades color between tabs instead of each tab's own
+  // border-bottom snapping instantly.
+  const metricIndicator = document.createElement('div');
+  metricIndicator.style.cssText = `position:absolute;bottom:-1px;left:0;height:2px;width:calc(100%/3);background:${_mColors[0]};transition:left .25s cubic-bezier(.4,0,.2,1),background .25s ease;`;
+  _mLabels.forEach((lbl, i) => {
+    const btn = document.createElement('button');
+    btn.style.cssText = `flex:1;border:none;background:transparent;font-family:'DM Sans';font-size:16px;font-weight:700;padding:8px 0;cursor:pointer;color:${i===0?_mColors[0]:'#555'};transition:color .15s;`;
+    btn.textContent = lbl;
+    btn.onclick = () => {
+      if (_mKeys[i] === _progMetric) return;
+      _progMetric = _mKeys[i];
+      metricBtns.forEach((b, j) => { b.style.color = j===i ? _mColors[j] : '#555'; });
+      metricIndicator.style.left = `calc(100%/3*${i})`;
+      metricIndicator.style.background = _mColors[i];
+      _renderProgChart();
+      _updatePeriodDropdown();
+    };
+    metricBar.appendChild(btn);
+    metricBtns.push(btn);
+  });
+  metricBar.appendChild(metricIndicator);
+  const _rangeNames = {'2W':'2 Weeks','1M':'1 Month','3M':'3 Months','6M':'6 Months','1Y':'1 Year'};
+  const _rangeKeys = ['1Y','6M','3M','1M','2W'];
+  const progBigVal = document.createElement('div');
+  progBigVal.id = 'ex-detail-stats-bigval';
+  progBigVal.style.cssText = "font-family:'DM Sans';font-size:18px;font-weight:700;min-height:22px;padding:2px 0 4px;display:none;text-align:center;position:relative;";
+  const progNoData = document.createElement('div');
+  progNoData.style.cssText = "display:none;text-align:center;padding:30px 0;font-family:'DM Sans';font-size:12px;color:var(--muted);";
+  progNoData.textContent = 'Not enough data for this range';
+  const progCanvasWrap = document.createElement('div');
+  progCanvasWrap.style.cssText = 'position:relative;height:150px;';
+  const progCanvas = document.createElement('canvas');
+  progCanvas.id = 'ex-detail-stats-canvas';
+  progCanvasWrap.appendChild(progCanvas);
+  const selectedDayEl = document.createElement('div');
+  selectedDayEl.id = 'ex-detail-stats-sel-date';
+  selectedDayEl.style.cssText = "display:none;font-family:'DM Sans';font-size:13px;font-weight:700;color:var(--text);position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);white-space:nowrap;";
+  const progXAxisRow = document.createElement('div');
+  progXAxisRow.style.cssText = 'position:relative;display:flex;align-items:center;justify-content:flex-end;min-height:24px;padding:6px 14px 2px;';
+  const progScrubWrap = document.createElement('div');
+  progScrubWrap.style.cssText = 'display:none;padding:0 14px;';
+  const _chevSvg = `<svg style="vertical-align:middle;margin-left:3px;" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
+  const periodWrap = document.createElement('div');
+  periodWrap.style.cssText = 'position:relative;';
+  const periodBtn = document.createElement('button');
+  periodBtn.style.cssText = `background:transparent;border:1px solid #333;border-radius:6px;color:var(--accent);font-family:'DM Sans';font-size:11px;font-weight:700;padding:3px 8px;cursor:pointer;line-height:1.4;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;`;
+  const _updatePeriodBtn = () => { periodBtn.innerHTML = _rangeNames[_progRange] + _chevSvg; };
+  _updatePeriodBtn();
+  const periodDropdown = document.createElement('div');
+  // Opens downward (not upward) — the period button now sits in the title row near
+  // the top of the "Stats" box, so there's no room above it to pop up into. Lighter,
+  // more opaque-looking background than the original #1a1a1a (which read as too
+  // transparent against the page's own near-black background in this new spot).
+  periodDropdown.style.cssText = 'display:none;position:absolute;right:0;top:calc(100% + 4px);background:#2a2a2a;border:1px solid #3f3f3f;border-radius:10px;overflow:hidden;z-index:20;min-width:110px;box-shadow:0 8px 24px rgba(0,0,0,.6);transform-origin:top right;opacity:0;transform:scale(.92) translateY(-4px);';
+  const _PERIOD_DD_ENTER_T = 'opacity .16s ease, transform .18s cubic-bezier(.2,.8,.3,1)';
+  const _PERIOD_DD_EXIT_T = 'opacity .13s ease, transform .13s cubic-bezier(.4,0,1,1)';
+  const _closePeriodDropdown = () => {
+    if (periodDropdown.style.display === 'none') return;
+    periodDropdown.style.transition = _PERIOD_DD_EXIT_T;
+    periodDropdown.style.opacity = '0';
+    periodDropdown.style.transform = 'scale(.92) translateY(-4px)';
+    setTimeout(() => { periodDropdown.style.display = 'none'; }, 130);
+  };
+  _rangeKeys.forEach((r, i) => {
+    const item = document.createElement('button');
+    item.style.cssText = `width:100%;background:transparent;border:none;${i<_rangeKeys.length-1?'border-bottom:1px solid #222;':''}color:${r===_progRange?'var(--accent)':'#aaa'};font-family:'DM Sans';font-size:13px;font-weight:${r===_progRange?'700':'400'};padding:9px 14px;cursor:pointer;text-align:left;display:block;transition:color .15s ease,background .15s ease;`;
+    item.textContent = _rangeNames[r];
+    item.onclick = (e) => {
+      e.stopPropagation();
+      _progRange = r;
+      _updatePeriodBtn();
+      // Quick highlight flash confirms the tap before the dropdown animates away —
+      // same "select" feedback spirit as the metric-bar indicator above.
+      periodDropdown.querySelectorAll('button').forEach((b, j) => {
+        b.style.color = j===i?'var(--accent)':'#aaa';
+        b.style.fontWeight = j===i?'700':'400';
+        b.style.background = j===i?'rgba(232,255,71,.12)':'transparent';
+      });
+      _renderProgChart();
+      setTimeout(() => {
+        item.style.background = 'transparent';
+        _closePeriodDropdown();
+      }, 140);
+    };
+    periodDropdown.appendChild(item);
+  });
+  periodBtn.onclick = (e) => {
+    e.stopPropagation();
+    const opening = periodDropdown.style.display === 'none';
+    if (opening) {
+      _updatePeriodDropdown();
+      periodDropdown.style.transition = 'none';
+      periodDropdown.style.display = 'block';
+      periodDropdown.style.opacity = '0';
+      periodDropdown.style.transform = 'scale(.92) translateY(-4px)';
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        periodDropdown.style.transition = _PERIOD_DD_ENTER_T;
+        periodDropdown.style.opacity = '1';
+        periodDropdown.style.transform = 'scale(1) translateY(0)';
+      }));
+      setTimeout(() => { const _c = () => { _closePeriodDropdown(); document.removeEventListener('click',_c,true); }; document.addEventListener('click',_c,true); }, 0);
+    } else {
+      _closePeriodDropdown();
+    }
+  };
+  periodWrap.appendChild(periodBtn);
+  periodWrap.appendChild(periodDropdown);
+  const progScrub = document.createElement('input');
+  progScrub.type = 'range'; progScrub.min = '0'; progScrub.max = '0'; progScrub.value = '0'; progScrub.step = '1';
+  progScrub.style.cssText = 'width:100%;accent-color:#555;cursor:pointer;height:3px;';
+  let _scrubUserTouched = false;
+  progScrub.oninput = () => { _scrubUserTouched = true; _onProgScrub(parseInt(progScrub.value)); };
+  progScrubWrap.appendChild(progScrub);
+  // One-time "auto-nudge" hint: briefly slides the scrubber thumb to signal it's
+  // draggable. Aborts immediately if the user starts dragging themselves.
+  function _nudgeProgScrub() {
+    if (_scrubUserTouched) return;
+    const max = parseInt(progScrub.max);
+    if (!max) return;
+    const target = parseInt(progScrub.value);
+    const nudgeTo = Math.max(0, target - Math.max(1, Math.round(max * 0.15)));
+    const animateTo = (from, to, dur, onDone) => {
+      const t0 = performance.now();
+      const step = now => {
+        if (_scrubUserTouched) return;
+        const p = Math.min(1, (now - t0) / dur);
+        const eased = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+        const val = Math.round(from + (to - from) * eased);
+        progScrub.value = String(val);
+        _onProgScrub(val);
+        if (p < 1) requestAnimationFrame(step);
+        else if (onDone) onDone();
+      };
+      requestAnimationFrame(step);
+    };
+    animateTo(target, nudgeTo, 320, () => animateTo(nudgeTo, target, 380));
+  }
+  // periodWrap is placed by the caller in the title row (next to "PROGRESS"), not
+  // here — only the selected-day date label stays on the chart's x-axis row.
+  progXAxisRow.appendChild(selectedDayEl);
+  const chartCard = document.createElement('div');
+  chartCard.style.cssText = 'background:#161616;border-radius:14px;padding:12px 0 10px;margin-top:8px;';
+  chartCard.appendChild(progBigVal);
+  chartCard.appendChild(progNoData);
+  chartCard.appendChild(progCanvasWrap);
+  chartCard.appendChild(progXAxisRow);
+  chartCard.appendChild(progScrubWrap);
+  progPane.appendChild(metricBar);
+  progPane.appendChild(chartCard);
+
+  // ── Stats table pane ────────────────────────────────────────────────────
+  const tablePane = document.createElement('div');
+  tablePane.id = 'ex-detail-stats-table-pane';
+  tablePane.style.cssText = 'display:none;padding:16px 16px 0;';
+  const _fn = n => n % 1 === 0 ? String(n) : n.toFixed(1);
+  const _uSm = `<span style="font-family:'Bebas Neue';font-size:18px;opacity:.65;margin-left:2px;">kg</span>`;
+  const _bKg = _best1RMSet ? String(_best1RMSet.kg) : '–';
+  const _bRp = _best1RMSet ? _best1RMSet.reps : '';
+  const _mkCell = (lbl, bigHtml, sub) =>
+    `<div style="background:#111;border:1px solid #1e1e1e;border-radius:14px;padding:14px 10px 12px;display:flex;flex-direction:column;align-items:center;gap:2px;">` +
+    `<div style="font-family:'DM Sans';font-size:10px;font-weight:700;color:${muscleColor};letter-spacing:1px;">${lbl}</div>` +
+    `<div style="font-family:'Bebas Neue';font-size:44px;line-height:1;color:${muscleColor};white-space:nowrap;">${bigHtml}</div>` +
+    `<div style="font-family:'DM Sans';font-size:10px;font-weight:600;color:#888;margin-top:1px;">${sub}</div>` +
+    `</div>`;
+  tablePane.innerHTML =
+    `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">` +
+    _mkCell('MAX',   `${_fn(_maxKg)}${_uSm}`,  'Heaviest lifted') +
+    _mkCell('1RM',   `${_fn(_max1RM)}${_uSm}`, 'Est. max') +
+    _mkCell('B.SET', `${_bKg}${_uSm}<span style="font-family:'DM Sans';font-size:18px;font-weight:700;color:${muscleColor};"> × ${_bRp}</span>`, 'Best set') +
+    _mkCell('VOL',   `${_volStr}${_uSm}`,      'Best session') +
+    `</div>`;
+
+  function _onProgScrub(idx) {
+    const chart = progCanvas._chartInst;
+    if (!chart?._pts) return;
+    const pts = chart._pts;
+    const {line} = _PC[_progMetric];
+    const maxVal = Math.max(...pts.map(p => p.val));
+    const maxIdx = pts.map(p => p.val).lastIndexOf(maxVal);
+    chart.data.datasets[0].pointRadius = pts.map((_, j) => j === idx ? 6 : j === maxIdx ? 4 : 2);
+    chart.data.datasets[0].pointBackgroundColor = pts.map((_, j) => j === idx ? '#fff' : j === maxIdx ? '#ff4444' : line);
+    chart.update('none');
+    selectedDayEl.textContent = pts[idx]?.date || '';
+    selectedDayEl.style.display = pts[idx]?.date ? 'block' : 'none';
+    if (pts[idx]) {
+      const pt = pts[idx];
+      progBigVal.style.color = line;
+      progBigVal.innerHTML = `${parseFloat(pt.val.toFixed(2))}kg`;
+      progBigVal.style.display = 'block';
+    }
+  }
+
+  function _renderProgChart() {
+    const cutoff = Date.now() - ({'2W':14,'1M':30,'3M':91,'6M':182,'1Y':365}[_progRange]||91) * 86400000;
+    const srcMap = {wt:_chartWtMap, rm:_chartRmMap, vol:_chartVolMap}[_progMetric];
+    const _mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const pts = [...srcMap.entries()].filter(([k])=>k>=cutoff).sort((a,b)=>a[0]-b[0]).map(([k,v])=>{const _d=new Date(k);return{date:_d.getDate()+' '+_mo[_d.getMonth()]+' '+_d.getFullYear(),val:v};});
+    if (progCanvas._chartInst) { progCanvas._chartInst.destroy(); progCanvas._chartInst = null; }
+    const hasData = pts.length >= 2;
+    progNoData.style.display = hasData ? 'none' : 'block';
+    progCanvasWrap.style.display = hasData ? '' : 'none';
+    progScrubWrap.style.display = hasData ? 'block' : 'none';
+    if (!hasData) { progBigVal.style.display = 'none'; selectedDayEl.style.display = 'none'; return; }
+    const {line, fill} = _PC[_progMetric];
+    const _minVal = Math.min(...pts.map(p => p.val));
+    const _maxVal = Math.max(...pts.map(p => p.val));
+    const _fmtYVal = v => v % 1 === 0 ? String(v) : parseFloat(v.toFixed(1));
+    progCanvas._chartInst = new Chart(progCanvas.getContext('2d'), {
+      type:'line',
+      data:{labels:pts.map(p=>p.date),datasets:[{data:pts.map(p=>p.val),borderColor:line,backgroundColor:fill,pointBackgroundColor:line,tension:0,fill:true,borderWidth:1.5,pointRadius:2}]},
+      options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:20,left:41}},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{ticks:{display:false},grid:{display:false}},y:{ticks:{display:false},grid:{color:'#1e1e1e'}}}},
+      plugins:[{id:'yminmax',afterDraw(chart){
+        const ctx=chart.ctx,yS=chart.scales.y;
+        ctx.save();ctx.fillStyle='#aaa';ctx.font="700 12px 'DM Sans',sans-serif";ctx.textAlign='right';ctx.textBaseline='middle';
+        const x=chart.chartArea.left-9;
+        ctx.fillText(_fmtYVal(_maxVal),x,yS.getPixelForValue(_maxVal));
+        ctx.fillText(_fmtYVal(_minVal),x,yS.getPixelForValue(_minVal));
+        ctx.restore();
+      }}]
+    });
+    progCanvas._chartInst._pts = pts;
+    progScrub.max = String(pts.length - 1);
+    progScrub.value = String(pts.length - 1);
+    _onProgScrub(pts.length - 1);
+    if (!_scrubNudged && pts.length > 1) { _scrubNudged = true; setTimeout(_nudgeProgScrub, 600); }
+  }
+
+  function _updatePeriodDropdown() {
+    const srcMap = {wt:_chartWtMap, rm:_chartRmMap, vol:_chartVolMap}[_progMetric];
+    if (!srcMap) return;
+    const _dayMs = {'2W':14,'1M':30,'3M':91,'6M':182,'1Y':365};
+    const items = [...periodDropdown.querySelectorAll('button')];
+    _rangeKeys.forEach((r, i) => {
+      if (!items[i]) return;
+      const cutoff = Date.now() - (_dayMs[r] || 91) * 86400000;
+      const hasEnough = [...srcMap.entries()].filter(([k]) => k >= cutoff).length >= 2;
+      items[i].style.display = hasEnough ? 'block' : 'none';
+    });
+    const curIdx = _rangeKeys.indexOf(_progRange);
+    if (items[curIdx] && items[curIdx].style.display === 'none') {
+      const fbIdx = _rangeKeys.findIndex((r, i) => items[i] && items[i].style.display !== 'none');
+      if (fbIdx >= 0) {
+        _progRange = _rangeKeys[fbIdx];
+        _updatePeriodBtn();
+        items.forEach((b, j) => { b.style.color = j===fbIdx ? 'var(--accent)' : '#aaa'; b.style.fontWeight = j===fbIdx ? '700' : '400'; });
+        _renderProgChart();
+      }
+    }
+  }
+
+  // ── goTo with animated transitions (dot navigation only — no touch-swipe, to avoid
+  // conflicting with the exercise-detail overlay's own scroll/swipe behavior) ──────
+  function goTo(idx) {
+    if (idx === _cur) return;
+    const _prevIdx = _cur;
+    const dir = idx > _prevIdx ? 1 : -1;
+    _cur = idx;
+    dotEls.forEach((d, i) => d.style.background = i === idx ? 'var(--accent)' : 'rgba(255,255,255,0.25)');
+
+    if (titleEl) {
+      titleEl.style.transition = 'opacity .13s ease, transform .13s ease';
+      titleEl.style.opacity = '0';
+      titleEl.style.transform = `translateX(${dir * -18}px)`;
+      setTimeout(() => {
+        titleEl.textContent = slides[idx].val;
+        titleEl.style.transition = 'none';
+        titleEl.style.transform = `translateX(${dir * 18}px)`;
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          titleEl.style.transition = 'opacity .22s ease, transform .22s cubic-bezier(.2,.8,.3,1)';
+          titleEl.style.opacity = '1';
+          titleEl.style.transform = 'translateX(0)';
+        }));
+      }, 130);
+    }
+
+    function _slideIn(el) {
+      const _targetDisplay = (el.style.display && el.style.display !== 'none') ? el.style.display : 'block';
+      el.style.opacity = '0';
+      el.style.transform = `translateX(${dir * 32}px)`;
+      el.style.transition = 'none';
+      el.style.display = _targetDisplay;
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        el.style.transition = 'opacity .28s ease, transform .28s cubic-bezier(.2,.8,.3,1)';
+        el.style.opacity = '1';
+        el.style.transform = 'translateX(0)';
+        el.addEventListener('transitionend', () => { el.style.transition = ''; el.style.transform = ''; }, { once: true });
+      }));
+    }
+    function _slideOut(el) {
+      el.style.transition = 'opacity .18s ease, transform .18s ease';
+      el.style.opacity = '0';
+      el.style.transform = `translateX(${dir * -32}px)`;
+      setTimeout(() => {
+        el.style.display = 'none';
+        el.style.transition = ''; el.style.transform = ''; el.style.opacity = '';
+      }, 190);
+    }
+
+    if (idx === PROG_IDX && _prevIdx !== PROG_IDX) { _slideIn(progPane); setTimeout(_renderProgChart, 50); }
+    if (idx !== PROG_IDX && _prevIdx === PROG_IDX) { _slideOut(progPane); }
+    if (idx === TABLE_IDX && _prevIdx !== TABLE_IDX) { _slideIn(tablePane); }
+    if (idx !== TABLE_IDX && _prevIdx === TABLE_IDX) { _slideOut(tablePane); }
+    // periodWrap lives in the title row (not inside progPane), so it isn't hidden by
+    // progPane's own display toggling — only relevant on the PROGRESS slide.
+    periodWrap.style.display = idx === PROG_IDX ? '' : 'none';
+  }
+
+  if (_maxKg === 0) {
+    const _noRec = '<div style="text-align:center;padding:30px 0;font-family:\'DM Sans\';font-size:16px;font-weight:600;color:#fff;">No record yet</div>';
+    progPane.innerHTML = _noRec;
+    tablePane.innerHTML = _noRec;
+  }
+
+  setTimeout(_renderProgChart, 80);
+
+  // Swipe between PROGRESS/YOUR BEST (adapted from openExtabExOverlay's swipe
+  // handling, scoped to just the pane content so it doesn't compete with the
+  // exercise-detail overlay's own swipe/scroll gestures elsewhere on the page).
+  const panesContainer = document.createElement('div');
+  // Clips the sliding pane transitions — kept off the outer "Stats" box itself, since
+  // that box's label straddles its top border (top:-9px) and would get clipped too.
+  panesContainer.style.overflow = 'hidden';
+  panesContainer.appendChild(progPane);
+  panesContainer.appendChild(tablePane);
+  const _swipeAC = new AbortController();
+  panesContainer._swipeAC = _swipeAC;
+  let _tx = 0, _ty = 0, _swipeBlocked = false;
+  panesContainer.addEventListener('touchstart', e => {
+    _tx = e.touches[0].clientX;
+    _ty = e.touches[0].clientY;
+    _swipeBlocked = progScrubWrap.contains(e.target);
+  }, { passive: true, signal: _swipeAC.signal });
+  panesContainer.addEventListener('touchend', e => {
+    if (_swipeBlocked) return;
+    const dx = e.changedTouches[0].clientX - _tx;
+    const dy = e.changedTouches[0].clientY - _ty;
+    if (Math.abs(dx) < 40 || Math.abs(dy) > Math.abs(dx)) return;
+    const next = dx < 0 ? _cur + 1 : _cur - 1;
+    if (next < 0 || next >= slides.length) return;
+    goTo(next);
+  }, { passive: true, signal: _swipeAC.signal });
+
+  return { dots, panesContainer, periodWrap };
+}
+window._buildExDetailStatsCarousel = _buildExDetailStatsCarousel;
+
+// Tapping the "Stats" float-bar action while the exercise-detail overlay is open
+// toggles an in-place PROGRESS/YOUR BEST view — the same pattern as
+// _toggleExDetailMuscles above (see its comment for the shared conventions), except
+// the Note/Timer/Stats float bar stays put (tapping "Stats" again is how you close
+// it — there's no separate CLOSE button).
+function _toggleExDetailStats() {
+  const overlayBody = document.getElementById('ex-detail-overlay-body');
+  const finishBtn   = document.getElementById('ex-detail-finish-btn');
+  const backBtn     = document.getElementById('ex-detail-back-btn');
+  const existing    = document.getElementById('ex-detail-stats-section');
+
+  const _restoreUnderlyingView = () => {
+    document.body.classList.remove('ex-detail-stats-open');
+    overlayBody?.querySelectorAll(':scope > .exercise-card').forEach(c => { c.style.display = ''; });
+    if (finishBtn) finishBtn.style.visibility = '';
+    if (backBtn) backBtn.style.display = '';
+    if (overlayBody && overlayBody.dataset.statsOverflow !== undefined) {
+      overlayBody.style.overflowY = overlayBody.dataset.statsOverflow;
+      delete overlayBody.dataset.statsOverflow;
+    }
+  };
+
+  if (existing) {
+    // Marks the section as mid-exit so _updateExFloatBar's #ex-detail-stats-section
+    // lookup (which excludes .closing) doesn't see it as "still open" and re-add the
+    // Stats button's active state during the 350ms it takes to actually remove it.
+    existing.classList.add('closing');
+    // Immediate feedback — don't wait for _updateExFloatBar to catch up.
+    document.getElementById('ex-float-stats')?.classList.remove('active');
+    existing.style.transition = _EX_DETAIL_TOGGLE_EXIT_T;
+    existing.style.transform  = 'translateY(48px)';
+    existing.style.opacity    = '0';
+    // setTimeout (not transitionend) — see _toggleExDetailMuscles for why: a fast
+    // re-tap can make this exit assignment a no-op (no value change → no transition
+    // → transitionend never fires), so a fixed timer is used instead.
+    setTimeout(() => {
+      existing.remove();
+      _restoreUnderlyingView();
+    }, 350);
+    return;
+  }
+
+  const exName = (document.getElementById('ex-detail-overlay-title')?.textContent || '').trim();
+  const exDef  = getAllExercises().find(x => x.name === exName || x.label === exName);
+
+  document.body.classList.add('ex-detail-stats-open');
+  // Immediate feedback — don't wait for _updateExFloatBar to catch up.
+  document.getElementById('ex-float-stats')?.classList.add('active');
+  if (finishBtn) finishBtn.style.visibility = 'hidden';
+  if (backBtn) backBtn.style.display = 'none';
+  // Neither the PROGRESS nor YOUR BEST pane should let the page scroll while open.
+  if (overlayBody) {
+    overlayBody.dataset.statsOverflow = overlayBody.style.overflowY || '';
+    overlayBody.style.overflowY = 'hidden';
+  }
+  overlayBody?.querySelectorAll(':scope > .exercise-card').forEach(c => { c.style.display = 'none'; });
+
+  const section = document.createElement('div');
+  section.id = 'ex-detail-stats-section';
+
+  // Single static "Stats" boundary box (accent border + centered top label, matching
+  // the "Note"/"Timer" box style) wrapping the title, both carousel pages AND the
+  // dots — the box stretches (as a column flexbox) so its own bottom border sits
+  // 30px above the always-visible Note/Timer/Stats float bar, with the dots pinned
+  // to that bottom edge (margin-top:auto). The box itself never moves — only the
+  // title text and pane content inside it change/slide between PROGRESS and YOUR
+  // BEST. No overflow:hidden here — the label straddles the top border (top:-9px)
+  // like Note/Timer and would get clipped; the sliding pane transitions are clipped
+  // by panesContainer instead (see _buildExDetailStatsCarousel).
+  const statsBox = document.createElement('div');
+  statsBox.id = 'ex-detail-stats-box';
+  statsBox.style.cssText = 'position:relative;display:flex;flex-direction:column;border:1px solid var(--accent);border-radius:9px;padding:18px 11px 10px;margin-top:6px;box-sizing:border-box;';
+  const statsBoxLabel = document.createElement('span');
+  statsBoxLabel.style.cssText = "position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:var(--bg);padding:0 5px;font-size:12px;font-weight:700;color:var(--accent);letter-spacing:.3px;pointer-events:none;";
+  statsBoxLabel.textContent = 'Statistics';
+  statsBox.appendChild(statsBoxLabel);
+
+  // Title row: "PROGRESS"/"YOUR BEST" stays centered on screen (plain centered block,
+  // full width) while the selected-period button ("1 Year" etc.) sits on the same
+  // line, pinned to the right via position:absolute so it doesn't shift the title
+  // off-center.
+  const titleRow = document.createElement('div');
+  titleRow.style.cssText = 'position:relative;';
+  const title = document.createElement('div');
+  title.id = 'ex-detail-stats-title';
+  title.style.cssText = "font-family:'Bebas Neue';font-size:26px;letter-spacing:1px;text-align:center;padding:4px 10px 6px;";
+  titleRow.appendChild(title);
+  const { dots, panesContainer, periodWrap } = _buildExDetailStatsCarousel(exDef, exName, title);
+  periodWrap.style.position  = 'absolute';
+  periodWrap.style.right     = '10px';
+  periodWrap.style.top       = '50%';
+  periodWrap.style.transform = 'translateY(-50%)';
+  // z-index alone on periodDropdown wasn't enough: without an explicit z-index here
+  // too, periodWrap never isolates its own stacking context, so the dropdown's
+  // z-index gets compared in the wrong context and content like the chart's big
+  // value label (progBigVal, position:relative) can paint over it instead of under.
+  periodWrap.style.zIndex = '30';
+  titleRow.appendChild(periodWrap);
+  statsBox.appendChild(titleRow);
+  statsBox.appendChild(panesContainer);
+  section.appendChild(statsBox);
+
+  // Hidden (opacity only, no transform yet) while we measure — appending is needed
+  // first so statsBox has a real, untransformed layout position to measure from.
+  section.style.opacity = '0';
+  overlayBody?.appendChild(section);
+
+  const floatBarRect = document.getElementById('ex-float-bar')?.getBoundingClientRect();
+  if (floatBarRect) {
+    const boxTop = statsBox.getBoundingClientRect().top;
+    statsBox.style.height = Math.max(0, Math.round(floatBarRect.top - 30 - boxTop)) + 'px';
+  }
+  // Pinned to the box's bottom edge (flex column + margin-top:auto) — inside the
+  // border, so the "Stats" boundary box visually wraps the dots too.
+  dots.style.marginTop = 'auto';
+  statsBox.appendChild(dots);
+
+  // Slide up 48px + fade in — same enter transition as _toggleExDetailMuscles/openShareQR().
+  section.style.transform  = 'translateY(48px)';
+  section.style.transition = 'none';
+
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    section.style.transition = _EX_DETAIL_TOGGLE_ENTER_T;
+    section.style.transform  = '';
+    section.style.opacity    = '';
+    section.addEventListener('transitionend', () => { section.style.transition = ''; }, { once: true });
+  }));
+}
+window._toggleExDetailStats = _toggleExDetailStats;
+
 function openExtabExOverlay(exName, musclesOnly) {
   const overlay = document.getElementById('extab-ex-overlay');
   const body = document.getElementById('extab-ex-overlay-body');
@@ -5901,119 +6708,9 @@ function openExtabExOverlay(exName, musclesOnly) {
   if (_extabMenuBtn) _extabMenuBtn.style.visibility = musclesOnly ? 'hidden' : '';
 
   // Body diagram
-  const w2Src = document.getElementById('w2-body-container');
-  if (w2Src) {
-    const diagWrap = document.createElement('div');
-    diagWrap.style.cssText = 'padding:10px 16px 0;';
-    const bc = w2Src.cloneNode(true);
-    bc.removeAttribute('id');
-    bc.style.width = ''; bc.style.transform = ''; bc.style.transformOrigin = '';
-    if (bc.children[0]) bc.children[0].style.display = '';
-    if (bc.children[1]) bc.children[1].style.display = '';
-    bc.querySelectorAll('[id]').forEach(el => { el.id = 'etdov-' + el.id; });
-    bc.querySelectorAll('[clip-path]').forEach(el => {
-      el.setAttribute('clip-path', el.getAttribute('clip-path').replace(/url\(#([^)]+)\)/g, 'url(#etdov-$1)'));
-    });
-    const _etdovSvgs = bc.querySelectorAll('svg');
-    if (_etdovSvgs.length >= 2) _etdovSvgs[1].setAttribute('viewBox', '790 -160 820 1510');
-    W2_ALL_MUSCLE_IDS.forEach(id => {
-      const el = bc.querySelector('#etdov-' + id);
-      if (el) { el.setAttribute('fill','#2a2a2a'); el.setAttribute('opacity','1'); }
-    });
-    const hmap = {};
-    if (muscle === 'Mix') {
-      if (subs.length > 0) {
-        subs.forEach(sm => {
-          const bp = _COMP_SUBS.find(x => x.n === sm)?.bp;
-          const smColor = bp ? (W2_MUSCLE_COLORS[bp] || '#aaa') : (W2_MUSCLE_COLORS[sm] || '#aaa');
-          if (NEX_SUB_MUSCLE_IDS[sm]) {
-            NEX_SUB_MUSCLE_IDS[sm].forEach(id => { hmap[id] = smColor; });
-          } else {
-            (W2_BODY_IDS[sm] || []).forEach(id => { hmap[id] = smColor; });
-          }
-        });
-      } else {
-        // "All" selected — highlight every compound sub-muscle with its body part color
-        _COMP_SUBS.forEach(s => {
-          const c = W2_MUSCLE_COLORS[s.bp] || '#aaa';
-          (NEX_SUB_MUSCLE_IDS[s.n] || []).forEach(id => { hmap[id] = c; });
-        });
-      }
-    } else if (subs.length > 0) {
-      subs.forEach(sm => {
-        if (NEX_SUB_MUSCLE_IDS[sm]) {
-          NEX_SUB_MUSCLE_IDS[sm].forEach(id => { hmap[id] = mainColor || '#aaa'; });
-        } else {
-          const bpColor = W2_MUSCLE_COLORS[sm] || mainColor;
-          (W2_BODY_IDS[sm] || []).forEach(id => { hmap[id] = bpColor; });
-        }
-      });
-    } else if (mainColor) {
-      const _fallbackSubs = NEX_BODY_SUBMUSCLES[muscle] || [];
-      if (_fallbackSubs.length > 0) {
-        _fallbackSubs.forEach(sm => {
-          (NEX_SUB_MUSCLE_IDS[sm] || W2_BODY_IDS[sm] || []).forEach(id => { hmap[id] = mainColor; });
-        });
-      } else {
-        (W2_BODY_IDS[muscle] || []).forEach(id => { hmap[id] = mainColor; });
-      }
-    }
-    Object.entries(hmap).forEach(([id, color]) => {
-      const el = bc.querySelector('#etdov-' + id);
-      if (el) { el.setAttribute('fill', color); el.setAttribute('opacity','0.9'); }
-    });
-
-    // Hide unused body side
-    const hasFront = Object.keys(hmap).some(id => id.startsWith('bf-'));
-    const hasBack  = Object.keys(hmap).some(id => id.startsWith('bb-'));
-    const frontDiv = bc.children[0];
-    const backDiv  = bc.children[1];
-    const _oneSide = (hasFront && !hasBack) || (!hasFront && hasBack);
-    if (hasFront && !hasBack && backDiv) {
-      backDiv.style.display = 'none';
-    } else if (!hasFront && hasBack && frontDiv) {
-      frontDiv.style.display = 'none';
-    }
-
-    // Match new-exercise body size:
-    // — both sides visible → full width; one side → 50% width (same as one side in new exercise)
-    // — same scale(0.95) as nex-body-container
-    diagWrap.id = 'extab-diag-wrap';
-    // "MUSCLES only" mode left-aligns the list (to match the left-aligned title above it)
-    // instead of centering the list+diagram pair, so the list's position is fixed at
-    // 32px regardless of the diagram's width or the list's text content.
-    diagWrap.style.cssText = `padding:10px 0 10px;margin-top:10px;display:flex;justify-content:${musclesOnly === true ? 'flex-start' : 'center'};position:relative;background:#161616;border-radius:14px;margin-left:16px;margin-right:16px;`;
-    const scaleWrap = document.createElement('div');
-    const _backOnly = !hasFront && hasBack;
-    const _frontOnly = hasFront && !hasBack;
-    const _oneSideShift = _backOnly ? 'translateX(23px) ' : _frontOnly ? 'translateX(-26px) ' : '';
-    scaleWrap.style.cssText = `width:${_oneSide ? '50%' : '100%'};transform:${_oneSide ? _oneSideShift + 'scale(0.855)' : 'translateX(30px) scale(0.94)'} translateZ(0);transform-origin:top center;backface-visibility:hidden;position:relative;`;
-    scaleWrap.appendChild(bc);
-
-    // Muscle list — flex sibling so it drives the card height
-    const muscleList = document.createElement('div');
-    muscleList.style.cssText = 'display:flex;flex-direction:column;gap:5px;align-items:flex-start;z-index:1;pointer-events:none;padding:10px 0 10px 16px;justify-content:center;';
-    const listItems = muscle === 'Mix'
-      ? (subs.length > 0 ? subs : _COMP_SUBS.map(s => s.n))
-      : (subs.length > 0 ? subs : (NEX_BODY_SUBMUSCLES[muscle] || []));
-    listItems.forEach(sm => {
-      let smColor;
-      if (muscle === 'Mix') {
-        const bp = _COMP_SUBS.find(x => x.n === sm)?.bp;
-        smColor = bp ? (W2_MUSCLE_COLORS[bp] || '#aaa') : (W2_MUSCLE_COLORS[sm] || '#aaa');
-      } else {
-        const isBodyPart = !NEX_SUB_MUSCLE_IDS[sm];
-        smColor = isBodyPart ? (W2_MUSCLE_COLORS[sm] || mainColor || '#aaa') : (mainColor || '#aaa');
-      }
-      const item = document.createElement('div');
-      item.style.cssText = `font-family:'DM Sans';font-size:12px;font-weight:700;color:${smColor};letter-spacing:.2px;text-shadow:0 1px 4px #000;white-space:nowrap;`;
-      item.textContent = sm;
-      muscleList.appendChild(item);
-    });
-    diagWrap.appendChild(muscleList);
-    diagWrap.appendChild(scaleWrap);
-
-    if (musclesOnly !== 'stats') body.appendChild(diagWrap);
+  if (musclesOnly !== 'stats') {
+    const _built = _buildMuscleDiagramWrap(exDef, musclesOnly === true);
+    if (_built) body.appendChild(_built.diagWrap);
   }
 
   // MAX · 1RM · B.Set · VOL · PROGRESS carousel
@@ -7751,7 +8448,7 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
       </div>
       <div class="timer-panel" id="timer-panel-${id}">
         <div style="position:relative;border:1px solid var(--accent);border-radius:9px;padding:18px 11px 10px;margin-top:6px;transition:border-color .2s;width:calc(min(430px,100vw) - 32px);max-width:398px;box-sizing:border-box;">
-          <span style="position:absolute;top:-9px;left:12px;background:var(--bg);padding:0 5px;font-size:12px;font-weight:700;color:var(--accent);letter-spacing:.3px;pointer-events:none;">Timer</span>
+          <span style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:var(--bg);padding:0 5px;font-size:12px;font-weight:700;color:var(--accent);letter-spacing:.3px;pointer-events:none;">Timer</span>
           <div style="position:relative;display:flex;align-items:center;">
             <div class="timer-display" id="timer-display-${id}" style="margin-bottom:0;width:100%;text-align:center;">00:00</div>
             <!-- Auto Start toggle — absolute left so number stays centered -->
@@ -7768,7 +8465,7 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
             ${(()=>{const _opts=[30,60,90,120,150,180];const _lbls=['0.5m','1m','1.5m','2m','2.5m','3m'];const _ci=_opts.indexOf(_opts.reduce((a,b)=>Math.abs(b-lastTimerSecs)<Math.abs(a-lastTimerSecs)?b:a));const _cl=_lbls[_ci];return `<div style="position:absolute;right:0;display:flex;flex-direction:column;align-items:center;gap:4px;"><button id="timer-preset-btn-${id}" onclick="toggleTimerPresetMenu('${id}')" style="background:transparent;border:1px solid #555;border-radius:8px;padding:4px 7px;cursor:pointer;display:flex;align-items:center;gap:3px;-webkit-tap-highlight-color:transparent;"><span id="timer-preset-label-${id}" style="color:#aaa;font-family:'DM Sans';font-size:13px;font-weight:700;min-width:28px;text-align:center;">${_cl}</span><svg width="10" height="7" viewBox="0 0 10 7" fill="none"><path d="M1 1.5L5 5.5L9 1.5" stroke="#777" stroke-width="1.5" stroke-linecap="round"/></svg></button><div style="font-size:10px;font-weight:700;color:#aaa;letter-spacing:.5px;">Preset</div></div>`;})()}
           </div>
           <!-- Expandable preset grid -->
-          ${(()=>{const _opts=[30,60,90,120,150,180];const _lbls=['0.5m','1m','1.5m','2m','2.5m','3m'];const _closest=_opts.reduce((a,b)=>Math.abs(b-lastTimerSecs)<Math.abs(a-lastTimerSecs)?b:a);return `<div id="timer-preset-menu-${id}" style="display:none;background:#111;border-radius:8px;margin:8px 0 2px;overflow:hidden;"><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:#2a2a2a;">${_opts.map((s,i)=>`<button onclick="selectTimerPreset('${id}',${s},'${_lbls[i]}')" style="background:#1a1a1a;border:none;color:${s===_closest?'#7ec8e3':'#aaa'};font-family:'DM Sans';font-size:14px;font-weight:700;padding:11px 0;cursor:pointer;-webkit-tap-highlight-color:transparent;">${_lbls[i]}</button>`).join('')}</div></div>`;})()}
+          ${(()=>{const _opts=[30,60,90,120,150,180];const _lbls=['0.5m','1m','1.5m','2m','2.5m','3m'];const _closest=_opts.reduce((a,b)=>Math.abs(b-lastTimerSecs)<Math.abs(a-lastTimerSecs)?b:a);return `<div id="timer-preset-menu-${id}" style="display:none;background:#111;border-radius:8px;margin:8px 0 2px;overflow:hidden;transform-origin:top center;opacity:0;transform:scale(.92) translateY(-4px);"><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:#2a2a2a;">${_opts.map((s,i)=>`<button onclick="selectTimerPreset('${id}',${s},'${_lbls[i]}',this)" style="background:#1a1a1a;border:none;color:${s===_closest?'#7ec8e3':'#aaa'};font-family:'DM Sans';font-size:14px;font-weight:700;padding:11px 0;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:color .15s ease,background .15s ease;">${_lbls[i]}</button>`).join('')}</div></div>`;})()}
           <div class="timer-presets" style="display:none;">
             ${(()=>{const opts=[30,60,90,120,150,180];const closest=opts.reduce((a,b)=>Math.abs(b-lastTimerSecs)<Math.abs(a-lastTimerSecs)?b:a);return opts.map((s,i)=>`<button class="timer-preset ${s===closest?'active':''}" onclick="setTimerPreset('${id}',${s})">${['0.5m','1m','1.5m','2m','2.5m','3m'][i]}</button>`).join('');})()}
           </div>
@@ -7779,7 +8476,7 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
             </button>
           </div>
           <div style="display:flex;justify-content:center;margin-top:14px;">
-            <button id="timer-plus30-${id}" onclick="timerAdd30('${id}')" style="display:none;background:transparent;border:1px solid #333;border-radius:10px;color:#aaa;font-family:'DM Sans';font-size:15px;font-weight:700;padding:8px 18px;cursor:pointer;-webkit-tap-highlight-color:transparent;">+30 Sec</button>
+            <button id="timer-plus30-${id}" onclick="timerAdd30('${id}')" style="display:none;background:transparent;border:1px solid #333;border-radius:10px;color:#aaa;font-family:'DM Sans';font-size:15px;font-weight:700;padding:8px 18px;cursor:pointer;-webkit-tap-highlight-color:transparent;opacity:0;transform:scale(.85) translateY(6px);">+30 Sec</button>
           </div>
         </div>
       </div>
@@ -7830,8 +8527,8 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
 
       <div class="comment-area" id="comment-area-${id}">
         <div class="comment-area-inner" id="comment-area-inner-${id}" style="position:relative;border:1px solid var(--accent);border-radius:9px;padding:18px 11px 10px;margin-top:6px;transition:border-color .2s;width:calc(min(430px,100vw) - 32px);max-width:398px;box-sizing:border-box;">
-          <span class="comment-area-label" style="position:absolute;top:-9px;left:12px;background:var(--bg);padding:0 5px;font-size:12px;font-weight:700;color:var(--accent);letter-spacing:.3px;pointer-events:none;">Note</span>
-          <textarea class="comment-box" id="comment-${id}" autocomplete="off" enterkeyhint="done" placeholder="Tap for editing&" oninput="updateNoteBtn('${id}');saveSession();if(window._isNewWorkoutFlow)updateWflowCloseBtn('${id}');this.style.direction=/[\u0590-\u05FF]/.test(this.value)?'rtl':'ltr';this.style.textAlign=/[\u0590-\u05FF]/.test(this.value)?'right':'left';this.style.height='auto';this.style.height=this.scrollHeight+'px'" onfocus="showNoteToolbar('${id}');this.closest('.comment-area')?.classList.add('note-active')" onblur="hideNoteToolbar();if(!this.value.trim())this.closest('.comment-area')?.classList.remove('note-active')"></textarea>
+          <span class="comment-area-label" style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:var(--bg);padding:0 5px;font-size:12px;font-weight:700;color:var(--accent);letter-spacing:.3px;pointer-events:none;">Note</span>
+          <textarea class="comment-box" id="comment-${id}" autocomplete="off" spellcheck="false" placeholder="Tap for editing&" oninput="updateNoteBtn('${id}');saveSession();if(window._isNewWorkoutFlow)updateWflowCloseBtn('${id}');this.style.direction=/[\u0590-\u05FF]/.test(this.value)?'rtl':'ltr';this.style.textAlign=/[\u0590-\u05FF]/.test(this.value)?'right':'left';this.style.height='auto';this.style.height=this.scrollHeight+'px'" onfocus="showNoteToolbar('${id}');this.closest('.comment-area')?.classList.add('note-active')" onblur="hideNoteToolbar();if(!this.value.trim())this.closest('.comment-area')?.classList.remove('note-active')"></textarea>
         </div>
       </div>
 
@@ -9946,18 +10643,47 @@ function setTimerPreset(id, secs) {
   });
 }
 
+const _TIMER_PRESET_MENU_ENTER_T = 'opacity .16s ease, transform .18s cubic-bezier(.2,.8,.3,1)';
+const _TIMER_PRESET_MENU_EXIT_T = 'opacity .13s ease, transform .13s cubic-bezier(.4,0,1,1)';
+
+function _closeTimerPresetMenu(menu) {
+  if (!menu || menu.style.display === 'none') return;
+  menu.style.transition = _TIMER_PRESET_MENU_EXIT_T;
+  menu.style.opacity = '0';
+  menu.style.transform = 'scale(.92) translateY(-4px)';
+  setTimeout(() => { menu.style.display = 'none'; }, 130);
+}
+
+function _openTimerPresetMenu(menu) {
+  menu.style.transition = 'none';
+  menu.style.display = 'block';
+  menu.style.opacity = '0';
+  menu.style.transform = 'scale(.92) translateY(-4px)';
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    menu.style.transition = _TIMER_PRESET_MENU_ENTER_T;
+    menu.style.opacity = '1';
+    menu.style.transform = 'scale(1) translateY(0)';
+  }));
+}
+
 function toggleTimerPresetMenu(id) {
   const menu = document.getElementById(`timer-preset-menu-${id}`);
   if (!menu) return;
   const isOpen = menu.style.display !== 'none';
-  document.querySelectorAll('[id^="timer-preset-menu-"]').forEach(m => { m.style.display = 'none'; });
-  if (!isOpen) menu.style.display = 'block';
+  document.querySelectorAll('[id^="timer-preset-menu-"]').forEach(m => { if (m !== menu) _closeTimerPresetMenu(m); });
+  if (isOpen) _closeTimerPresetMenu(menu); else _openTimerPresetMenu(menu);
 }
 
-function selectTimerPreset(id, secs, label) {
-  setTimerPreset(id, secs);
+function selectTimerPreset(id, secs, label, btn) {
   const menu = document.getElementById(`timer-preset-menu-${id}`);
-  if (menu) menu.style.display = 'none';
+  setTimerPreset(id, secs);
+  // Quick highlight flash confirms the tap before the menu animates away —
+  // same "select" feedback used for the progress-carousel period dropdown.
+  if (btn) btn.style.background = 'rgba(126,200,227,.15)';
+  setTimeout(() => {
+    if (btn) btn.style.background = '#1a1a1a';
+    _closeTimerPresetMenu(menu);
+  }, 140);
 }
 
 function updateTimerChevronDot(exId, show) {
@@ -10138,8 +10864,15 @@ function showNoteToolbar(id) {
   textarea?.closest('.comment-area')?.classList.add('note-active');
   // Highlight note float button
   const noteBtn = document.getElementById('ex-float-note');
-  if (noteBtn) noteBtn.style.color = 'var(--accent)';
+  if (noteBtn) noteBtn.classList.add('active');
   window._noteEditingId = id;
+  // Hide the Note/Timer/Stats float bar while the note keyboard is up — same
+  // focus-driven approach as _nwfFieldFocus (visualViewport-resize heuristics
+  // are unreliable on Android, so we key off the textarea's own focus state).
+  const floatBar = document.getElementById('ex-float-bar');
+  const floatBarBlock = document.getElementById('ex-float-bar-block');
+  if (floatBar) floatBar.style.display = 'none';
+  if (floatBarBlock) floatBarBlock.style.display = 'none';
 }
 function hideNoteToolbar() {
   setTimeout(() => {
@@ -10155,9 +10888,17 @@ function hideNoteToolbar() {
       }
       // Reset note float button color
       const noteBtn = document.getElementById('ex-float-note');
-      if (noteBtn) noteBtn.style.color = 'var(--muted)';
+      if (noteBtn) noteBtn.classList.remove('active');
     }
     window._noteEditingId = null;
+    // Restore the float bar now that the keyboard has closed — only if it's
+    // still supposed to be showing for this card (exFloatCardId still set).
+    if (window._exFloatCardId) {
+      const floatBar = document.getElementById('ex-float-bar');
+      const floatBarBlock = document.getElementById('ex-float-bar-block');
+      if (floatBar) floatBar.style.display = 'flex';
+      if (floatBarBlock) floatBarBlock.style.display = 'block';
+    }
   }, 150);
 }
 function noteKbdDone() {
@@ -20889,9 +21630,8 @@ function deleteCoachWorkout(id) {
   <div id="ex-detail-overlay-body">
     <!-- Photo (21:9) + FINISH — scrollable, not sticky -->
     <div id="ex-detail-photo-wrap" style="display:none;">
-      <div style="position:relative;margin:4px 2px 0;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;">
+      <div id="ex-detail-photo-tap-wrap" onclick="_toggleExDetailMuscles()" style="position:relative;margin:4px 2px 0;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;cursor:pointer;">
         <img id="ex-detail-photo-img" src="" style="width:100%;height:100%;object-fit:cover;display:block;">
-        <button id="ex-detail-info-btn" onclick="openExtabExOverlay((document.getElementById('ex-detail-overlay-title')?.textContent||'').trim(),true)" style="position:absolute;top:8px;right:8px;z-index:2;background:rgba(0,0,0,0.38);border:none;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;-webkit-tap-highlight-color:transparent;padding:0;font-family:Georgia,serif;font-style:italic;font-size:15px;font-weight:700;line-height:1;">i</button>
       </div>
       <!-- FINISH + exercise name — below image -->
       <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 2px 4px;gap:8px;">
@@ -21566,8 +22306,8 @@ function _updateExFloatBar(cardId) {
   const noteBox = document.getElementById(`comment-${cardId}`);
   const noteBtn = document.getElementById('ex-float-note');
   const noteBadge = document.getElementById('ex-float-note-badge');
-  const _grey = 'var(--muted)';
-  if (noteBtn) noteBtn.style.color = noteArea?.classList.contains('open') ? 'var(--accent)' : _grey; // highlight when open
+  // .active drives both the accent color and the icon-enlarge/label-hide animation.
+  if (noteBtn) noteBtn.classList.toggle('active', !!noteArea?.classList.contains('open')); // highlight when open
   // For badge: also check toolbar._noteId in case _exFloatCardId is stale
   // Don't reset badge if it was locked by noteKbdDone
   if (!noteBadge?.dataset.locked) {
@@ -21579,8 +22319,13 @@ function _updateExFloatBar(cardId) {
   const floatTimer = document.getElementById('ex-float-timer');
   const timerPanel = document.getElementById(`timer-panel-${cardId}`);
   const timerPanelOpen = timerPanel?.classList.contains('open');
-  if (floatTimer) floatTimer.style.color = timerPanelOpen ? 'var(--accent)' : _grey;
+  if (floatTimer) floatTimer.classList.toggle('active', !!timerPanelOpen);
 
+  // Stats button — accent only when the PROGRESS/YOUR BEST view is open. Excludes
+  // .closing (mid-exit-animation, not removed yet — see _toggleExDetailStats) so this
+  // doesn't re-add the active state while the section is on its way out.
+  const floatStats = document.getElementById('ex-float-stats');
+  if (floatStats) floatStats.classList.toggle('active', !!document.querySelector('#ex-detail-stats-section:not(.closing)'));
 }
 
 function exFloatAction(action) {
@@ -21592,16 +22337,20 @@ function exFloatAction(action) {
   const _isTimerOpen = () => !!document.getElementById(`timer-panel-${id}`)?.classList.contains('open');
   const _isKgOpen    = () => !!_inlineKgEditorId;
   const _isRepsOpen  = () => !!_repsEditorSpan;
+  const _isStatsOpen = () => !!document.getElementById('ex-detail-stats-section');
 
   // True if any closeable box is currently open
-  const _anyOpen = () => _isNoteOpen() || _isTimerOpen() || _isKgOpen() || _isRepsOpen();
+  const _anyOpen = () => _isNoteOpen() || _isTimerOpen() || _isKgOpen() || _isRepsOpen() || _isStatsOpen();
 
-  // Close all sections (inline editors + float-bar panels)
+  // Close all sections (inline editors + float-bar panels) — selecting one of the
+  // three float-bar buttons (Note/Timer/Stats) always closes whichever box is
+  // currently open first, before presenting the newly selected one.
   const _closeAll = () => {
     if (_isKgOpen())    closeInlineKgEditor(false);
     if (_isRepsOpen())  _closeRepsEditor(true);
     if (_isNoteOpen())  toggleComment(id);
     if (_isTimerOpen()) toggleTimer(id);
+    if (_isStatsOpen()) _toggleExDetailStats();
   };
 
   const _scrollToBottom = () => {
@@ -21613,7 +22362,8 @@ function exFloatAction(action) {
   // Determine if the tapped panel was already open (so we skip re-opening — acts as toggle)
   const _targetWasOpen =
     (action === 'note'  && _isNoteOpen())  ||
-    (action === 'timer' && _isTimerOpen());
+    (action === 'timer' && _isTimerOpen()) ||
+    (action === 'stats' && _isStatsOpen());
 
   // Wait for close animation only when something was open and we are opening a different panel
   const _hadOpen = _anyOpen();
@@ -21634,7 +22384,9 @@ function exFloatAction(action) {
       } else if (action === 'stats') {
         const _card = document.getElementById(id);
         const _exName = _card?.querySelector('.ex-name')?.textContent?.trim() || '';
-        if (_exName) openExtabExOverlay(_exName, 'stats');
+        if (!_exName) { /* no-op */ }
+        else if (document.body.classList.contains('ex-detail-open')) _toggleExDetailStats();
+        else openExtabExOverlay(_exName, 'stats');
       }
     }, _delay);
   }
@@ -21903,8 +22655,8 @@ function openRepsPopup(span, exId) {
   document.getElementById('kg-editor-sheet-inner').innerHTML = `
     <div style="display:flex;flex-direction:column;gap:10px;">
       <div style="display:flex;gap:8px;margin-top:6px;">
-        <button onclick="repsEditorDelta(-1)" style="flex:1;background:transparent;border:1px solid #555;border-radius:8px;color:#f87171;font-size:68px;font-weight:300;height:82px;padding:0;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;-webkit-tap-highlight-color:transparent;">−</button>
-        <button onclick="repsEditorDelta(1)" style="flex:1;background:transparent;border:1px solid #555;border-radius:8px;color:var(--accent);font-size:68px;font-weight:300;height:82px;padding:0;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;-webkit-tap-highlight-color:transparent;">+</button>
+        <button onclick="repsEditorDelta(-1)" class="editor-tap-btn" style="flex:1;background:transparent;border:1px solid #555;border-radius:8px;color:#f87171;font-size:68px;font-weight:300;height:82px;padding:0;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;-webkit-tap-highlight-color:transparent;">−</button>
+        <button onclick="repsEditorDelta(1)" class="editor-tap-btn" style="flex:1;background:transparent;border:1px solid #555;border-radius:8px;color:var(--accent);font-size:68px;font-weight:300;height:82px;padding:0;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;-webkit-tap-highlight-color:transparent;">+</button>
       </div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
         <button class="kg-pad-btn" onclick="repsEditorPress('1')">1</button>
@@ -21921,9 +22673,9 @@ function openRepsPopup(span, exId) {
         <button class="kg-pad-btn" onclick="repsEditorBack()">⌫</button>
       </div>
       <div style="display:flex;gap:8px;">
-        <button class="editor-action-btn" onclick="cancelRepsEditor()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:18px;font-weight:700;padding:0 11px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Cancel</button>
-        <button class="editor-action-btn" onclick="repsEditorReset()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:18px;font-weight:700;padding:0 11px;cursor:pointer;-webkit-tap-highlight-color:transparent;opacity:${prevReps>0?'1':'0.35'};pointer-events:${prevReps>0?'auto':'none'};">Prev</button>
-        <button class="editor-action-btn" onclick="confirmRepsEditor()" style="flex:2;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:18px;font-weight:700;padding:0 11px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Done</button>
+        <button class="editor-action-btn editor-tap-btn" onclick="cancelRepsEditor()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:18px;font-weight:700;padding:0 11px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Cancel</button>
+        <button class="editor-action-btn editor-tap-btn" onclick="repsEditorReset()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:18px;font-weight:700;padding:0 11px;cursor:pointer;-webkit-tap-highlight-color:transparent;opacity:${prevReps>0?'1':'0.35'};pointer-events:${prevReps>0?'auto':'none'};">Prev</button>
+        <button class="editor-action-btn editor-tap-btn" onclick="confirmRepsEditor()" style="flex:2;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:18px;font-weight:700;padding:0 11px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Done</button>
       </div>
     </div>`;
 
@@ -22681,13 +23433,13 @@ closeInlineKgEditor(false);
   document.getElementById('kg-editor-sheet-inner').innerHTML = `
     <div style="display:flex;flex-direction:column;gap:10px;">
       <div style="display:flex;gap:8px;">
-        <button onclick="kgPadBW()" id="kgBWBtnInline" class="${bwActiveClass}" style="flex:1;background:transparent;border:none;border-radius:8px;color:#aaa;font-family:'DM Sans';font-size:14px;font-weight:700;padding:8px 10px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:6px;"><svg width="20" height="20" viewBox="0 0 512 512" style="display:block;flex-shrink:0;"><style>.st0{fill:currentColor;}</style><g><path class="st0" d="M455.998,0.004H56.002C25.063,0.011,0.008,25.067,0,56.006v399.989c0.008,30.938,25.063,55.994,56.002,56.002h399.997c30.938-0.008,55.994-25.063,56.002-56.002V56.006C511.993,25.067,486.937,0.011,455.998,0.004z M479.999,455.994c-0.007,6.68-2.664,12.579-7.032,16.969c-4.39,4.367-10.289,7.024-16.969,7.032H56.002c-6.68-0.008-12.579-2.664-16.969-7.032c-4.367-4.39-7.023-10.289-7.031-16.969V56.006c0.008-6.68,2.664-12.579,7.031-16.977c4.39-4.359,10.289-7.016,16.969-7.023h399.997c6.68,0.007,12.579,2.664,16.969,7.023,4.367,4.398,7.024,10.297,7.032,16.977V455.994z"/><path class="st0" d="M128.012,119.101l26.391,76.783H270.86l16.352-67.947l9.938,2.031l9.93,2.015l-10.696,63.9h61.212l26.392-76.783C346.612,96.577,302.83,83.6,256.008,83.6C209.178,83.6,165.388,96.577,128.012,119.101z"/></g></svg><span>${isBW ? 'Remove Body Weight (BW)' : 'Add Body Weight (BW)'}</span></button>
+        <button onclick="kgPadBW()" id="kgBWBtnInline" class="editor-tap-btn${bwActiveClass}" style="flex:1;background:transparent;border:none;border-radius:8px;color:#aaa;font-family:'DM Sans';font-size:14px;font-weight:700;padding:8px 10px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;"><svg width="20" height="20" viewBox="0 0 512 512" style="display:block;flex-shrink:0;"><style>.st0{fill:currentColor;}</style><g><path class="st0" d="M455.998,0.004H56.002C25.063,0.011,0.008,25.067,0,56.006v399.989c0.008,30.938,25.063,55.994,56.002,56.002h399.997c30.938-0.008,55.994-25.063,56.002-56.002V56.006C511.993,25.067,486.937,0.011,455.998,0.004z M479.999,455.994c-0.007,6.68-2.664,12.579-7.032,16.969c-4.39,4.367-10.289,7.024-16.969,7.032H56.002c-6.68-0.008-12.579-2.664-16.969-7.032c-4.367-4.39-7.023-10.289-7.031-16.969V56.006c0.008-6.68,2.664-12.579,7.031-16.977c4.39-4.359,10.289-7.016,16.969-7.023h399.997c6.68,0.007,12.579,2.664,16.969,7.023,4.367,4.398,7.024,10.297,7.032,16.977V455.994z"/><path class="st0" d="M128.012,119.101l26.391,76.783H270.86l16.352-67.947l9.938,2.031l9.93,2.015l-10.696,63.9h61.212l26.392-76.783C346.612,96.577,302.83,83.6,256.008,83.6C209.178,83.6,165.388,96.577,128.012,119.101z"/></g></svg><span>${isBW ? 'Remove Body Weight (BW)' : 'Add Body Weight (BW)'}</span></button>
       </div>
       <div style="display:flex;gap:6px;">
-        <button onclick="kgPadToggleSign()" id="kgSignToggle" style="flex:0 0 auto;width:40px;background:transparent;border:1px solid #333;border-radius:8px;font-family:'DM Sans';font-size:16px;font-weight:700;padding:8px 0;cursor:pointer;text-align:center;"><span style="color:#555;">-/</span><span style="color:var(--accent);">+</span></button>
-        <button onclick="kgPadAdd(1.25)" id="kgAddBtn1" style="flex:1;background:transparent;border:1px solid #555;border-radius:8px;font-family:'DM Sans';padding:10px 0;cursor:pointer;display:flex;align-items:baseline;justify-content:center;gap:2px;"><span style="color:var(--accent);font-size:16px;font-weight:700;">+1.25</span><span style="color:var(--accent);font-size:14px;font-weight:300;">Kg</span></button>
-        <button onclick="kgPadAdd(2.5)"  id="kgAddBtn2" style="flex:1;background:transparent;border:1px solid #555;border-radius:8px;font-family:'DM Sans';padding:10px 0;cursor:pointer;display:flex;align-items:baseline;justify-content:center;gap:2px;"><span style="color:var(--accent);font-size:16px;font-weight:700;">+2.5</span><span style="color:var(--accent);font-size:14px;font-weight:300;">Kg</span></button>
-        <button onclick="kgPadAdd(5)"    id="kgAddBtn3" style="flex:1;background:transparent;border:1px solid #555;border-radius:8px;font-family:'DM Sans';padding:10px 0;cursor:pointer;display:flex;align-items:baseline;justify-content:center;gap:2px;"><span style="color:var(--accent);font-size:16px;font-weight:700;">+5</span><span style="color:var(--accent);font-size:14px;font-weight:300;">Kg</span></button>
+        <button onclick="kgPadToggleSign()" id="kgSignToggle" class="editor-tap-btn" style="flex:0 0 auto;width:40px;background:transparent;border:1px solid #333;border-radius:8px;font-family:'DM Sans';font-size:16px;font-weight:700;padding:8px 0;cursor:pointer;text-align:center;"><span style="color:#555;">-/</span><span style="color:var(--accent);">+</span></button>
+        <button onclick="kgPadAdd(1.25)" id="kgAddBtn1" class="editor-tap-btn" style="flex:1;background:transparent;border:1px solid #555;border-radius:8px;font-family:'DM Sans';padding:10px 0;cursor:pointer;display:flex;align-items:baseline;justify-content:center;gap:2px;"><span style="color:var(--accent);font-size:16px;font-weight:700;">+1.25</span><span style="color:var(--accent);font-size:14px;font-weight:300;">Kg</span></button>
+        <button onclick="kgPadAdd(2.5)"  id="kgAddBtn2" class="editor-tap-btn" style="flex:1;background:transparent;border:1px solid #555;border-radius:8px;font-family:'DM Sans';padding:10px 0;cursor:pointer;display:flex;align-items:baseline;justify-content:center;gap:2px;"><span style="color:var(--accent);font-size:16px;font-weight:700;">+2.5</span><span style="color:var(--accent);font-size:14px;font-weight:300;">Kg</span></button>
+        <button onclick="kgPadAdd(5)"    id="kgAddBtn3" class="editor-tap-btn" style="flex:1;background:transparent;border:1px solid #555;border-radius:8px;font-family:'DM Sans';padding:10px 0;cursor:pointer;display:flex;align-items:baseline;justify-content:center;gap:2px;"><span style="color:var(--accent);font-size:16px;font-weight:700;">+5</span><span style="color:var(--accent);font-size:14px;font-weight:300;">Kg</span></button>
       </div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
         <button class="kg-pad-btn" onclick="kgPadPress('1')">1</button>
@@ -22704,9 +23456,9 @@ closeInlineKgEditor(false);
         <button class="kg-pad-btn" onclick="kgPadBack()" style="font-size:18px;">⌫</button>
       </div>
       <div style="display:flex;gap:8px;">
-        <button class="editor-action-btn" onclick="cancelInlineKgEditor()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:18px;font-weight:700;padding:0 11px;cursor:pointer;">Cancel</button>
-        <button class="editor-action-btn" onclick="kgPadReset()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:18px;font-weight:700;padding:0 11px;cursor:pointer;opacity:${prevKg>0?'1':'0.35'};pointer-events:${prevKg>0?'auto':'none'};">Prev</button>
-        <button class="editor-action-btn" onclick="confirmKgEditor()" style="flex:2;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:18px;font-weight:700;padding:0 11px;cursor:pointer;">Done</button>
+        <button class="editor-action-btn editor-tap-btn" onclick="cancelInlineKgEditor()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:18px;font-weight:700;padding:0 11px;cursor:pointer;">Cancel</button>
+        <button class="editor-action-btn editor-tap-btn" onclick="kgPadReset()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:18px;font-weight:700;padding:0 11px;cursor:pointer;opacity:${prevKg>0?'1':'0.35'};pointer-events:${prevKg>0?'auto':'none'};">Prev</button>
+        <button class="editor-action-btn editor-tap-btn" onclick="confirmKgEditor()" style="flex:2;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:18px;font-weight:700;padding:0 11px;cursor:pointer;">Done</button>
       </div>
     </div>`;
 
@@ -24933,9 +25685,30 @@ function timerAdd30(id) {
 }
 window.timerAdd30 = timerAdd30;
 
+const _TIMER_PLUS30_ENTER_T = 'opacity .18s ease, transform .2s cubic-bezier(.2,.8,.3,1)';
+const _TIMER_PLUS30_EXIT_T = 'opacity .13s ease, transform .13s cubic-bezier(.4,0,1,1)';
+
 function _showTimerPlus30(id, show) {
   const btn = document.getElementById(`timer-plus30-${id}`);
-  if (btn) btn.style.display = show ? 'block' : 'none';
+  if (!btn) return;
+  if (show) {
+    if (btn.style.display === 'block') return;
+    btn.style.transition = 'none';
+    btn.style.display = 'block';
+    btn.style.opacity = '0';
+    btn.style.transform = 'scale(.85) translateY(6px)';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      btn.style.transition = _TIMER_PLUS30_ENTER_T;
+      btn.style.opacity = '1';
+      btn.style.transform = 'scale(1) translateY(0)';
+    }));
+  } else {
+    if (btn.style.display === 'none') return;
+    btn.style.transition = _TIMER_PLUS30_EXIT_T;
+    btn.style.opacity = '0';
+    btn.style.transform = 'scale(.85) translateY(6px)';
+    setTimeout(() => { btn.style.display = 'none'; }, 130);
+  }
 }
 window._showTimerPlus30 = _showTimerPlus30;
 
@@ -24980,7 +25753,7 @@ function _onSetDoneAutoStartTimer(cardId) {
       timerPanel.classList.add('open');
       // Update float bar color
       const floatTimer = document.getElementById('ex-float-timer');
-      if (floatTimer) floatTimer.style.color = 'var(--accent)';
+      if (floatTimer) floatTimer.classList.add('active');
     }
     // Scroll to show timer box
     setTimeout(() => {
@@ -25017,18 +25790,18 @@ function _updateKgDisplay(val, isBWMode) {
 <div id="ex-float-bar-block"></div>
 <div id="ex-float-bar" style="display:none;flex-direction:row;">
   <button id="ex-float-note" onclick="exFloatAction('note')" title="Note" style="position:relative;">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+    <svg class="ex-float-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
     <span id="ex-float-note-badge" style="display:none;position:absolute;top:3px;right:4px;line-height:1;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
-    Note
+    <span class="ex-float-label">Note</span>
   </button>
   <button id="ex-float-timer" onclick="exFloatAction('timer')" title="Timer" style="position:relative;">
     <div id="ex-float-timer-dot" class="timer-float-dot"></div>
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
-    Timer
+    <svg class="ex-float-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+    <span class="ex-float-label">Timer</span>
   </button>
   <button id="ex-float-stats" onclick="exFloatAction('stats')" title="Stats">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="13" width="4" height="9"/><rect x="9" y="8" width="4" height="14"/><rect x="16" y="3" width="4" height="19"/></svg>
-    Stats
+    <svg class="ex-float-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="13" width="4" height="9"/><rect x="9" y="8" width="4" height="14"/><rect x="16" y="3" width="4" height="19"/></svg>
+    <span class="ex-float-label">Stats</span>
   </button>
 </div>
 
