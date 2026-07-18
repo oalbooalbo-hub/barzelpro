@@ -123,7 +123,7 @@ body.desktop-mode .pages-wrap {
 #nwf-description::placeholder,#nwf-video-link::placeholder,#nwf-name-input::placeholder{color:#888;-webkit-text-fill-color:#888;opacity:1;}
 .ex-editor-open #ex-detail-finish-btn{opacity:0.3;pointer-events:none;filter:grayscale(1);}
 .ex-editor-open #ex-detail-back-btn,.ex-editor-open #ex-detail-back-btn-nophoto,.ex-editor-open #ex-detail-menu-btn,.ex-editor-open #ex-detail-menu-btn-nophoto{display:none!important;}
-.ex-editor-open #ex-detail-photo-tap-wrap,.ex-detail-stats-open #ex-detail-photo-tap-wrap{pointer-events:none!important;}
+.ex-editor-open #ex-detail-photo-tap-wrap,.ex-note-editing #ex-detail-photo-tap-wrap{pointer-events:none!important;}
 .workouts-flow-card .btn-done,.workouts-flow-card .cancel-done-btn,.workouts-flow-card .btn-timer,.workouts-flow-card .timer-panel{display:none!important;}
 .workouts-flow-card .workouts-flow-only{display:inline-flex!important;}
 .empty-state .big{font-family:'Bebas Neue';font-size:48px;color:var(--surface2);display:block;}
@@ -5996,6 +5996,16 @@ const _EX_DETAIL_TOGGLE_EXIT_T  = 'transform 0.35s cubic-bezier(0.2,0.8,0.3,1), 
 // CLOSE button, while the top bar (menu/timer/back), photo and exercise name stay
 // put. Tapping the photo again (or CLOSE) reverts back to the normal view.
 function _toggleExDetailMuscles() {
+  // If Stats (PROGRESS/YOUR BEST) is currently open, tapping the photo closes it
+  // first, then opens Muscles — same close-before-open sequencing exFloatAction
+  // uses for Note/Timer/Stats.
+  const statsSection = document.getElementById('ex-detail-stats-section');
+  if (statsSection && !statsSection.classList.contains('closing')) {
+    _toggleExDetailStats();
+    setTimeout(_toggleExDetailMuscles, 350);
+    return;
+  }
+
   const overlayBody = document.getElementById('ex-detail-overlay-body');
   const finishBtn   = document.getElementById('ex-detail-finish-btn');
   const backBtn     = document.getElementById('ex-detail-back-btn');
@@ -6626,7 +6636,7 @@ function _toggleExDetailStats() {
   // Pinned to the box's bottom edge (flex column + margin-top:auto) — inside the
   // border, so the "Stats" boundary box visually wraps the dots too.
   dots.style.marginTop = 'auto';
-  dots.style.transform = 'translateY(40px)';
+  dots.style.transform = 'translateY(35px)';
   statsBox.appendChild(dots);
 
   // Slide up 48px + fade in — same enter transition as _toggleExDetailMuscles/openShareQR().
@@ -8441,7 +8451,6 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
     </table>
     <div class="ex-footer">
       <div class="ex-footer-row">
-        <button id="note-done-btn-${id}" onmousedown="event.preventDefault();noteKbdDone()" ontouchstart="event.preventDefault();noteKbdDone()" style="display:none;background:transparent;border:none;color:#7ec8e3;font-family:'DM Sans';font-size:16px;font-weight:700;cursor:pointer;padding:4px 8px;">Done</button>
         <button class="workouts-flow-only" id="wflow-close-btn-${id}" onclick="toggleCardCollapse('${id}')" style="background:transparent;border:1px solid rgba(232,255,71,.4);border-radius:8px;color:var(--accent);font-family:'DM Sans';font-size:12px;font-weight:700;padding:6px 12px;cursor:pointer;display:none;">Close</button>
         <button onclick="toggleMiniChart('${id}')" id="mini-chart-toggle-${id}" style="display:none;"></button>
         <button class="btn-note" id="note-btn-${id}" onclick="toggleComment('${id}')" style="display:none;"></button>
@@ -10854,12 +10863,6 @@ function updateNoteBtn(id) {
 }
 
 function showNoteToolbar(id) {
-  // Store id for noteKbdDone
-  const toolbar = document.getElementById('note-kbd-toolbar');
-  if (toolbar) { toolbar._noteId = id; }
-  // Show inline Done button in footer row
-  const doneBtn = document.getElementById(`note-done-btn-${id}`);
-  if (doneBtn) doneBtn.style.display = 'block';
   // Highlight note border with accent
   const textarea = document.getElementById(`comment-${id}`);
   textarea?.closest('.comment-area')?.classList.add('note-active');
@@ -10874,14 +10877,15 @@ function showNoteToolbar(id) {
   const floatBarBlock = document.getElementById('ex-float-bar-block');
   if (floatBar) floatBar.style.display = 'none';
   if (floatBarBlock) floatBarBlock.style.display = 'none';
+  // Disable the exercise photo's tap-to-open-MUSCLES while editing — same
+  // pointer-events:none mechanism as .ex-editor-open/.ex-detail-stats-open.
+  document.body.classList.add('ex-note-editing');
 }
 function hideNoteToolbar() {
   setTimeout(() => {
     if (document.activeElement?.classList.contains('comment-box')) return;
     const id = window._noteEditingId;
     if (id) {
-      const doneBtn = document.getElementById(`note-done-btn-${id}`);
-      if (doneBtn) doneBtn.style.display = 'none';
       // Keep border if note has content, remove if empty
       const textarea = document.getElementById(`comment-${id}`);
       if (textarea && !textarea.value.trim()) {
@@ -10892,6 +10896,7 @@ function hideNoteToolbar() {
       if (noteBtn) noteBtn.classList.remove('active');
     }
     window._noteEditingId = null;
+    document.body.classList.remove('ex-note-editing');
     // Restore the float bar now that the keyboard has closed — only if it's
     // still supposed to be showing for this card (exFloatCardId still set).
     if (window._exFloatCardId) {
@@ -10900,26 +10905,12 @@ function hideNoteToolbar() {
       if (floatBar) floatBar.style.display = 'flex';
       if (floatBarBlock) floatBarBlock.style.display = 'block';
     }
+    // Dismissing the keyboard exits note-edit mode entirely — collapse the note
+    // box back closed, same as tapping the Note float-bar button again.
+    if (id && document.getElementById(`comment-area-${id}`)?.classList.contains('open')) {
+      toggleComment(id);
+    }
   }, 150);
-}
-function noteKbdDone() {
-  const toolbar = document.getElementById('note-kbd-toolbar');
-  const id = toolbar?._noteId || window._noteEditingId;
-  // Hide inline Done button
-  if (id) { const db = document.getElementById(`note-done-btn-${id}`); if (db) db.style.display = 'none'; }
-  window._noteEditingId = null;
-  if (!id) return;
-  const box = document.getElementById(`comment-${id}`);
-  const hasNote = !!(box?.value?.trim());
-  updateNoteBtn(id);
-  if (box) box.blur();
-  // Lock badge before blur so _updateExFloatBar can't reset it
-  const noteBadge = document.getElementById('ex-float-note-badge');
-  if (noteBadge) {
-    noteBadge.style.display = hasNote ? 'block' : 'none';
-    noteBadge.dataset.locked = '1';
-    setTimeout(() => { delete noteBadge.dataset.locked; }, 500);
-  }
 }
 function toggleComment(id) {
   const area = document.getElementById(`comment-area-${id}`);
@@ -22309,8 +22300,6 @@ function _updateExFloatBar(cardId) {
   const noteBadge = document.getElementById('ex-float-note-badge');
   // .active drives both the accent color and the icon-enlarge/label-hide animation.
   if (noteBtn) noteBtn.classList.toggle('active', !!noteArea?.classList.contains('open')); // highlight when open
-  // For badge: also check toolbar._noteId in case _exFloatCardId is stale
-  // Don't reset badge if it was locked by noteKbdDone
   if (!noteBadge?.dataset.locked) {
     const _hasNote = !!(noteBox?.value?.trim());
     if (noteBadge) noteBadge.style.display = _hasNote ? 'block' : 'none';
@@ -23434,7 +23423,7 @@ closeInlineKgEditor(false);
   document.getElementById('kg-editor-sheet-inner').innerHTML = `
     <div style="display:flex;flex-direction:column;gap:10px;">
       <div style="display:flex;gap:8px;">
-        <button onclick="kgPadBW()" id="kgBWBtnInline" class="editor-tap-btn${bwActiveClass}" style="flex:1;background:transparent;border:none;border-radius:8px;color:#aaa;font-family:'DM Sans';font-size:14px;font-weight:700;padding:8px 10px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;"><svg width="20" height="20" viewBox="0 0 512 512" style="display:block;flex-shrink:0;"><style>.st0{fill:currentColor;}</style><g><path class="st0" d="M455.998,0.004H56.002C25.063,0.011,0.008,25.067,0,56.006v399.989c0.008,30.938,25.063,55.994,56.002,56.002h399.997c30.938-0.008,55.994-25.063,56.002-56.002V56.006C511.993,25.067,486.937,0.011,455.998,0.004z M479.999,455.994c-0.007,6.68-2.664,12.579-7.032,16.969c-4.39,4.367-10.289,7.024-16.969,7.032H56.002c-6.68-0.008-12.579-2.664-16.969-7.032c-4.367-4.39-7.023-10.289-7.031-16.969V56.006c0.008-6.68,2.664-12.579,7.031-16.977c4.39-4.359,10.289-7.016,16.969-7.023h399.997c6.68,0.007,12.579,2.664,16.969,7.023,4.367,4.398,7.024,10.297,7.032,16.977V455.994z"/><path class="st0" d="M128.012,119.101l26.391,76.783H270.86l16.352-67.947l9.938,2.031l9.93,2.015l-10.696,63.9h61.212l26.392-76.783C346.612,96.577,302.83,83.6,256.008,83.6C209.178,83.6,165.388,96.577,128.012,119.101z"/></g></svg><span>${isBW ? 'Remove Body Weight (BW)' : 'Add Body Weight (BW)'}</span></button>
+        <button onclick="kgPadBW()" id="kgBWBtnInline" class="editor-tap-btn${bwActiveClass}" style="flex:1;background:transparent;border:none;border-radius:8px;color:#aaa;font-family:'DM Sans';font-size:14px;font-weight:700;padding:5px 10px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;"><svg width="26" height="26" viewBox="0 0 512 512" style="display:block;flex-shrink:0;"><style>.st0{fill:currentColor;}</style><g><path class="st0" d="M455.998,0.004H56.002C25.063,0.011,0.008,25.067,0,56.006v399.989c0.008,30.938,25.063,55.994,56.002,56.002h399.997c30.938-0.008,55.994-25.063,56.002-56.002V56.006C511.993,25.067,486.937,0.011,455.998,0.004z M479.999,455.994c-0.007,6.68-2.664,12.579-7.032,16.969c-4.39,4.367-10.289,7.024-16.969,7.032H56.002c-6.68-0.008-12.579-2.664-16.969-7.032c-4.367-4.39-7.023-10.289-7.031-16.969V56.006c0.008-6.68,2.664-12.579,7.031-16.977c4.39-4.359,10.289-7.016,16.969-7.023h399.997c6.68,0.007,12.579,2.664,16.969,7.023,4.367,4.398,7.024,10.297,7.032,16.977V455.994z"/><path class="st0" d="M128.012,119.101l26.391,76.783H270.86l16.352-67.947l9.938,2.031l9.93,2.015l-10.696,63.9h61.212l26.392-76.783C346.612,96.577,302.83,83.6,256.008,83.6C209.178,83.6,165.388,96.577,128.012,119.101z"/></g></svg><span>${isBW ? 'Remove Body Weight (BW)' : 'Add Body Weight (BW)'}</span></button>
       </div>
       <div style="display:flex;gap:6px;">
         <button onclick="kgPadToggleSign()" id="kgSignToggle" class="editor-tap-btn" style="flex:0 0 auto;width:40px;background:transparent;border:1px solid #333;border-radius:8px;font-family:'DM Sans';font-size:16px;font-weight:700;padding:8px 0;cursor:pointer;text-align:center;"><span style="color:#555;">-/</span><span style="color:var(--accent);">+</span></button>
@@ -25614,7 +25603,6 @@ window.w2SheetStart = w2SheetStart;
 
 window.closeShareQR = closeShareQR;
 window.shareQRLink = shareQRLink;
-window.noteKbdDone = noteKbdDone;
 window.showNoteToolbar = showNoteToolbar;
 window.hideNoteToolbar = hideNoteToolbar;
 window._repositionChips = _repositionChips;
