@@ -1243,7 +1243,7 @@ function hidAuthScreen() {
         <svg width="300" height="300" viewBox="0 0 300 300" style="display:block;">
           <circle cx="150" cy="150" r="117.86" fill="none" stroke="#1e1e1e" stroke-width="25.71"/>
           <circle id="today-progress-ring" cx="150" cy="150" r="117.86" fill="none" stroke="#7ec8e3" stroke-width="25.71" stroke-linecap="round" stroke-dasharray="740.52" stroke-dashoffset="740.52" transform="rotate(-90 150 150)" style="transition:stroke-dashoffset .6s ease,stroke .4s ease;"/>
-          <circle id="today-progress-goal-ring" cx="150" cy="150" r="90" fill="none" stroke="#7ec8e3" stroke-opacity="0.55" stroke-width="6" stroke-linecap="round" transform="rotate(-90 150 150)"/>
+          <circle id="today-progress-goal-ring" cx="150" cy="150" r="90" fill="none" stroke="#7ec8e3" stroke-opacity="0.55" stroke-width="6" stroke-linecap="round" transform="rotate(-90 150 150)" style="transition:stroke .4s ease,stroke-opacity .4s ease;"/>
         </svg>
         <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;">
           <span style="font-family:'DM Sans';font-size:14px;font-weight:700;color:#ccc;letter-spacing:.5px;text-transform:uppercase;">This Week</span>
@@ -2150,10 +2150,15 @@ function _migratePhotosToIDB() {
     });
   });
 }
-// Run once on load; flag so it only runs once per session
+// Run once on load; flag so it only runs once per session. Deferred via
+// requestIdleCallback (not a flat setTimeout) so this non-critical IndexedDB work
+// naturally yields to whatever's still busy on the main thread right after boot —
+// including the weekly-goal ring's entrance animation — instead of racing it on a
+// fixed clock. The timeout is a fallback guarantee in case the thread never idles.
 if (!sessionStorage.getItem('_photosIDBMigrated')) {
   sessionStorage.setItem('_photosIDBMigrated', '1');
-  setTimeout(_migratePhotosToIDB, 1000);
+  if ('requestIdleCallback' in window) requestIdleCallback(_migratePhotosToIDB, { timeout: 3000 });
+  else setTimeout(_migratePhotosToIDB, 1500);
 }
 
 // ── Migration: copy localStorage → IndexedDB once ─────
@@ -2867,6 +2872,23 @@ function cancelTodayPlan() {
   };
 }
 
+// Gates a callback until the browser has actually painted the current frame and
+// stabilized layout (double rAF — the first rAF fires before the frame that reflects
+// the latest DOM changes has been rendered; the second fires after), then further
+// defers to an idle slice (falling back to a plain rAF if requestIdleCallback isn't
+// available) so the callback doesn't start racing whatever startup work (auth
+// callbacks, Firestore syncs, etc.) may still be busy on the main thread. Used to
+// keep entrance animations (e.g. the weekly-goal ring fill) from skipping frames /
+// visibly "catching up" when triggered too soon after page load.
+function _whenPaintStable(cb) {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if ('requestIdleCallback' in window) requestIdleCallback(cb, { timeout: 200 });
+      else setTimeout(cb, 0);
+    });
+  });
+}
+
 function renderTodayWeekProgress(withAnim) {
   const el = document.getElementById('today-week-progress');
   if (!el) return;
@@ -2901,35 +2923,86 @@ function renderTodayWeekProgress(withAnim) {
     overflowEl.style.transition = '';
   }
   const goalRing = document.getElementById('today-progress-goal-ring');
+  const ring = document.getElementById('today-progress-ring');
+  const goalAchieved = count >= target;
+  // Same neon-green used by the workout-hero progress bar (#workout-progress-fill)
+  // shown above the exercise photo once a workout is loaded. Applied to both rings
+  // together, only once the goal-ring's shrink/connect animation (below) has actually
+  // finished — not while it's still mid-transition.
+  const _applyAchievedColors = () => {
+    if (goalRing) { goalRing.style.stroke = goalAchieved ? '#39FF14' : '#7ec8e3'; goalRing.style.strokeOpacity = goalAchieved ? '1' : '0.55'; }
+    if (ring) { ring.style.stroke = goalAchieved ? '#39FF14' : '#7ec8e3'; }
+  };
   if (goalRing) {
     const n = Math.max(1, target);
-    const gCirc = 2 * Math.PI * 90;
     const gap = 16;
-    const dash = Math.max(1, (gCirc - gap * n) / n);
-    goalRing.setAttribute('stroke-dasharray', `${dash.toFixed(2)} ${gap}`);
-    goalRing.setAttribute('stroke-dashoffset', (dash + gap / 2).toFixed(2));
+    // Base (not-yet-met) state: N segments with real gaps, radius 90 — same as before.
+    // "Met" state: the segments close their gaps to 0 (touching/"connected") while the
+    // ring itself contracts inward to a smaller radius, as one continuous animation.
+    const baseR = 90, connectedR = 75;
+    const applyGoalRing = (r, g) => {
+      const circ = 2 * Math.PI * r;
+      const dash = Math.max(0.01, (circ - g * n) / n);
+      goalRing.setAttribute('r', r.toFixed(2));
+      goalRing.setAttribute('stroke-dasharray', `${dash.toFixed(2)} ${g}`);
+      goalRing.setAttribute('stroke-dashoffset', (dash + g / 2).toFixed(2));
+    };
+    const wasAchieved = goalRing.dataset.achieved === '1';
+    const wasInited = goalRing.dataset.inited === '1';
+    goalRing.dataset.achieved = goalAchieved ? '1' : '0';
+    goalRing.dataset.inited = '1';
+    if (wasInited && goalAchieved !== wasAchieved) {
+      const fromR = wasAchieved ? connectedR : baseR;
+      const toR = goalAchieved ? connectedR : baseR;
+      const fromGap = wasAchieved ? 0 : gap;
+      const toGap = goalAchieved ? 0 : gap;
+      const token = (goalRing._animToken = (goalRing._animToken || 0) + 1);
+      const dur = 600;
+      const t0 = performance.now();
+      goalRing.style.willChange = 'r, stroke-dasharray, stroke-dashoffset';
+      const step = (now) => {
+        if (goalRing._animToken !== token) return;
+        const p = Math.min(1, (now - t0) / dur);
+        const eased = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+        applyGoalRing(fromR + (toR - fromR) * eased, fromGap + (toGap - fromGap) * eased);
+        if (p < 1) requestAnimationFrame(step);
+        else { goalRing.style.willChange = ''; _applyAchievedColors(); }
+      };
+      requestAnimationFrame(step);
+    } else {
+      goalRing._animToken = (goalRing._animToken || 0) + 1; // cancel any in-flight animation
+      applyGoalRing(goalAchieved ? connectedR : baseR, goalAchieved ? 0 : gap);
+      _applyAchievedColors();
+    }
+  } else {
+    _applyAchievedColors();
   }
-  const ring = document.getElementById('today-progress-ring');
   if (ring) {
     const circ = 2 * Math.PI * 117.86;
-    const achieved = count >= target;
+    const achieved = goalAchieved;
     const targetOffset = (circ * (1 - Math.min(count / target, 1))).toFixed(2);
     ring.setAttribute('stroke-dasharray', circ.toFixed(2));
-    ring.style.stroke = achieved ? 'var(--accent)' : '#7ec8e3';
     if (withAnim) {
       const _doRingAnim = () => {
         const _btn = document.getElementById('today-coach-btn');
         if (_btn) { _btn.style.opacity = '0'; _btn.style.transform = 'translateY(24px)'; }
         ring.style.transition = 'none';
         ring.setAttribute('stroke-dashoffset', circ.toFixed(2));
+        // Hint the compositor about the properties actually about to animate, so the
+        // browser can promote them to their own layer ahead of time instead of doing
+        // that promotion mid-transition (a common source of the first-frame stutter
+        // this whole gate exists to avoid). Cleared once the sequence settles.
+        ring.style.willChange = 'stroke-dashoffset, stroke';
         requestAnimationFrame(() => requestAnimationFrame(() => {
           ring.style.transition = 'stroke-dashoffset .6s ease,stroke .4s ease';
           ring.setAttribute('stroke-dashoffset', targetOffset);
           setTimeout(() => {
+            ring.style.willChange = '';
             if (_showBadge && overflowEl) {
+              overflowEl.style.willChange = 'opacity, transform';
               overflowEl.style.transition = 'opacity .3s ease, transform .3s cubic-bezier(.175,.885,.32,1.275)';
               requestAnimationFrame(() => { overflowEl.style.opacity = '1'; overflowEl.style.transform = 'scale(1)'; });
-              setTimeout(_fireCoachBtn, 380);
+              setTimeout(() => { overflowEl.style.willChange = ''; _fireCoachBtn(); }, 380);
             } else {
               _fireCoachBtn();
             }
@@ -2940,7 +3013,11 @@ function renderTodayWeekProgress(withAnim) {
         ring.setAttribute('stroke-dashoffset', circ.toFixed(2));
         window._pendingCoachAnim = () => renderTodayWeekProgress(true);
       } else {
-        _doRingAnim();
+        // Deferred past paint/layout stabilization (and, where supported, an idle
+        // slice) rather than invoked synchronously — see _whenPaintStable — so this
+        // doesn't start competing with whatever startup/tab-switch work the main
+        // thread may still be finishing.
+        _whenPaintStable(_doRingAnim);
       }
     } else {
       ring.setAttribute('stroke-dashoffset', targetOffset);
@@ -2951,7 +3028,8 @@ function renderTodayWeekProgress(withAnim) {
 function _fireCoachBtn() {
   const btn = document.getElementById('today-coach-btn');
   if (!btn) return;
-  _springAnimate(btn, 24, 0, 300, 28);
+  btn.style.willChange = 'transform, opacity';
+  _springAnimate(btn, 24, 0, 300, 28, () => { btn.style.willChange = ''; });
   _fadeAnimate(btn, 0, 1, 320);
 }
 window.renderTodayWeekProgress = renderTodayWeekProgress;
@@ -2992,9 +3070,9 @@ function renderWeekStatus() {
   const labels = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
   wrap.innerHTML = days.map((d, i) => `
     <div class="week-status-day" data-completed="${d.completed ? '1' : '0'}" onclick="event.stopPropagation();selectWeekStatusDay(${i})" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:5px 0;border-radius:10px;cursor:pointer;-webkit-tap-highlight-color:transparent;">
-      <div class="wsd-circle" style="width:56px;height:${d.completed ? '72px' : '56px'};border-radius:${d.completed ? '28px' : '50%'};background:${d.completed ? '#38bdf8' : '#2a2a2a'};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;box-sizing:border-box;transition:background .2s;">
+      <div class="wsd-circle" style="width:46px;height:${d.completed ? '62px' : '46px'};border-radius:${d.completed ? '23px' : '50%'};background:${d.completed ? '#38bdf8' : '#2a2a2a'};border:2px solid transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;box-sizing:border-box;transition:background .2s,border-color .2s;">
         ${d.completed ? `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>` : ''}
-        <span class="wsd-label" style="font-family:'DM Sans';font-size:13px;font-weight:700;color:${d.completed ? '#000' : 'var(--muted)'};letter-spacing:.5px;">${labels[i]}</span>
+        <span class="wsd-label" style="font-family:'DM Sans';font-size:12px;font-weight:700;color:${d.completed ? '#000' : 'var(--muted)'};letter-spacing:.3px;">${labels[i]}</span>
       </div>
     </div>`).join('');
   const todayIdx = days.findIndex(d => d.isToday);
@@ -3009,16 +3087,12 @@ function selectWeekStatusDay(idx) {
   if (wrap) {
     wrap.querySelectorAll('.week-status-day').forEach((el, i) => {
       const isSel = i === idx;
-      const isCompleted = el.dataset.completed === '1';
       const circle = el.querySelector('.wsd-circle');
       if (circle) {
-        // Completed days stay a fixed cyan oval regardless of selection — only
-        // non-completed (plain circle) days reflect the current selection.
-        if (!isCompleted) {
-          circle.style.background = isSel ? '#38bdf8' : '#2a2a2a';
-          const label = el.querySelector('.wsd-label');
-          if (label) label.style.color = isSel ? '#000' : 'var(--muted)';
-        }
+        // Both completed and non-completed days keep their fixed fill/label color
+        // regardless of selection — selection only adds a bright grey edge around
+        // the shape.
+        circle.style.borderColor = isSel ? '#ccc' : 'transparent';
         if (isSel) {
           circle.style.animation = 'none';
           requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -3031,8 +3105,8 @@ function selectWeekStatusDay(idx) {
   const detail = document.getElementById('week-status-detail');
   if (!detail || !d) return;
   detail.textContent = d.completed ? d.name : 'No workout completed on this day';
-  detail.style.color = d.completed ? 'var(--text)' : '#999';
-  detail.style.fontSize = '15px';
+  detail.style.color = d.completed ? 'var(--accent)' : '#999';
+  detail.style.fontSize = '20px';
 }
 window.selectWeekStatusDay = selectWeekStatusDay;
 
@@ -21620,8 +21694,8 @@ function deleteCoachWorkout(id) {
   <div style="width:36px;height:4px;border-radius:2px;background:#444;margin:0 auto 18px;"></div>
   <div id="week-status-completed-count" style="font-family:'DM Sans';font-size:54px;font-weight:800;color:var(--text);text-align:center;line-height:1;margin-bottom:10px;"></div>
   <div style="font-family:'DM Sans';font-size:18px;font-weight:800;color:var(--text);text-align:center;margin-bottom:14px;letter-spacing:.3px;">COMPLETED WORKOUTS</div>
-  <div id="week-status-days" style="display:flex;justify-content:space-between;gap:2px;margin-bottom:6px;"></div>
-  <div id="week-status-detail" style="text-align:center;font-family:'DM Sans';font-size:13px;font-weight:600;color:var(--muted);min-height:18px;padding-bottom:30px;"></div>
+  <div id="week-status-detail" style="text-align:center;font-family:'DM Sans';font-size:20px;font-weight:600;color:var(--muted);min-height:18px;margin-bottom:20px;"></div>
+  <div id="week-status-days" style="display:flex;justify-content:space-between;gap:2px;padding-bottom:30px;"></div>
   <div style="border-top:1px solid #444;padding-bottom:69px;"></div>
   <div style="font-family:'DM Sans';font-size:18px;font-weight:800;color:var(--text);text-align:center;margin-bottom:18px;letter-spacing:.3px;">MY WEEKLY GOAL</div>
   <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:28px;">
