@@ -17021,33 +17021,11 @@ document.getElementById("installBtn").addEventListener("click", async () => {
 });
 </script>
 
-<!-- Service Worker Registration (disabled on localhost for dev) -->
-<script>
-if ('serviceWorker' in navigator && location.hostname !== '127.0.0.1' && location.hostname !== 'localhost') {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./service-worker.js', { scope: './' })
-      .then(reg => {
-        console.log('[SW] Registered, scope:', reg.scope);
-        reg.addEventListener('updatefound', () => {
-          const newWorker = reg.installing;
-          newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-    }
-          });
-        });
-      })
-      .catch(err => console.warn('[SW] Registration failed:', err));
-
-    // Auto-reload when SW sends SW_UPDATED message
-    navigator.serviceWorker.addEventListener('message', event => {
-      if (event.data?.type === 'SW_UPDATED') {
-        console.log('[SW] New version activated:', event.data.version, '— reloading');
-        window.location.reload();
-      }
-    });
-  });
-}
-</script>
+<!-- Service Worker Registration is handled by the single registration block below
+     (search "A NEW VERSION IS AVAILABLE" popup), which also owns the update-detection
+     listeners — having a second registration here duplicated updatefound listeners
+     and silently auto-reloaded the page, which raced with that popup and was
+     causing "new version available" to show more than once per deploy. -->
 
 <!-- CLIENT VIEWER -->
 <div id="clientViewerOverlay" style="display:none;position:fixed;inset:0;z-index:9100;background:#0a0a0a;overflow-y:auto;">
@@ -22071,10 +22049,10 @@ function deleteCoachWorkout(id) {
 </div>
 
 <script>
-    if ('serviceWorker' in navigator) {
+    if ('serviceWorker' in navigator && location.hostname !== '127.0.0.1' && location.hostname !== 'localhost') {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('./service-worker.js').then(reg => {
-                
+
                 // Check if an update is waiting
                 if (reg.waiting) {
                     showUpdateModal();
@@ -22095,6 +22073,13 @@ function deleteCoachWorkout(id) {
 
     // 2. Updated function to trigger the OVERLAY
     function showUpdateModal() {
+        // reg.waiting and the updatefound->'installed' listener above can both fire for
+        // the same update, and a "REFRESH NOW" reload can briefly still see the old
+        // worker as waiting before the new one takes over — without this guard each of
+        // those re-shows the same prompt again instead of it appearing exactly once.
+        if (window._updateModalShown || sessionStorage.getItem('ironlog_update_seen') === '1') return;
+        window._updateModalShown = true;
+        sessionStorage.setItem('ironlog_update_seen', '1');
         const overlay = document.getElementById('update-overlay');
         if (overlay) {
             overlay.classList.add('show');
