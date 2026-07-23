@@ -8425,7 +8425,13 @@ function updateTodayMuscleChips() {
   const _chipsBlock = document.getElementById('today-chips-block');
   const _chipsVisible = !(_anyCardOpen || _detailOpen);
   wrap.style.display = _chipsVisible ? 'flex' : 'none';
-  if (_chipsBlock) { _chipsBlock.style.display = _chipsVisible ? 'block' : 'none'; }
+  if (_chipsBlock) {
+    _chipsBlock.style.display = _chipsVisible ? 'block' : 'none';
+    // _repositionChips() (float-bar mode) can leave a stale inline height on
+    // this block; it must never carry over into the normal top-of-list view,
+    // or it opens an extra gap between the divider and the first exercise.
+    if (_chipsVisible) _chipsBlock.style.height = '0';
+  }
   const MUSCLE_ABBR = { Chest:'Chest', Back:'Back', Legs:'Legs', Shoulders:'Shldr', Arms:'Arms', Core:'Core', Mix:'Mix' };
   const allActive = !_todayMuscleFilter;
   const anyDone = true;
