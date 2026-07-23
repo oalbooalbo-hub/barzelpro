@@ -1725,7 +1725,7 @@ function hidAuthScreen() {
         <span id="newExPhotoLabel" style="font-family:'DM Sans';font-size:12px;color:#fff;font-weight:700;letter-spacing:.5px;cursor:pointer;" onclick="openNewExPhotoSheet()">Change Image <span style="color:#888;font-weight:500;">(optional)</span></span>
       </div>
       <!-- Name -->
-      <input id="newExInput" type="text" autocomplete="off" enterkeyhint="done" style="width:100%;background:#1a1a1a;border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans';font-size:16px;font-weight:600;padding:14px;box-sizing:border-box;outline:none;" placeholder="Exercise name" oninput="const _hb=/[\u0590-\u05FF]/.test(this.value);this.style.direction=_hb?'rtl':'ltr';this.style.textAlign=_hb?'right':'left';document.getElementById('newExDuplicateNote').style.display='none';this.style.borderColor='var(--border)';const _sb=document.getElementById('newExSaveBtn');const _has=!!this.value.trim();_sb.style.opacity=_has?'1':'0.35';_sb.style.cursor=_has?'pointer':'not-allowed';" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"/>
+      <input id="newExInput" type="text" autocomplete="off" enterkeyhint="done" style="width:100%;background:#1a1a1a;border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans';font-size:16px;font-weight:600;padding:14px;box-sizing:border-box;outline:none;" placeholder="Exercise name" oninput="const _hb=/[\u0590-\u05FF]/.test(this.value);this.style.direction=_hb?'rtl':'ltr';this.style.textAlign=_hb?'right':'left';document.getElementById('newExDuplicateNote').style.display='none';this.style.borderColor='var(--border)';const _sb=document.getElementById('newExSaveBtn');const _has=!!this.value.trim();_sb.style.opacity=_has?'1':'0.35';_sb.style.cursor=_has?'pointer':'not-allowed';" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onfocus="_newExFieldFocus(true)" onblur="_newExFieldFocus(false)"/>
       <div id="newExDuplicateNote" style="display:none;color:#ff8c42;font-family:'DM Sans';font-size:12px;font-weight:600;text-align:center;margin-top:-8px;">⚠ An exercise with this name already exists</div>
       <!-- Body part -->
       <div>
@@ -1757,7 +1757,7 @@ function hidAuthScreen() {
         <div style="margin-top:16px;">
           <div style="font-family:'DM Sans';font-size:15px;font-weight:700;color:#fff;letter-spacing:.5px;margin-bottom:8px;">Video Link <span style="color:#888;font-weight:500;">(optional)</span></div>
           <div style="background:#111;border:1px solid #444;border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:8px;">
-            <input id="newExVideoUrl" type="url" inputmode="url" placeholder="https://..." spellcheck="false" autocomplete="off" style="flex:1;background:transparent;border:none;outline:none;color:#fff;font-family:'DM Sans';font-size:14px;font-weight:400;caret-color:#34d399;-webkit-text-fill-color:#fff;box-sizing:border-box;min-width:0;" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"/>
+            <input id="newExVideoUrl" type="url" inputmode="url" placeholder="https://..." spellcheck="false" autocomplete="off" style="flex:1;background:transparent;border:none;outline:none;color:#fff;font-family:'DM Sans';font-size:14px;font-weight:400;caret-color:#34d399;-webkit-text-fill-color:#fff;box-sizing:border-box;min-width:0;" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onfocus="_newExFieldFocus(true)" onblur="_newExFieldFocus(false)"/>
             <button onclick="navigator.clipboard.readText().then(t=>{const i=document.getElementById('newExVideoUrl');if(i)i.value=t;}).catch(()=>{})" style="background:transparent;border:none;padding:2px;cursor:pointer;flex-shrink:0;-webkit-tap-highlight-color:transparent;display:flex;align-items:center;">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
@@ -1769,7 +1769,7 @@ function hidAuthScreen() {
       </div>
     </div>
   <!-- Fixed save button -->
-  <div style="position:fixed;bottom:0;left:0;right:0;padding:12px 8px calc(12px + env(safe-area-inset-bottom));background:var(--surface);border-top:1px solid var(--border);z-index:10;max-width:calc(100vw);box-sizing:border-box;display:flex;gap:10px;">
+  <div id="newExBottomBar" style="position:fixed;bottom:0;left:0;right:0;padding:12px 8px calc(12px + env(safe-area-inset-bottom));background:var(--surface);border-top:1px solid var(--border);z-index:10;max-width:calc(100vw);box-sizing:border-box;display:flex;gap:10px;">
     <button onclick="closeNewExModal()" style="flex:0 0 auto;padding:16px 22px;background:transparent;color:var(--muted);border:1px solid #333;border-radius:10px;font-family:'DM Sans';font-size:16px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;">Cancel</button>
     <button id="newExSaveBtn" onclick="confirmNewEx()" style="flex:1;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:16px;font-weight:900;padding:16px;cursor:not-allowed;opacity:0.35;-webkit-tap-highlight-color:transparent;">SAVE EXERCISE</button>
   </div>
@@ -3709,20 +3709,68 @@ function _nwfFieldFocus(titleId, boxId, on) {
   if (title) title.style.color = on ? 'var(--accent)' : '#fff';
   if (box) box.style.borderColor = on ? 'var(--accent)' : '#444';
 
-  const btns = document.getElementById('nwf-bottom-btns');
-  if (!btns) return;
+  // Same "Done" bar pinned above the keyboard as note-editing (showNoteToolbar/
+  // hideNoteToolbar) — these fields have no float bar of their own to hide, so
+  // this function owns showing/hiding the kbd bar directly instead of delegating.
+  const kbdBar = document.getElementById('note-kbd-done-bar');
+  if (on && kbdBar) {
+    kbdBar.style.display = 'flex';
+    _positionNoteKbdBar();
+    window.visualViewport?.addEventListener('resize', _positionNoteKbdBar);
+    window.visualViewport?.addEventListener('scroll', _positionNoteKbdBar);
+  }
+
   if (on) {
-    btns.style.display = 'none';
+    const btns = document.getElementById('nwf-bottom-btns');
+    if (btns) btns.style.display = 'none';
   } else {
     // Defer so a blur immediately followed by another field's focus (e.g.
-    // tabbing between fields) doesn't flash the buttons back on in between.
+    // tabbing between fields) doesn't flash the bar/buttons back on in between.
     setTimeout(() => {
       const stillEditing = _NWF_FIELD_IDS.includes(document.activeElement?.id);
-      if (!stillEditing) btns.style.display = 'flex';
+      if (stillEditing) return;
+      if (kbdBar) {
+        kbdBar.style.display = 'none';
+        window.visualViewport?.removeEventListener('resize', _positionNoteKbdBar);
+        window.visualViewport?.removeEventListener('scroll', _positionNoteKbdBar);
+      }
+      const btns = document.getElementById('nwf-bottom-btns');
+      if (btns) btns.style.display = 'flex';
     }, 0);
   }
 }
 window._nwfFieldFocus = _nwfFieldFocus;
+const _NEWEX_FIELD_IDS = ['newExInput', 'newExVideoUrl'];
+function _newExFieldFocus(on) {
+  const bar = document.getElementById('newExBottomBar');
+  // Same "Done" bar pinned above the keyboard as note-editing and the new-workout
+  // name page (showNoteToolbar/_nwfFieldFocus) — owned directly here since these
+  // fields have no float bar of their own.
+  const kbdBar = document.getElementById('note-kbd-done-bar');
+  if (on && kbdBar) {
+    kbdBar.style.display = 'flex';
+    _positionNoteKbdBar();
+    window.visualViewport?.addEventListener('resize', _positionNoteKbdBar);
+    window.visualViewport?.addEventListener('scroll', _positionNoteKbdBar);
+  }
+  if (on) {
+    if (bar) bar.style.display = 'none';
+  } else {
+    // Defer so a blur immediately followed by the other field's focus (e.g.
+    // tabbing between name and video link) doesn't flash the bar back on.
+    setTimeout(() => {
+      const stillEditing = _NEWEX_FIELD_IDS.includes(document.activeElement?.id);
+      if (stillEditing) return;
+      if (kbdBar) {
+        kbdBar.style.display = 'none';
+        window.visualViewport?.removeEventListener('resize', _positionNoteKbdBar);
+        window.visualViewport?.removeEventListener('scroll', _positionNoteKbdBar);
+      }
+      if (bar) bar.style.display = 'flex';
+    }, 0);
+  }
+}
+window._newExFieldFocus = _newExFieldFocus;
 function _openNwfNamePage() {
   const nameEl = document.getElementById('nwf-hero-name');
   const cur = (document.getElementById('workoutName')?.value || '').trim();
@@ -4074,7 +4122,7 @@ function _setWorkoutHeroPhoto(name) {
       </div>
     </div>
     ${window._isNewWorkoutFlow ? '' : `<div style="display:flex;align-items:flex-end;padding:8px 10px 4px;gap:8px;position:relative;">
-      <button onclick="finishWorkout()" style="background:var(--accent);border:none;border-radius:8px;padding:7px 0;width:76px;cursor:pointer;-webkit-tap-highlight-color:transparent;display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;">
+      <button id="workout-finish-btn" onclick="finishWorkout()" style="background:var(--accent);border:none;border-radius:8px;padding:7px 0;width:76px;cursor:pointer;-webkit-tap-highlight-color:transparent;display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;">
         <span style="color:#000;font-family:'DM Sans';font-size:13px;font-weight:900;letter-spacing:.5px;">FINISH</span>
         <span style="color:#000;font-family:'DM Sans';font-size:10px;font-weight:700;letter-spacing:.3px;">WORKOUT</span>
       </button>
@@ -6396,7 +6444,7 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
   const progXAxisRow = document.createElement('div');
   progXAxisRow.style.cssText = 'position:relative;display:flex;align-items:center;justify-content:flex-end;min-height:24px;padding:6px 14px 2px;';
   const progScrubWrap = document.createElement('div');
-  progScrubWrap.style.cssText = 'display:none;padding:0 14px;margin-top:-5px;';
+  progScrubWrap.style.cssText = 'display:none;padding:0 14px;margin-top:15px;';
   const _chevSvg = `<svg style="vertical-align:middle;margin-left:3px;" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
   const periodWrap = document.createElement('div');
   periodWrap.style.cssText = 'position:relative;';
@@ -6560,7 +6608,7 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
     progCanvas._chartInst = new Chart(progCanvas.getContext('2d'), {
       type:'line',
       data:{labels:pts.map(p=>p.date),datasets:[{data:pts.map(p=>p.val),borderColor:line,backgroundColor:fill,pointBackgroundColor:line,tension:0,fill:true,borderWidth:1.5,pointRadius:2}]},
-      options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:20,left:41}},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{ticks:{display:false},grid:{display:false}},y:{ticks:{display:false},grid:{color:'#1e1e1e'}}}},
+      options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:20,left:41,right:14}},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{ticks:{display:false},grid:{display:false}},y:{ticks:{display:false},grid:{color:'#1e1e1e'}}}},
       plugins:[{id:'yminmax',afterDraw(chart){
         const ctx=chart.ctx,yS=chart.scales.y;
         ctx.save();ctx.fillStyle='#aaa';ctx.font="700 12px 'DM Sans',sans-serif";ctx.textAlign='right';ctx.textBaseline='middle';
@@ -11079,6 +11127,29 @@ function _positionNoteKbdBar() {
   bar.style.bottom = gap + 'px';
 }
 function showNoteToolbar(id) {
+  // Hide/shade the same page-level chrome (muscle chips, today-actions, add-ex
+  // row, workout name bar, float bar, other cards) as the KG inline editor does
+  // while its keyboard is up — called first so it captures each element's true
+  // pre-edit state before anything below touches them.
+  _kgEditorFocusEnter(id, { skipCardInternals: true });
+  // Same treatment the KG editor gives a card's own sets — can't mark a set (or
+  // the whole exercise) done while mid-edit. Reuses .kg-editor-active, which
+  // already fades out .set-done-btn (see CSS), rather than a parallel rule.
+  const _noteCard = document.getElementById(id);
+  if (_noteCard) {
+    _noteCard.classList.add('kg-editor-active');
+    _noteCard.querySelectorAll('.btn-done, .cancel-done-btn').forEach(el => {
+      if (el.dataset.noteHide === undefined) el.dataset.noteHide = el.style.display || '';
+      el.style.display = 'none';
+    });
+  }
+  // Can't finish the workout out from under a note that's mid-edit.
+  const _finishBtn = document.getElementById('workout-finish-btn');
+  if (_finishBtn) { _finishBtn.disabled = true; _finishBtn.style.opacity = '0.4'; _finishBtn.style.pointerEvents = 'none'; }
+  // Detail-overlay header (back/"..." nav hidden, FINISH EXERCISE grayed out at
+  // opacity 0.3) — reuse .ex-editor-open verbatim instead of duplicating its
+  // rules (index.html:124-126), so note mode looks pixel-identical to KG-edit mode.
+  document.body.classList.add('ex-editor-open');
   // Highlight note border with accent
   const textarea = document.getElementById(`comment-${id}`);
   textarea?.closest('.comment-area')?.classList.add('note-active');
@@ -11119,9 +11190,24 @@ function hideNoteToolbar() {
       // Reset note float button color
       const noteBtn = document.getElementById('ex-float-note');
       if (noteBtn) noteBtn.classList.remove('active');
+      // Restore mark-done ability on this card
+      const _noteCard = document.getElementById(id);
+      if (_noteCard) {
+        _noteCard.classList.remove('kg-editor-active');
+        _noteCard.querySelectorAll('[data-note-hide]').forEach(el => {
+          el.style.display = el.dataset.noteHide;
+          delete el.dataset.noteHide;
+        });
+      }
     }
+    // Re-enable finishing the workout
+    const _finishBtn = document.getElementById('workout-finish-btn');
+    if (_finishBtn) { _finishBtn.disabled = false; _finishBtn.style.opacity = ''; _finishBtn.style.pointerEvents = ''; }
+    document.body.classList.remove('ex-editor-open');
     window._noteEditingId = null;
     document.body.classList.remove('ex-note-editing');
+    // Restore the chrome that showNoteToolbar's _kgEditorFocusEnter hid/shaded.
+    _kgEditorFocusLeave();
     const kbdBar = document.getElementById('note-kbd-done-bar');
     if (kbdBar) kbdBar.style.display = 'none';
     window.visualViewport?.removeEventListener('resize', _positionNoteKbdBar);
@@ -21793,12 +21879,12 @@ function deleteCoachWorkout(id) {
   <div class="ex-detail-bottom-blocker" style="position:absolute;bottom:0;left:0;right:0;height:calc(100px + env(safe-area-inset-bottom));background:var(--bg);pointer-events:none;z-index:1;"></div>
 </div>
 
-<!-- Note keyboard "Done" bar — sits just above the on-screen keyboard while a
-     .comment-box textarea is focused (see showNoteToolbar/hideNoteToolbar). Text is
-     already autosaved live via the textarea's own oninput handler, so Done only
-     needs to close the keyboard. -->
-<div id="note-kbd-done-bar" style="display:none;position:fixed;left:0;right:0;bottom:0;max-width:430px;margin:0 auto;z-index:9500;background:#1a1a1a;border-top:1px solid #2a2a2a;box-sizing:border-box;justify-content:flex-end;">
-  <button onclick="document.activeElement?.classList.contains('comment-box')&&document.activeElement.blur();" style="background:transparent;border:none;color:var(--accent);font-family:'DM Sans';font-size:16px;font-weight:700;padding:12px 18px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Done</button>
+<!-- Keyboard "Done" bar — sits just above the on-screen keyboard while a note
+     .comment-box (see showNoteToolbar/hideNoteToolbar) or an nwf-name-page field
+     (see _nwfFieldFocus) is focused. All of these autosave live via their own
+     oninput handlers, so Done only ever needs to close the keyboard. -->
+<div id="note-kbd-done-bar" style="display:none;position:fixed;left:0;right:0;bottom:0;max-width:430px;margin:0 auto;z-index:9500;background:#1a1a1a;border-top:1px solid #2a2a2a;box-sizing:border-box;justify-content:flex-end;align-items:center;padding:8px 12px;">
+  <button onclick="document.activeElement?.blur();" style="background:var(--accent);border:none;border-radius:20px;color:#000;font-family:'DM Sans';font-size:15px;font-weight:900;padding:9px 20px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Done</button>
 </div>
 
 <!-- KG / Reps editor sheet — body-level so position:fixed works outside any stacking context -->
@@ -23237,7 +23323,7 @@ function _kgFocusAnimShow(el, displayVal) {
   el._kgFocusShowEnd = _onEnd;
   el.addEventListener('animationend', _onEnd);
 }
-function _kgEditorFocusEnter(exId) {
+function _kgEditorFocusEnter(exId, opts = {}) {
   const _chips0 = document.getElementById('todayMuscleChipsWrap');
   const _ta0 = document.querySelector('.today-actions');
   const _wnb0 = document.getElementById('workoutNameBar');
@@ -23307,6 +23393,10 @@ _kgFocusAnimHide(_chips);
   // Dim all other exercise cards, hide other sets within the active card
   document.querySelectorAll('#exerciseList .exercise-card').forEach(card => {
     if (card.id === exId) {
+      // Note editing has no single "row being edited" to preserve like the KG/reps
+      // editors do — the active card should stay exactly as-is (sets, note box and
+      // all) while only the page-level chrome around it hides/dims.
+      if (opts.skipCardInternals) return;
       // Find the edited set-row and its paired editor row
       const _editedSetRow = window._kgEditorInput?.closest('tr.set-row');
       const _editedEditorRow = _editedSetRow?.nextElementSibling;
