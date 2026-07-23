@@ -4165,7 +4165,15 @@ window._updateWorkoutProgress = _updateWorkoutProgress;
 function _syncWorkoutHeaderSpacer() {
   const hdr = document.getElementById('workout-sticky-header');
   const spacer = document.getElementById('workout-header-spacer');
-  if (hdr && spacer) spacer.style.height = hdr.offsetHeight + 'px';
+  if (hdr && spacer) {
+    // hdr is position:fixed to the true device top, but body's own
+    // padding-top:env(safe-area-inset-top) pushes the spacer (normal flow)
+    // down by that same inset — subtract it so the spacer only reserves the
+    // header's actual on-screen height, or a gap opens below the header on
+    // any device with a nonzero safe-area-inset-top (notch/status bar).
+    const safeTop = parseFloat(getComputedStyle(document.body).paddingTop) || 0;
+    spacer.style.height = Math.max(0, hdr.offsetHeight - safeTop) + 'px';
+  }
 }
 window._syncWorkoutHeaderSpacer = _syncWorkoutHeaderSpacer;
 (function() {
