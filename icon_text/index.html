@@ -8385,6 +8385,8 @@ function updateTodayMuscleChips() {
     // Ensure the ADD EXERCISE button scrolls clear of the bottom bar
     const _nl = document.getElementById('ex-nav-list');
     if (_nl) _nl.style.paddingBottom = '120px';
+    _syncWorkoutHeaderSpacer();
+    requestAnimationFrame(_syncWorkoutHeaderSpacer);
     return;
   }
   // Not in new-workout flow — hide the bottom bar if visible
@@ -8456,6 +8458,12 @@ function updateTodayMuscleChips() {
     scrollEl.scrollLeft = _savedScrollLeft;
     window._todayChipsScrollPos = scrollEl.scrollLeft;
   }
+  // Chips wrap sits inside the fixed sticky header — its height just changed,
+  // so the spacer that reserves space for it below must catch up immediately
+  // (ResizeObserver alone can lag a frame and show as a gap/overlap until
+  // something else nudges it — same class of bug as _setWorkoutHeroPhoto).
+  _syncWorkoutHeaderSpacer();
+  requestAnimationFrame(_syncWorkoutHeaderSpacer);
 }
 
 function refreshOrderNums() {
