@@ -1312,6 +1312,14 @@ function hidAuthScreen() {
       </div>
     </div>
     <div id="workout-header-spacer" style="height:0;flex-shrink:0;"></div>
+    <!-- In-place "description + muscles" panel — shown when tapping the hero
+         image (see _openTodayInfoPanel/_closeTodayInfoPanel). Reuses the same
+         #w2-sheet-description/#w2-sheet-muscles-title/#w2-sheet-body-wrap nodes
+         the W2 sheet uses (moved in, not duplicated) so there's no SVG id clash. -->
+    <div id="today-info-panel" style="display:none;opacity:0;transform:translateY(10px);transition:opacity .25s ease,transform .25s ease;padding-bottom:24px;"></div>
+    <div id="today-info-close-bar" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;padding:12px 20px calc(20px + env(safe-area-inset-bottom));background:#111;border-top:1px solid #1e1e1e;z-index:200;box-sizing:border-box;">
+      <button onclick="_closeTodayInfoPanel()" style="width:100%;padding:18px;background:transparent;color:var(--muted);border:1px solid #333;border-radius:100px;font-family:'DM Sans';font-size:16px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;">CLOSE</button>
+    </div>
     <div class="today-actions" style="margin:0;padding:0;">
       <button class="btn-clear-workout" onclick="clearSession()" style="display:none;"></button>
       <button class="btn-load-history" onclick="window._loadFromToday=true;switchTab('workouts2')" style="display:none;"></button>
@@ -4088,11 +4096,100 @@ function _selfTestW2SubMuscleMapping() {
 }
 window._selfTestW2SubMuscleMapping = _selfTestW2SubMuscleMapping;
 function _openWorkoutHeroMenu() {
+  if (window._todayInfoPanelOpen) { _closeTodayInfoPanel(); return; }
   const _n = document.getElementById('workout-hero-name')?.dataset?.name || '';
   const _i = (typeof workouts !== 'undefined' ? workouts : []).findIndex(w => w.name === _n);
-  if (_i >= 0) { window._w2FromSession = true; openW2Sheet(_i); }
+  if (_i >= 0) _openTodayInfoPanel(workouts[_i]);
 }
 window._openWorkoutHeroMenu = _openWorkoutHeroMenu;
+
+// Tapping the Today hero photo used to open the full W2 sheet (its own separate
+// photo sliding up over the screen — reads as a new page). This instead hides
+// the muscle chips/exercise list in place, directly below the SAME photo
+// element, and drops in the description + body-diagram — moving (not copying)
+// the singleton #w2-sheet-description/#w2-sheet-muscles-title/#w2-sheet-body-wrap
+// nodes so there's no duplicate-SVG-id conflict with the real W2 sheet.
+function _openTodayInfoPanel(w) {
+  if (!w || window._todayInfoPanelOpen) return;
+  window._todayInfoPanelOpen = true;
+  _renderW2MusclesInto(w);
+
+  const panel = document.getElementById('today-info-panel');
+  const closeBar = document.getElementById('today-info-close-bar');
+  const descEl = document.getElementById('w2-sheet-description');
+  const titleEl = document.getElementById('w2-sheet-muscles-title');
+  const bodyWrapEl = document.getElementById('w2-sheet-body-wrap');
+  if (!panel || !descEl || !titleEl || !bodyWrapEl) return;
+  panel.appendChild(descEl);
+  panel.appendChild(titleEl);
+  panel.appendChild(bodyWrapEl);
+
+  const chipsWrap = document.getElementById('todayMuscleChipsWrap');
+  const chipsBlock = document.getElementById('today-chips-block');
+  const exSlider = document.getElementById('ex-nav-slider');
+  if (chipsWrap) chipsWrap.style.display = 'none';
+  if (chipsBlock) chipsBlock.style.display = 'none';
+  if (exSlider) exSlider.style.display = 'none';
+
+  // Finish/PR-stars line, the close "X", and the "..." menu all belong to the
+  // normal hero header — none of them make sense while this panel is open.
+  // The exercise-count number between Finish and the stars is absolutely
+  // positioned (bottom:4px) against this same row, so display:none on Finish/
+  // PR-stars would shrink the row's height and shift that count upward —
+  // visibility:hidden keeps their box space reserved instead.
+  ['workout-finish-btn', 'workout-pr-stars'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.visibility = 'hidden';
+  });
+  ['workout-hero-close-btn', 'workout-hero-menu-btn'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+
+  panel.style.display = 'block';
+  if (closeBar) closeBar.style.display = 'block';
+  void panel.offsetHeight;
+  panel.style.opacity = '1';
+  panel.style.transform = 'translateY(0)';
+}
+window._openTodayInfoPanel = _openTodayInfoPanel;
+
+function _closeTodayInfoPanel() {
+  if (!window._todayInfoPanelOpen) return;
+  window._todayInfoPanelOpen = false;
+  const panel = document.getElementById('today-info-panel');
+  const closeBar = document.getElementById('today-info-close-bar');
+  if (panel) { panel.style.opacity = '0'; panel.style.transform = 'translateY(10px)'; }
+  if (closeBar) closeBar.style.display = 'none';
+  ['workout-finish-btn', 'workout-pr-stars'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.visibility = '';
+  });
+  ['workout-hero-close-btn', 'workout-hero-menu-btn'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'flex';
+  });
+
+  setTimeout(() => {
+    // Move the shared nodes back to their original spot in the (untouched) W2
+    // sheet markup so opening it normally still renders correctly.
+    const descEl = document.getElementById('w2-sheet-description');
+    const titleEl = document.getElementById('w2-sheet-muscles-title');
+    const bodyWrapEl = document.getElementById('w2-sheet-body-wrap');
+    const scrollArea = document.getElementById('w2-scroll-area');
+    const grad = document.getElementById('w2-list-gradient');
+    if (descEl && scrollArea) scrollArea.parentNode.insertBefore(descEl, scrollArea);
+    if (titleEl && grad) grad.parentNode.insertBefore(titleEl, grad);
+    if (bodyWrapEl && grad) grad.parentNode.insertBefore(bodyWrapEl, grad);
+    if (panel) panel.style.display = 'none';
+    // Bring the list/chips back only once the panel has fully faded out, so
+    // they don't visually overlap the panel mid-transition.
+    const exSlider = document.getElementById('ex-nav-slider');
+    if (exSlider) exSlider.style.display = '';
+    if (typeof updateTodayMuscleChips === 'function') updateTodayMuscleChips();
+  }, 250);
+}
+window._closeTodayInfoPanel = _closeTodayInfoPanel;
 function _setWorkoutHeroPhoto(name) {
   const el = document.getElementById('workout-hero-photo');
   if (!el) return;
@@ -4102,7 +4199,7 @@ function _setWorkoutHeroPhoto(name) {
     const ps = document.getElementById('workout-progress-section');
     if (ps && !window._isNewWorkoutFlow) { ps.style.display = 'block'; _updateWorkoutProgress(); }
     el.innerHTML = `${!window._isNewWorkoutFlow ? `<div id="workout-above-elapsed" style="display:none;align-items:center;gap:5px;padding:0 16px 8px;justify-content:center;position:relative;">
-      <button onclick="openWorkoutMenu(event)" style="position:absolute;left:16px;background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
+      <button id="workout-hero-menu-btn" onclick="openWorkoutMenu(event)" style="position:absolute;left:16px;background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="#888"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
       </button>
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
@@ -6521,7 +6618,7 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
   // here — only the selected-day date label stays on the chart's x-axis row.
   progXAxisRow.appendChild(selectedDayEl);
   const chartCard = document.createElement('div');
-  chartCard.style.cssText = 'background:#161616;border-radius:14px;padding:12px 0 10px;margin-top:8px;';
+  chartCard.style.cssText = 'background:#161616;border-radius:14px;padding:12px 0 25px;margin-top:8px;';
   chartCard.appendChild(progBigVal);
   chartCard.appendChild(progNoData);
   chartCard.appendChild(progCanvasWrap);
@@ -6823,8 +6920,8 @@ function _toggleExDetailStats() {
 
   // Title row: "PROGRESS"/"YOUR BEST" stays centered on screen (plain centered block,
   // full width) while the selected-period button ("1 Year" etc.) sits on the same
-  // line, pinned to the right via position:absolute so it doesn't shift the title
-  // off-center.
+  // line, pinned to the left via position:absolute so it doesn't shift the title
+  // off-center (and stays clear of the close "X" button in the opposite corner).
   const titleRow = document.createElement('div');
   titleRow.style.cssText = 'position:relative;';
   const title = document.createElement('div');
@@ -6833,7 +6930,7 @@ function _toggleExDetailStats() {
   titleRow.appendChild(title);
   const { dots, panesContainer, periodWrap } = _buildExDetailStatsCarousel(exDef, exName, title);
   periodWrap.style.position  = 'absolute';
-  periodWrap.style.right     = '10px';
+  periodWrap.style.left      = '10px';
   periodWrap.style.top       = '50%';
   periodWrap.style.transform = 'translateY(-50%)';
   // z-index alone on periodDropdown wasn't enough: without an explicit z-index here
@@ -6843,6 +6940,15 @@ function _toggleExDetailStats() {
   periodWrap.style.zIndex = '30';
   titleRow.appendChild(periodWrap);
   statsBox.appendChild(titleRow);
+  // Round "X" close button (top-right corner) — same .modal-close style as the
+  // calendar overlay's close button — so Stats can be dismissed without hunting
+  // for the float-bar Stats button again.
+  const statsBoxClose = document.createElement('button');
+  statsBoxClose.className = 'modal-close';
+  statsBoxClose.style.cssText = 'position:absolute;top:8px;right:8px;';
+  statsBoxClose.textContent = '✕';
+  statsBoxClose.onclick = () => _toggleExDetailStats();
+  statsBox.appendChild(statsBoxClose);
   statsBox.appendChild(panesContainer);
   section.appendChild(statsBox);
 
@@ -21601,9 +21707,9 @@ function deleteCoachWorkout(id) {
   <!-- Divider before body diagram -->
   <div style="height:1px;background:#444;margin:10px 20px 0;"></div>
   </div>
-  <div style="padding:8px 20px 0;"><span style="font-family:'DM Sans';font-size:12px;font-weight:700;color:#888;letter-spacing:.8px;">MUSCLES</span></div>
+  <div id="w2-sheet-muscles-title" style="padding:8px 20px 0;"><span style="font-family:'DM Sans';font-size:12px;font-weight:700;color:#888;letter-spacing:.8px;">MUSCLES</span></div>
   <!-- Body diagram -->
-  <div style="display:block;width:100%;box-sizing:border-box;padding:4px 16px calc(140px + env(safe-area-inset-bottom));margin-top:-25px;overflow:visible;position:relative;">
+  <div id="w2-sheet-body-wrap" style="display:block;width:100%;box-sizing:border-box;padding:4px 16px calc(140px + env(safe-area-inset-bottom));margin-top:-25px;overflow:visible;position:relative;">
 <div style="display:flex;gap:18px;width:100%;box-sizing:border-box;transform:translateZ(0);backface-visibility:hidden;" id="w2-body-container">
       <div style="flex:1;min-width:0;overflow:hidden;transform:translateZ(0);backface-visibility:hidden;"><svg viewBox="-170 -160 820 1510" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;transform:translateZ(0);backface-visibility:hidden;">
 <defs>
@@ -23374,8 +23480,12 @@ _kgFocusAnimHide(_chips);
     addExRow.dataset.kgHide = addExRow.dataset.kgOrigDisplay;
     _kgFocusAnimHide(addExRow);
   }
-  // Hide float bar — save _exFloatCardId so we can restore it
-  const floatBar = document.getElementById('ex-float-bar');
+  // Hide float bar — save _exFloatCardId so we can restore it. Note mode
+  // (skipCardInternals) handles the float bar itself in showNoteToolbar/
+  // hideNoteToolbar, whose restore already correctly no-ops if _exFloatCardId
+  // gets cleared while the keyboard is open — skip this duplicate hide/restore
+  // here or it clobbers that check by restoring a stale enter-time snapshot.
+  const floatBar = opts.skipCardInternals ? null : document.getElementById('ex-float-bar');
   if (floatBar) {
     // Only save kgHide once — a second _kgEditorFocusEnter call (switching between
     // set editors) must not overwrite the original 'flex' with 'none'.
@@ -25443,42 +25553,12 @@ function _w2BuildExerciseList(workout) {
   el.innerHTML = html;
 }
 
-function openW2Sheet(idx) {
-  const w = workouts[idx];
-  if (!w) return;
-  window._w2SheetIdx = idx;
-  window._w2SheetExpanded = false;
-  const _et = document.getElementById('_nwf-edit-title');
-  if (_et) _et.style.display = 'none';
-
-  const _nameEl = document.getElementById('w2-sheet-name');
-  if (_nameEl) {
-    _nameEl.innerHTML = _heroNameHtml(w.name || 'Workout');
-    _nameEl.style.direction = _heroNameDir(w.name || '');
-    _nameEl.style.cursor = window._editingWorkoutIdx != null ? 'pointer' : 'default';
-  }
-
-  const _photoWrap = document.getElementById('w2-sheet-photo-wrap');
-  const _photoImg  = document.getElementById('w2-sheet-photo');
-  const _wPhoto = _getWorkoutPhoto(w.name);
-  if (_photoWrap) {
-    if (_wPhoto && _photoImg) { _photoImg.src = _wPhoto; _photoImg.style.display = 'block'; }
-    else if (_photoImg) _photoImg.style.display = 'none';
-    _photoWrap.style.display = 'block';
-  }
-
-  const _playBtn = document.getElementById('w2-sheet-play-btn');
-  if (_playBtn) {
-    const _videoUrl = localStorage.getItem(`ironlog_workout_video_${w.name}`);
-    if (_videoUrl) {
-      _playBtn.style.display = 'flex';
-      _playBtn.onclick = (e) => { e.stopPropagation(); window.open(_videoUrl, '_blank'); };
-    } else {
-      _playBtn.style.display = 'none';
-      _playBtn.onclick = null;
-    }
-  }
-
+// Populates the (singleton, relocatable) description/tags/body-diagram elements
+// for a given workout. Operates purely by element id, so it works identically
+// whether those elements currently live inside #w2-sheet or have been moved
+// into #today-info-panel (see _openTodayInfoPanel) — getElementById doesn't
+// care which parent a node is attached to.
+function _renderW2MusclesInto(w) {
   const _descEl = document.getElementById('w2-sheet-description');
   if (_descEl) {
     const _desc = (w.description || '').trim();
@@ -25603,6 +25683,46 @@ function openW2Sheet(idx) {
     const color = W2_MUSCLE_COLORS[m] || '#888';
     return `<span style="font-size:13px;font-weight:700;color:${color};">${m}</span>`;
   }).join('');
+}
+window._renderW2MusclesInto = _renderW2MusclesInto;
+
+function openW2Sheet(idx) {
+  const w = workouts[idx];
+  if (!w) return;
+  window._w2SheetIdx = idx;
+  window._w2SheetExpanded = false;
+  const _et = document.getElementById('_nwf-edit-title');
+  if (_et) _et.style.display = 'none';
+
+  const _nameEl = document.getElementById('w2-sheet-name');
+  if (_nameEl) {
+    _nameEl.innerHTML = _heroNameHtml(w.name || 'Workout');
+    _nameEl.style.direction = _heroNameDir(w.name || '');
+    _nameEl.style.cursor = window._editingWorkoutIdx != null ? 'pointer' : 'default';
+  }
+
+  const _photoWrap = document.getElementById('w2-sheet-photo-wrap');
+  const _photoImg  = document.getElementById('w2-sheet-photo');
+  const _wPhoto = _getWorkoutPhoto(w.name);
+  if (_photoWrap) {
+    if (_wPhoto && _photoImg) { _photoImg.src = _wPhoto; _photoImg.style.display = 'block'; }
+    else if (_photoImg) _photoImg.style.display = 'none';
+    _photoWrap.style.display = 'block';
+  }
+
+  const _playBtn = document.getElementById('w2-sheet-play-btn');
+  if (_playBtn) {
+    const _videoUrl = localStorage.getItem(`ironlog_workout_video_${w.name}`);
+    if (_videoUrl) {
+      _playBtn.style.display = 'flex';
+      _playBtn.onclick = (e) => { e.stopPropagation(); window.open(_videoUrl, '_blank'); };
+    } else {
+      _playBtn.style.display = 'none';
+      _playBtn.onclick = null;
+    }
+  }
+
+  _renderW2MusclesInto(w);
 
   // Build exercise list
   _w2BuildExerciseList(w);
