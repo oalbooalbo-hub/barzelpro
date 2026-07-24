@@ -188,7 +188,7 @@ body.desktop-mode .pages-wrap {
 #ex-float-bar button.active .ex-float-icon{transform:scale(1.45);color:var(--accent);}
 #ex-float-bar button.active .ex-float-label{max-height:0;margin-top:0;opacity:0;}
 @keyframes timerDotBlink{0%,100%{opacity:1;}50%{opacity:0;}}
-.timer-float-dot{position:absolute;top:4px;right:4px;width:7px;height:7px;border-radius:50%;display:none;pointer-events:none;}
+.timer-float-dot{position:absolute;top:9px;right:4px;width:7px;height:7px;border-radius:50%;display:none;pointer-events:none;}
 .timer-float-dot.running{display:block;background:var(--accent);animation:timerDotBlink 1s ease-in-out infinite;}
 .timer-float-dot.ended{display:block;background:#ff4747;animation:none;}
 #ex-float-bar button:hover,#ex-float-bar button.active{color:var(--accent);}
@@ -1240,7 +1240,7 @@ function hidAuthScreen() {
       <div style="position:relative;width:300px;height:300px;">
         <svg width="300" height="300" viewBox="0 0 300 300" style="display:block;">
           <circle cx="150" cy="150" r="117.86" fill="none" stroke="#1e1e1e" stroke-width="25.71"/>
-          <circle id="today-progress-ring" cx="150" cy="150" r="117.86" fill="none" stroke="#7ec8e3" stroke-opacity="0.55" stroke-width="25.71" stroke-linecap="round" stroke-dasharray="740.52" stroke-dashoffset="740.52" transform="rotate(-90 150 150)" style="transition:stroke-dashoffset .6s ease,stroke .4s ease,stroke-opacity .4s ease;"/>
+          <circle id="today-progress-ring" cx="150" cy="150" r="117.86" fill="none" stroke="#999" stroke-opacity="0.55" stroke-width="25.71" stroke-linecap="round" stroke-dasharray="740.52" stroke-dashoffset="740.52" transform="rotate(-90 150 150)" style="transition:stroke-dashoffset .6s ease,stroke .4s ease,stroke-opacity .4s ease;"/>
           <g id="today-progress-goal-ring" transform="rotate(-90 150 150)"></g>
         </svg>
         <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;">
@@ -2911,7 +2911,7 @@ function _resetWeekProgressForReplay() {
   if (goalRing.dataset.achieved === '1') goalRing.dataset.achieved = '0';
   const segs = goalRing.querySelectorAll('circle');
   segs.forEach(seg => { seg.style.transition = 'none'; seg.style.stroke = '#999'; seg.style.strokeOpacity = '0.55'; });
-  if (ring) { ring.style.transition = 'none'; ring.style.stroke = '#7ec8e3'; ring.style.strokeOpacity = '0.55'; }
+  if (ring) { ring.style.transition = 'none'; ring.style.stroke = '#999'; ring.style.strokeOpacity = '0.55'; }
   // Force a reflow so the transition-less reset above actually paints before
   // transitions are re-enabled below.
   if (ring) ring.getBoundingClientRect(); else goalRing.getBoundingClientRect();
@@ -2965,7 +2965,9 @@ function renderTodayWeekProgress(withAnim) {
         seg.style.strokeOpacity = done ? '1' : '0.55';
       });
     }
-    if (ring) { ring.style.stroke = goalAchieved ? 'var(--accent)' : '#7ec8e3'; ring.style.strokeOpacity = goalAchieved ? '1' : '0.55'; }
+    // Not-yet-met color matches the goal-ring's own not-done segments (#999) —
+    // same grey, same opacity — instead of a mismatched blue.
+    if (ring) { ring.style.stroke = goalAchieved ? 'var(--accent)' : '#999'; ring.style.strokeOpacity = goalAchieved ? '1' : '0.55'; }
   };
   if (goalRing) {
     const n = Math.max(1, target);
@@ -3173,7 +3175,7 @@ function selectWeekStatusDay(idx) {
   }
   const detail = document.getElementById('week-status-detail');
   if (!detail || !d) return;
-  detail.textContent = d.completed ? d.name : 'No workout completed on this day';
+  detail.textContent = d.completed ? d.name : '-';
   detail.style.color = d.completed ? 'var(--accent)' : '#999';
   detail.style.fontSize = '20px';
 }
@@ -4112,6 +4114,11 @@ window._openWorkoutHeroMenu = _openWorkoutHeroMenu;
 function _openTodayInfoPanel(w) {
   if (!w || window._todayInfoPanelOpen) return;
   window._todayInfoPanelOpen = true;
+  // The exercise list (hidden below) can be scrolled arbitrarily far down before
+  // this opens; since the panel replaces it in the same normal-flow position, an
+  // existing deep scroll position would land partway/past the end of the much
+  // shorter panel content instead of at its top — reset to the top of the page.
+  window.scrollTo({ top: 0, behavior: 'instant' });
   _renderW2MusclesInto(w);
 
   const panel = document.getElementById('today-info-panel');
@@ -6531,7 +6538,7 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
   progNoData.style.cssText = "display:none;text-align:center;padding:30px 0;font-family:'DM Sans';font-size:12px;color:var(--muted);";
   progNoData.textContent = 'Not enough data for this range';
   const progCanvasWrap = document.createElement('div');
-  progCanvasWrap.style.cssText = 'position:relative;height:135px;';
+  progCanvasWrap.style.cssText = 'position:relative;height:125px;';
   const progCanvas = document.createElement('canvas');
   progCanvas.id = 'ex-detail-stats-canvas';
   progCanvasWrap.appendChild(progCanvas);
@@ -6541,7 +6548,7 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
   const progXAxisRow = document.createElement('div');
   progXAxisRow.style.cssText = 'position:relative;display:flex;align-items:center;justify-content:flex-end;min-height:24px;padding:6px 14px 2px;';
   const progScrubWrap = document.createElement('div');
-  progScrubWrap.style.cssText = 'display:none;padding:0 14px;margin-top:15px;';
+  progScrubWrap.style.cssText = 'display:none;padding:0 14px;margin-top:7px;';
   const _chevSvg = `<svg style="vertical-align:middle;margin-left:3px;" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
   const periodWrap = document.createElement('div');
   periodWrap.style.cssText = 'position:relative;';
@@ -6662,8 +6669,8 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
   tablePane.innerHTML =
     `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">` +
     _mkCell('MAX',   `${_fn(_maxKg)}${_uSm}`,  'Heaviest lifted') +
-    _mkCell('1RM',   `${_fn(_max1RM)}${_uSm}`, 'Est. max') +
     _mkCell('B.SET', `${_bKg}${_uSm}<span style="font-family:'DM Sans';font-size:18px;font-weight:700;color:${muscleColor};"> × ${_bRp}</span>`, 'Best set') +
+    _mkCell('1RM',   `${_fn(_max1RM)}${_uSm}`, 'Est. max') +
     _mkCell('VOL',   `${_volStr}${_uSm}`,      'Best session') +
     `</div>`;
 
@@ -6920,8 +6927,9 @@ function _toggleExDetailStats() {
 
   // Title row: "PROGRESS"/"YOUR BEST" stays centered on screen (plain centered block,
   // full width) while the selected-period button ("1 Year" etc.) sits on the same
-  // line, pinned to the left via position:absolute so it doesn't shift the title
-  // off-center (and stays clear of the close "X" button in the opposite corner).
+  // line, pinned to the right via position:absolute so it doesn't shift the title
+  // off-center — right-aligned to the chart area's own edge (progPane's 16px
+  // horizontal padding), not an arbitrary inset, so it lines up with the chart below it.
   const titleRow = document.createElement('div');
   titleRow.style.cssText = 'position:relative;';
   const title = document.createElement('div');
@@ -6930,7 +6938,7 @@ function _toggleExDetailStats() {
   titleRow.appendChild(title);
   const { dots, panesContainer, periodWrap } = _buildExDetailStatsCarousel(exDef, exName, title);
   periodWrap.style.position  = 'absolute';
-  periodWrap.style.left      = '10px';
+  periodWrap.style.right     = '16px';
   periodWrap.style.top       = '50%';
   periodWrap.style.transform = 'translateY(-50%)';
   // z-index alone on periodDropdown wasn't enough: without an explicit z-index here
@@ -6940,15 +6948,6 @@ function _toggleExDetailStats() {
   periodWrap.style.zIndex = '30';
   titleRow.appendChild(periodWrap);
   statsBox.appendChild(titleRow);
-  // Round "X" close button (top-right corner) — same .modal-close style as the
-  // calendar overlay's close button — so Stats can be dismissed without hunting
-  // for the float-bar Stats button again.
-  const statsBoxClose = document.createElement('button');
-  statsBoxClose.className = 'modal-close';
-  statsBoxClose.style.cssText = 'position:absolute;top:8px;right:8px;';
-  statsBoxClose.textContent = '✕';
-  statsBoxClose.onclick = () => _toggleExDetailStats();
-  statsBox.appendChild(statsBoxClose);
   statsBox.appendChild(panesContainer);
   section.appendChild(statsBox);
 
@@ -8820,9 +8819,9 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
             <!-- Auto Start toggle — absolute left so number stays centered -->
             <div style="position:absolute;left:0;display:flex;flex-direction:column;align-items:center;gap:4px;">
               <label style="position:relative;display:inline-block;width:44px;height:26px;cursor:pointer;">
-                <input type="checkbox" id="timer-autostart-${id}" onchange="toggleTimerAutoStart('${id}',this.checked)" style="opacity:0;width:0;height:0;position:absolute;">
-                <span id="timer-autostart-track-${id}" style="position:absolute;inset:0;background:#333;border-radius:13px;transition:background .2s;">
-                  <span id="timer-autostart-thumb-${id}" style="position:absolute;left:3px;top:3px;width:20px;height:20px;background:#666;border-radius:50%;transition:left .2s,background .2s;"></span>
+                <input type="checkbox" id="timer-autostart-${id}" ${window._timerAutoStart ? 'checked' : ''} onchange="toggleTimerAutoStart('${id}',this.checked)" style="opacity:0;width:0;height:0;position:absolute;">
+                <span id="timer-autostart-track-${id}" style="position:absolute;inset:0;background:${window._timerAutoStart ? 'var(--accent)' : '#333'};border-radius:13px;transition:background .2s;">
+                  <span id="timer-autostart-thumb-${id}" style="position:absolute;left:${window._timerAutoStart ? '21px' : '3px'};top:3px;width:20px;height:20px;background:${window._timerAutoStart ? '#000' : '#666'};border-radius:50%;transition:left .2s,background .2s;"></span>
                 </span>
               </label>
               <div style="font-size:10px;font-weight:700;color:#aaa;letter-spacing:.5px;">Auto Start</div>
@@ -18510,6 +18509,10 @@ function renderAdminSites() {
 function openAddSiteDialog() {
   const overlay = document.createElement('div');
   overlay.className = 'delete-confirm-overlay';
+  // .delete-confirm-overlay's own z-index (200) sits well below #adminPanelOverlay
+  // (9000), so without this the dialog rendered behind the admin panel — invisible
+  // and unclickable until the admin panel itself was closed.
+  overlay.style.zIndex = '9100';
   overlay.innerHTML = `<div class="delete-confirm-sheet">
     <div class="delete-confirm-title">Add New Site</div>
     <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
@@ -19227,7 +19230,7 @@ function renderCoachLibrary() {
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0;">
           <button onclick="assignCoachItem('${item.id}','${_coachLibTab}')" style="background:#7ec8e322;border:1px solid #7ec8e344;border-radius:7px;color:#7ec8e3;font-family:'DM Sans';font-size:11px;font-weight:700;padding:5px 8px;cursor:pointer;">Assign</button>
-          <button onclick="deleteCoachItem('${item.id}','${_coachLibTab}')" style="background:transparent;border:1px solid #333;border-radius:7px;color:#555;font-size:11px;padding:5px 8px;cursor:pointer;">✕</button>
+          <button onclick="deleteCoachItem('${item.id}','${_coachLibTab}')" style="background:transparent;border:1px solid #333;border-radius:7px;color:#555;padding:5px 8px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg></button>
         </div>
       </div>
     </div>`).join('');
@@ -22674,6 +22677,10 @@ function _updateExFloatBar(cardId) {
   const timerPanelOpen = timerPanel?.classList.contains('open');
   if (floatTimer) floatTimer.classList.toggle('active', !!timerPanelOpen);
 
+  // "Auto" badge — Auto Start is workout-wide, so this doesn't vary per card.
+  const timerAutoBadge = document.getElementById('ex-float-timer-auto-badge');
+  if (timerAutoBadge) timerAutoBadge.style.display = window._timerAutoStart ? 'block' : 'none';
+
   // Stats button — accent only when the PROGRESS/YOUR BEST view is open. Excludes
   // .closing (mid-exit-animation, not removed yet — see _toggleExDetailStats) so this
   // doesn't re-add the active state while the section is on its way out.
@@ -26038,7 +26045,12 @@ function _updateTimerDot(state) {
   // state: 'running' | 'ended' | 'idle'
   const dot = document.getElementById('ex-float-timer-dot');
   if (!dot) return;
+  const dotVisible = state === 'running' || state === 'ended';
   dot.className = 'timer-float-dot' + (state === 'running' ? ' running' : state === 'ended' ? ' ended' : '');
+  // Both sit on the same line (top:8px) at the same right edge, so slide "Auto"
+  // further left to clear the dot whenever it appears, instead of overlapping it.
+  const autoBadge = document.getElementById('ex-float-timer-auto-badge');
+  if (autoBadge) autoBadge.style.right = dotVisible ? '15px' : '3px';
 }
 window._updateTimerDot = _updateTimerDot;
 
@@ -26084,13 +26096,22 @@ window._showTimerPlus30 = _showTimerPlus30;
 
 // ── TIMER AUTO START ──────────────────────────────────────
 function toggleTimerAutoStart(id, enabled) {
-  const track = document.getElementById(`timer-autostart-track-${id}`);
-  const thumb = document.getElementById(`timer-autostart-thumb-${id}`);
-  if (track) track.style.background = enabled ? 'var(--accent)' : '#333';
-  if (thumb) { thumb.style.left = enabled ? '21px' : '3px'; thumb.style.background = enabled ? '#000' : '#666'; }
-  // Store per-card
-  if (!window._timerAutoStart) window._timerAutoStart = {};
-  window._timerAutoStart[id] = enabled;
+  // Auto Start is a workout-wide setting, not per-exercise — flipping it on any
+  // one exercise's toggle applies to every exercise in the current workout, so
+  // sync every card's checkbox/track/thumb to match, not just the one touched.
+  window._timerAutoStart = enabled;
+  document.querySelectorAll('input[id^="timer-autostart-"]').forEach(cb => {
+    const cardId = cb.id.slice('timer-autostart-'.length);
+    cb.checked = enabled;
+    const track = document.getElementById(`timer-autostart-track-${cardId}`);
+    const thumb = document.getElementById(`timer-autostart-thumb-${cardId}`);
+    if (track) track.style.background = enabled ? 'var(--accent)' : '#333';
+    if (thumb) { thumb.style.left = enabled ? '21px' : '3px'; thumb.style.background = enabled ? '#000' : '#666'; }
+  });
+  // Immediate feedback on the float bar's "Auto" badge — _updateExFloatBar would
+  // otherwise only pick this up on the next sync.
+  const timerAutoBadge = document.getElementById('ex-float-timer-auto-badge');
+  if (timerAutoBadge) timerAutoBadge.style.display = enabled ? 'block' : 'none';
 }
 window.toggleTimerAutoStart = toggleTimerAutoStart;
 
@@ -26161,11 +26182,12 @@ function _updateKgDisplay(val, isBWMode) {
 <div id="ex-float-bar" style="display:none;flex-direction:row;">
   <button id="ex-float-note" onclick="exFloatAction('note')" title="Note" style="position:relative;">
     <svg class="ex-float-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-    <span id="ex-float-note-badge" style="display:none;position:absolute;top:3px;right:4px;line-height:1;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+    <span id="ex-float-note-badge" style="display:none;position:absolute;top:3px;right:4px;line-height:1;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
     <span class="ex-float-label">Note</span>
   </button>
   <button id="ex-float-timer" onclick="exFloatAction('timer')" title="Timer" style="position:relative;">
     <div id="ex-float-timer-dot" class="timer-float-dot"></div>
+    <span id="ex-float-timer-auto-badge" style="display:none;position:absolute;top:8px;right:3px;font-family:'DM Sans';font-size:10px;font-weight:800;color:var(--accent);line-height:1;transition:right .25s ease;">Auto</span>
     <svg class="ex-float-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
     <span class="ex-float-label">Timer</span>
   </button>
