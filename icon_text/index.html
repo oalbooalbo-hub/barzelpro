@@ -4373,6 +4373,7 @@ function _syncW2TopPad() {
   // its position) is the correct value, same as _syncExToggleBarHeight uses
   // for the sibling Exercises tab.
   pg.style.paddingTop = bar.offsetHeight + 'px';
+  if (window._debugW2Gap) setTimeout(window._debugW2Gap, 50); // TEMP-DEBUG-W2GAP
 }
 window._syncW2TopPad = _syncW2TopPad;
 (function() {
@@ -4381,6 +4382,53 @@ window._syncW2TopPad = _syncW2TopPad;
     new ResizeObserver(_syncW2TopPad).observe(bar);
   }
 })();
+
+// TEMP-DEBUG-W2GAP — on-screen diagnostic overlay for the workouts-tab top-gap
+// bug. Remove this whole block (and the one line above tagged TEMP-DEBUG-W2GAP)
+// once resolved.
+function _debugW2Gap() {
+  const bar = document.getElementById('w2ToggleBar');
+  const pg = document.getElementById('page-workouts2');
+  const content = document.getElementById('workouts2TabContent');
+  const wrap = content?.firstElementChild;
+  const firstRow = wrap?.firstElementChild;
+  const secondRow = firstRow?.nextElementSibling;
+  const rect = el => el ? el.getBoundingClientRect() : null;
+  const cs = (el, prop) => el ? getComputedStyle(el)[prop] : null;
+  const rBar = rect(bar), rPg = rect(pg), rFirst = rect(firstRow), rSecond = rect(secondRow);
+  const lines = [
+    `bar rect.top: ${rBar ? rBar.top.toFixed(1) : 'n/a'}`,
+    `bar rect.bottom: ${rBar ? rBar.bottom.toFixed(1) : 'n/a'}`,
+    `bar offsetHeight: ${bar ? bar.offsetHeight : 'n/a'}`,
+    `body computed padTop: ${cs(document.body, 'paddingTop')}`,
+    `page inline padTop: ${pg?.style.paddingTop}`,
+    `page computed padTop: ${cs(pg, 'paddingTop')}`,
+    `page rect.top: ${rPg ? rPg.top.toFixed(1) : 'n/a'}`,
+    `firstRow rect.top: ${rFirst ? rFirst.top.toFixed(1) : 'n/a'}`,
+    `firstRow rect.bottom: ${rFirst ? rFirst.bottom.toFixed(1) : 'n/a'}`,
+    `secondRow rect.top: ${rSecond ? rSecond.top.toFixed(1) : 'n/a'}`,
+    `--- GAPS ---`,
+    `bar.bottom -> firstRow.top: ${(rBar && rFirst) ? (rFirst.top - rBar.bottom).toFixed(1) : 'n/a'}`,
+    `firstRow.bottom -> secondRow.top: ${(rFirst && rSecond) ? (rSecond.top - rFirst.bottom).toFixed(1) : 'n/a'}`,
+  ];
+  let ov = document.getElementById('_w2debugOverlay');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = '_w2debugOverlay';
+    ov.style.cssText = 'position:fixed;top:10px;left:10px;right:10px;z-index:999999;background:#000;color:#0f0;font-family:monospace;font-size:11px;padding:10px;border:2px solid #0f0;border-radius:8px;max-height:80vh;overflow:auto;';
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = 'CLOSE';
+    closeBtn.style.cssText = 'display:block;margin-bottom:8px;background:#0f0;color:#000;border:none;padding:6px 10px;font-weight:bold;border-radius:4px;';
+    closeBtn.onclick = () => ov.remove();
+    ov.appendChild(closeBtn);
+    document.body.appendChild(ov);
+  }
+  const pre = document.createElement('pre');
+  pre.style.cssText = 'margin:0 0 10px;white-space:pre-wrap;word-break:break-all;border-top:1px dashed #0f0;padding-top:8px;';
+  pre.textContent = new Date().toLocaleTimeString() + '\n' + lines.join('\n');
+  ov.insertBefore(pre, ov.firstChild.nextSibling);
+}
+window._debugW2Gap = _debugW2Gap;
 
 function setAddExerciseBtnStyle(isNew) {
   const btn = document.querySelector('.btn-add-exercise');
