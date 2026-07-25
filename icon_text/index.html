@@ -1904,8 +1904,8 @@ function hidAuthScreen() {
         <div style="display:flex;gap:12px;align-items:flex-start;">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="#ff8c42" style="flex-shrink:0;"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
           <div>
-            <div style="font-family:'DM Sans';font-size:14px;font-weight:800;color:#ff8c42;letter-spacing:.5px;">1RM</div>
-            <div style="font-family:'DM Sans';font-size:13px;font-weight:500;color:var(--muted);line-height:1.5;margin-top:2px;">Your estimated one-rep max, calculated from your best set (weight × (1 + reps ÷ 30)). This can hit a new high even without adding weight — e.g. squeezing out extra reps at the same load.</div>
+            <div style="font-family:'DM Sans';font-size:14px;font-weight:800;color:#ff8c42;letter-spacing:.5px;">B.SET</div>
+            <div style="font-family:'DM Sans';font-size:13px;font-weight:500;color:var(--muted);line-height:1.5;margin-top:2px;">Your best set — the weight × reps combination with the highest estimated one-rep max (weight × (1 + reps ÷ 30)). This can hit a new high even without adding weight — e.g. squeezing out extra reps at the same load.</div>
           </div>
         </div>
         <div style="display:flex;gap:12px;align-items:flex-start;">
@@ -4255,7 +4255,7 @@ function _updateWorkoutProgress() {
       const f   = n > 0 ? color : '#333';
       const lc  = n > 0 ? color : '#444';
       const num = n > 0 ? `<span style="position:absolute;font-size:14px;font-weight:900;color:#000;line-height:1;">${n}</span>` : '';
-      const lbl = ['MAX','1RM','VOL'][idx] || '';
+      const lbl = ['MAX','B.SET','VOL'][idx] || '';
       return `<span data-pr="${idx}" data-count="${n}" style="display:inline-flex;flex-direction:column;align-items:center;gap:2px;"><span style="position:relative;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;"><svg width="32" height="32" viewBox="0 0 24 24" fill="${f}"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>${num}</span><span style="font-size:8px;font-weight:700;color:${lc};letter-spacing:.5px;line-height:1;">${lbl}</span></span>`;
     };
     prStars.innerHTML = star('#e8ff47', weightPRs, 0) + star('#ff8c42', volPRs, 1) + star('#a78bfa', volumePRs, 2);
@@ -6443,6 +6443,10 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
 
   let _maxKg = 0, _max1RM = 0, _best1RMSet = null, _maxVol = 0;
   const _chartWtMap = new Map(), _chartRmMap = new Map(), _chartVolMap = new Map();
+  // Per-day best set (kg/reps) behind that day's _chartRmMap number — the B.SET
+  // tab plots the same 1RM-estimate values on its Y axis, but the big scrub
+  // value shows the actual set (e.g. "12.5kg × 13") instead of the estimate.
+  const _chartRmSetMap = new Map();
   workouts.filter(w => !w._draft).forEach(w => {
     w.exercises.filter(e => e.name === exName).forEach(e => {
       const ds = doneSets(e.sets);
@@ -6457,7 +6461,11 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
       const wt  = ds.length ? Math.max(0, ...ds.map(s => s.kg)) : 0;
       const rm1 = ds.length ? Math.max(...ds.map(s => Math.round(s.kg * (1 + s.reps / 30) * 10) / 10)) : 0;
       if (wt  > (_chartWtMap.get(dayKey)  || 0)) _chartWtMap.set(dayKey, wt);
-      if (rm1 > (_chartRmMap.get(dayKey) || 0)) _chartRmMap.set(dayKey, rm1);
+      if (rm1 > (_chartRmMap.get(dayKey) || 0)) {
+        _chartRmMap.set(dayKey, rm1);
+        const _bestSet = ds.reduce((a, s) => s.kg*(1+s.reps/30) >= a.kg*(1+a.reps/30) ? s : a, ds[0]);
+        _chartRmSetMap.set(dayKey, { kg: _bestSet.kg, reps: _bestSet.reps });
+      }
       if (sessionVol > (_chartVolMap.get(dayKey) || 0)) _chartVolMap.set(dayKey, sessionVol);
     });
   });
@@ -6471,7 +6479,7 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
   const PROG_IDX = 0, TABLE_IDX = 1;
   let _cur = 0;
 
-  if (titleEl) { titleEl.textContent = slides[0].val; titleEl.style.color = muscleColor; }
+  if (titleEl) { titleEl.textContent = slides[0].val; titleEl.style.color = '#ccc'; }
 
   const dots = document.createElement('div');
   dots.id = 'ex-detail-stats-dots';
@@ -6487,7 +6495,7 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
   // ── Progress chart pane (adapted verbatim from openExtabExOverlay's stats mode) ──
   let _progMetric = 'wt', _progRange = '1Y';
   const _PC = { wt:{line:'#e8ff47',fill:'rgba(232,255,71,.08)'}, rm:{line:'#ff8c42',fill:'rgba(255,140,66,.08)'}, vol:{line:'#a78bfa',fill:'rgba(167,139,250,.08)'} };
-  const _mKeys = ['wt','rm','vol'], _mLabels = ['MAX','1RM','VOL'], _mColors = ['#e8ff47','#ff8c42','#a78bfa'];
+  const _mKeys = ['wt','rm','vol'], _mLabels = ['MAX','B.SET','VOL'], _mColors = ['#e8ff47','#ff8c42','#a78bfa'];
   const progPane = document.createElement('div');
   progPane.id = 'ex-detail-stats-prog-pane';
   progPane.style.cssText = 'display:block;padding:2px 16px 0;';
@@ -6640,27 +6648,57 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
     progPane.appendChild(chartCard);
   }
 
-  // ── Stats table pane ────────────────────────────────────────────────────
+  // ── Stats table pane — big number + MAX/B.SET/VOL tab bar (mirrors the
+  // Progress pane's own metric bar/indicator pattern below) ─────────────────
   const tablePane = document.createElement('div');
   tablePane.id = 'ex-detail-stats-table-pane';
-  tablePane.style.cssText = 'display:none;padding:16px 16px 0;';
+  tablePane.style.cssText = 'display:none;flex-direction:column;height:100%;box-sizing:border-box;padding:0 16px;';
   const _fn = n => n % 1 === 0 ? String(n) : n.toFixed(1);
-  const _uSm = `<span style="font-family:'Bebas Neue';font-size:18px;opacity:.65;margin-left:2px;">kg</span>`;
+  const _uBig = `<span style="font-family:'Bebas Neue';font-size:28px;margin-left:4px;vertical-align:baseline;">kg</span>`;
   const _bKg = _best1RMSet ? String(_best1RMSet.kg) : '–';
   const _bRp = _best1RMSet ? _best1RMSet.reps : '';
-  const _mkCell = (lbl, bigHtml, sub) =>
-    `<div style="background:#111;border:1px solid #1e1e1e;border-radius:14px;padding:14px 10px 12px;display:flex;flex-direction:column;align-items:center;gap:2px;">` +
-    `<div style="font-family:'DM Sans';font-size:10px;font-weight:700;color:${muscleColor};letter-spacing:1px;">${lbl}</div>` +
-    `<div style="font-family:'Bebas Neue';font-size:44px;line-height:1;color:${muscleColor};white-space:nowrap;">${bigHtml}</div>` +
-    `<div style="font-family:'DM Sans';font-size:10px;font-weight:600;color:#888;margin-top:1px;">${sub}</div>` +
-    `</div>`;
-  tablePane.innerHTML =
-    `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">` +
-    _mkCell('MAX',   `${_fn(_maxKg)}${_uSm}`,  'Heaviest lifted') +
-    _mkCell('B.SET', `${_bKg}${_uSm}<span style="font-family:'DM Sans';font-size:18px;font-weight:700;color:${muscleColor};"> × ${_bRp}</span>`, 'Best set') +
-    _mkCell('1RM',   `${_fn(_max1RM)}${_uSm}`, 'Est. max') +
-    _mkCell('VOL',   `${_volStr}${_uSm}`,      'Best session') +
-    `</div>`;
+
+  const bestBigVal = document.createElement('div');
+  bestBigVal.id = 'ex-detail-stats-bestval';
+  bestBigVal.style.cssText = "font-family:'Bebas Neue';font-size:80px;line-height:1;flex:1;display:flex;align-items:center;justify-content:center;white-space:nowrap;";
+
+  let _bestMetric = 'wt';
+  function _renderBestVal() {
+    const i = _mKeys.indexOf(_bestMetric);
+    bestBigVal.style.color = _mColors[i];
+    // Wrapped in a plain inline-block so bestBigVal's flex centering treats it as one
+    // item, while inside it everything stays on the normal text line (no flex/wrap)
+    // and vertical-align:bottom on the "kg" unit sits it flush with the number's base.
+    let _inner;
+    if (_bestMetric === 'wt')      _inner = `${_fn(_maxKg)}${_uBig}`;
+    else if (_bestMetric === 'rm') _inner = `${_bKg}${_uBig}<span style="font-family:'Bebas Neue';font-size:36px;opacity:.6;"> × </span>${_bRp}`;
+    else                           _inner = `${_volStr}${_uBig}`;
+    bestBigVal.innerHTML = `<span style="display:inline-block;">${_inner}</span>`;
+  }
+  _renderBestVal();
+
+  const bestBar = document.createElement('div');
+  bestBar.style.cssText = 'position:relative;display:flex;gap:0;margin-top:auto;border-bottom:1px solid var(--border);';
+  const bestIndicator = document.createElement('div');
+  bestIndicator.style.cssText = `position:absolute;bottom:-1px;left:0;height:2px;width:calc(100%/3);background:${_mColors[0]};transition:left .25s cubic-bezier(.4,0,.2,1),background .25s ease;`;
+  const bestBtns = _mLabels.map((lbl, i) => {
+    const btn = document.createElement('button');
+    btn.style.cssText = `flex:1;border:none;background:transparent;font-family:'DM Sans';font-size:14px;font-weight:700;padding:8px 0;cursor:pointer;color:${i===0?_mColors[0]:'#555'};transition:color .15s;`;
+    btn.textContent = lbl;
+    btn.onclick = () => {
+      if (_mKeys[i] === _bestMetric) return;
+      _bestMetric = _mKeys[i];
+      bestBtns.forEach((b, j) => { b.style.color = j===i ? _mColors[j] : '#555'; });
+      bestIndicator.style.left = `calc(100%/3*${i})`;
+      bestIndicator.style.background = _mColors[i];
+      _renderBestVal();
+    };
+    bestBar.appendChild(btn);
+    return btn;
+  });
+  bestBar.appendChild(bestIndicator);
+
+  tablePane.append(bestBigVal, bestBar);
 
   function _onProgScrub(idx) {
     const chart = progCanvas._chartInst;
@@ -6677,7 +6715,9 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
     if (pts[idx]) {
       const pt = pts[idx];
       progBigVal.style.color = line;
-      progBigVal.innerHTML = `${parseFloat(pt.val.toFixed(2))}kg`;
+      progBigVal.innerHTML = (_progMetric === 'rm' && pt.setKg != null)
+        ? `${pt.setKg}kg <span style="opacity:.6;">×</span> ${pt.setReps}`
+        : `${parseFloat(pt.val.toFixed(2))}kg`;
       progBigVal.style.display = 'block';
     }
   }
@@ -6686,7 +6726,7 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
     const cutoff = Date.now() - ({'2W':14,'1M':30,'3M':91,'6M':182,'1Y':365}[_progRange]||91) * 86400000;
     const srcMap = {wt:_chartWtMap, rm:_chartRmMap, vol:_chartVolMap}[_progMetric];
     const _mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    const pts = [...srcMap.entries()].filter(([k])=>k>=cutoff).sort((a,b)=>a[0]-b[0]).map(([k,v])=>{const _d=new Date(k);return{date:_d.getDate()+' '+_mo[_d.getMonth()]+' '+_d.getFullYear(),val:v};});
+    const pts = [...srcMap.entries()].filter(([k])=>k>=cutoff).sort((a,b)=>a[0]-b[0]).map(([k,v])=>{const _d=new Date(k);const _s=_progMetric==='rm'?_chartRmSetMap.get(k):null;return{date:_d.getDate()+' '+_mo[_d.getMonth()]+' '+_d.getFullYear(),val:v,setKg:_s?_s.kg:null,setReps:_s?_s.reps:null};});
     if (progCanvas._chartInst) { progCanvas._chartInst.destroy(); progCanvas._chartInst = null; }
     const hasData = pts.length >= 2;
     progNoData.style.display = hasData ? 'none' : 'block';
@@ -6789,7 +6829,7 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
 
     if (idx === PROG_IDX && _prevIdx !== PROG_IDX) { _slideIn(progPane); setTimeout(_renderProgChart, 50); }
     if (idx !== PROG_IDX && _prevIdx === PROG_IDX) { _slideOut(progPane); }
-    if (idx === TABLE_IDX && _prevIdx !== TABLE_IDX) { _slideIn(tablePane); }
+    if (idx === TABLE_IDX && _prevIdx !== TABLE_IDX) { tablePane.style.display = 'flex'; _slideIn(tablePane); }
     if (idx !== TABLE_IDX && _prevIdx === TABLE_IDX) { _slideOut(tablePane); }
     // periodWrap lives in the title row (not inside progPane), so it isn't hidden by
     // progPane's own display toggling — only relevant on the PROGRESS slide, and
@@ -6811,7 +6851,10 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
   const panesContainer = document.createElement('div');
   // Clips the sliding pane transitions — kept off the outer "Stats" box itself, since
   // that box's label straddles its top border (top:-9px) and would get clipped too.
-  panesContainer.style.overflow = 'hidden';
+  // flex:1 lets it fill the remaining height between the title and the bottom-pinned
+  // dots, so tablePane's own bottom-anchored content (the MAX/B.SET/VOL bar) can sit
+  // close to the box's bottom edge instead of directly under the big number.
+  panesContainer.style.cssText = 'overflow:hidden;flex:1;';
   panesContainer.appendChild(progPane);
   panesContainer.appendChild(tablePane);
   const _swipeAC = new AbortController();
@@ -7043,6 +7086,10 @@ function openExtabExOverlay(exName, musclesOnly) {
   // MAX · 1RM · B.Set · VOL · PROGRESS carousel
   let _maxKg = 0, _max1RM = 0, _best1RMSet = null, _maxVol = 0;
   const _chartWtMap = new Map(), _chartRmMap = new Map(), _chartVolMap = new Map();
+  // Per-day best set (kg/reps) behind that day's _chartRmMap number — the B.SET
+  // tab plots the same 1RM-estimate values on its Y axis, but the big scrub
+  // value shows the actual set (e.g. "12.5kg × 13") instead of the estimate.
+  const _chartRmSetMap = new Map();
   workouts.filter(w => !w._draft).forEach(w => {
     w.exercises.filter(e => e.name === exName).forEach(e => {
       const ds = doneSets(e.sets);
@@ -7057,7 +7104,11 @@ function openExtabExOverlay(exName, musclesOnly) {
       const wt  = ds.length ? Math.max(0, ...ds.map(s => s.kg)) : 0;
       const rm1 = ds.length ? Math.max(...ds.map(s => Math.round(s.kg * (1 + s.reps / 30) * 10) / 10)) : 0;
       if (wt  > (_chartWtMap.get(dayKey)  || 0)) _chartWtMap.set(dayKey, wt);
-      if (rm1 > (_chartRmMap.get(dayKey) || 0)) _chartRmMap.set(dayKey, rm1);
+      if (rm1 > (_chartRmMap.get(dayKey) || 0)) {
+        _chartRmMap.set(dayKey, rm1);
+        const _bestSet = ds.reduce((a, s) => s.kg*(1+s.reps/30) >= a.kg*(1+a.reps/30) ? s : a, ds[0]);
+        _chartRmSetMap.set(dayKey, { kg: _bestSet.kg, reps: _bestSet.reps });
+      }
       if (sessionVol > (_chartVolMap.get(dayKey) || 0)) _chartVolMap.set(dayKey, sessionVol);
     });
   });
@@ -7094,7 +7145,7 @@ function openExtabExOverlay(exName, musclesOnly) {
       }
     }
     function _renderSlideVal(slide) {
-      if (_titleEl) { _titleEl.textContent = slide.val; _titleEl.style.color = muscleColor; _titleEl.style.display = 'block'; }
+      if (_titleEl) { _titleEl.textContent = slide.val; _titleEl.style.color = '#ccc'; _titleEl.style.display = 'block'; }
     }
     _renderSlideVal(slides[_startIdx]);
     if (musclesOnly === 'stats') setTimeout(_renderProgChart, 80);
@@ -7112,7 +7163,7 @@ function openExtabExOverlay(exName, musclesOnly) {
     // ── Progress chart pane ──────────────────────────────────────────────────
     let _progMetric = 'wt', _progRange = '1Y', _scrubNudged = false;
     const _PC = { wt:{line:'#e8ff47',fill:'rgba(232,255,71,.08)'}, rm:{line:'#ff8c42',fill:'rgba(255,140,66,.08)'}, vol:{line:'#a78bfa',fill:'rgba(167,139,250,.08)'} };
-    const _mKeys = ['wt','rm','vol'], _mLabels = ['MAX','1RM','VOL'], _mColors = ['#e8ff47','#ff8c42','#a78bfa'];
+    const _mKeys = ['wt','rm','vol'], _mLabels = ['MAX','B.SET','VOL'], _mColors = ['#e8ff47','#ff8c42','#a78bfa'];
     const progPane = document.createElement('div');
     progPane.id = 'extab-prog-pane';
     progPane.style.cssText = `display:${musclesOnly === 'stats' ? 'block' : 'none'};padding:8px 16px 0;`;
@@ -7232,27 +7283,52 @@ function openExtabExOverlay(exName, musclesOnly) {
     progPane.appendChild(metricBar);
     progPane.appendChild(chartCard);
 
-    // ── Stats table pane ──────────────────────────────────────────────────────
+    // ── Stats table pane — big number + MAX/B.SET/VOL tab bar (mirrors the
+    // Progress pane's own metric bar/indicator pattern below) ────────────────
     const tablePane = document.createElement('div');
     tablePane.id = 'extab-table-pane';
-    tablePane.style.cssText = 'display:none;padding:16px 16px 0;';
+    tablePane.style.cssText = 'display:none;padding:0 16px;';
     const _fn = n => n % 1 === 0 ? String(n) : n.toFixed(1);
-    const _uSm = `<span style="font-family:'Bebas Neue';font-size:18px;opacity:.65;margin-left:2px;">kg</span>`;
+    const _uBig = `<span style="font-family:'Bebas Neue';font-size:28px;opacity:.65;margin-left:4px;">kg</span>`;
     const _bKg = _best1RMSet ? String(_best1RMSet.kg) : '–';
     const _bRp = _best1RMSet ? _best1RMSet.reps : '';
-    const _mkCell = (lbl, bigHtml, sub) =>
-      `<div style="background:#111;border:1px solid #1e1e1e;border-radius:14px;padding:14px 10px 12px;display:flex;flex-direction:column;align-items:center;gap:2px;">` +
-      `<div style="font-family:'DM Sans';font-size:10px;font-weight:700;color:${muscleColor};letter-spacing:1px;">${lbl}</div>` +
-      `<div style="font-family:'Bebas Neue';font-size:44px;line-height:1;color:${muscleColor};white-space:nowrap;">${bigHtml}</div>` +
-      `<div style="font-family:'DM Sans';font-size:10px;font-weight:600;color:#888;margin-top:1px;">${sub}</div>` +
-      `</div>`;
-    tablePane.innerHTML =
-      `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">` +
-      _mkCell('MAX',   `${_fn(_maxKg)}${_uSm}`,  'Heaviest lifted') +
-      _mkCell('1RM',   `${_fn(_max1RM)}${_uSm}`, 'Est. max') +
-      _mkCell('B.SET', `${_bKg}${_uSm}<span style="font-family:'DM Sans';font-size:18px;font-weight:700;color:${muscleColor};"> × ${_bRp}</span>`, 'Best set') +
-      _mkCell('VOL',   `${_volStr}${_uSm}`,      'Best session') +
-      `</div>`;
+
+    const bestBigVal = document.createElement('div');
+    bestBigVal.id = 'extab-stats-bestval';
+    bestBigVal.style.cssText = "font-family:'Bebas Neue';font-size:80px;line-height:1;text-align:center;padding:26px 10px 22px;white-space:nowrap;";
+
+    let _bestMetric = 'wt';
+    function _renderBestVal() {
+      const i = _mKeys.indexOf(_bestMetric);
+      bestBigVal.style.color = _mColors[i];
+      if (_bestMetric === 'wt')      bestBigVal.innerHTML = `${_fn(_maxKg)}${_uBig}`;
+      else if (_bestMetric === 'rm') bestBigVal.innerHTML = `${_bKg}${_uBig}<span style="font-family:'Bebas Neue';font-size:36px;opacity:.6;"> × </span>${_bRp}`;
+      else                           bestBigVal.innerHTML = `${_volStr}${_uBig}`;
+    }
+    _renderBestVal();
+
+    const bestBar = document.createElement('div');
+    bestBar.style.cssText = 'position:relative;display:flex;gap:0;border-bottom:1px solid var(--border);';
+    const bestIndicator = document.createElement('div');
+    bestIndicator.style.cssText = `position:absolute;bottom:-1px;left:0;height:2px;width:calc(100%/3);background:${_mColors[0]};transition:left .25s cubic-bezier(.4,0,.2,1),background .25s ease;`;
+    const bestBtns = _mLabels.map((lbl, i) => {
+      const btn = document.createElement('button');
+      btn.style.cssText = `flex:1;border:none;background:transparent;font-family:'DM Sans';font-size:14px;font-weight:700;padding:8px 0;cursor:pointer;color:${i===0?_mColors[0]:'#555'};transition:color .15s;`;
+      btn.textContent = lbl;
+      btn.onclick = () => {
+        if (_mKeys[i] === _bestMetric) return;
+        _bestMetric = _mKeys[i];
+        bestBtns.forEach((b, j) => { b.style.color = j===i ? _mColors[j] : '#555'; });
+        bestIndicator.style.left = `calc(100%/3*${i})`;
+        bestIndicator.style.background = _mColors[i];
+        _renderBestVal();
+      };
+      bestBar.appendChild(btn);
+      return btn;
+    });
+    bestBar.appendChild(bestIndicator);
+
+    tablePane.append(bestBigVal, bestBar);
 
     function _onProgScrub(idx) {
       const canvas = document.getElementById('extab-prog-canvas');
@@ -7270,11 +7346,15 @@ function openExtabExOverlay(exName, musclesOnly) {
       const bigValEl = document.getElementById('extab-prog-bigval');
       if (bigValEl && pts[idx]) {
         const pt = pts[idx];
-        const prev = idx > 0 ? pts[idx - 1].val : null;
-        const diff = prev != null ? parseFloat((pt.val - prev).toFixed(2)) : null;
-        const diffStr = diff != null ? `<span style="position:absolute;top:50%;right:0;transform:translateY(-50%);color:${diff>0?'#4caf50':diff<0?'#ff4444':'#888'};font-size:11px;white-space:nowrap;">(${diff>=0?'+':''}${diff}kg)</span>` : '';
         bigValEl.style.color = line;
-        bigValEl.innerHTML = `${parseFloat(pt.val.toFixed(2))}kg${diffStr}`;
+        if (_progMetric === 'rm' && pt.setKg != null) {
+          bigValEl.innerHTML = `${pt.setKg}kg <span style="opacity:.6;">×</span> ${pt.setReps}`;
+        } else {
+          const prev = idx > 0 ? pts[idx - 1].val : null;
+          const diff = prev != null ? parseFloat((pt.val - prev).toFixed(2)) : null;
+          const diffStr = diff != null ? `<span style="position:absolute;top:50%;right:0;transform:translateY(-50%);color:${diff>0?'#4caf50':diff<0?'#ff4444':'#888'};font-size:11px;white-space:nowrap;">(${diff>=0?'+':''}${diff}kg)</span>` : '';
+          bigValEl.innerHTML = `${parseFloat(pt.val.toFixed(2))}kg${diffStr}`;
+        }
         bigValEl.style.display = 'block';
       }
     }
@@ -7285,7 +7365,7 @@ function openExtabExOverlay(exName, musclesOnly) {
       const cutoff = Date.now() - ({'2W':14,'1M':30,'3M':91,'6M':182,'1Y':365}[_progRange]||91) * 86400000;
       const srcMap = {wt:_chartWtMap, rm:_chartRmMap, vol:_chartVolMap}[_progMetric];
       const _mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-      const pts = [...srcMap.entries()].filter(([k])=>k>=cutoff).sort((a,b)=>a[0]-b[0]).map(([k,v])=>{const _d=new Date(k);return{date:_d.getDate()+' '+_mo[_d.getMonth()]+' '+_d.getFullYear(),val:v};});
+      const pts = [...srcMap.entries()].filter(([k])=>k>=cutoff).sort((a,b)=>a[0]-b[0]).map(([k,v])=>{const _d=new Date(k);const _s=_progMetric==='rm'?_chartRmSetMap.get(k):null;return{date:_d.getDate()+' '+_mo[_d.getMonth()]+' '+_d.getFullYear(),val:v,setKg:_s?_s.kg:null,setReps:_s?_s.reps:null};});
       if (canvas._chartInst) { canvas._chartInst.destroy(); canvas._chartInst = null; }
       const hasData = pts.length >= 2;
       progNoData.style.display = hasData ? 'none' : 'block';
@@ -9893,6 +9973,12 @@ function toggleCardCollapse(id) {
     if (_chipsOnClose && _chipsOnClose.dataset.preExpandDisplay) {
       _expandAnimShow(_chipsOnClose, 'flex');
       delete _chipsOnClose.dataset.preExpandDisplay;
+    } else if (_chipsOnClose) {
+      // This card was opened without going through the expand animation (e.g. a
+      // loaded workout auto-opening a card to reveal its note) — preExpandDisplay
+      // was never set, so recompute visibility from scratch instead of leaving
+      // the bar stuck hidden from updateTodayMuscleChips()'s _anyCardOpen check.
+      updateTodayMuscleChips();
     }
     const _wnbOnClose = document.getElementById('workoutNameBar');
     if (_wnbOnClose && _wnbOnClose.dataset.preExpandVisible) {
@@ -11311,16 +11397,19 @@ function hideNoteToolbar() {
       if (floatBar) floatBar.style.display = 'flex';
       if (floatBarBlock) floatBarBlock.style.display = 'block';
     }
+    // Dismissing the keyboard exits note-edit mode entirely — collapse the note
+    // box back closed, same as tapping the Note float-bar button again. This
+    // must happen BEFORE the _updateExFloatBar refresh below, or that call reads
+    // the box as still "open" and re-highlights the float button right after
+    // it was cleared above, leaving it stuck lit with nothing left to clear it.
+    if (id && document.getElementById(`comment-area-${id}`)?.classList.contains('open')) {
+      toggleComment(id);
+    }
     // Refresh the Note button's "has content" checkmark badge now — whether the
     // keyboard was dismissed by the OS back-gesture or by tapping "Done" above it,
     // this is the one place both paths funnel through (both end in the textarea
     // blurring), so this is where the badge needs to catch up to the latest text.
     _updateExFloatBar(id || window._exFloatCardId);
-    // Dismissing the keyboard exits note-edit mode entirely — collapse the note
-    // box back closed, same as tapping the Note float-bar button again.
-    if (id && document.getElementById(`comment-area-${id}`)?.classList.contains('open')) {
-      toggleComment(id);
-    }
   }, 150);
 }
 function toggleComment(id) {
@@ -11512,7 +11601,7 @@ function finishWorkoutFull() {
     const volPR = !!e.hasPRvol;
     const volumePR = !!e.hasPRvolume;
     if (weightPR) window._pendingPRs.push({ label: 'MAX' });
-    if (volPR) window._pendingPRs.push({ label: '1RM' });
+    if (volPR) window._pendingPRs.push({ label: 'B.SET' });
     if (volumePR) window._pendingPRs.push({ label: 'VOL' });
     const totalSetsEx = allSetsRaw.length;
     const undoneSets = totalSetsEx - done;
@@ -11839,7 +11928,7 @@ function confirmSave() {
   window._workoutSaved = false;
   const closeAndSave = () => { doSaveWorkout(); const el = document.getElementById('celebrationOverlay'); if (el) el.remove(); setTimeout(() => exportData(), 300); };
   if (hasStars) {
-    const starTypes = [{ label: 'MAX', color: '#e8ff47' },{ label: '1RM', color: '#ff8c42' },{ label: 'VOL', color: '#a78bfa' }];
+    const starTypes = [{ label: 'MAX', color: '#e8ff47' },{ label: 'B.SET', color: '#ff8c42' },{ label: 'VOL', color: '#a78bfa' }];
     const starsRow = starTypes.map((t, ti) => { const count = allStars.filter(s => s.label === t.label).length; if (!count) return ''; return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;animation:starPop .8s cubic-bezier(.175,.885,.32,1.275) both;animation-delay:${ti * 0.25}s;"><div style="position:relative;width:72px;height:72px;display:flex;align-items:center;justify-content:center;">${svgStar(t.color, 72)}<span style="position:absolute;font-family:'Bebas Neue';font-size:26px;color:#000;line-height:1;margin-top:5px;">${count}</span></div><span style="font-size:12px;font-weight:700;color:${t.color};letter-spacing:.5px;text-transform:uppercase;">${t.label}</span></div>`; }).join('');
     cel.innerHTML = `<style>@keyframes celFadeIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}@keyframes starPop{0%{opacity:0;transform:scale(0) rotate(-20deg)}60%{transform:scale(1.2) rotate(5deg)}100%{opacity:1;transform:scale(1) rotate(0deg)}}</style><div style="display:flex;flex-direction:column;align-items:center;padding-top:56px;">${_brandLogoHtml(36)}</div><div style="display:flex;flex-direction:column;align-items:center;gap:24px;"><div style="font-family:'Bebas Neue';font-size:48px;letter-spacing:3px;color:#fff;text-align:center;line-height:1;">GREAT JOB</div><div style="display:flex;gap:32px;justify-content:center;align-items:flex-end;">${starsRow}</div><div style="font-size:16px;color:#7ec8e3;font-weight:600;"><span style="display:inline-flex;align-items:center;gap:6px;vertical-align:middle;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7ec8e3" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="7" x2="12" y2="12"/><line x1="12" y1="12" x2="15" y2="14"/></svg> ${_durStr}</span></div></div><div style="display:flex;gap:10px;width:100%;max-width:320px;margin-bottom:40px;"><button id="celCloseBtn" style="flex:1;padding:15px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;cursor:pointer;">CLOSE</button><button id="celDetailsBtn" style="flex:1;padding:15px;background:rgba(232,255,71,.12);border:1px solid rgba(232,255,71,.4);border-radius:12px;color:var(--accent);font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;cursor:pointer;">DETAILS</button></div>`;
   } else {
