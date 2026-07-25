@@ -4373,7 +4373,7 @@ function _syncW2TopPad() {
   // its position) is the correct value, same as _syncExToggleBarHeight uses
   // for the sibling Exercises tab.
   pg.style.paddingTop = bar.offsetHeight + 'px';
-  if (window._debugW2Gap) setTimeout(window._debugW2Gap, 50); // TEMP-DEBUG-W2GAP
+  if (window._debugW2Gap) { setTimeout(() => window._debugW2Gap('+50ms'), 50); setTimeout(() => window._debugW2Gap('+600ms settled'), 600); } // TEMP-DEBUG-W2GAP
 }
 window._syncW2TopPad = _syncW2TopPad;
 (function() {
@@ -4386,41 +4386,26 @@ window._syncW2TopPad = _syncW2TopPad;
 // TEMP-DEBUG-W2GAP — on-screen diagnostic overlay for the workouts-tab top-gap
 // bug. Remove this whole block (and the one line above tagged TEMP-DEBUG-W2GAP)
 // once resolved.
-function _debugW2Gap() {
+function _debugW2Gap(label) {
   const bar = document.getElementById('w2ToggleBar');
   const pg = document.getElementById('page-workouts2');
+  const hdr = document.querySelector('.header');
   const content = document.getElementById('workouts2TabContent');
   const wrap = content?.firstElementChild;
   const firstRow = wrap?.firstElementChild;
-  const secondRow = firstRow?.nextElementSibling;
   const rect = el => el ? el.getBoundingClientRect() : null;
   const cs = (el, prop) => el ? getComputedStyle(el)[prop] : null;
-  const rBar = rect(bar), rPg = rect(pg), rFirst = rect(firstRow), rSecond = rect(secondRow);
-  const activePages = Array.from(document.querySelectorAll('.page.active')).map(p => p.id);
-  const allPagesDisplay = Array.from(document.querySelectorAll('.page')).map(p => `${p.id}:${getComputedStyle(p).display}${getComputedStyle(p).height !== 'auto' ? '/h='+getComputedStyle(p).height : ''}`);
-  const prevSib = pg?.previousElementSibling;
+  const rBar = rect(bar), rPg = rect(pg), rFirst = rect(firstRow), rHdr = rect(hdr);
   const lines = [
-    `bar rect.top: ${rBar ? rBar.top.toFixed(1) : 'n/a'}`,
     `bar rect.bottom: ${rBar ? rBar.bottom.toFixed(1) : 'n/a'}`,
-    `bar offsetHeight: ${bar ? bar.offsetHeight : 'n/a'}`,
-    `body computed padTop: ${cs(document.body, 'paddingTop')}`,
-    `body scrollTop: ${document.body.scrollTop}, window.scrollY: ${window.scrollY}`,
+    `header classList: ${hdr?.className}`,
+    `header rect.height: ${rHdr ? rHdr.height.toFixed(1) : 'n/a'}`,
+    `header computed maxHeight: ${cs(hdr, 'maxHeight')}, opacity: ${cs(hdr, 'opacity')}`,
+    `header-chevron-hint display: ${cs(document.getElementById('header-chevron-hint'), 'display')}`,
     `page inline padTop: ${pg?.style.paddingTop}`,
-    `page computed padTop: ${cs(pg, 'paddingTop')}`,
-    `page computed marginTop: ${cs(pg, 'marginTop')}`,
-    `page computed transform: ${cs(pg, 'transform')}`,
     `page rect.top: ${rPg ? rPg.top.toFixed(1) : 'n/a'}`,
-    `page offsetTop: ${pg?.offsetTop}, offsetParent: ${pg?.offsetParent?.id || pg?.offsetParent?.tagName}`,
-    `page parentElement: ${pg?.parentElement?.id || pg?.parentElement?.tagName}`,
-    `pages with .active class: ${JSON.stringify(activePages)}`,
-    `ALL .page display/height: ${JSON.stringify(allPagesDisplay)}`,
-    `page-workouts2 previousElementSibling: ${prevSib?.id || prevSib?.tagName}, its display: ${prevSib ? getComputedStyle(prevSib).display : 'n/a'}, its rect.height: ${prevSib ? rect(prevSib).height.toFixed(1) : 'n/a'}`,
     `firstRow rect.top: ${rFirst ? rFirst.top.toFixed(1) : 'n/a'}`,
-    `firstRow rect.bottom: ${rFirst ? rFirst.bottom.toFixed(1) : 'n/a'}`,
-    `secondRow rect.top: ${rSecond ? rSecond.top.toFixed(1) : 'n/a'}`,
-    `--- GAPS ---`,
-    `bar.bottom -> firstRow.top: ${(rBar && rFirst) ? (rFirst.top - rBar.bottom).toFixed(1) : 'n/a'}`,
-    `firstRow.bottom -> secondRow.top: ${(rFirst && rSecond) ? (rSecond.top - rFirst.bottom).toFixed(1) : 'n/a'}`,
+    `GAP bar.bottom -> firstRow.top: ${(rBar && rFirst) ? (rFirst.top - rBar.bottom).toFixed(1) : 'n/a'}`,
   ];
   let ov = document.getElementById('_w2debugOverlay');
   if (!ov) {
@@ -4436,7 +4421,7 @@ function _debugW2Gap() {
   }
   const pre = document.createElement('pre');
   pre.style.cssText = 'margin:0 0 10px;white-space:pre-wrap;word-break:break-all;border-top:1px dashed #0f0;padding-top:8px;';
-  pre.textContent = new Date().toLocaleTimeString() + '\n' + lines.join('\n');
+  pre.textContent = new Date().toLocaleTimeString() + ' ' + (label || '') + '\n' + lines.join('\n');
   ov.insertBefore(pre, ov.firstChild.nextSibling);
 }
 window._debugW2Gap = _debugW2Gap;
