@@ -4114,11 +4114,6 @@ window._openWorkoutHeroMenu = _openWorkoutHeroMenu;
 function _openTodayInfoPanel(w) {
   if (!w || window._todayInfoPanelOpen) return;
   window._todayInfoPanelOpen = true;
-  // The exercise list (hidden below) can be scrolled arbitrarily far down before
-  // this opens; since the panel replaces it in the same normal-flow position, an
-  // existing deep scroll position would land partway/past the end of the much
-  // shorter panel content instead of at its top — reset to the top of the page.
-  window.scrollTo({ top: 0, behavior: 'instant' });
   _renderW2MusclesInto(w);
 
   const panel = document.getElementById('today-info-panel');
@@ -4130,6 +4125,11 @@ function _openTodayInfoPanel(w) {
   panel.appendChild(descEl);
   panel.appendChild(titleEl);
   panel.appendChild(bodyWrapEl);
+  // bodyWrapEl's built-in 140px bottom padding exists to clear the real W2
+  // sheet's own fixed bottom button bar (CLOSE/START WORKOUT) — this panel's
+  // #today-info-close-bar is a single, much shorter button, so that much
+  // trailing space is unnecessary here. Restored to the original on close.
+  bodyWrapEl.style.paddingBottom = 'calc(50px + env(safe-area-inset-bottom))';
 
   const chipsWrap = document.getElementById('todayMuscleChipsWrap');
   const chipsBlock = document.getElementById('today-chips-block');
@@ -4155,7 +4155,14 @@ function _openTodayInfoPanel(w) {
 
   panel.style.display = 'block';
   if (closeBar) closeBar.style.display = 'block';
+  // Force a reflow with the exercise list already hidden — reading
+  // offsetHeight makes the browser recompute layout synchronously — THEN
+  // clamp scroll to the top. Scrolling first (before the list was hidden)
+  // left the page's scrollable extent still sized for the old, much taller
+  // content until some other interaction forced a recalculation, letting you
+  // scroll down into blank space roughly the height of the hidden list.
   void panel.offsetHeight;
+  window.scrollTo({ top: 0, behavior: 'instant' });
   panel.style.opacity = '1';
   panel.style.transform = 'translateY(0)';
 }
@@ -4187,7 +4194,12 @@ function _closeTodayInfoPanel() {
     const grad = document.getElementById('w2-list-gradient');
     if (descEl && scrollArea) scrollArea.parentNode.insertBefore(descEl, scrollArea);
     if (titleEl && grad) grad.parentNode.insertBefore(titleEl, grad);
-    if (bodyWrapEl && grad) grad.parentNode.insertBefore(bodyWrapEl, grad);
+    if (bodyWrapEl && grad) {
+      grad.parentNode.insertBefore(bodyWrapEl, grad);
+      // Restore the full padding this panel trimmed down — the real W2 sheet
+      // still needs it to clear its own (taller) fixed bottom button bar.
+      bodyWrapEl.style.paddingBottom = 'calc(140px + env(safe-area-inset-bottom))';
+    }
     if (panel) panel.style.display = 'none';
     // Bring the list/chips back only once the panel has fully faded out, so
     // they don't visually overlap the panel mid-transition.
@@ -7898,6 +7910,18 @@ function renderWorkoutsTab2() {
   </div>`;
   if (toggleBar) {
     toggleBar.innerHTML = _wToggleHtml;
+    // Each card row is wrapped in padding:5px 2px (index.html ~8056), so
+    // consecutive cards already end up 5px+5px=10px apart. The page's own
+    // padding-top only needs to clear the fixed toggle bar's actual on-screen
+    // height (measured, not guessed — its content height isn't a fixed
+    // constant) — the first row's own 5px top padding then supplies the
+    // matching other half, landing on the same 10px gap as every other pair.
+    if (toggleBar.id === 'w2ToggleBar') {
+      requestAnimationFrame(() => {
+        const _pg = document.getElementById('page-workouts2');
+        if (_pg) _pg.style.paddingTop = toggleBar.getBoundingClientRect().bottom + 'px';
+      });
+    }
   }
 
   // ── Coach view ────────────────────────────────────────
