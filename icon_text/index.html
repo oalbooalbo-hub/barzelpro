@@ -98,11 +98,8 @@ body.desktop-mode .pages-wrap {
 }
 
 /* ── APP SHELL ─────────────────────────────────── */
-.header{padding:18px 20px 0;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:30;background:var(--bg);transition:max-height .35s cubic-bezier(.4,0,.2,1),opacity .3s,padding .35s;max-height:80px;overflow:hidden;}
-.header.collapsed{max-height:0;opacity:0;padding:0;pointer-events:none;}
-#header-chevron-hint{display:none;position:sticky;top:0;z-index:31;text-align:center;padding:4px 0 2px;cursor:pointer;background:var(--bg);}
-#header-chevron-hint svg{transition:transform .3s;}
-#header-chevron-hint:hover svg{transform:translateY(2px);}
+.header{padding:18px 20px 0;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:30;background:var(--bg);}
+.header.collapsed{display:none;}
 .logo{font-family:'Bebas Neue';font-size:34px;color:var(--accent);display:flex;flex-direction:column;align-items:flex-start;}
 .logo span{color:var(--muted);font-size:9px;font-family:'DM Sans';display:block;margin-top:-4px;letter-spacing:3px;}
 .date-badge{padding:6px 4px;font-size:12px;color:#999;font-weight:600;}
@@ -1174,7 +1171,7 @@ function hidAuthScreen() {
   <img src="logo.svg" alt="Brand Logo" style="height:64px;width:auto;" onerror="this.style.display='none'"/>
 </div>
 
-<div class="header" onclick="if(this.classList.contains('collapsed'))return;collapseHeader()" style="cursor:pointer;position:relative;padding-bottom:6px;" title="Tap to collapse">
+<div class="header">
   <div class="logo" onclick="openAboutModal()" style="cursor:pointer;">
     <img id="brand-logo-img" src="logo.svg" alt="Brand Logo" style="height:36px;width:auto;display:block;" onerror="this.style.display='none'"/>
   </div>
@@ -1186,14 +1183,6 @@ function hidAuthScreen() {
       <span id="dateBadgeText"></span>
     </div>
   </div>
-  <div id="header-collapse-hint" style="display:none;position:absolute;bottom:2px;left:50%;transform:translateX(-50%);line-height:1;">
-    <svg width="20" height="10" viewBox="0 0 20 10" fill="none"><polyline points="3,8 10,2 17,8" stroke="#e8ff47" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.6"/></svg>
-  </div>
-</div>
-<div id="header-chevron-hint" onclick="expandHeader()" title="Show header" ontouchstart="window._hintTouchY=event.touches[0].clientY" ontouchmove="if(event.touches[0].clientY-window._hintTouchY>20)expandHeader()">
-  <svg width="24" height="12" viewBox="0 0 24 12" fill="none">
-    <polyline points="4,2 12,10 20,2" stroke="#e8ff47" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-  </svg>
 </div>
 
 <div class="tabs">
@@ -2773,11 +2762,6 @@ function updateVolProgressBar(exId) {
 
 function showTodayStartScreen() {
   _headerWorkoutModeOff();
-  // Show header only on start screen
-  const _hdrS = document.querySelector('.header');
-  const _hintS = document.getElementById('header-chevron-hint');
-  if (_hdrS) _hdrS.classList.remove('collapsed');
-  if (_hintS) _hintS.style.display = 'none';
   if (window.hideExFloatBar) hideExFloatBar();
   window._isNewWorkoutFlow = false;
   document.getElementById('today-start-screen').style.display = 'flex';
@@ -3374,38 +3358,9 @@ function renderTodayPlanCard() {
   }, 50);
 }
 
-function collapseHeader() {
-  if (!window._headerCollapseAllowed) return; // only during active workout
-  const header = document.querySelector('.header');
-  const hint = document.getElementById('header-chevron-hint');
-  const collapseHint = document.getElementById('header-collapse-hint');
-  if (!header) return;
-  header.classList.add('collapsed');
-  if (hint) hint.style.display = 'block';
-  if (collapseHint) collapseHint.style.display = 'none';
-}
-function expandHeader() {
-  const header = document.querySelector('.header');
-  const hint = document.getElementById('header-chevron-hint');
-  const collapseHint = document.getElementById('header-collapse-hint');
-  if (!header) return;
-  header.classList.remove('collapsed');
-  // Only show collapse hint if in workout mode
-  if (hint) hint.style.display = 'none';
-  if (collapseHint) collapseHint.style.display = window._headerCollapseAllowed ? 'block' : 'none';
-}
-function _headerWorkoutModeOn() {
-  window._headerCollapseAllowed = true;
-}
 function _headerWorkoutModeOff() {
-  window._headerCollapseAllowed = false;
-  // Force expand and hide hints
   const header = document.querySelector('.header');
-  const hint = document.getElementById('header-chevron-hint');
-  const collapseHint = document.getElementById('header-collapse-hint');
   if (header) header.classList.remove('collapsed');
-  if (hint) hint.style.display = 'none';
-  if (collapseHint) collapseHint.style.display = 'none';
 }
 function showTodayWorkoutArea(isNew=false) {
   window.scrollTo({ top: 0, behavior: 'instant' });
@@ -3413,13 +3368,8 @@ function showTodayWorkoutArea(isNew=false) {
   _syncShareBtn();
   document.getElementById('today-workout-area').style.display = '';
   // Hide header completely when workout is active
-  _headerWorkoutModeOn();
   const _hdrW = document.querySelector('.header');
-  const _hintW = document.getElementById('header-chevron-hint');
-  const _collapseW = document.getElementById('header-collapse-hint');
   if (_hdrW) _hdrW.classList.add('collapsed');
-  if (_hintW) _hintW.style.display = 'none';
-  if (_collapseW) _collapseW.style.display = 'none';
   // Hide tab bar when workout is active
   const _tabsEl = document.querySelector('.tabs');
   if (_tabsEl) _tabsEl.style.display = 'none';
@@ -4366,17 +4316,16 @@ function _syncW2TopPad() {
   const bar = document.getElementById('w2ToggleBar');
   const pg = document.getElementById('page-workouts2');
   if (!bar || !pg) return;
-  // Measure directly instead of assuming a fixed relationship between the
-  // bar's own position and the page's — page-workouts2's top edge floats
-  // depending on the app-wide .header's collapse animation (index.html
-  // ~7808-7809, a 350ms transition that runs when leaving the Today tab),
-  // so any formula based on safe-area-inset math alone goes stale mid-
-  // transition. Reading the page's actual current rect.top and solving for
-  // the padding that lands the first row exactly 10px below the bar (the
-  // same gap used between every other pair of cards, index.html ~8121)
-  // self-corrects regardless of what state that animation is in.
+  // .page.active elements get a translateY(48px)->0 entrance slide
+  // (index.html ~114) whenever they're not the log page and not flagged
+  // delayed-reveal. This fires early in that animation (via the
+  // ResizeObserver on the bar becoming visible), so pg.getBoundingClientRect()
+  // reflects wherever the slide currently is, not pg's resting position —
+  // offsetTop is unaffected by transforms, so combine it with the (non-
+  // animated) offsetParent's own viewport position for a stable number.
+  const offsetParent = pg.offsetParent || document.body;
+  const pageTop = offsetParent.getBoundingClientRect().top + pg.offsetTop;
   const targetFirstRowTop = bar.getBoundingClientRect().bottom + 10;
-  const pageTop = pg.getBoundingClientRect().top;
   const wrapMarginTop = 5; // matches the row-list wrapper's margin-top (index.html ~8121)
   pg.style.paddingTop = Math.max(0, targetFirstRowTop - pageTop - wrapMarginTop) + 'px';
 }
@@ -7813,22 +7762,8 @@ function switchTab(tab) {
   if (_hdrVisible && tab !== 'log') _pageEl.classList.add('delayed-reveal');
   _pageEl.classList.add('active');
   if (tab==='workouts') {
-    const _hdrW = document.querySelector('.header');
-    const _alreadyCollapsed = !_hdrW || _hdrW.classList.contains('collapsed');
-    if (_alreadyCollapsed) {
-      _initWTabView();
-      renderWorkoutsTab();
-    } else {
-      // Render after header collapse animation finishes (350ms)
-      _hdrW.addEventListener('transitionend', function _wtabWait(e) {
-        if (e.propertyName !== 'max-height') return;
-        _hdrW.removeEventListener('transitionend', _wtabWait);
-        if (window._activeTab === 'workouts') {
-          _initWTabView();
-          renderWorkoutsTab();
-        }
-      });
-    }
+    _initWTabView();
+    renderWorkoutsTab();
   }
   if (tab==='workouts2') {
     _initWTabView();
@@ -7945,13 +7880,7 @@ function renderWorkoutsTab2() {
     // matching other half, landing on the same 10px gap as every other pair.
     // A ResizeObserver on w2ToggleBar (set up once, module-level) keeps this
     // in sync on its own whenever the bar's rendered box size actually
-    // changes, so no rAF-timing guess is needed here. It also fires once
-    // immediately on the very first observe() — but that first firing can
-    // land while the app-wide .header is still mid-collapse-animation
-    // (index.html ~7808, a 350ms transition), so page-workouts2's own
-    // rect.top is still shrinking at that instant. Re-run once after the
-    // transition is done so the padding lands on the final, settled value.
-    if (toggleBar.id === 'w2ToggleBar') setTimeout(_syncW2TopPad, 400);
+    // changes, so no rAF-timing guess is needed here.
   }
 
   // ── Coach view ────────────────────────────────────────
