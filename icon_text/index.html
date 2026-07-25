@@ -4396,14 +4396,25 @@ function _debugW2Gap() {
   const rect = el => el ? el.getBoundingClientRect() : null;
   const cs = (el, prop) => el ? getComputedStyle(el)[prop] : null;
   const rBar = rect(bar), rPg = rect(pg), rFirst = rect(firstRow), rSecond = rect(secondRow);
+  const activePages = Array.from(document.querySelectorAll('.page.active')).map(p => p.id);
+  const allPagesDisplay = Array.from(document.querySelectorAll('.page')).map(p => `${p.id}:${getComputedStyle(p).display}${getComputedStyle(p).height !== 'auto' ? '/h='+getComputedStyle(p).height : ''}`);
+  const prevSib = pg?.previousElementSibling;
   const lines = [
     `bar rect.top: ${rBar ? rBar.top.toFixed(1) : 'n/a'}`,
     `bar rect.bottom: ${rBar ? rBar.bottom.toFixed(1) : 'n/a'}`,
     `bar offsetHeight: ${bar ? bar.offsetHeight : 'n/a'}`,
     `body computed padTop: ${cs(document.body, 'paddingTop')}`,
+    `body scrollTop: ${document.body.scrollTop}, window.scrollY: ${window.scrollY}`,
     `page inline padTop: ${pg?.style.paddingTop}`,
     `page computed padTop: ${cs(pg, 'paddingTop')}`,
+    `page computed marginTop: ${cs(pg, 'marginTop')}`,
+    `page computed transform: ${cs(pg, 'transform')}`,
     `page rect.top: ${rPg ? rPg.top.toFixed(1) : 'n/a'}`,
+    `page offsetTop: ${pg?.offsetTop}, offsetParent: ${pg?.offsetParent?.id || pg?.offsetParent?.tagName}`,
+    `page parentElement: ${pg?.parentElement?.id || pg?.parentElement?.tagName}`,
+    `pages with .active class: ${JSON.stringify(activePages)}`,
+    `ALL .page display/height: ${JSON.stringify(allPagesDisplay)}`,
+    `page-workouts2 previousElementSibling: ${prevSib?.id || prevSib?.tagName}, its display: ${prevSib ? getComputedStyle(prevSib).display : 'n/a'}, its rect.height: ${prevSib ? rect(prevSib).height.toFixed(1) : 'n/a'}`,
     `firstRow rect.top: ${rFirst ? rFirst.top.toFixed(1) : 'n/a'}`,
     `firstRow rect.bottom: ${rFirst ? rFirst.bottom.toFixed(1) : 'n/a'}`,
     `secondRow rect.top: ${rSecond ? rSecond.top.toFixed(1) : 'n/a'}`,
