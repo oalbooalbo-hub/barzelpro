@@ -53,7 +53,7 @@ if ('serviceWorker' in navigator) {
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;}
 button{cursor:pointer;touch-action:manipulation;-webkit-appearance:none;outline:none;}
 *:focus{outline:none;}
-#page-workouts2{scrollbar-width:none;padding-top:calc(96px + env(safe-area-inset-top));padding-bottom:calc(180px + env(safe-area-inset-bottom)) !important;}
+#page-workouts2{scrollbar-width:none;padding-top:96px;padding-bottom:calc(180px + env(safe-area-inset-bottom)) !important;}
 #page-workouts2::-webkit-scrollbar{display:none;}
 #workouts2TabContent::-webkit-scrollbar{display:none;}
 /* Safe area — ensure fixed full-screen overlays respect notch and home indicator */
@@ -4366,7 +4366,14 @@ function _syncW2TopPad() {
   const bar = document.getElementById('w2ToggleBar');
   const pg = document.getElementById('page-workouts2');
   if (!bar || !pg) return;
-  pg.style.paddingTop = bar.getBoundingClientRect().bottom + 'px';
+  // body already carries padding-top:env(safe-area-inset-top) (index.html ~72),
+  // and the bar's own fixed position (top:env(safe-area-inset-top)) bakes that
+  // same offset in again — so using bar.getBoundingClientRect().bottom here
+  // double-counts the safe area. bar.offsetHeight (the bar's own height, not
+  // its position) is the correct value, same as _syncExToggleBarHeight uses
+  // for the sibling Exercises tab.
+  pg.style.paddingTop = bar.offsetHeight + 'px';
+  if (window._debugW2Gap) { setTimeout(() => window._debugW2Gap('+50ms'), 50); setTimeout(() => window._debugW2Gap('+600ms settled'), 600); } // TEMP-DEBUG-W2GAP
 }
 window._syncW2TopPad = _syncW2TopPad;
 (function() {
@@ -4375,6 +4382,49 @@ window._syncW2TopPad = _syncW2TopPad;
     new ResizeObserver(_syncW2TopPad).observe(bar);
   }
 })();
+
+// TEMP-DEBUG-W2GAP — on-screen diagnostic overlay for the workouts-tab top-gap
+// bug. Remove this whole block (and the one line above tagged TEMP-DEBUG-W2GAP)
+// once resolved.
+function _debugW2Gap(label) {
+  const bar = document.getElementById('w2ToggleBar');
+  const pg = document.getElementById('page-workouts2');
+  const hdr = document.querySelector('.header');
+  const content = document.getElementById('workouts2TabContent');
+  const wrap = content?.firstElementChild;
+  const firstRow = wrap?.firstElementChild;
+  const rect = el => el ? el.getBoundingClientRect() : null;
+  const cs = (el, prop) => el ? getComputedStyle(el)[prop] : null;
+  const rBar = rect(bar), rPg = rect(pg), rFirst = rect(firstRow), rHdr = rect(hdr);
+  const lines = [
+    `bar rect.bottom: ${rBar ? rBar.bottom.toFixed(1) : 'n/a'}`,
+    `header classList: ${hdr?.className}`,
+    `header rect.height: ${rHdr ? rHdr.height.toFixed(1) : 'n/a'}`,
+    `header computed maxHeight: ${cs(hdr, 'maxHeight')}, opacity: ${cs(hdr, 'opacity')}`,
+    `header-chevron-hint display: ${cs(document.getElementById('header-chevron-hint'), 'display')}`,
+    `page inline padTop: ${pg?.style.paddingTop}`,
+    `page rect.top: ${rPg ? rPg.top.toFixed(1) : 'n/a'}`,
+    `firstRow rect.top: ${rFirst ? rFirst.top.toFixed(1) : 'n/a'}`,
+    `GAP bar.bottom -> firstRow.top: ${(rBar && rFirst) ? (rFirst.top - rBar.bottom).toFixed(1) : 'n/a'}`,
+  ];
+  let ov = document.getElementById('_w2debugOverlay');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = '_w2debugOverlay';
+    ov.style.cssText = 'position:fixed;top:10px;left:10px;right:10px;z-index:999999;background:#000;color:#0f0;font-family:monospace;font-size:11px;padding:10px;border:2px solid #0f0;border-radius:8px;max-height:80vh;overflow:auto;';
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = 'CLOSE';
+    closeBtn.style.cssText = 'display:block;margin-bottom:8px;background:#0f0;color:#000;border:none;padding:6px 10px;font-weight:bold;border-radius:4px;';
+    closeBtn.onclick = () => ov.remove();
+    ov.appendChild(closeBtn);
+    document.body.appendChild(ov);
+  }
+  const pre = document.createElement('pre');
+  pre.style.cssText = 'margin:0 0 10px;white-space:pre-wrap;word-break:break-all;border-top:1px dashed #0f0;padding-top:8px;';
+  pre.textContent = new Date().toLocaleTimeString() + ' ' + (label || '') + '\n' + lines.join('\n');
+  ov.insertBefore(pre, ov.firstChild.nextSibling);
+}
+window._debugW2Gap = _debugW2Gap;
 
 function setAddExerciseBtnStyle(isNew) {
   const btn = document.querySelector('.btn-add-exercise');
@@ -7933,7 +7983,6 @@ function renderWorkoutsTab2() {
     // A ResizeObserver on w2ToggleBar (set up once, module-level) keeps this
     // in sync on its own whenever the bar's rendered box size actually
     // changes, so no rAF-timing guess is needed here.
-    if (toggleBar.id === 'w2ToggleBar') setTimeout(_debugW2Gap, 500); // TEMP-DEBUG-W2GAP — remove after diagnosing gap issue
   }
 
   // ── Coach view ────────────────────────────────────────
