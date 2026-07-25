@@ -4362,6 +4362,20 @@ window._syncExToggleBarHeight = _syncExToggleBarHeight;
   }
 })();
 
+function _syncW2TopPad() {
+  const bar = document.getElementById('w2ToggleBar');
+  const pg = document.getElementById('page-workouts2');
+  if (!bar || !pg) return;
+  pg.style.paddingTop = bar.getBoundingClientRect().bottom + 'px';
+}
+window._syncW2TopPad = _syncW2TopPad;
+(function() {
+  const bar = document.getElementById('w2ToggleBar');
+  if (bar && typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(_syncW2TopPad).observe(bar);
+  }
+})();
+
 function setAddExerciseBtnStyle(isNew) {
   const btn = document.querySelector('.btn-add-exercise');
   if (btn) btn.classList.toggle('new-workout', !!isNew);
@@ -7916,12 +7930,9 @@ function renderWorkoutsTab2() {
     // height (measured, not guessed — its content height isn't a fixed
     // constant) — the first row's own 5px top padding then supplies the
     // matching other half, landing on the same 10px gap as every other pair.
-    if (toggleBar.id === 'w2ToggleBar') {
-      requestAnimationFrame(() => {
-        const _pg = document.getElementById('page-workouts2');
-        if (_pg) _pg.style.paddingTop = toggleBar.getBoundingClientRect().bottom + 'px';
-      });
-    }
+    // A ResizeObserver on w2ToggleBar (set up once, module-level) keeps this
+    // in sync on its own whenever the bar's rendered box size actually
+    // changes, so no rAF-timing guess is needed here.
   }
 
   // ── Coach view ────────────────────────────────────────
