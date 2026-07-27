@@ -4538,8 +4538,45 @@ function _syncExToggleBarHeight() {
   if (!bar || !pg) return;
   const h = bar.offsetHeight;
   pg.style.paddingTop = h > 0 ? h + 'px' : '';
+  if (window._debugExGapLog) _debugExGapLog('_syncExToggleBarHeight');
 }
 window._syncExToggleBarHeight = _syncExToggleBarHeight;
+
+// === TEMP DEBUG: exercises-tab gap probe — remove this whole block once solved ===
+function _debugExGapLog(label) {
+  const panel = document.getElementById('debug-gap-panel');
+  const logEl = document.getElementById('debug-gap-log');
+  if (!panel || !logEl) return;
+  const bar = document.getElementById('exercisesToggleBar');
+  const pg = document.getElementById('page-exercises');
+  const content = document.getElementById('exercisesTabContent');
+  const firstItem = content ? content.querySelector('.ex-list-item') : null;
+  const barRect = bar ? bar.getBoundingClientRect() : null;
+  const pgRect = pg ? pg.getBoundingClientRect() : null;
+  const firstRect = firstItem ? firstItem.getBoundingClientRect() : null;
+  const pgCs = pg ? getComputedStyle(pg) : null;
+  const gapBarToFirst = (firstRect && barRect) ? (firstRect.top - barRect.bottom).toFixed(1) : 'n/a';
+  const t = new Date();
+  const ts = `${t.toLocaleTimeString()}.${String(t.getMilliseconds()).padStart(3,'0')}`;
+  const lines = [
+    `${ts}  [EX ${label}]`,
+    `bar offsetHeight=${bar ? bar.offsetHeight : 'n/a'}  rect.top=${barRect ? barRect.top.toFixed(1) : 'n/a'}  rect.bottom=${barRect ? barRect.bottom.toFixed(1) : 'n/a'}`,
+    `page rect.top=${pgRect ? pgRect.top.toFixed(1) : 'n/a'}  inline paddingTop=${pg ? pg.style.paddingTop : 'n/a'}  computed paddingTop=${pgCs ? pgCs.paddingTop : 'n/a'}`,
+    `firstItem rect.top=${firstRect ? firstRect.top.toFixed(1) : 'n/a'}`,
+    `GAP bar.bottom->firstItem.top = ${gapBarToFirst}`,
+    '='.repeat(32)
+  ];
+  panel.style.display = 'block';
+  logEl.textContent = lines.join('\n') + '\n' + logEl.textContent;
+}
+window._debugExGapLog = _debugExGapLog;
+function _debugExGapSchedule() {
+  [0, 50, 150, 300, 600, 1000, 2000].forEach(ms => {
+    setTimeout(() => _debugExGapLog(`+${ms}ms`), ms);
+  });
+}
+window._debugExGapSchedule = _debugExGapSchedule;
+// === END TEMP DEBUG ===
 (function() {
   const bar = document.getElementById('exercisesToggleBar');
   if (bar && typeof ResizeObserver !== 'undefined') {
@@ -8115,6 +8152,7 @@ function switchTab(tab) {
     _exTabView = 'all';
     renderExercisesTab();
     requestAnimationFrame(_syncExToggleBarHeight);
+    if (window._debugExGapSchedule) _debugExGapSchedule(); // TEMP DEBUG — remove with the rest of the debug block
   }
   if (tab==='progress') {
     renderProgress();
