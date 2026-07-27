@@ -4439,86 +4439,8 @@ function _syncWorkoutHeaderSpacer() {
     // tab cards list) instead of reliably reserving visible space.
     spacer.style.height = Math.max(0, hdrBottom - spacerTop + 10) + 'px';
   }
-  if (window._debugGapLog) _debugGapLog('_syncWorkoutHeaderSpacer');
 }
 window._syncWorkoutHeaderSpacer = _syncWorkoutHeaderSpacer;
-
-// === TEMP DEBUG: header-gap probe — remove this whole block once solved ===
-function _debugGapLog(label) {
-  const panel = document.getElementById('debug-gap-panel');
-  const logEl = document.getElementById('debug-gap-log');
-  if (!panel || !logEl) return;
-  const hdr = document.getElementById('workout-sticky-header');
-  const chips = document.getElementById('todayMuscleChipsWrap');
-  const spacer = document.getElementById('workout-header-spacer');
-  const list = document.getElementById('exerciseList');
-  const firstCard = list ? list.querySelector('.exercise-card') : null;
-  const hdrRect = hdr ? hdr.getBoundingClientRect() : null;
-  const chipsRect = chips ? chips.getBoundingClientRect() : null;
-  const spacerRect = spacer ? spacer.getBoundingClientRect() : null;
-  const firstRect = firstCard ? firstCard.getBoundingClientRect() : null;
-  const chipsDisplay = chips ? getComputedStyle(chips).display : 'n/a';
-  const gapChipsToFirst = (firstRect && chipsRect) ? (firstRect.top - chipsRect.bottom).toFixed(1) : 'n/a';
-  const gapHdrToFirst = (firstRect && hdrRect) ? (firstRect.top - hdrRect.bottom).toFixed(1) : 'n/a';
-  // Spacer's rect.top is landing at ~21px instead of 0 — probing what's ABOVE it
-  // (before #today-workout-area even starts) that could be pushing flow content
-  // down: body's own padding-top (safeTop, used in the height calc), the main app
-  // .header bar (possibly not fully collapsed to 0, same class of bug as before),
-  // .tabs, and #page-log/#today-workout-area's own position.
-  const _bodyCs = getComputedStyle(document.body);
-  const mainHdr = document.querySelector('.header');
-  const tabsEl = document.querySelector('.tabs');
-  const pageLog = document.getElementById('page-log');
-  const workoutArea = document.getElementById('today-workout-area');
-  const mainHdrRect = mainHdr ? mainHdr.getBoundingClientRect() : null;
-  const tabsRect = tabsEl ? tabsEl.getBoundingClientRect() : null;
-  const pageLogRect = pageLog ? pageLog.getBoundingClientRect() : null;
-  const workoutAreaRect = workoutArea ? workoutArea.getBoundingClientRect() : null;
-  const aboveLines = [
-    `  body: paddingTop=${_bodyCs.paddingTop} (this is "safeTop" in the height calc)`,
-    `  .header: ${mainHdr ? `classList="${mainHdr.className}" display=${getComputedStyle(mainHdr).display} rect.top=${mainHdrRect.top.toFixed(1)} rect.height=${mainHdrRect.height.toFixed(1)} maxHeight=${getComputedStyle(mainHdr).maxHeight}` : 'n/a'}`,
-    `  .tabs: ${tabsEl ? `display=${getComputedStyle(tabsEl).display} rect.top=${tabsRect.top.toFixed(1)} rect.height=${tabsRect.height.toFixed(1)}` : 'n/a'}`,
-    `  #page-log: ${pageLog ? `rect.top=${pageLogRect.top.toFixed(1)} paddingTop=${getComputedStyle(pageLog).paddingTop}` : 'n/a'}`,
-    `  #today-workout-area: ${workoutArea ? `rect.top=${workoutAreaRect.top.toFixed(1)}` : 'n/a'}`
-  ];
-  // Every element in the flow between the spacer and #exerciseList — to find which
-  // one is contributing height between spacer.bottom and firstCard.top.
-  const _midIds = ['today-info-panel', 'today-info-close-bar', 'today-actions', 'today-chips-block', 'nwf-bottom-bar', 'ex-nav-slider', 'ex-nav-list', 'exerciseList'];
-  const midLines = _midIds.map(id => {
-    const el = document.getElementById(id);
-    if (!el) return `  ${id}: n/a`;
-    const r = el.getBoundingClientRect();
-    const cs = getComputedStyle(el);
-    return `  ${id}: display=${cs.display} rect.top=${r.top.toFixed(1)} rect.height=${r.height.toFixed(1)} marginTop=${cs.marginTop} paddingTop=${cs.paddingTop}`;
-  });
-  const t = new Date();
-  const ts = `${t.toLocaleTimeString()}.${String(t.getMilliseconds()).padStart(3,'0')}`;
-  const lines = [
-    `${ts}  [${label}]`,
-    `hdr offsetHeight=${hdr ? hdr.offsetHeight : 'n/a'}  rect.bottom=${hdrRect ? hdrRect.bottom.toFixed(1) : 'n/a'}`,
-    `chips display=${chipsDisplay}  rect.bottom=${chipsRect ? chipsRect.bottom.toFixed(1) : 'n/a'}`,
-    `spacer style.height=${spacer ? spacer.style.height : 'n/a'}  rect.top=${spacerRect ? spacerRect.top.toFixed(1) : 'n/a'}  rect.bottom=${spacerRect ? spacerRect.bottom.toFixed(1) : 'n/a'}`,
-    ...aboveLines,
-    ...midLines,
-    `firstCard rect.top=${firstRect ? firstRect.top.toFixed(1) : 'n/a'}`,
-    `GAP chips.bottom->firstCard.top = ${gapChipsToFirst}`,
-    `GAP hdr.bottom->firstCard.top   = ${gapHdrToFirst}`,
-    '-'.repeat(32)
-  ];
-  panel.style.display = 'block';
-  logEl.textContent = lines.join('\n') + '\n' + logEl.textContent;
-}
-window._debugGapLog = _debugGapLog;
-// Extra delayed snapshots after a workout is shown, to catch anything that only
-// settles into its final layout after the initial synchronous render (matches the
-// "+50ms" / "+600ms settled" snapshots used to diagnose the earlier workouts-tab gap).
-function _debugGapSchedule() {
-  [0, 50, 150, 300, 600, 1000, 2000].forEach(ms => {
-    setTimeout(() => _debugGapLog(`+${ms}ms`), ms);
-  });
-}
-window._debugGapSchedule = _debugGapSchedule;
-// === END TEMP DEBUG ===
 (function() {
   const hdr = document.getElementById('workout-sticky-header');
   if (hdr && typeof ResizeObserver !== 'undefined') {
@@ -4545,45 +4467,8 @@ function _syncExToggleBarHeight() {
   } else {
     pg.style.paddingTop = '';
   }
-  if (window._debugExGapLog) _debugExGapLog('_syncExToggleBarHeight');
 }
 window._syncExToggleBarHeight = _syncExToggleBarHeight;
-
-// === TEMP DEBUG: exercises-tab gap probe — remove this whole block once solved ===
-function _debugExGapLog(label) {
-  const panel = document.getElementById('debug-gap-panel');
-  const logEl = document.getElementById('debug-gap-log');
-  if (!panel || !logEl) return;
-  const bar = document.getElementById('exercisesToggleBar');
-  const pg = document.getElementById('page-exercises');
-  const content = document.getElementById('exercisesTabContent');
-  const firstItem = content ? content.querySelector('[data-exname]') : null;
-  const barRect = bar ? bar.getBoundingClientRect() : null;
-  const pgRect = pg ? pg.getBoundingClientRect() : null;
-  const firstRect = firstItem ? firstItem.getBoundingClientRect() : null;
-  const pgCs = pg ? getComputedStyle(pg) : null;
-  const gapBarToFirst = (firstRect && barRect) ? (firstRect.top - barRect.bottom).toFixed(1) : 'n/a';
-  const t = new Date();
-  const ts = `${t.toLocaleTimeString()}.${String(t.getMilliseconds()).padStart(3,'0')}`;
-  const lines = [
-    `${ts}  [EX ${label}]`,
-    `bar offsetHeight=${bar ? bar.offsetHeight : 'n/a'}  rect.top=${barRect ? barRect.top.toFixed(1) : 'n/a'}  rect.bottom=${barRect ? barRect.bottom.toFixed(1) : 'n/a'}`,
-    `page rect.top=${pgRect ? pgRect.top.toFixed(1) : 'n/a'}  inline paddingTop=${pg ? pg.style.paddingTop : 'n/a'}  computed paddingTop=${pgCs ? pgCs.paddingTop : 'n/a'}`,
-    `firstItem rect.top=${firstRect ? firstRect.top.toFixed(1) : 'n/a'}`,
-    `GAP bar.bottom->firstItem.top = ${gapBarToFirst}`,
-    '='.repeat(32)
-  ];
-  panel.style.display = 'block';
-  logEl.textContent = lines.join('\n') + '\n' + logEl.textContent;
-}
-window._debugExGapLog = _debugExGapLog;
-function _debugExGapSchedule() {
-  [0, 50, 150, 300, 600, 1000, 2000].forEach(ms => {
-    setTimeout(() => _debugExGapLog(`+${ms}ms`), ms);
-  });
-}
-window._debugExGapSchedule = _debugExGapSchedule;
-// === END TEMP DEBUG ===
 (function() {
   const bar = document.getElementById('exercisesToggleBar');
   if (bar && typeof ResizeObserver !== 'undefined') {
@@ -8164,7 +8049,6 @@ function switchTab(tab) {
     // the tab switch) — a single sync right away can lock in a stale mid-settle
     // position and never correct itself again.
     [50, 150, 300, 600].forEach(ms => setTimeout(_syncExToggleBarHeight, ms));
-    if (window._debugExGapSchedule) _debugExGapSchedule(); // TEMP DEBUG — remove with the rest of the debug block
   }
   if (tab==='progress') {
     renderProgress();
@@ -12903,7 +12787,6 @@ function loadWorkout(idx) {
         _updateExSetCount(card.id);
       });
     }, 100);
-    if (window._debugGapSchedule) _debugGapSchedule(); // TEMP DEBUG — remove with the rest of the debug block
   };
   // If user already confirmed via Change Workout menu, skip second popup
   if (!anySetDone || window._isChangingWorkout) {
@@ -26568,16 +26451,6 @@ function _updateKgDisplay(val, isBWMode) {
 }
 // ─────────────────────────────────────────────────────────────────────────
 </script>
-
-<!-- === TEMP DEBUG: header-gap probe — remove this whole block once solved ===
-     Body-level (NOT inside any .page) — .page elements get display:none when
-     inactive, which was hiding this panel the moment you switched away from the
-     Log tab even though it was still logging behind the scenes. -->
-<div id="debug-gap-panel" style="display:none;position:fixed;top:30px;left:6px;right:6px;z-index:99999;background:#000;border:2px solid #39FF14;border-radius:8px;padding:8px;font-family:monospace;font-size:10px;line-height:1.4;color:#39FF14;max-height:85vh;overflow-y:auto;white-space:pre-wrap;">
-  <button onclick="document.getElementById('debug-gap-panel').style.display='none'" style="background:#39FF14;color:#000;border:none;border-radius:6px;padding:6px 14px;font-weight:700;margin-bottom:8px;">CLOSE</button>
-  <div id="debug-gap-log"></div>
-</div>
-<!-- === END TEMP DEBUG === -->
 
 <div id="reps-popup" style="display:none;"></div>
 <div id="ex-float-bar-block"></div>
