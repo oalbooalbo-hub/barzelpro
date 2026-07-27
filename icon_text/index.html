@@ -1317,7 +1317,7 @@ function hidAuthScreen() {
     <div id="nwf-bottom-bar" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;padding:16px 16px calc(env(safe-area-inset-bottom,0px) + 16px);background:var(--bg,#0a0a0a);z-index:20;box-sizing:border-box;gap:10px;"></div>
     <div id="ex-nav-slider">
       <div id="ex-nav-list">
-        <div id="exerciseList" style="margin-top:10px;"></div>
+        <div id="exerciseList"></div>
         <div class="add-ex-row">
           <div id="nwf-build-prompt" style="display:none;width:100%;text-align:center;padding:28px 20px 20px;box-sizing:border-box;">
             <div style="font-family:'DM Sans',sans-serif;font-size:24px;font-weight:800;color:#fff;line-height:1.2;">Let's Build Your Workout</div>
@@ -4428,7 +4428,12 @@ function _syncWorkoutHeaderSpacer() {
     // header's actual on-screen height, or a gap opens below the header on
     // any device with a nonzero safe-area-inset-top (notch/status bar).
     const safeTop = parseFloat(getComputedStyle(document.body).paddingTop) || 0;
-    spacer.style.height = Math.max(0, hdr.offsetHeight - safeTop) + 'px';
+    // +10 so the exercise list starts with a bit of breathing room below the header
+    // (e.g. below the muscle-chips divider) — done here via the spacer's own height
+    // rather than a margin-top on #exerciseList, since a plain margin there was
+    // getting collapsed/overridden in practice (same class of issue as the workouts-
+    // tab cards list) instead of reliably reserving visible space.
+    spacer.style.height = Math.max(0, hdr.offsetHeight - safeTop + 10) + 'px';
   }
 }
 window._syncWorkoutHeaderSpacer = _syncWorkoutHeaderSpacer;
