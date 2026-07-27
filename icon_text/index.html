@@ -4428,18 +4428,22 @@ function _syncWorkoutHeaderSpacer() {
   const hdr = document.getElementById('workout-sticky-header');
   const spacer = document.getElementById('workout-header-spacer');
   if (hdr && spacer) {
-    // hdr is position:fixed to the true device top, but body's own
-    // padding-top:env(safe-area-inset-top) pushes the spacer (normal flow)
-    // down by that same inset — subtract it so the spacer only reserves the
-    // header's actual on-screen height, or a gap opens below the header on
-    // any device with a nonzero safe-area-inset-top (notch/status bar).
-    const safeTop = parseFloat(getComputedStyle(document.body).paddingTop) || 0;
+    // hdr is position:fixed to the true device top, so it renders at an absolute
+    // viewport position unaffected by any ancestor's safe-area padding — while the
+    // spacer (normal flow) can land at a nonzero rect.top of its own if ANY ancestor
+    // above it (not necessarily body — measured, not assumed) reserves space for
+    // the safe-area inset (notch/status bar). Comparing the two elements' own
+    // measured rects directly (instead of assuming the offset lives on body's
+    // padding-top specifically) is what actually keeps this correct regardless of
+    // which ancestor introduces that offset.
+    const hdrBottom = hdr.getBoundingClientRect().bottom;
+    const spacerTop = spacer.getBoundingClientRect().top;
     // +10 so the exercise list starts with a bit of breathing room below the header
     // (e.g. below the muscle-chips divider) — done here via the spacer's own height
     // rather than a margin-top on #exerciseList, since a plain margin there was
     // getting collapsed/overridden in practice (same class of issue as the workouts-
     // tab cards list) instead of reliably reserving visible space.
-    spacer.style.height = Math.max(0, hdr.offsetHeight - safeTop + 10) + 'px';
+    spacer.style.height = Math.max(0, hdrBottom - spacerTop + 10) + 'px';
   }
   if (window._debugGapLog) _debugGapLog('_syncWorkoutHeaderSpacer');
 }
