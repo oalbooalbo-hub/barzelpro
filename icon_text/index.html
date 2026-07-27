@@ -4462,13 +4462,24 @@ function _debugGapLog(label) {
   const chipsDisplay = chips ? getComputedStyle(chips).display : 'n/a';
   const gapChipsToFirst = (firstRect && chipsRect) ? (firstRect.top - chipsRect.bottom).toFixed(1) : 'n/a';
   const gapHdrToFirst = (firstRect && hdrRect) ? (firstRect.top - hdrRect.bottom).toFixed(1) : 'n/a';
+  // Every element in the flow between the spacer and #exerciseList — to find which
+  // one is contributing height between spacer.bottom and firstCard.top.
+  const _midIds = ['today-info-panel', 'today-info-close-bar', 'today-actions', 'today-chips-block', 'nwf-bottom-bar', 'ex-nav-slider', 'ex-nav-list', 'exerciseList'];
+  const midLines = _midIds.map(id => {
+    const el = document.getElementById(id);
+    if (!el) return `  ${id}: n/a`;
+    const r = el.getBoundingClientRect();
+    const cs = getComputedStyle(el);
+    return `  ${id}: display=${cs.display} rect.top=${r.top.toFixed(1)} rect.height=${r.height.toFixed(1)} marginTop=${cs.marginTop} paddingTop=${cs.paddingTop}`;
+  });
   const t = new Date();
   const ts = `${t.toLocaleTimeString()}.${String(t.getMilliseconds()).padStart(3,'0')}`;
   const lines = [
     `${ts}  [${label}]`,
     `hdr offsetHeight=${hdr ? hdr.offsetHeight : 'n/a'}  rect.bottom=${hdrRect ? hdrRect.bottom.toFixed(1) : 'n/a'}`,
     `chips display=${chipsDisplay}  rect.bottom=${chipsRect ? chipsRect.bottom.toFixed(1) : 'n/a'}`,
-    `spacer style.height=${spacer ? spacer.style.height : 'n/a'}  rect.height=${spacerRect ? spacerRect.height.toFixed(1) : 'n/a'}`,
+    `spacer style.height=${spacer ? spacer.style.height : 'n/a'}  rect.top=${spacerRect ? spacerRect.top.toFixed(1) : 'n/a'}  rect.bottom=${spacerRect ? spacerRect.bottom.toFixed(1) : 'n/a'}`,
+    ...midLines,
     `firstCard rect.top=${firstRect ? firstRect.top.toFixed(1) : 'n/a'}`,
     `GAP chips.bottom->firstCard.top = ${gapChipsToFirst}`,
     `GAP hdr.bottom->firstCard.top   = ${gapHdrToFirst}`,
