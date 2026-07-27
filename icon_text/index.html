@@ -4531,7 +4531,20 @@ function _syncExToggleBarHeight() {
   const pg = document.getElementById('page-exercises');
   if (!bar || !pg) return;
   const h = bar.offsetHeight;
-  pg.style.paddingTop = h > 0 ? h + 'px' : '';
+  if (h > 0) {
+    // bar is position:fixed (viewport-relative) but pg's own rect.top can land at a
+    // nonzero value of its own — measuring both directly (rather than assuming pg
+    // starts at the viewport top, which a flat "padding = bar.offsetHeight" implicitly
+    // did) is what keeps this correct regardless of where pg actually settles.
+    // pg.getBoundingClientRect().top is unaffected by pg's own padding-top, so it's
+    // safe to read before updating it below. +10 for a bit of breathing room below
+    // the pill-bar divider, same as the workout screen's spacer.
+    const barBottom = bar.getBoundingClientRect().bottom;
+    const pgTop = pg.getBoundingClientRect().top;
+    pg.style.paddingTop = Math.max(0, barBottom - pgTop + 10) + 'px';
+  } else {
+    pg.style.paddingTop = '';
+  }
   if (window._debugExGapLog) _debugExGapLog('_syncExToggleBarHeight');
 }
 window._syncExToggleBarHeight = _syncExToggleBarHeight;
@@ -4544,7 +4557,7 @@ function _debugExGapLog(label) {
   const bar = document.getElementById('exercisesToggleBar');
   const pg = document.getElementById('page-exercises');
   const content = document.getElementById('exercisesTabContent');
-  const firstItem = content ? content.querySelector('.ex-list-item') : null;
+  const firstItem = content ? content.querySelector('[data-exname]') : null;
   const barRect = bar ? bar.getBoundingClientRect() : null;
   const pgRect = pg ? pg.getBoundingClientRect() : null;
   const firstRect = firstItem ? firstItem.getBoundingClientRect() : null;
@@ -8146,6 +8159,11 @@ function switchTab(tab) {
     _exTabView = 'all';
     renderExercisesTab();
     requestAnimationFrame(_syncExToggleBarHeight);
+    // Re-sync a few more times as the page settles into its final position (some
+    // ancestor above #page-exercises is still animating/collapsing for a bit after
+    // the tab switch) — a single sync right away can lock in a stale mid-settle
+    // position and never correct itself again.
+    [50, 150, 300, 600].forEach(ms => setTimeout(_syncExToggleBarHeight, ms));
     if (window._debugExGapSchedule) _debugExGapSchedule(); // TEMP DEBUG — remove with the rest of the debug block
   }
   if (tab==='progress') {
