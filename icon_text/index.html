@@ -579,7 +579,7 @@ body.ex-tab-detail-open #ex-float-bar{display:none !important;}
 #calendarOverlay{background:rgba(0,0,0,.5)!important;top:0!important;align-items:flex-start!important;}#calendarOverlay .modal-sheet{border-radius:0 0 20px 20px;border-top:none;border-bottom:1px solid var(--border);animation:sheetDown .3s cubic-bezier(.34,1.56,.64,1);margin-top:0;border-radius:0 0 20px 20px;max-height:100dvh;max-height:100vh;}@keyframes sheetDown{from{transform:translateY(-60px);opacity:0}to{transform:translateY(0);opacity:1}}
 @keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 @keyframes prStarPop{0%{transform:scale(0) rotate(-25deg);opacity:0}55%{transform:scale(1.5) rotate(10deg);opacity:1}78%{transform:scale(0.85) rotate(-5deg)}100%{transform:scale(1) rotate(0deg);opacity:1}}
-.pr-star-new{animation:prStarPop 1s cubic-bezier(.34,1.56,.64,1) forwards;display:block;}
+.pr-star-new{animation:prStarPop 1.5s cubic-bezier(.34,1.56,.64,1) forwards;display:block;}
 @keyframes tapPopScale{0%{transform:scale(.8)}60%{transform:scale(1.12)}100%{transform:scale(1)}}
 .wsd-circle{transition:border-color .2s ease;}
 @keyframes modalFadeIn{from{opacity:0}to{opacity:1}}
@@ -2256,7 +2256,7 @@ function autoSaveDraft() {
     card.querySelectorAll('.set-row').forEach(row => {
       const inp = row.querySelectorAll('.set-input');
       const repsSpan1=row.querySelector('.reps-spin-val'); const reps1=repsSpan1?(parseInt(repsSpan1.dataset.reps)||0):(parseInt(inp[1]?.value)||0);
-      sets.push({kg:parseFloat(inp[0]?.value)||0, reps:reps1, done:!!row.querySelector('.set-done-btn.done'), ignored:row.dataset.ignored==='1', setType:row.dataset.setType||''});
+      sets.push({kg:parseFloat(inp[0]?.value)||0, reps:reps1, done:!!row.querySelector('.set-done-btn.done'), ignored:row.dataset.ignored==='1', setType:row.dataset.setType||'', bwExtra:inp[0]?.dataset.bwExtra!==undefined?parseFloat(inp[0].dataset.bwExtra):null});
     });
     exercises.push({name:card.dataset.exname||'Exercise', muscle:card.dataset.exmuscle||'Chest', sets, comment:card.querySelector('.comment-box')?.value||''});
   });
@@ -4393,6 +4393,11 @@ function _updateWorkoutProgress() {
     const prevWt  = parseInt(prevSpans[0]?.dataset.count || '0');
     const prevVol = parseInt(prevSpans[1]?.dataset.count || '0');
     const prevVl  = parseInt(prevSpans[2]?.dataset.count || '0');
+    // Counts unchanged since last render — bail out before the rebuild below, which
+    // replaces the star SVGs outright and would cut short a pop animation still
+    // mid-flight from a call moments earlier (e.g. toggleDone's immediate update
+    // followed by its repositioning timeout re-syncing progress with the same counts).
+    if (prevSpans.length && weightPRs === prevWt && volPRs === prevVol && volumePRs === prevVl) return;
     const star = (color, n, idx) => {
       const f   = n > 0 ? color : '#333';
       const lc  = n > 0 ? color : '#444';
@@ -4402,14 +4407,12 @@ function _updateWorkoutProgress() {
     };
     prStars.innerHTML = star('#e8ff47', weightPRs, 0) + star('#ff8c42', volPRs, 1) + star('#a78bfa', volumePRs, 2);
     const newSpans = prStars.querySelectorAll('span[data-pr]');
-    let delay = 0;
     const _animStar = (span, condition) => {
       if (!condition) return;
       const svg = span?.querySelector('svg');
       if (!svg) return;
-      svg.style.animationDelay = delay + 'ms';
+      svg.style.animationDelay = '0ms';
       svg.classList.add('pr-star-new');
-      delay += 400;
     };
     _animStar(newSpans[0], weightPRs > prevWt && weightPRs > 0);
     _animStar(newSpans[1], volPRs    > prevVol && volPRs    > 0);
@@ -4431,7 +4434,11 @@ function _syncWorkoutHeaderSpacer() {
     // padding-top specifically) is what actually keeps this correct regardless of
     // which ancestor introduces that offset.
     const hdrBottom = hdr.getBoundingClientRect().bottom;
-    const spacerTop = spacer.getBoundingClientRect().top;
+    // spacer.getBoundingClientRect().top is viewport-relative, so it drifts by the
+    // current scroll offset — cancel that out (+ scrollY) so a sync that happens to
+    // run while the page is mid-scroll (e.g. a filter's show/hide animation shifting
+    // scroll position) doesn't bake that transient offset into the spacer's height.
+    const spacerTop = spacer.getBoundingClientRect().top + window.scrollY;
     // +10 so the exercise list starts with a bit of breathing room below the header
     // (e.g. below the muscle-chips divider) — done here via the spacer's own height
     // rather than a margin-top on #exerciseList, since a plain margin there was
@@ -4531,7 +4538,8 @@ function saveSession() {
         reps: (()=>{const rs=row.querySelector('.reps-spin-val');return rs?(parseInt(rs.dataset.reps)||0):(parseInt(inp[1]?.value)||0);})(),
         done: !!row.querySelector('.set-done-btn.done'),
         ignored: row.dataset.ignored === '1',
-        setType: row.dataset.setType || ''
+        setType: row.dataset.setType || '',
+        bwExtra: inp[0]?.dataset.bwExtra !== undefined ? parseFloat(inp[0].dataset.bwExtra) : null
       });
     });
     cards.push({
@@ -9256,7 +9264,7 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
   if (sessionData) {
     // Restore from saved session: exact sets with done state
     sessionData.sets.forEach(s => {
-      addSet(id, s.kg||null, s.reps||null, s.done);
+      addSet(id, s.kg||null, s.reps||null, s.done, s.bwExtra!=null ? s.bwExtra : null);
       const rows = document.querySelectorAll(`#set-body-${id} tr.set-row`);
       const lastRow = rows[rows.length-1];
       if (s.ignored && !s.setType) {
@@ -10060,6 +10068,13 @@ function closeExDetailOverlay() {
   if (_cw) _cw.style.display = 'flex';
   if (window.hideExFloatBar) hideExFloatBar();
   if (_wasCompleted) setTimeout(_scrollToNextExercise, 380);
+  // Header shrank while its chips row was hidden during the detail view — resync
+  // the spacer now that it's restored, otherwise it keeps reserving the taller
+  // height and leaves a dead blank gap above the list.
+  if (window._syncWorkoutHeaderSpacer) {
+    _syncWorkoutHeaderSpacer();
+    requestAnimationFrame(_syncWorkoutHeaderSpacer);
+  }
 
   if (overlayBody && overlayBody.scrollTop > 0) {
     overlayBody.scrollTo({ top: 0, behavior: 'smooth' });
@@ -10622,7 +10637,9 @@ function toggleDone(id) {
   checkFinishReady();
   saveSession();
   updateTodayMuscleChips();
-  if (_todayHideDone) applyTodayFilters();
+  // isDone case schedules its own delayed applyTodayFilters() above, timed to the
+  // PR star animation — only fire immediately here for the un-complete path.
+  if (!isDone && _todayHideDone) applyTodayFilters();
 }
 
 function checkResetBtn(exId) {
@@ -10744,8 +10761,8 @@ let _kgSignMode = 1; // 1 = plus, -1 = minus
 function kgPadReset() {
   const prev = window._kgEditorPrevKg;
   if (!prev || prev <= 0) return;
-  const input = window._kgEditorInput;
-  const wasBW = input?.dataset.origBw === '1';
+  const prevBwExtra = window._kgEditorPrevBwExtra;
+  const wasBW = prevBwExtra != null;
   _kgBWMode = wasBW;
   window._kgEditorBWMode = wasBW;
   const btn = document.getElementById('kgBWBtnInline');
@@ -10753,13 +10770,16 @@ function kgPadReset() {
   if (wasBW) {
     btn?.classList.add('kg-bw-btn-active');
     if (btnLabel) btnLabel.textContent = 'Remove Body Weight (BW)';
+    // prev is the resolved total (bodyweight + extra) from last time — only the
+    // extra portion goes in _kgEditorVal, since that's what BW mode edits/displays.
+    window._kgEditorVal = prevBwExtra > 0 ? String(prevBwExtra) : '';
     _refreshBWCell();
   } else {
     btn?.classList.remove('kg-bw-btn-active');
     if (btnLabel) btnLabel.textContent = 'Add Body Weight (BW)';
     _removeBWCell();
+    _setKgVal(prev);
   }
-  _setKgVal(prev);
 }
 
 function kgPadToggleSign() {
@@ -11074,7 +11094,32 @@ function _tryClearSetFillError() {
     window._setFillErrorRow = null;
   }
 }
-function addSet(exId, defaultKg=null, defaultReps=null, defaultDone=false) {
+// Renders a set's kg cell as "BW"/"BW+X" instead of the plain number, and wires
+// it to reopen the KG editor in BW mode when tapped — shared by addSet's
+// "inherit BW from previous row" path and its "restore a saved BW set" path.
+function _applyBWDisplayToInput(input, extra, total, exId) {
+  input.dataset.bwExtra = extra;
+  input.dataset.bwTotal = total;
+  const td = input.parentElement;
+  input.style.cssText += ';position:absolute;opacity:0;pointer-events:none;width:0;height:0;';
+  input.parentElement.style.position = 'relative';
+  const bwLabel = document.createElement('div');
+  bwLabel.className = 'bw-display-label';
+  bwLabel.style.cssText = 'display:inline-flex;align-items:baseline;justify-content:space-between;width:100%;gap:4px;cursor:pointer;';
+  const _bwExtraHTML = extra > 0
+    ? `<span style="flex:1;display:flex;align-items:baseline;justify-content:center;gap:2px;white-space:nowrap;"><span style="font-size:18px;font-weight:700;color:#fff;">BW+</span><span style="font-size:18px;font-weight:700;color:#fff;">${extra}</span></span>`
+    : `<span style="flex:1;text-align:center;font-size:18px;font-weight:700;color:#fff;">BW</span>`;
+  bwLabel.innerHTML = _bwExtraHTML + '<span style="color:#fff;font-size:14px;font-weight:300;flex-shrink:0;">Kg</span>';
+  bwLabel.onclick = () => openInlineKgEditor(input, exId);
+  const _wrapper = td.querySelector("div") || td;
+  // Hide Kg label in wrapper when BW active
+  const _kgUnitLabel = _wrapper.querySelector(".kg-unit-label");
+  if (_kgUnitLabel) _kgUnitLabel.style.display = "none";
+  // Remove old BW label if inside wrapper
+  _wrapper.querySelector(".bw-display-label")?.remove();
+  _wrapper.appendChild(bwLabel);
+}
+function addSet(exId, defaultKg=null, defaultReps=null, defaultDone=false, defaultBwExtra=null) {
   // Validate previous set is filled before adding a new one
   if (!window._isNewWorkoutFlow && defaultKg === null && defaultReps === null) {
     const _rows = document.querySelectorAll(`#${exId} .set-row`);
@@ -11082,7 +11127,12 @@ function addSet(exId, defaultKg=null, defaultReps=null, defaultDone=false) {
       const _lastRow = _rows[_rows.length - 1];
       const _kgInput = _lastRow.querySelector('.kg-box-wrap input.set-input');
       const _repsSpan = _lastRow.querySelector('.reps-spin-val');
-      const _kgVal = parseFloat(_kgInput?.value);
+      // BW/BW+ sets keep their resolved weight in dataset.bwTotal, not the hidden
+      // input's .value — check that first so a sync slip elsewhere can't make a
+      // visibly-filled BW set read as empty here.
+      const _kgVal = _kgInput?.dataset.bwExtra !== undefined
+        ? (parseFloat(_kgInput.dataset.bwTotal) || 0)
+        : parseFloat(_kgInput?.value);
       const _repsVal = _repsSpan ? parseInt(_repsSpan.dataset.reps) : 0;
       if (!(_kgVal > 0) || !(_repsVal > 0)) {
         _showSetFillError(_lastRow, !(_kgVal > 0), !(_repsVal > 0));
@@ -11141,29 +11191,14 @@ function addSet(exId, defaultKg=null, defaultReps=null, defaultDone=false) {
   // Apply BW mode from previous set if inherited
   if (_inheritBWExtra !== null) {
     const newInput = tr.querySelector('.set-input');
-    if (newInput) {
-      newInput.dataset.bwExtra = _inheritBWExtra;
-      newInput.dataset.bwTotal = _inheritBWTotal;
-      const displayVal = _inheritBWExtra > 0 ? `BW+${_inheritBWExtra}` : 'BW';
-      const td = newInput.parentElement;
-      newInput.style.cssText += ';position:absolute;opacity:0;pointer-events:none;width:0;height:0;';
-      newInput.parentElement.style.position = 'relative';
-      const bwLabel = document.createElement('div');
-      bwLabel.className = 'bw-display-label';
-      bwLabel.style.cssText = 'display:inline-flex;align-items:baseline;justify-content:space-between;width:100%;gap:4px;cursor:pointer;';
-      const _bwExtraHTML = _inheritBWExtra > 0
-        ? `<span style="flex:1;display:flex;align-items:baseline;justify-content:center;gap:2px;white-space:nowrap;"><span style="font-size:18px;font-weight:700;color:#fff;">BW+</span><span style="font-size:18px;font-weight:700;color:#fff;">${_inheritBWExtra}</span></span>`
-        : `<span style="flex:1;text-align:center;font-size:18px;font-weight:700;color:#fff;">BW</span>`;
-      bwLabel.innerHTML = _bwExtraHTML + '<span style="color:#fff;font-size:14px;font-weight:300;flex-shrink:0;">Kg</span>';
-      bwLabel.onclick = () => openInlineKgEditor(newInput, exId);
-      const _wrapper = td.querySelector("div") || td;
-      // Hide Kg label in wrapper when BW active
-      const _kgUnitLabel = _wrapper.querySelector(".kg-unit-label");
-      if (_kgUnitLabel) _kgUnitLabel.style.display = "none";
-      // Remove old BW label if inside wrapper
-      _wrapper.querySelector(".bw-display-label")?.remove();
-      _wrapper.appendChild(bwLabel);
-    }
+    if (newInput) _applyBWDisplayToInput(newInput, _inheritBWExtra, _inheritBWTotal, exId);
+  } else if (defaultBwExtra !== null) {
+    // Restoring a saved set that was originally entered in BW/BW+ mode — show
+    // "BW"/"BW+X" instead of the resolved number, using the exact kg this set
+    // was saved with (not today's bodyweight): the label changes, but the
+    // underlying historical value driving volume/PR/chart math never does.
+    const newInput = tr.querySelector('.set-input');
+    if (newInput) _applyBWDisplayToInput(newInput, defaultBwExtra, defaultKg, exId);
   }
   // Add inline KG editor row
   const editorTr = document.createElement('tr');
@@ -11768,7 +11803,7 @@ function finishWorkoutFull() {
     card.querySelectorAll('.set-row').forEach(row => {
       const inp = row.querySelectorAll('.set-input');
       const repsSpan3=row.querySelector('.reps-spin-val'); const reps3=repsSpan3?(parseInt(repsSpan3.dataset.reps)||0):(parseInt(inp[1]?.value)||0);
-      sets.push({kg:parseFloat(inp[0].value)||0, reps:reps3, done:row.querySelector('.set-done-btn.done')!==null, ignored:row.dataset.ignored==='1', setType:row.dataset.setType||''});
+      sets.push({kg:parseFloat(inp[0].value)||0, reps:reps3, done:row.querySelector('.set-done-btn.done')!==null, ignored:row.dataset.ignored==='1', setType:row.dataset.setType||'', bwExtra:inp[0]?.dataset.bwExtra!==undefined?parseFloat(inp[0].dataset.bwExtra):null});
     });
     const comment = document.getElementById(`comment-${card.id}`)?.value?.trim()||'';
     // Read PR stars already computed in Today tab from imp-indicator
@@ -11848,7 +11883,7 @@ function saveWorkoutToList() {
       const inp = row.querySelectorAll('.set-input');
       const repsSpan = row.querySelector('.reps-spin-val');
       const reps = repsSpan ? (parseInt(repsSpan.dataset.reps)||0) : (parseInt(inp[1]?.value)||0);
-      sets.push({ kg: parseFloat(inp[0]?.value)||0, reps, done: row.querySelector('.set-done-btn.done')!==null, ignored: row.dataset.ignored==='1', setType: row.dataset.setType||'' });
+      sets.push({ kg: parseFloat(inp[0]?.value)||0, reps, done: row.querySelector('.set-done-btn.done')!==null, ignored: row.dataset.ignored==='1', setType: row.dataset.setType||'', bwExtra: inp[0]?.dataset.bwExtra!==undefined?parseFloat(inp[0].dataset.bwExtra):null });
     });
     exercises.push({ name: card.dataset.exname||'Exercise', muscle: card.dataset.exmuscle||'Chest', sets, comment: document.getElementById(`comment-${card.id}`)?.value?.trim()||'' });
   });
@@ -12760,7 +12795,7 @@ function loadWorkout(idx) {
       // stats, not as a "drop this row" marker) and carry setType through so the W/D
       // tag gets reapplied below — only truly manual-ignored (non-typed) sets are
       // dropped when loading a finished workout as a fresh template.
-      const sourceSets = (exData.sets||[]).filter(s=>!(s.ignored&&!s.setType)).map(s=>({kg:s.kg,reps:s.reps,done:isDraft?!!s.done:false,ignored:!!s.ignored,setType:s.setType||''}));
+      const sourceSets = (exData.sets||[]).filter(s=>!(s.ignored&&!s.setType)).map(s=>({kg:s.kg,reps:s.reps,done:isDraft?!!s.done:false,ignored:!!s.ignored,setType:s.setType||'',bwExtra:s.bwExtra!=null?s.bwExtra:null}));
       // `open: true` when there's a comment — addExerciseCard's sessionData-restore
       // path already auto-reveals the note (adds .open to the comment-area), but that
       // has no visible effect unless the card itself also opens: `.comment-area` is
@@ -13801,7 +13836,7 @@ function restoreWorkout(wi) {
       // stats, not as a "drop this row" marker) and carry setType through so the W/D
       // tag gets reapplied below — only truly manual-ignored (non-typed) sets are
       // dropped when loading a finished workout as a fresh template.
-      const sourceSets = (exData.sets||[]).filter(s=>!(s.ignored&&!s.setType)).map(s=>({kg:s.kg,reps:s.reps,done:isDraft?!!s.done:false,ignored:!!s.ignored,setType:s.setType||''}));
+      const sourceSets = (exData.sets||[]).filter(s=>!(s.ignored&&!s.setType)).map(s=>({kg:s.kg,reps:s.reps,done:isDraft?!!s.done:false,ignored:!!s.ignored,setType:s.setType||'',bwExtra:s.bwExtra!=null?s.bwExtra:null}));
       // `open: true` when there's a comment — addExerciseCard's sessionData-restore
       // path already auto-reveals the note (adds .open to the comment-area), but that
       // has no visible effect unless the card itself also opens: `.comment-area` is
@@ -24060,6 +24095,10 @@ closeInlineKgEditor(false);
   const _defaultSet = _setIndex >= 0 ? _defaults[_setIndex] : null;
   const prevKg = (_defaultSet?.kg > 0) ? _defaultSet.kg : null;
   window._kgEditorPrevKg = prevKg;
+  // Whether the set at this position was itself entered as BW/BW+ last time —
+  // read by kgPadReset() so tapping "Prev" restores BW mode too, not just the
+  // resolved number.
+  window._kgEditorPrevBwExtra = (_defaultSet?.bwExtra != null) ? _defaultSet.bwExtra : null;
 
   // Reset sign mode
   _kgSignMode = 1;
@@ -24148,13 +24187,23 @@ function cancelInlineKgEditor() {
     // Remove any BW label added during editing
     td?.querySelector('.bw-display-label')?.remove();
     if (origBWLabelHTML) {
-      // Restore original BW label
+      // Restore original BW label — re-hide the base "Kg" unit label that
+      // _removeBWCell() just turned back on above, since the restored BW label
+      // carries its own trailing "Kg", or both end up showing at once.
+      const kgLbl = td?.querySelector('.kg-unit-label');
+      if (kgLbl) kgLbl.style.display = 'none';
       td.insertAdjacentHTML('beforeend', origBWLabelHTML);
       td.querySelector('.bw-display-label').onclick = () => openInlineKgEditor(input, exId);
       input.style.display = 'none';
       if (origBWExtra  !== null) input.dataset.bwExtra   = origBWExtra;
       if (origBWTotal  !== null) input.dataset.bwTotal   = origBWTotal;
       if (origBWDisplay !== null) input.dataset.bwDisplay = origBWDisplay;
+      // The hidden numeric input's own .value can have drifted during editing
+      // (_refreshBWCell() overwrites it live while typing) — restore it to match
+      // the resolved total being restored above, or the "is this set filled"
+      // check elsewhere (which reads .value directly) sees a stale/empty value
+      // and incorrectly blocks adding a new set.
+      if (origBWTotal !== null) input.value = origBWTotal;
     } else {
       // Restore plain numeric value
       input.value = origVal;
