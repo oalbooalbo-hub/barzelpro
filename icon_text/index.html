@@ -1317,7 +1317,7 @@ function hidAuthScreen() {
     <div id="nwf-bottom-bar" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;padding:16px 16px calc(env(safe-area-inset-bottom,0px) + 16px);background:var(--bg,#0a0a0a);z-index:20;box-sizing:border-box;gap:10px;"></div>
     <div id="ex-nav-slider">
       <div id="ex-nav-list">
-        <div id="exerciseList"></div>
+        <div id="exerciseList" style="margin-top:10px;"></div>
         <div class="add-ex-row">
           <div id="nwf-build-prompt" style="display:none;width:100%;text-align:center;padding:28px 20px 20px;box-sizing:border-box;">
             <div style="font-family:'DM Sans',sans-serif;font-size:24px;font-weight:800;color:#fff;line-height:1.2;">Let's Build Your Workout</div>
@@ -2790,6 +2790,13 @@ function showTodayStartScreen() {
   const loadWrap = document.getElementById('today-load-btn-wrap');
   if (loadWrap) loadWrap.style.display = hasWorkouts ? '' : 'none';
   renderTodayPlanCard();
+  // Reset first (same as the switchTab('log') path) — without this, finishing a
+  // workout that crosses the weekly goal here goes straight from "not achieved" data
+  // to a render call, but if dataset.achieved was ever left stale at '1' from earlier
+  // (e.g. the goal was already met once this week), this render sees no change and
+  // skips the goal-met animation entirely, leaving the ring pre-colored with nothing
+  // ever having visibly played.
+  _resetWeekProgressForReplay();
   renderTodayWeekProgress(true);
 }
 
@@ -2861,6 +2868,18 @@ function cancelTodayPlan() {
   };
 }
 
+// Plays a small sound effect by key (see window.SOUNDS in config.js). Swallows
+// errors silently — a missing file or a browser blocking autoplay shouldn't ever
+// break the surrounding UI flow.
+function _playSound(key) {
+  const src = window.SOUNDS && window.SOUNDS[key];
+  if (!src) return;
+  try {
+    const audio = new Audio(src);
+    audio.play().catch(() => {});
+  } catch (e) {}
+}
+
 // Gates a callback until the browser has actually painted the current frame and
 // stabilized layout (double rAF — the first rAF fires before the frame that reflects
 // the latest DOM changes has been rendered; the second fires after), then further
@@ -2892,14 +2911,40 @@ function _resetWeekProgressForReplay() {
   const goalRing = document.getElementById('today-progress-goal-ring');
   const ring = document.getElementById('today-progress-ring');
   if (!goalRing) return;
+  // Cancel any in-flight goal-met animation (e.g. the user switched tabs mid-sequence,
+  // between the phased color/gap/radius steps) — without this, a stuck _animating flag
+  // makes the next renderTodayWeekProgress(true) call's alreadyAnimatingToThisState
+  // guard think a (long-abandoned) animation is still playing, silently no-op-ing the
+  // replay instead of kicking off the achieve sequence again from Home.
+  goalRing._animToken = (goalRing._animToken || 0) + 1;
+  goalRing._animating = false;
+  goalRing.style.willChange = '';
   if (goalRing.dataset.achieved === '1') goalRing.dataset.achieved = '0';
   const segs = goalRing.querySelectorAll('circle');
   segs.forEach(seg => { seg.style.transition = 'none'; seg.style.stroke = '#999'; seg.style.strokeOpacity = '0.55'; });
   if (ring) { ring.style.transition = 'none'; ring.style.stroke = '#999'; ring.style.strokeOpacity = '0.55'; }
+  // Also snap geometry back to the "not yet met" base state (full radius, full gaps).
+  // The goal-met flow leaves the ring contracted (radius 60, gaps 0) — without resetting
+  // that here too, replaying the achieve animation on return to Home would start from
+  // the wrong geometry and visibly pop back out to full size mid-sequence instead of
+  // animating smoothly from the true base state. Values must match renderTodayWeekProgress's
+  // own baseR/gap constants above.
+  const _baseR = 80, _gap = 30;
+  const _n = Math.max(1, workoutWeekTarget || parseInt(localStorage.getItem('ironlog_workout_target')) || 3);
+  if (segs.length === _n) {
+    const _circ = 2 * Math.PI * _baseR;
+    const _dash = Math.max(0.01, (_circ - _gap * _n) / _n);
+    const _spacing = _dash + _gap;
+    segs.forEach((seg, i) => {
+      seg.setAttribute('r', _baseR.toFixed(2));
+      seg.setAttribute('stroke-dasharray', `${_dash.toFixed(2)} ${(_circ - _dash).toFixed(2)}`);
+      seg.setAttribute('stroke-dashoffset', ((_dash + _gap / 2 + i * _spacing) % _circ).toFixed(2));
+    });
+  }
   // Force a reflow so the transition-less reset above actually paints before
   // transitions are re-enabled below.
   if (ring) ring.getBoundingClientRect(); else goalRing.getBoundingClientRect();
-  segs.forEach(seg => { seg.style.transition = 'stroke .4s ease, stroke-opacity .4s ease'; });
+  segs.forEach(seg => { seg.style.transition = 'stroke .2s ease, stroke-opacity .2s ease'; });
   if (ring) ring.style.transition = 'stroke-dashoffset .6s ease,stroke .4s ease,stroke-opacity .4s ease';
 }
 
@@ -2949,17 +2994,18 @@ function renderTodayWeekProgress(withAnim) {
         seg.style.strokeOpacity = done ? '1' : '0.55';
       });
     }
-    // Not-yet-met color matches the goal-ring's own not-done segments (#999) —
-    // same grey, same opacity — instead of a mismatched blue.
-    if (ring) { ring.style.stroke = goalAchieved ? 'var(--accent)' : '#999'; ring.style.strokeOpacity = goalAchieved ? '1' : '0.55'; }
+    // Outer ring color intentionally left untouched here for now (was: matching
+    // goalAchieved to var(--accent)/#999) — this was firing from the outer ring's own
+    // fill-completion callback below regardless of the goal-ring's phase 1/2/3
+    // sequence, which is the "still coloring it" bug being isolated out right now.
   };
   if (goalRing) {
     const n = Math.max(1, target);
-    const gap = 16;
-    // Base (not-yet-met) state: N segments with real gaps, radius 90 — same as before.
+    const gap = 30;
+    // Base (not-yet-met) state: N segments with real gaps, radius 80 — same as before.
     // "Met" state: the segments close their gaps to 0 (touching/"connected") while the
     // ring itself contracts inward to a smaller radius, as one continuous animation.
-    const baseR = 90, connectedR = 60;
+    const baseR = 80, connectedR = 60;
     // One <circle> per weekly slot (instead of one dashed circle for all of them) so
     // completed-workout segments can be lit independently of not-yet-done ones.
     let segs = Array.from(goalRing.children);
@@ -2974,7 +3020,7 @@ function renderTodayWeekProgress(withAnim) {
         seg.setAttribute('stroke-width', '8');
         seg.setAttribute('stroke-linecap', 'round');
         seg.dataset.idx = i;
-        seg.style.transition = 'stroke .4s ease, stroke-opacity .4s ease';
+        seg.style.transition = 'stroke .2s ease, stroke-opacity .2s ease';
         goalRing.appendChild(seg);
         segs.push(seg);
       }
@@ -3004,11 +3050,98 @@ function renderTodayWeekProgress(withAnim) {
     goalRing.dataset.inited = '1';
     if (alreadyAnimatingToThisState) {
       // let the in-flight animation keep playing.
+    } else if (wasInited && goalAchieved && !wasAchieved) {
+      // Goal-met choreography, three sequential phases:
+      //  1) every already-completed arc flips to --accent immediately (color only,
+      //     geometry unchanged) — but NOT the one arc that just crossed the threshold
+      //     this render; that one stays grey a little longer, so its own reveal still
+      //     reads as a distinct "this is the one that just finished" moment instead of
+      //     disappearing into the rest lighting up together.
+      //  2) once that color transition settles, the gaps close down to 0 — the last
+      //     arc lights up here too, right as the gaps start closing
+      //  3) the ring then contracts to connectedR while the outer circle flips to --accent
+      setTimeout(() => _playSound('targetMet'), 200);
+      const token = (goalRing._animToken = (goalRing._animToken || 0) + 1);
+      goalRing._animating = true;
+      goalRing._animatingTo = true;
+      goalRing.style.willChange = 'contents';
+      const _lastIdx = n - count;
+      // Instant snap, no fade — these arcs represent workouts already completed
+      // before this render (only the last one, excluded here, is actually new), so
+      // they shouldn't visibly transition color at all, just already read as done.
+      segs.forEach(seg => {
+        if (parseInt(seg.dataset.idx, 10) === _lastIdx) return;
+        seg.style.transition = 'none';
+        seg.style.stroke = 'var(--accent)'; seg.style.strokeOpacity = '1';
+      });
+      goalRing.getBoundingClientRect(); // flush the transition-less snap before restoring transitions (offsetHeight isn't reliable on SVG elements)
+      segs.forEach(seg => {
+        if (parseInt(seg.dataset.idx, 10) === _lastIdx) return;
+        seg.style.transition = 'stroke .2s ease, stroke-opacity .2s ease';
+      });
+      const _phase3 = () => {
+        if (goalRing._animToken !== token) return;
+        let _ringColored = false;
+        const dur = 400, t0 = performance.now();
+        const step = (now) => {
+          if (goalRing._animToken !== token) return;
+          const p = Math.min(1, (now - t0) / dur);
+          const eased = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+          const r = baseR + (connectedR - baseR) * eased;
+          applyGoalRing(r, 0);
+          // Outer ring flips to --accent the moment the arcs' radius shrinks past 70
+          // (midway between baseR 80 and connectedR 60). Uses a short, explicit
+          // transition here (rather than the ring's normal .4s) so the color actually
+          // finishes landing around this same moment instead of still fading in well
+          // after phase 3's 400ms radius animation has already finished.
+          if (!_ringColored && r <= 70) {
+            _ringColored = true;
+            // Instant snap to a full-strength, solid --accent — no fade transition and
+            // no leftover dimmed strokeOpacity (e.g. 0.55 from the grey/not-met state),
+            // which would otherwise make it read as a translucent overlay instead of
+            // a flat, solid color.
+            if (ring) { ring.style.transition = 'stroke-dashoffset .6s ease'; ring.style.stroke = 'var(--accent)'; ring.style.strokeOpacity = '1'; }
+          }
+          if (p < 1) requestAnimationFrame(step);
+          else {
+            goalRing.style.willChange = '';
+            goalRing._animating = false;
+          }
+        };
+        requestAnimationFrame(step);
+      };
+      const _phase2Gap = () => {
+        if (goalRing._animToken !== token) return;
+        let _phase3Started = false;
+        const dur = 200, t0 = performance.now();
+        const step = (now) => {
+          if (goalRing._animToken !== token) return;
+          const p = Math.min(1, (now - t0) / dur);
+          const eased = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+          const curGap = gap * (1 - eased);
+          applyGoalRing(baseR, curGap);
+          // Radius contraction (phase 3) starts as soon as the gap has shrunk down to
+          // 5 — slightly before it's fully closed — instead of waiting for this gap
+          // animation to finish completely, so the two overlap briefly.
+          if (!_phase3Started && curGap <= 1) { _phase3Started = true; _phase3(); }
+          if (p < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      };
+      const _phase2 = () => {
+        if (goalRing._animToken !== token) return;
+        const lastSeg = segs.find(s => parseInt(s.dataset.idx, 10) === _lastIdx);
+        if (lastSeg) { lastSeg.style.stroke = 'var(--accent)'; lastSeg.style.strokeOpacity = '1'; }
+        // Wait for the last arc's own color transition (.4s, set on all segments at
+        // creation) to fully finish before starting to close the gaps, instead of
+        // running both at the same time.
+        setTimeout(_phase2Gap, 500);
+      };
+      setTimeout(_phase2, 100); // let phase 1's arc color transition (.2s) finish first
     } else if (wasInited && goalAchieved !== wasAchieved) {
-      const fromR = wasAchieved ? connectedR : baseR;
-      const toR = goalAchieved ? connectedR : baseR;
-      const fromGap = wasAchieved ? 0 : gap;
-      const toGap = goalAchieved ? 0 : gap;
+      // Un-achieving (goal no longer met) — original combined shrink/expand tween.
+      const fromR = connectedR, toR = baseR;
+      const fromGap = 0, toGap = gap;
       const token = (goalRing._animToken = (goalRing._animToken || 0) + 1);
       goalRing._animating = true;
       goalRing._animatingTo = goalAchieved;
@@ -3044,7 +3177,16 @@ function renderTodayWeekProgress(withAnim) {
     const achieved = goalAchieved;
     const targetOffset = (circ * (1 - Math.min(count / target, 1))).toFixed(2);
     ring.setAttribute('stroke-dasharray', circ.toFixed(2));
-    if (withAnim) {
+    if (goalAchieved) {
+      // Once the goal is met, the goal-ring's own phase 1/2/3 sequence above already
+      // carries the "just completed" moment — the outer ring's separate empty->full
+      // fill-in animation would be a redundant second animation on top of that, so it
+      // just snaps straight to its final (fully filled) state instead.
+      ring.style.transition = 'none';
+      ring.setAttribute('stroke-dashoffset', targetOffset);
+      ring.style.willChange = '';
+      _fireCoachBtn();
+    } else if (withAnim) {
       const _startFillTransition = () => {
         ring.style.transition = 'stroke-dashoffset .6s ease,stroke .4s ease';
         ring.setAttribute('stroke-dashoffset', targetOffset);
@@ -6430,6 +6572,22 @@ function _toggleExDetailMuscles() {
 }
 window._toggleExDetailMuscles = _toggleExDetailMuscles;
 
+// Relative-time label for a "Your Best" record's date (shared by both the
+// in-workout Stats carousel and the Exercises-tab overlay's identical one).
+function _prRelTimeLabel(ts) {
+  if (!ts) return '';
+  const days = Math.floor((Date.now() - new Date(ts).getTime()) / 86400000);
+  const weeks = Math.floor(days / 7);
+  const months = Math.floor(days / 30);
+  if (days === 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days} days ago`;
+  if (weeks <= 8) return `${weeks} ${weeks === 1 ? 'week' : 'weeks'} ago`;
+  if (months < 12) return `${months} ${months === 1 ? 'month' : 'months'} ago`;
+  const years = Math.floor(months / 12);
+  return `${years} ${years === 1 ? 'year' : 'years'} ago`;
+}
+
 // Builds the 2-slide PROGRESS / YOUR BEST stats carousel (dots + chart pane + stats
 // table pane) for the in-workout exercise-detail "STATS" toggle. Adapted from the
 // 'stats' branch of openExtabExOverlay (Exercises-tab detail overlay) — that function
@@ -6442,6 +6600,7 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
   const muscleColor = mainColor || '#aaa';
 
   let _maxKg = 0, _max1RM = 0, _best1RMSet = null, _maxVol = 0;
+  let _maxKgDate = null, _best1RMDate = null, _maxVolDate = null;
   const _chartWtMap = new Map(), _chartRmMap = new Map(), _chartVolMap = new Map();
   // Per-day best set (kg/reps) behind that day's _chartRmMap number — the B.SET
   // tab plots the same 1RM-estimate values on its Y axis, but the big scrub
@@ -6451,12 +6610,12 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
     w.exercises.filter(e => e.name === exName).forEach(e => {
       const ds = doneSets(e.sets);
       ds.forEach(s => {
-        if (s.kg > _maxKg) _maxKg = s.kg;
+        if (s.kg > _maxKg) { _maxKg = s.kg; _maxKgDate = w.date; }
         const rm = Math.round(s.kg * (1 + s.reps / 30) * 10) / 10;
-        if (rm > _max1RM) { _max1RM = rm; _best1RMSet = { kg: s.kg, reps: s.reps }; }
+        if (rm > _max1RM) { _max1RM = rm; _best1RMSet = { kg: s.kg, reps: s.reps }; _best1RMDate = w.date; }
       });
       const sessionVol = ds.reduce((a, s) => a + s.kg * s.reps, 0);
-      if (sessionVol > _maxVol) _maxVol = sessionVol;
+      if (sessionVol > _maxVol) { _maxVol = sessionVol; _maxVolDate = w.date; }
       const dayKey = new Date(w.date).setHours(0, 0, 0, 0);
       const wt  = ds.length ? Math.max(0, ...ds.map(s => s.kg)) : 0;
       const rm1 = ds.length ? Math.max(...ds.map(s => Math.round(s.kg * (1 + s.reps / 30) * 10) / 10)) : 0;
@@ -6660,7 +6819,7 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
 
   const bestBigVal = document.createElement('div');
   bestBigVal.id = 'ex-detail-stats-bestval';
-  bestBigVal.style.cssText = "font-family:'Bebas Neue';font-size:80px;line-height:1;flex:1;display:flex;align-items:center;justify-content:center;white-space:nowrap;";
+  bestBigVal.style.cssText = "font-family:'Bebas Neue';font-size:80px;line-height:1;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;white-space:nowrap;";
 
   let _bestMetric = 'wt';
   function _renderBestVal() {
@@ -6669,11 +6828,13 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
     // Wrapped in a plain inline-block so bestBigVal's flex centering treats it as one
     // item, while inside it everything stays on the normal text line (no flex/wrap)
     // and vertical-align:bottom on the "kg" unit sits it flush with the number's base.
-    let _inner;
-    if (_bestMetric === 'wt')      _inner = `${_fn(_maxKg)}${_uBig}`;
-    else if (_bestMetric === 'rm') _inner = `${_bKg}${_uBig}<span style="font-family:'Bebas Neue';font-size:36px;opacity:.6;"> × </span>${_bRp}`;
-    else                           _inner = `${_volStr}${_uBig}`;
-    bestBigVal.innerHTML = `<span style="display:inline-block;">${_inner}</span>`;
+    let _inner, _recDate;
+    if (_bestMetric === 'wt')      { _inner = `${_fn(_maxKg)}${_uBig}`; _recDate = _maxKgDate; }
+    else if (_bestMetric === 'rm') { _inner = `${_bKg}${_uBig}<span style="font-family:'Bebas Neue';font-size:36px;opacity:.6;"> × </span>${_bRp}<span style="font-family:'Bebas Neue';font-size:28px;margin-left:4px;vertical-align:baseline;">Reps</span>`; _recDate = _best1RMDate; }
+    else                           { _inner = `${_volStr}${_uBig}`; _recDate = _maxVolDate; }
+    const _recLabel = _prRelTimeLabel(_recDate);
+    bestBigVal.innerHTML = `<span style="display:inline-block;">${_inner}</span>` +
+      (_recLabel ? `<span style="font-family:'DM Sans';font-size:13px;font-weight:600;color:#888;margin-top:6px;">${_recLabel}</span>` : '');
   }
   _renderBestVal();
 
@@ -7085,6 +7246,7 @@ function openExtabExOverlay(exName, musclesOnly) {
 
   // MAX · 1RM · B.Set · VOL · PROGRESS carousel
   let _maxKg = 0, _max1RM = 0, _best1RMSet = null, _maxVol = 0;
+  let _maxKgDate = null, _best1RMDate = null, _maxVolDate = null;
   const _chartWtMap = new Map(), _chartRmMap = new Map(), _chartVolMap = new Map();
   // Per-day best set (kg/reps) behind that day's _chartRmMap number — the B.SET
   // tab plots the same 1RM-estimate values on its Y axis, but the big scrub
@@ -7094,12 +7256,12 @@ function openExtabExOverlay(exName, musclesOnly) {
     w.exercises.filter(e => e.name === exName).forEach(e => {
       const ds = doneSets(e.sets);
       ds.forEach(s => {
-        if (s.kg > _maxKg) _maxKg = s.kg;
+        if (s.kg > _maxKg) { _maxKg = s.kg; _maxKgDate = w.date; }
         const rm = Math.round(s.kg * (1 + s.reps / 30) * 10) / 10;
-        if (rm > _max1RM) { _max1RM = rm; _best1RMSet = { kg: s.kg, reps: s.reps }; }
+        if (rm > _max1RM) { _max1RM = rm; _best1RMSet = { kg: s.kg, reps: s.reps }; _best1RMDate = w.date; }
       });
       const sessionVol = ds.reduce((a, s) => a + s.kg * s.reps, 0);
-      if (sessionVol > _maxVol) _maxVol = sessionVol;
+      if (sessionVol > _maxVol) { _maxVol = sessionVol; _maxVolDate = w.date; }
       const dayKey = new Date(w.date).setHours(0, 0, 0, 0);
       const wt  = ds.length ? Math.max(0, ...ds.map(s => s.kg)) : 0;
       const rm1 = ds.length ? Math.max(...ds.map(s => Math.round(s.kg * (1 + s.reps / 30) * 10) / 10)) : 0;
@@ -7295,15 +7457,19 @@ function openExtabExOverlay(exName, musclesOnly) {
 
     const bestBigVal = document.createElement('div');
     bestBigVal.id = 'extab-stats-bestval';
-    bestBigVal.style.cssText = "font-family:'Bebas Neue';font-size:80px;line-height:1;text-align:center;padding:26px 10px 22px;white-space:nowrap;";
+    bestBigVal.style.cssText = "font-family:'Bebas Neue';font-size:80px;line-height:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:26px 10px 22px;white-space:nowrap;";
 
     let _bestMetric = 'wt';
     function _renderBestVal() {
       const i = _mKeys.indexOf(_bestMetric);
       bestBigVal.style.color = _mColors[i];
-      if (_bestMetric === 'wt')      bestBigVal.innerHTML = `${_fn(_maxKg)}${_uBig}`;
-      else if (_bestMetric === 'rm') bestBigVal.innerHTML = `${_bKg}${_uBig}<span style="font-family:'Bebas Neue';font-size:36px;opacity:.6;"> × </span>${_bRp}`;
-      else                           bestBigVal.innerHTML = `${_volStr}${_uBig}`;
+      let _inner, _recDate;
+      if (_bestMetric === 'wt')      { _inner = `${_fn(_maxKg)}${_uBig}`; _recDate = _maxKgDate; }
+      else if (_bestMetric === 'rm') { _inner = `${_bKg}${_uBig}<span style="font-family:'Bebas Neue';font-size:36px;opacity:.6;"> × </span>${_bRp}<span style="font-family:'Bebas Neue';font-size:28px;margin-left:4px;vertical-align:baseline;">Reps</span>`; _recDate = _best1RMDate; }
+      else                           { _inner = `${_volStr}${_uBig}`; _recDate = _maxVolDate; }
+      const _recLabel = _prRelTimeLabel(_recDate);
+      bestBigVal.innerHTML = `<span>${_inner}</span>` +
+        (_recLabel ? `<span style="font-family:'DM Sans';font-size:13px;font-weight:600;color:#888;margin-top:6px;">${_recLabel}</span>` : '');
     }
     _renderBestVal();
 
@@ -11926,7 +12092,14 @@ function confirmSave() {
   cel.id = 'celebrationOverlay';
   cel.style.cssText = 'position:fixed;inset:0;z-index:999;background:#0a0a0a;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:env(safe-area-inset-top,24px) 24px env(safe-area-inset-bottom,24px);animation:celFadeIn .4s ease;';
   window._workoutSaved = false;
-  const closeAndSave = () => { doSaveWorkout(); const el = document.getElementById('celebrationOverlay'); if (el) el.remove(); setTimeout(() => exportData(), 300); };
+  const closeAndSave = () => {
+    doSaveWorkout();
+    const el = document.getElementById('celebrationOverlay');
+    if (el) el.remove();
+    // Only export to a local file after "GREAT JOB" (PR stars earned) — plain
+    // "GOOD JOB" finishes (no new records) don't trigger a local file save.
+    if (hasStars) setTimeout(() => exportData(), 300);
+  };
   if (hasStars) {
     const starTypes = [{ label: 'MAX', color: '#e8ff47' },{ label: 'B.SET', color: '#ff8c42' },{ label: 'VOL', color: '#a78bfa' }];
     const starsRow = starTypes.map((t, ti) => { const count = allStars.filter(s => s.label === t.label).length; if (!count) return ''; return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;animation:starPop .8s cubic-bezier(.175,.885,.32,1.275) both;animation-delay:${ti * 0.25}s;"><div style="position:relative;width:72px;height:72px;display:flex;align-items:center;justify-content:center;">${svgStar(t.color, 72)}<span style="position:absolute;font-family:'Bebas Neue';font-size:26px;color:#000;line-height:1;margin-top:5px;">${count}</span></div><span style="font-size:12px;font-weight:700;color:${t.color};letter-spacing:.5px;text-transform:uppercase;">${t.label}</span></div>`; }).join('');
