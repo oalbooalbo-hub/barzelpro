@@ -723,6 +723,9 @@ body.ex-tab-detail-open #ex-float-bar{display:none !important;}
 .cal-day.past{opacity:.55;}
 /* Completed workout/cardio days stay fully bright even in the past — they should stand out, not fade. */
 .cal-day.past.has-workout,.cal-day.past.has-cardio-only,.cal-day.past.has-both{opacity:1;}
+.cal-day.cal-day-adjacent{opacity:.4;}
+/* Same exception for prev/next-month days — a completed workout must stay visible even across the boundary. */
+.cal-day.cal-day-adjacent.has-workout,.cal-day.cal-day-adjacent.has-cardio-only,.cal-day.cal-day-adjacent.has-both{opacity:1;}
 .cal-day-cardio-dot{width:5px;height:5px;border-radius:50%;background:#7ec8e3;margin-top:2px;}
 .cal-day-dots{display:flex;gap:2px;margin-top:2px;}
 
@@ -3060,7 +3063,6 @@ function renderTodayWeekProgress(withAnim) {
       //  2) once that color transition settles, the gaps close down to 0 — the last
       //     arc lights up here too, right as the gaps start closing
       //  3) the ring then contracts to connectedR while the outer circle flips to --accent
-      setTimeout(() => _playSound('targetMet'), 200);
       const token = (goalRing._animToken = (goalRing._animToken || 0) + 1);
       goalRing._animating = true;
       goalRing._animatingTo = true;
@@ -3112,7 +3114,6 @@ function renderTodayWeekProgress(withAnim) {
       };
       const _phase2Gap = () => {
         if (goalRing._animToken !== token) return;
-        let _phase3Started = false;
         const dur = 200, t0 = performance.now();
         const step = (now) => {
           if (goalRing._animToken !== token) return;
@@ -3120,11 +3121,10 @@ function renderTodayWeekProgress(withAnim) {
           const eased = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
           const curGap = gap * (1 - eased);
           applyGoalRing(baseR, curGap);
-          // Radius contraction (phase 3) starts as soon as the gap has shrunk down to
-          // 5 — slightly before it's fully closed — instead of waiting for this gap
-          // animation to finish completely, so the two overlap briefly.
-          if (!_phase3Started && curGap <= 1) { _phase3Started = true; _phase3(); }
           if (p < 1) requestAnimationFrame(step);
+          // Once the gap has fully closed to 0, wait before starting the radius
+          // contraction (phase 3) instead of overlapping the two animations.
+          else setTimeout(_phase3, 400);
         };
         requestAnimationFrame(step);
       };
@@ -3132,10 +3132,13 @@ function renderTodayWeekProgress(withAnim) {
         if (goalRing._animToken !== token) return;
         const lastSeg = segs.find(s => parseInt(s.dataset.idx, 10) === _lastIdx);
         if (lastSeg) { lastSeg.style.stroke = 'var(--accent)'; lastSeg.style.strokeOpacity = '1'; }
-        // Wait for the last arc's own color transition (.4s, set on all segments at
-        // creation) to fully finish before starting to close the gaps, instead of
-        // running both at the same time.
-        setTimeout(_phase2Gap, 500);
+        // All arcs are now highlighted — cue the sound here instead of at an
+        // arbitrary fixed delay from the start of the whole sequence, with a
+        // brief extra pause so it doesn't land right on the color change itself.
+        setTimeout(() => _playSound('targetMet'), 400);
+        // Wait for the last arc's own color transition to fully finish before
+        // starting to close the gaps, instead of running both at the same time.
+        setTimeout(_phase2Gap, 400);
       };
       setTimeout(_phase2, 100); // let phase 1's arc color transition (.2s) finish first
     } else if (wasInited && goalAchieved !== wasAchieved) {
@@ -4469,7 +4472,11 @@ function _syncExToggleBarHeight() {
     // safe to read before updating it below. +10 for a bit of breathing room below
     // the pill-bar divider, same as the workout screen's spacer.
     const barBottom = bar.getBoundingClientRect().bottom;
-    const pgTop = pg.getBoundingClientRect().top;
+    // pg.getBoundingClientRect().top is viewport-relative, so it drifts by the
+    // current scroll offset — cancel that out (+ scrollY) so a sync that runs
+    // while still scrolled (e.g. right as a muscle-tab switch resets scroll on
+    // a later frame) doesn't bake that transient offset into the padding.
+    const pgTop = pg.getBoundingClientRect().top + window.scrollY;
     pg.style.paddingTop = Math.max(0, barBottom - pgTop + 10) + 'px';
   } else {
     pg.style.paddingTop = '';
@@ -15735,19 +15742,16 @@ function renderCalendar() {
   html += dows.map(d=>`<div class="cal-dow">${d}</div>`).join('');
   html += '<div class="cal-badge-col-header"></div>';
 
-  for(let i=0;i<firstDay;i++) html += '<div class="cal-day empty"></div>';
-
-  for(let d=1;d<=daysInMonth;d++){
-    const key = `${calYear}-${calMonth}-${d}`;
+  // Shared day-cell renderer — used for the current month's days as well as the
+  // prev/next-month days that fill out a boundary week's leading/trailing cells,
+  // so a week spanning a month transition still shows whether workouts were
+  // completed on every one of its days, not just the ones inside the current month.
+  const _calDayCell = (year, month, day, adjacent) => {
+    const key = `${year}-${month}-${day}`;
     const hasW = workoutDays.has(key);
     const hasC = cardioDays.has(key);
-    const isToday = today.getFullYear()===calYear && today.getMonth()===calMonth && today.getDate()===d;
-    const thisDate = new Date(calYear, calMonth, d);
-    const dayOfWeek = thisDate.getDay();
-    const weekStart = new Date(thisDate); weekStart.setDate(thisDate.getDate()-dayOfWeek);
-    const wkMins = weeklyMins.get(weekStart.toDateString())||0;
-    const wkWorkouts = weeklyWorkouts.get(weekStart.toDateString())||0;
-
+    const isToday = today.getFullYear()===year && today.getMonth()===month && today.getDate()===day;
+    const thisDate = new Date(year, month, day);
     const isFuture = thisDate > today && !isToday;
     const isPlannedOnly = plannedOnlyDays.has(key) && (thisDate >= today || isToday);
     const isPlannedCardio = plannedCardioDays.has(key);
@@ -15758,8 +15762,8 @@ function renderCalendar() {
     else if(hasC) cls += ' has-cardio-only';
     if(isToday) cls += ' today';
     if(isFuture) cls += ' future';
+    if(adjacent) cls += ' cal-day-adjacent';
     let dots = '<div class="cal-day-dots">';
-    // Only show dot if no box (box is shown via has-workout class)
     if(isPlannedOnly) dots += '<div class="cal-day-dot" style="background:var(--accent);"></div>';
     if(isPlannedCardio && !hasC) dots += '<div class="cal-day-dot" style="background:#7ec8e3;"></div>';
     dots += '</div>';
@@ -15769,12 +15773,29 @@ function renderCalendar() {
     const isPast = !isToday && !isFuture;
     if(isPast) cls += ' past';
     const isPlanPast = window._wtabPlanMode && isPast;
-if(isSelected) cls += ' selected';
-const onclick = isPlanPast ? '' : `onclick="selectCalDay('${key}')"`;
+    if(isSelected) cls += ' selected';
+    const onclick = isPlanPast ? '' : `onclick="selectCalDay('${key}')"`;
     const planHighlight = isPlanSelected ? 'outline:2px solid var(--accent);outline-offset:1px;background:rgba(232,255,71,.15);' : '';
     const pastStyle = isPlanPast ? 'opacity:0.25;cursor:default;pointer-events:none;' : '';
-    const showDots = isPlanSelected || (!hasRealW && !hasC);
-    html += `<div class="${cls}" style="${hasAny?'cursor:pointer':''}${planHighlight}${pastStyle}" ${onclick}>${d}${isPlanSelected ? '<div style="width:5px;height:5px;border-radius:50%;background:var(--accent);margin:1px auto 0;"></div>' : (isPlannedOnly || isPlannedCardio ? dots : '')}</div>`;
+    return `<div class="${cls}" style="${hasAny?'cursor:pointer':''}${planHighlight}${pastStyle}" ${onclick}>${day}${isPlanSelected ? '<div style="width:5px;height:5px;border-radius:50%;background:var(--accent);margin:1px auto 0;"></div>' : (isPlannedOnly || isPlannedCardio ? dots : '')}</div>`;
+  };
+
+  const prevMonthRef = new Date(calYear, calMonth, 0);
+  const prevMonthDays = prevMonthRef.getDate();
+  const prevY = prevMonthRef.getFullYear(), prevM = prevMonthRef.getMonth();
+  for(let i=0;i<firstDay;i++){
+    const dNum = prevMonthDays - firstDay + 1 + i;
+    html += _calDayCell(prevY, prevM, dNum, true);
+  }
+
+  for(let d=1;d<=daysInMonth;d++){
+    const thisDate = new Date(calYear, calMonth, d);
+    const dayOfWeek = thisDate.getDay();
+    const weekStart = new Date(thisDate); weekStart.setDate(thisDate.getDate()-dayOfWeek);
+    const wkMins = weeklyMins.get(weekStart.toDateString())||0;
+    const wkWorkouts = weeklyWorkouts.get(weekStart.toDateString())||0;
+
+    html += _calDayCell(calYear, calMonth, d, false);
 
     // After Saturday (dayOfWeek===6), insert badge column cell for this week
     if (dayOfWeek === 6) {
@@ -15795,8 +15816,13 @@ const onclick = isPlanPast ? '' : `onclick="selectCalDay('${key}')"`;
     const wkWOsLast  = weeklyWorkouts.get(weekStart2.toDateString())||0;
     const cAchL = wkMinsLast >= cardioWeekTarget;
     const wAchL = wkWOsLast >= workoutWeekTarget;
-    // Fill remaining day cells
-    for(let i=lastDayOfWeek+1;i<=6;i++) html += '<div class="cal-day empty"></div>';
+    // Fill remaining day cells with the start of next month
+    const nextMonthRef = new Date(calYear, calMonth+1, 1);
+    const nextY = nextMonthRef.getFullYear(), nextM = nextMonthRef.getMonth();
+    for(let i=lastDayOfWeek+1;i<=6;i++){
+      const dNum = i - lastDayOfWeek;
+      html += _calDayCell(nextY, nextM, dNum, true);
+    }
     const wkStartKey2 = weekStart2.toDateString();
     html += `<div class="cal-badge-col" style="cursor:pointer;" onclick="openWeekSummary('${wkStartKey2}')">
       <span class="cal-target-badge cal-target-badge-workout${wAchL?' achieved':''}">${chevSVG}</span>
@@ -23484,12 +23510,12 @@ function _closeRepsEditor(silent = false, switching = false) {
         document.getElementById('kg-editor-sheet-inner').innerHTML = '';
         if (editorRow?.classList.contains('reps-inline-editor-row')) editorRow.remove();
         if (_spacerH > 0 && _closeBody && _scrollNow > _scrollBack) {
-          // Mirror the open animation: smoothly scroll the sets back down to their natural position
-          _closeBody.scrollTo({ top: _scrollBack, behavior: 'smooth' });
+          // Mirror the open animation: scroll the sets back down to their natural position
+          _fastScrollTo(_closeBody, _scrollBack);
           setTimeout(() => {
             _closeSpacer?.remove();
             requestAnimationFrame(() => _syncExDetailBodyTop());
-          }, 320);
+          }, 150);
         } else {
           document.getElementById('_kgScrollSpacer')?.remove();
           requestAnimationFrame(() => { _syncExDetailBodyTop(); _scrollExDetailToPhoto(); });
@@ -23739,7 +23765,11 @@ function _kgFocusAnimShow(el, displayVal) {
   _kgFocusAnimCancel(el);
   const _dv = displayVal !== undefined ? displayVal : '';
   el.style.display = _dv;
-  if (!_dv || _dv === 'none') return;
+  // Only 'none' means "deliberately stay hidden, skip the animation" — '' means
+  // "reveal via default CSS display," the normal restore case, which must still
+  // animate (previously treated as falsy here, so ordinary restores snapped back
+  // instantly instead of playing the fade/slide-in).
+  if (_dv === 'none') return;
   void el.offsetHeight;
   el.classList.add('kg-focus-showing');
   const _onEnd = () => { el.removeEventListener('animationend', _onEnd); el.classList.remove('kg-focus-showing'); delete el._kgFocusShowEnd; };
@@ -24246,12 +24276,12 @@ if (restoreFocus) _kgEditorFocusLeave();
         _sheet.style.pointerEvents = '';
         document.getElementById('kg-editor-sheet-inner').innerHTML = '';
         if (_spacerH > 0 && _closeBody && _scrollNow > _scrollBack) {
-          // Mirror the open animation: smoothly scroll the sets back down to their natural position
-          _closeBody.scrollTo({ top: _scrollBack, behavior: 'smooth' });
+          // Mirror the open animation: scroll the sets back down to their natural position
+          _fastScrollTo(_closeBody, _scrollBack);
           setTimeout(() => {
             _closeSpacer?.remove();
             requestAnimationFrame(() => _syncExDetailBodyTop());
-          }, 320);
+          }, 150);
         } else {
           document.getElementById('_kgScrollSpacer')?.remove();
           requestAnimationFrame(() => { _syncExDetailBodyTop(); _scrollExDetailToPhoto(); });
@@ -25802,6 +25832,25 @@ window._w2SheetIdx = null;
 window._w2SheetExpanded = false;
 const W2_HALF_HEIGHT = Math.max(Math.round(window.innerHeight * 0.80), 520);
 
+// Fast, fixed-duration scroll — used to snap the set list back down once the
+// kg/rep editor sheet closes. Native scrollTo({behavior:'smooth'}) has no
+// duration control and runs noticeably slower (~200ms+) than this feels like
+// it should for a "return to where you were" scroll.
+function _fastScrollTo(el, to, duration = 120) {
+  if (!el) return;
+  const from = el.scrollTop;
+  const dist = to - from;
+  if (dist === 0) return;
+  const start = performance.now();
+  function step(now) {
+    const p = Math.min(1, (now - start) / duration);
+    const eased = 1 - Math.pow(1 - p, 3);
+    el.scrollTop = from + dist * eased;
+    if (p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
 // Spring animation engine
 function _springAnimate(el, fromY, toY, stiffness, damping, onDone) {
   let pos = fromY, vel = 0;
@@ -26281,32 +26330,37 @@ function _runWorkoutLoadingAnim(onDone) {
 window._runWorkoutLoadingAnim = _runWorkoutLoadingAnim;
 
 function _wtabLoadWorkout(idx) {
-  _runWorkoutLoadingAnim(() => {
-    window._activeTabHighlight = null;
-    window._loadFromToday = false;
-    window._wtabSelectedIdx = null;
-    loadWorkout(idx);
-    switchTab('log');
-    const _now = Date.now();
-    window._sessionStartTime = _now;
-    _LS.set('ironlog_session_start', String(_now));
-  });
+  // Build the workout (incl. exercise images) immediately, in parallel with the
+  // loading animation — it's fully hidden behind the opaque overlay the whole
+  // time anyway, so there's no reason to wait until the animation finishes to
+  // start it. Previously that meant thumbnails visibly popped in right as the
+  // overlay faded away instead of already being ready.
+  _runWorkoutLoadingAnim();
+  window._activeTabHighlight = null;
+  window._loadFromToday = false;
+  window._wtabSelectedIdx = null;
+  loadWorkout(idx);
+  switchTab('log');
+  const _now = Date.now();
+  window._sessionStartTime = _now;
+  _LS.set('ironlog_session_start', String(_now));
 }
 window._wtabLoadWorkout = _wtabLoadWorkout;
 
 function w2SheetStart() {
   const idx = window._w2SheetIdx;
   closeW2Sheet();
-  _runWorkoutLoadingAnim(() => {
-    window._activeTabHighlight = null;
-    window._loadFromToday = false;
-    window._wtabSelectedIdx = null;
-    loadWorkout(idx);
-    switchTab('log');
-    const _now = Date.now();
-    window._sessionStartTime = _now;
-    _LS.set('ironlog_session_start', String(_now));
-  });
+  // See _wtabLoadWorkout — build the workout in parallel with the loading
+  // animation instead of waiting for it to finish, so images are already ready.
+  _runWorkoutLoadingAnim();
+  window._activeTabHighlight = null;
+  window._loadFromToday = false;
+  window._wtabSelectedIdx = null;
+  loadWorkout(idx);
+  switchTab('log');
+  const _now = Date.now();
+  window._sessionStartTime = _now;
+  _LS.set('ironlog_session_start', String(_now));
 }
 
 window.openW2Sheet = openW2Sheet;
