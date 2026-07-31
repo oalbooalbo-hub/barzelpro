@@ -2763,7 +2763,7 @@ function updateVolProgressBar(exId) {
   }
 }
 
-function showTodayStartScreen() {
+function showTodayStartScreen(skipGoalReplay) {
   _headerWorkoutModeOff();
   if (window.hideExFloatBar) hideExFloatBar();
   window._isNewWorkoutFlow = false;
@@ -2793,14 +2793,21 @@ function showTodayStartScreen() {
   const loadWrap = document.getElementById('today-load-btn-wrap');
   if (loadWrap) loadWrap.style.display = hasWorkouts ? '' : 'none';
   renderTodayPlanCard();
-  // Reset first (same as the switchTab('log') path) — without this, finishing a
-  // workout that crosses the weekly goal here goes straight from "not achieved" data
-  // to a render call, but if dataset.achieved was ever left stale at '1' from earlier
-  // (e.g. the goal was already met once this week), this render sees no change and
-  // skips the goal-met animation entirely, leaving the ring pre-colored with nothing
-  // ever having visibly played.
-  _resetWeekProgressForReplay();
-  renderTodayWeekProgress(true);
+  if (skipGoalReplay) {
+    // Backing out of an action (e.g. cancelling "create new workout") that never
+    // actually changed anything — just reflect the current state, don't replay
+    // the goal-met celebration (animation + sound) as if something was just achieved.
+    renderTodayWeekProgress();
+  } else {
+    // Reset first (same as the switchTab('log') path) — without this, finishing a
+    // workout that crosses the weekly goal here goes straight from "not achieved" data
+    // to a render call, but if dataset.achieved was ever left stale at '1' from earlier
+    // (e.g. the goal was already met once this week), this render sees no change and
+    // skips the goal-met animation entirely, leaving the ring pre-colored with nothing
+    // ever having visibly played.
+    _resetWeekProgressForReplay();
+    renderTodayWeekProgress(true);
+  }
 }
 
 function replaceTodayPlan() {
@@ -3942,7 +3949,7 @@ function _cancelNwfNamePage() {
     window._activeTabHighlight = null;
     _closeNwfNamePage();
     resetWorkoutState();
-    showTodayStartScreen();
+    showTodayStartScreen(true);
     updatePickModeTabs();
     switchTab('workouts2');
     window._w2SheetInstantOverlay = true;
@@ -6849,7 +6856,7 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
   const tablePane = document.createElement('div');
   tablePane.id = 'ex-detail-stats-table-pane';
   tablePane.style.cssText = 'display:none;flex-direction:column;height:100%;box-sizing:border-box;padding:0 16px;';
-  const _fn = n => n % 1 === 0 ? String(n) : n.toFixed(1);
+  const _fn = n => n % 1 === 0 ? String(n) : String(Math.round(n * 100) / 100);
   const _uBig = `<span style="font-family:'Bebas Neue';font-size:28px;margin-left:4px;vertical-align:baseline;">kg</span>`;
   const _bKg = _best1RMSet ? String(_best1RMSet.kg) : '–';
   const _bRp = _best1RMSet ? _best1RMSet.reps : '';
@@ -6858,7 +6865,7 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
   bestBigVal.id = 'ex-detail-stats-bestval';
   bestBigVal.style.cssText = "font-family:'Bebas Neue';font-size:80px;line-height:1;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;white-space:nowrap;";
 
-  let _bestMetric = 'wt';
+  let _bestMetric = 'rm'; // default tab: B.SET
   function _renderBestVal() {
     const i = _mKeys.indexOf(_bestMetric);
     bestBigVal.style.color = _mColors[i];
@@ -6875,13 +6882,14 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
   }
   _renderBestVal();
 
+  const _bestDefaultIdx = Math.max(0, _mKeys.indexOf(_bestMetric));
   const bestBar = document.createElement('div');
   bestBar.style.cssText = 'position:relative;display:flex;gap:0;margin-top:auto;border-bottom:1px solid var(--border);';
   const bestIndicator = document.createElement('div');
-  bestIndicator.style.cssText = `position:absolute;bottom:-1px;left:0;height:2px;width:calc(100%/3);background:${_mColors[0]};transition:left .25s cubic-bezier(.4,0,.2,1),background .25s ease;`;
+  bestIndicator.style.cssText = `position:absolute;bottom:-1px;left:calc(100%/3*${_bestDefaultIdx});height:2px;width:calc(100%/3);background:${_mColors[_bestDefaultIdx]};transition:left .25s cubic-bezier(.4,0,.2,1),background .25s ease;`;
   const bestBtns = _mLabels.map((lbl, i) => {
     const btn = document.createElement('button');
-    btn.style.cssText = `flex:1;border:none;background:transparent;font-family:'DM Sans';font-size:14px;font-weight:700;padding:8px 0;cursor:pointer;color:${i===0?_mColors[0]:'#555'};transition:color .15s;`;
+    btn.style.cssText = `flex:1;border:none;background:transparent;font-family:'DM Sans';font-size:14px;font-weight:700;padding:8px 0;cursor:pointer;color:${i===_bestDefaultIdx?_mColors[i]:'#555'};transition:color .15s;`;
     btn.textContent = lbl;
     btn.onclick = () => {
       if (_mKeys[i] === _bestMetric) return;
@@ -9167,7 +9175,7 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
       <div class="comment-area" id="comment-area-${id}">
         <div class="comment-area-inner" id="comment-area-inner-${id}" style="position:relative;border:1px solid var(--accent);border-radius:9px;padding:18px 11px 10px;margin-top:6px;transition:border-color .2s;width:calc(min(430px,100vw) - 32px);max-width:398px;box-sizing:border-box;">
           <span class="comment-area-label" style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:var(--bg);padding:0 5px;font-size:12px;font-weight:700;color:var(--accent);letter-spacing:.3px;pointer-events:none;">Note</span>
-          <textarea class="comment-box" id="comment-${id}" autocomplete="off" spellcheck="false" placeholder="Tap for editing&" oninput="updateNoteBtn('${id}');saveSession();if(window._isNewWorkoutFlow)updateWflowCloseBtn('${id}');this.style.direction=/[\u0590-\u05FF]/.test(this.value)?'rtl':'ltr';this.style.textAlign=/[\u0590-\u05FF]/.test(this.value)?'right':'left';this.style.height='auto';this.style.height=this.scrollHeight+'px'" onfocus="showNoteToolbar('${id}');this.closest('.comment-area')?.classList.add('note-active')" onblur="hideNoteToolbar();if(!this.value.trim())this.closest('.comment-area')?.classList.remove('note-active')"></textarea>
+          <textarea class="comment-box" id="comment-${id}" autocomplete="off" spellcheck="false" placeholder="Tap for editing&" oninput="updateNoteBtn('${id}');saveSession();if(window._isNewWorkoutFlow)updateWflowCloseBtn('${id}');this.style.direction=/[\u0590-\u05FF]/.test(this.value)?'rtl':'ltr';this.style.textAlign=/[\u0590-\u05FF]/.test(this.value)?'right':'left';this.style.height='auto';this.style.height=this.scrollHeight+'px';_updateNoteKbdPreview('${id}')" onfocus="showNoteToolbar('${id}');this.closest('.comment-area')?.classList.add('note-active')" onblur="hideNoteToolbar();if(!this.value.trim())this.closest('.comment-area')?.classList.remove('note-active')"></textarea>
         </div>
       </div>
 
@@ -11585,9 +11593,23 @@ function showNoteToolbar(id) {
   if (kbdBar) {
     kbdBar.style.display = 'flex';
     _positionNoteKbdBar();
+    _updateNoteKbdPreview(id);
     window.visualViewport?.addEventListener('resize', _positionNoteKbdBar);
     window.visualViewport?.addEventListener('scroll', _positionNoteKbdBar);
   }
+}
+// Mirrors the first 3 lines of the note being edited into the "Done" bar above
+// the keyboard, since the textarea itself is usually covered by the keyboard.
+function _updateNoteKbdPreview(id) {
+  const preview = document.getElementById('note-kbd-preview');
+  if (!preview) return;
+  const textarea = document.getElementById(`comment-${id}`);
+  const val = textarea?.value || '';
+  const isHebrew = /[֐-׿]/.test(val);
+  preview.style.direction = isHebrew ? 'rtl' : 'ltr';
+  preview.style.textAlign = isHebrew ? 'right' : 'left';
+  preview.style.marginBottom = val ? '6px' : '0';
+  preview.textContent = val.split('\n').slice(0, 3).join('\n');
 }
 function hideNoteToolbar() {
   setTimeout(() => {
@@ -11690,6 +11712,30 @@ function getLastSets(exName) {
     if (m?.sets?.length) return m.sets;
   }
   return [];
+}
+
+// Most recent non-empty note ever written for this exercise — same
+// same-workout-name-first / newest-first lookup as getLastSets, so a note
+// keeps showing up on an exercise even if the single most-recent workout
+// instance being loaded happens not to have one (e.g. it wasn't re-typed
+// that session).
+function getLastComment(exName) {
+  const curWorkoutName = (document.getElementById('workoutName')?.value || '').trim();
+  if (curWorkoutName) {
+    for (const w of workouts) {
+      if (w._draft || w._template) continue;
+      if ((w.name||'').trim() !== curWorkoutName) continue;
+      const m = w.exercises.find(e => e.name === exName);
+      if (m?.comment) return m.comment;
+    }
+  }
+  if (isNewWorkoutName()) return '';
+  for (const w of workouts) {
+    if (w._draft || w._template) continue;
+    const m = w.exercises.find(e => e.name === exName);
+    if (m?.comment) return m.comment;
+  }
+  return '';
 }
 
 // ══════════════════════════════════════════════════════
@@ -12543,7 +12589,7 @@ function cancelWorkoutNameModal() {
     _LS.remove('ironlog_session');
     updatePickModeTabs();
     if (_wasFromToday) {
-      showTodayStartScreen();
+      showTodayStartScreen(true);
       switchTab('log');
     } else {
       // Coming from workouts — discard new workout state and return to W2
@@ -12551,7 +12597,7 @@ function cancelWorkoutNameModal() {
       window._preNewWorkoutName = null;
       window._pendingWorkoutPhoto = null;
       resetWorkoutState();
-      showTodayStartScreen();
+      showTodayStartScreen(true);
       switchTab('workouts2');
     }
   }
@@ -12633,7 +12679,7 @@ function closeNewWorkoutAction(proceed) {
     _syncShareBtn();
     updatePickModeTabs();
     if (_wasFromToday) {
-      showTodayStartScreen();
+      showTodayStartScreen(true);
       switchTab('log');
     } else {
       switchTab('workouts2');
@@ -12803,11 +12849,15 @@ function loadWorkout(idx) {
       // tag gets reapplied below — only truly manual-ignored (non-typed) sets are
       // dropped when loading a finished workout as a fresh template.
       const sourceSets = (exData.sets||[]).filter(s=>!(s.ignored&&!s.setType)).map(s=>({kg:s.kg,reps:s.reps,done:isDraft?!!s.done:false,ignored:!!s.ignored,setType:s.setType||'',bwExtra:s.bwExtra!=null?s.bwExtra:null}));
+      // Fall back to the most recent note ever written for this exercise if this
+      // particular instance doesn't have one — otherwise a note goes missing the
+      // moment one session doesn't happen to re-type it.
+      const _resolvedComment = exData.comment || getLastComment(exData.name) || '';
       // `open: true` when there's a comment — addExerciseCard's sessionData-restore
       // path already auto-reveals the note (adds .open to the comment-area), but that
       // has no visible effect unless the card itself also opens: `.comment-area` is
       // `display:none!important` while `card.dataset.open` isn't 'true'.
-      const sessionDataOverride = sourceSets.length || exData.comment ? {sets:sourceSets, completed:isDraft&&exData.sets?.every(s=>s.ignored||s.done), comment:exData.comment||'', open:!!exData.comment} : null;
+      const sessionDataOverride = sourceSets.length || _resolvedComment ? {sets:sourceSets, completed:isDraft&&exData.sets?.every(s=>s.ignored||s.done), comment:_resolvedComment, open:!!_resolvedComment} : null;
       addExerciseCard(ex, false, sessionDataOverride);
       const cards = document.querySelectorAll('#exerciseList .exercise-card');
       const card = cards[cards.length-1];
@@ -12815,7 +12865,7 @@ function loadWorkout(idx) {
         const cid = card.id;
         setTimeout(()=>{ if(card.dataset.open==='true') toggleCardCollapse(cid); }, 50);
         // Auto-expand note if comment exists
-        if (exData.comment) setTimeout(() => {
+        if (_resolvedComment) setTimeout(() => {
           const noteArea = document.getElementById(`comment-area-${cid}`);
           if (noteArea) noteArea.classList.add('open');
           updateNoteBtn(cid);
@@ -16364,13 +16414,6 @@ function renderCalDayWorkouts(ws) {
       const volSlot = `<span data-pr="${volPR?'1rm':''}" style="width:16px;display:inline-flex;justify-content:center;">${volPR?svgStar(w._draft?'#666':'#ff8c42'):''}</span>`;
       const volumeSlot = `<span data-pr="${volumePR?'vol':''}" style="width:16px;display:inline-flex;justify-content:center;">${volumePR?svgStar(w._draft?'#666':'#a78bfa'):''}</span>`;
       const doneSetsArr = e.sets.filter(s=>s.done&&!s.ignored);
-      const maxKgVal = doneSetsArr.length ? parseFloat(Math.max(0,...doneSetsArr.map(s=>s.kg)).toFixed(2)) : 0;
-      const irmVal = doneSetsArr.length ? parseFloat(Math.max(...doneSetsArr.map(s=>s.kg*(1+s.reps/30))).toFixed(2)) : 0;
-      const bestSet = doneSetsArr.length ? doneSetsArr.reduce((a,s)=>s.kg*(1+s.reps/30)>=a.kg*(1+a.reps/30)?s:a, doneSetsArr[0]) : null;
-      const statsLine = doneSetsArr.length ? `<div style="display:flex;flex-direction:column;gap:1px;margin-top:4px;">
-        ${maxKgVal>0?`<div style="display:flex;gap:6px;font-size:11px;font-weight:700;"><span style="color:${weightPR?'#e8ff47':'var(--muted)'};width:28px;">MAX</span><span style="color:#fff;">${maxKgVal}kg</span></div>`:''}
-        ${irmVal>0?`<div style="display:flex;gap:6px;font-size:11px;font-weight:700;"><span style="color:${volPR?'#ff8c42':'var(--muted)'};width:28px;">1RM</span><span style="color:#fff;">${bestSet?(bestSet.kg+'kg×'+bestSet.reps):''}</span></div>`:''}
-      </div>` : '';
       const noDone = doneSetsArr.length === 0;
       const prFlags = [weightPR?'max':'', volPR?'1rm':'', volumePR?'vol':''].filter(Boolean).join(' ');
       const exHistId = `exhist-cal-${wi}-${ei}`;
@@ -16382,25 +16425,15 @@ function renderCalDayWorkouts(ws) {
             <div class="hcard-ex-name">${e.name}</div>
           </div>
           <div class="hcard-ex-sets">${chips}</div>
-          ${statsLine}
           ${e.comment?`<div class="hcard-note">${e.comment}</div>`:''}
           <div id="${exHistId}" style="display:none;margin-top:10px;" onclick="event.stopPropagation()"></div>
         </div>
         <span style="display:inline-flex;flex-direction:column;align-items:center;gap:4px;">
           <span style="display:inline-flex;gap:2px;align-items:center;">${weightSlot}${volSlot}${volumeSlot}</span>
-          
+
         </span>
       </div>`;
     }).join('');
-
-    const counts = {};
-    w.exercises.forEach(e => {
-      const m = e.muscle || getAllExercises().find(x=>x.name===e.name||x.label===e.name)?.muscle || 'Other';
-      counts[m] = (counts[m]||0) + 1;
-    });
-    const muscleChips = Object.entries(counts).map(([m,c])=>
-      `<button class="hcard-muscle-chip" data-muscle="${m}" onclick="event.stopPropagation();filterCalByMuscle(${wi},'${m}')">${displayMuscle(m)} <strong style="${w._draft?'color:#666':''}">${c}</strong></button>`
-    ).join('');
 
     const prSummary = (weightPRCount > 0 || volPRCount > 0 || volumePRCount > 0) ? `
       <div style="display:flex;align-items:center;padding:5px 14px 6px;border-top:1px solid var(--border);gap:0;">
@@ -16422,7 +16455,6 @@ function renderCalDayWorkouts(ws) {
         ${completedBadge}
         <span class="hcard-chevron" id="cal-hchev-${wi}" style="display:none;">▾</span>
       </div>
-      <div class="hcard-muscles" style="display:none;">${muscleChips}</div>
       <div class="hcard-body collapsed" id="cal-hbody-${wi}" style="max-height:0;">
         ${prSummary}
         <div class="hcard-stats">
@@ -16434,18 +16466,22 @@ function renderCalDayWorkouts(ws) {
         ${(()=>{
           const MUSCLE_ORDER = ['Chest','Back','Legs','Shoulders','Arms','Core','Mix'];
           const muscleColors = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171',Mix:'#20d4c8' };
-          const volByMuscle = {};
+          const setsByMuscle = {};
           w.exercises.forEach(e => {
             const m = e.muscle || getAllExercises().find(x=>x.name===e.name||x.label===e.name)?.muscle || 'Other';
-            const v = e.sets.filter(s=>s.done&&!s.ignored).reduce((a,s)=>a+s.kg*s.reps,0);
-            if (v > 0) volByMuscle[m] = (volByMuscle[m]||0) + v;
+            const v = e.sets.filter(s=>s.done&&!s.ignored).length;
+            if (v > 0) setsByMuscle[m] = (setsByMuscle[m]||0) + v;
           });
-          const entries = MUSCLE_ORDER.filter(m => volByMuscle[m]).map(m => [m, volByMuscle[m]]).sort((a,b)=>b[1]-a[1]);
+          const entries = MUSCLE_ORDER.filter(m => setsByMuscle[m]).map(m => [m, setsByMuscle[m]]).sort((a,b)=>b[1]-a[1]);
           if (!entries.length) return '';
-          const maxVol = Math.max(...entries.map(([,v])=>v));
+          const maxSets = Math.max(...entries.map(([,v])=>v));
+          // Reserve space at the end of the bar track, sized to fit the longest count,
+          // so the number (positioned right after each bar's own fill, not a fixed
+          // trailing column) never overflows even for the 100%-filled longest bar.
+          const numWidth = Math.max(16, String(maxSets).length * 8 + 4);
           return `<div style="padding:8px 14px 10px;border-top:1px solid var(--border);">
-            <div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.5px;margin-bottom:7px;">VOLUME BY BODY PART</div>
-            ${entries.map(([m,v])=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;"><span style="font-size:11px;font-weight:700;color:${w._draft?'#555':(muscleColors[m]||'#888')};width:52px;flex-shrink:0;">${displayMuscle(m)}</span><div style="flex:1;height:5px;background:#1e1e1e;border-radius:3px;overflow:hidden;"><div style="height:100%;width:${Math.round(v/maxVol*100)}%;background:${w._draft?'#555':(muscleColors[m]||'#888')};border-radius:3px;transition:width .3s;"></div></div></div>`).join('')}
+            <div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.5px;margin-bottom:7px;">SETS BY BODY PART</div>
+            ${entries.map(([m,v])=>{ const _color = w._draft?'#555':(muscleColors[m]||'#888'); const _pct = Math.round(v/maxSets*100); return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;"><span style="font-size:11px;font-weight:700;color:${_color};width:52px;flex-shrink:0;">${displayMuscle(m)}</span><div style="position:relative;flex:1;height:5px;background:#1e1e1e;border-radius:3px;margin-right:${numWidth+4}px;"><div style="position:absolute;left:0;top:0;height:100%;width:${_pct}%;background:${_color};border-radius:3px;transition:width .3s;"></div><span style="position:absolute;left:${_pct}%;top:50%;transform:translateY(-50%);margin-left:4px;font-size:11px;font-weight:700;color:${_color};white-space:nowrap;">${v}</span></div></div>`; }).join('')}
           </div>`;
         })()}
         ${exRows}
@@ -22328,8 +22364,11 @@ function deleteCoachWorkout(id) {
      .comment-box (see showNoteToolbar/hideNoteToolbar) or an nwf-name-page field
      (see _nwfFieldFocus) is focused. All of these autosave live via their own
      oninput handlers, so Done only ever needs to close the keyboard. -->
-<div id="note-kbd-done-bar" style="display:none;position:fixed;left:0;right:0;bottom:0;max-width:430px;margin:0 auto;z-index:9500;background:#1a1a1a;border-top:1px solid #2a2a2a;box-sizing:border-box;justify-content:flex-end;align-items:center;padding:8px 12px;">
-  <button onclick="document.activeElement?.blur();" style="background:var(--accent);border:none;border-radius:20px;color:#000;font-family:'DM Sans';font-size:15px;font-weight:900;padding:9px 20px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Done</button>
+<div id="note-kbd-done-bar" style="display:none;flex-direction:column;position:fixed;left:0;right:0;bottom:0;max-width:430px;margin:0 auto;z-index:9500;background:#1a1a1a;border-top:1px solid #2a2a2a;box-sizing:border-box;padding:8px 12px;">
+  <div id="note-kbd-preview" style="font-family:'DM Sans';font-size:13px;line-height:1.4;color:var(--muted);overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;word-break:break-word;"></div>
+  <div style="display:flex;justify-content:flex-end;align-items:center;">
+    <button onclick="document.activeElement?.blur();" style="background:var(--accent);border:none;border-radius:20px;color:#000;font-family:'DM Sans';font-size:15px;font-weight:900;padding:9px 20px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Done</button>
+  </div>
 </div>
 
 <!-- KG / Reps editor sheet — body-level so position:fixed works outside any stacking context -->
@@ -25041,6 +25080,7 @@ function setSetType(type) {
   updateVolProgressBar(exId);
   _updateExSetCount(exId);
   saveSession();
+  if (window._markExDetailModified) window._markExDetailModified();
 }
 
 window.openSetOptions = openSetOptions;
