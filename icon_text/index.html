@@ -990,7 +990,6 @@ async function createUserDoc(user) {
 
 let _authNullGraceTimer = null;
 onAuthStateChanged(auth, async (user) => {
-  console.log('[AUTH-DBG]', performance.now().toFixed(0), 'onAuthStateChanged fired, user=', user ? user.uid : null);
   if (user) {
     // A real user showed up — cancel any pending "show auth screen" grace
     // timer scheduled below for an earlier, transient null callback.
@@ -4618,31 +4617,13 @@ function updateWflowCloseBtn(id) {
   btn.textContent = hasData ? 'Save' : 'Close';
 }
 
-function restoreSession() {
-  const raw = _LS.get('ironlog_session');
-  if (!raw) { showTodayStartScreen(); return; }
-  try {
-    const session = JSON.parse(raw);
-    if (!session.cards?.length) { showTodayStartScreen(); return; }
-    const _wn = document.getElementById('workoutName');
-    _wn.value = session.name || '';
-    const _hb = /[\u0590-\u05FF]/.test(_wn.value);
-    _wn.style.direction = _hb ? 'rtl' : 'ltr';
-    _wn.style.textAlign = _hb ? 'right' : 'left';
-    _setWorkoutHeroPhoto(session.name || '');
-  showTodayWorkoutArea();
-    session.cards.forEach(cd => {
-      const ex = getAllExercises().find(e=>e.label===cd.name||e.name===cd.name)
-        || {name:cd.name, label:cd.name, muscle:cd.muscle||'Chest', custom:true};
-      addExerciseCard(ex, false, cd);
-    });
-    checkFinishReady();
-    window._todayChipsScrollPos = 0;
-    updateTodayMuscleChips();
-    // Update mark-done buttons based on restored set states
-    document.querySelectorAll('.exercise-card').forEach(card => { updateMarkDoneBtn(card.id); setTimeout(() => updateVolProgressBar(card.id), 100); });
-  } catch(e) { _LS.remove('ironlog_session'); }
+// Boot always lands on the Home/start screen; any in-progress workout
+// session from before the app was closed is discarded, not restored.
+function _discardSessionAndShowHome() {
+  _LS.remove('ironlog_session');
+  showTodayStartScreen();
 }
+window._discardSessionAndShowHome = _discardSessionAndShowHome;
 
 function clearSession() {
   // Edit mode (from W2 "Edit") — cancel returns to expanded workout sheet, no confirmation needed
@@ -6669,7 +6650,8 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
 
   let _maxKg = 0, _max1RM = 0, _best1RMSet = null, _maxVol = 0;
   let _maxKgDate = null, _best1RMDate = null, _maxVolDate = null;
-  const _chartWtMap = new Map(), _chartRmMap = new Map(), _chartVolMap = new Map();
+  let _maxKgBwExtra = null;
+  const _chartWtMap = new Map(), _chartRmMap = new Map(), _chartVolMap = new Map(), _chartWtBwMap = new Map();
   // Per-day best set (kg/reps) behind that day's _chartRmMap number — the B.SET
   // tab plots the same 1RM-estimate values on its Y axis, but the big scrub
   // value shows the actual set (e.g. "12.5kg × 13") instead of the estimate.
@@ -6678,20 +6660,21 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
     w.exercises.filter(e => e.name === exName).forEach(e => {
       const ds = doneSets(e.sets);
       ds.forEach(s => {
-        if (s.kg > _maxKg) { _maxKg = s.kg; _maxKgDate = w.date; }
+        if (s.kg > _maxKg) { _maxKg = s.kg; _maxKgDate = w.date; _maxKgBwExtra = (s.bwExtra != null ? s.bwExtra : null); }
         const rm = Math.round(s.kg * (1 + s.reps / 30) * 10) / 10;
-        if (rm > _max1RM) { _max1RM = rm; _best1RMSet = { kg: s.kg, reps: s.reps }; _best1RMDate = w.date; }
+        if (rm > _max1RM) { _max1RM = rm; _best1RMSet = { kg: s.kg, reps: s.reps, bwExtra: (s.bwExtra != null ? s.bwExtra : null) }; _best1RMDate = w.date; }
       });
       const sessionVol = ds.reduce((a, s) => a + s.kg * s.reps, 0);
       if (sessionVol > _maxVol) { _maxVol = sessionVol; _maxVolDate = w.date; }
       const dayKey = new Date(w.date).setHours(0, 0, 0, 0);
-      const wt  = ds.length ? Math.max(0, ...ds.map(s => s.kg)) : 0;
+      const wtBest = ds.length ? ds.reduce((a, s) => s.kg >= a.kg ? s : a, ds[0]) : null;
+      const wt  = wtBest ? wtBest.kg : 0;
       const rm1 = ds.length ? Math.max(...ds.map(s => Math.round(s.kg * (1 + s.reps / 30) * 10) / 10)) : 0;
-      if (wt  > (_chartWtMap.get(dayKey)  || 0)) _chartWtMap.set(dayKey, wt);
+      if (wt  > (_chartWtMap.get(dayKey)  || 0)) { _chartWtMap.set(dayKey, wt); _chartWtBwMap.set(dayKey, wtBest.bwExtra != null ? wtBest.bwExtra : null); }
       if (rm1 > (_chartRmMap.get(dayKey) || 0)) {
         _chartRmMap.set(dayKey, rm1);
         const _bestSet = ds.reduce((a, s) => s.kg*(1+s.reps/30) >= a.kg*(1+a.reps/30) ? s : a, ds[0]);
-        _chartRmSetMap.set(dayKey, { kg: _bestSet.kg, reps: _bestSet.reps });
+        _chartRmSetMap.set(dayKey, { kg: _bestSet.kg, reps: _bestSet.reps, bwExtra: _bestSet.bwExtra != null ? _bestSet.bwExtra : null });
       }
       if (sessionVol > (_chartVolMap.get(dayKey) || 0)) _chartVolMap.set(dayKey, sessionVol);
     });
@@ -6704,16 +6687,16 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
   const _volStr = _maxVol >= 1000 ? (_maxVol / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : String(Math.round(_maxVol));
   const slides = [{ val: 'PROGRESS' }, { val: 'YOUR BEST' }];
   const PROG_IDX = 0, TABLE_IDX = 1;
-  let _cur = 0;
+  let _cur = TABLE_IDX; // default to the YOUR BEST slide
 
-  if (titleEl) { titleEl.textContent = slides[0].val; titleEl.style.color = '#ccc'; }
+  if (titleEl) { titleEl.textContent = slides[_cur].val; titleEl.style.color = '#ccc'; }
 
   const dots = document.createElement('div');
   dots.id = 'ex-detail-stats-dots';
   dots.style.cssText = 'display:flex;gap:6px;justify-content:center;padding:2px 0 6px;';
   const dotEls = slides.map((_, i) => {
     const d = document.createElement('div');
-    d.style.cssText = `width:6px;height:6px;border-radius:50%;background:${i===0 ? 'var(--accent)' : 'rgba(255,255,255,0.25)'};transition:background .2s;cursor:pointer;display:inline-block;`;
+    d.style.cssText = `width:6px;height:6px;border-radius:50%;background:${i===_cur ? 'var(--accent)' : 'rgba(255,255,255,0.25)'};transition:background .2s;cursor:pointer;display:inline-block;`;
     d.onclick = () => goTo(i);
     dots.appendChild(d);
     return d;
@@ -6725,7 +6708,7 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
   const _mKeys = ['wt','rm','vol'], _mLabels = ['MAX','B.SET','VOL'], _mColors = ['#e8ff47','#ff8c42','#a78bfa'];
   const progPane = document.createElement('div');
   progPane.id = 'ex-detail-stats-prog-pane';
-  progPane.style.cssText = 'display:block;padding:2px 16px 0;';
+  progPane.style.cssText = 'display:none;padding:2px 16px 0;';
   const metricBtns = [];
   const metricBar = document.createElement('div');
   metricBar.style.cssText = 'position:relative;display:flex;gap:0;margin-bottom:10px;border-bottom:1px solid var(--border);';
@@ -6775,7 +6758,8 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
   const _chevSvg = `<svg style="vertical-align:middle;margin-left:3px;" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
   const periodWrap = document.createElement('div');
   periodWrap.style.cssText = 'position:relative;';
-  if (_totalExSessions < 2) periodWrap.style.display = 'none';
+  // Only relevant to the PROGRESS slide, which isn't the default (YOUR BEST is).
+  if (_totalExSessions < 2 || _cur !== PROG_IDX) periodWrap.style.display = 'none';
   const periodBtn = document.createElement('button');
   periodBtn.style.cssText = `background:transparent;border:1px solid #333;border-radius:6px;color:var(--accent);font-family:'DM Sans';font-size:11px;font-weight:700;padding:3px 8px;cursor:pointer;line-height:1.4;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;`;
   const _updatePeriodBtn = () => { periodBtn.innerHTML = _rangeNames[_progRange] + _chevSvg; };
@@ -6879,10 +6863,13 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
   // Progress pane's own metric bar/indicator pattern below) ─────────────────
   const tablePane = document.createElement('div');
   tablePane.id = 'ex-detail-stats-table-pane';
-  tablePane.style.cssText = 'display:none;flex-direction:column;height:100%;box-sizing:border-box;padding:0 16px;';
+  tablePane.style.cssText = 'display:flex;flex-direction:column;height:100%;box-sizing:border-box;padding:0 16px;';
   const _fn = n => n % 1 === 0 ? String(n) : String(Math.round(n * 100) / 100);
+  // BW/BW+ sets store the resolved total kg, not the "BW+X" the user actually
+  // entered — show that original notation here instead of the equivalent number.
+  const _fmtWtDisplay = (kgVal, bwExtra) => bwExtra != null ? (bwExtra > 0 ? `BW+${_fn(bwExtra)}` : 'BW') : _fn(kgVal);
   const _uBig = `<span style="font-family:'Bebas Neue';font-size:28px;margin-left:4px;vertical-align:baseline;">kg</span>`;
-  const _bKg = _best1RMSet ? String(_best1RMSet.kg) : '–';
+  const _bKg = _best1RMSet ? _fmtWtDisplay(_best1RMSet.kg, _best1RMSet.bwExtra) : '–';
   const _bRp = _best1RMSet ? _best1RMSet.reps : '';
 
   const bestBigVal = document.createElement('div');
@@ -6897,7 +6884,7 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
     // item, while inside it everything stays on the normal text line (no flex/wrap)
     // and vertical-align:bottom on the "kg" unit sits it flush with the number's base.
     let _inner, _recDate;
-    if (_bestMetric === 'wt')      { _inner = `${_fn(_maxKg)}${_uBig}`; _recDate = _maxKgDate; }
+    if (_bestMetric === 'wt')      { _inner = `${_fmtWtDisplay(_maxKg, _maxKgBwExtra)}${_uBig}`; _recDate = _maxKgDate; }
     else if (_bestMetric === 'rm') { _inner = `${_bKg}${_uBig}<span style="font-family:'Bebas Neue';font-size:36px;opacity:.6;"> × </span>${_bRp}<span style="font-family:'Bebas Neue';font-size:28px;margin-left:4px;vertical-align:baseline;">Reps</span>`; _recDate = _best1RMDate; }
     else                           { _inner = `${_volStr}${_uBig}`; _recDate = _maxVolDate; }
     const _recLabel = _prRelTimeLabel(_recDate);
@@ -6945,9 +6932,14 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
     if (pts[idx]) {
       const pt = pts[idx];
       progBigVal.style.color = line;
+      // Big scrub number shows the original BW/BW+ notation (not the resolved
+      // equivalent kg) when the record set was bodyweight-based — the chart's
+      // Y axis itself stays numeric (set separately, not touched here).
       progBigVal.innerHTML = (_progMetric === 'rm' && pt.setKg != null)
-        ? `${pt.setKg}kg <span style="opacity:.6;">×</span> ${pt.setReps}`
-        : `${parseFloat(pt.val.toFixed(2))}kg`;
+        ? `${_fmtWtDisplay(pt.setKg, pt.bwExtra)}kg <span style="opacity:.6;">×</span> ${pt.setReps}`
+        : (_progMetric === 'wt')
+          ? `${_fmtWtDisplay(pt.val, pt.bwExtra)}kg`
+          : `${parseFloat(pt.val.toFixed(2))}kg`;
       progBigVal.style.display = 'block';
     }
   }
@@ -6956,7 +6948,7 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
     const cutoff = Date.now() - ({'2W':14,'1M':30,'3M':91,'6M':182,'1Y':365}[_progRange]||91) * 86400000;
     const srcMap = {wt:_chartWtMap, rm:_chartRmMap, vol:_chartVolMap}[_progMetric];
     const _mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    const pts = [...srcMap.entries()].filter(([k])=>k>=cutoff).sort((a,b)=>a[0]-b[0]).map(([k,v])=>{const _d=new Date(k);const _s=_progMetric==='rm'?_chartRmSetMap.get(k):null;return{date:_d.getDate()+' '+_mo[_d.getMonth()]+' '+_d.getFullYear(),val:v,setKg:_s?_s.kg:null,setReps:_s?_s.reps:null};});
+    const pts = [...srcMap.entries()].filter(([k])=>k>=cutoff).sort((a,b)=>a[0]-b[0]).map(([k,v])=>{const _d=new Date(k);const _s=_progMetric==='rm'?_chartRmSetMap.get(k):null;const _bw=_progMetric==='wt'?(_chartWtBwMap.has(k)?_chartWtBwMap.get(k):null):(_s?_s.bwExtra:null);return{date:_d.getDate()+' '+_mo[_d.getMonth()]+' '+_d.getFullYear(),val:v,setKg:_s?_s.kg:null,setReps:_s?_s.reps:null,bwExtra:_bw};});
     if (progCanvas._chartInst) { progCanvas._chartInst.destroy(); progCanvas._chartInst = null; }
     const hasData = pts.length >= 2;
     progNoData.style.display = hasData ? 'none' : 'block';
@@ -9199,7 +9191,7 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
       <div class="comment-area" id="comment-area-${id}">
         <div class="comment-area-inner" id="comment-area-inner-${id}" style="position:relative;border:1px solid var(--accent);border-radius:9px;padding:18px 11px 10px;margin-top:6px;transition:border-color .2s;width:calc(min(430px,100vw) - 32px);max-width:398px;box-sizing:border-box;">
           <span class="comment-area-label" style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:var(--bg);padding:0 5px;font-size:12px;font-weight:700;color:var(--accent);letter-spacing:.3px;pointer-events:none;">Note</span>
-          <textarea class="comment-box" id="comment-${id}" autocomplete="off" spellcheck="false" placeholder="Tap for editing&" oninput="updateNoteBtn('${id}');saveSession();if(window._isNewWorkoutFlow)updateWflowCloseBtn('${id}');this.style.direction=/[\u0590-\u05FF]/.test(this.value)?'rtl':'ltr';this.style.textAlign=/[\u0590-\u05FF]/.test(this.value)?'right':'left';this.style.height='auto';this.style.height=this.scrollHeight+'px';_updateNoteKbdPreview('${id}')" onfocus="showNoteToolbar('${id}');this.closest('.comment-area')?.classList.add('note-active')" onblur="hideNoteToolbar();if(!this.value.trim())this.closest('.comment-area')?.classList.remove('note-active')"></textarea>
+          <textarea class="comment-box" id="comment-${id}" autocomplete="off" spellcheck="false" placeholder="Tap for editing&" oninput="updateNoteBtn('${id}');saveSession();if(window._isNewWorkoutFlow)updateWflowCloseBtn('${id}');this.style.direction=/[\u0590-\u05FF]/.test(this.value)?'rtl':'ltr';this.style.textAlign=/[\u0590-\u05FF]/.test(this.value)?'right':'left';this.style.height='auto';this.style.height=this.scrollHeight+'px'" onfocus="showNoteToolbar('${id}');this.closest('.comment-area')?.classList.add('note-active')" onblur="hideNoteToolbar();if(!this.value.trim())this.closest('.comment-area')?.classList.remove('note-active')"></textarea>
         </div>
       </div>
 
@@ -11623,23 +11615,9 @@ function showNoteToolbar(id) {
   if (kbdBar) {
     kbdBar.style.display = 'flex';
     _positionNoteKbdBar();
-    _updateNoteKbdPreview(id);
     window.visualViewport?.addEventListener('resize', _positionNoteKbdBar);
     window.visualViewport?.addEventListener('scroll', _positionNoteKbdBar);
   }
-}
-// Mirrors the first 3 lines of the note being edited into the "Done" bar above
-// the keyboard, since the textarea itself is usually covered by the keyboard.
-function _updateNoteKbdPreview(id) {
-  const preview = document.getElementById('note-kbd-preview');
-  if (!preview) return;
-  const textarea = document.getElementById(`comment-${id}`);
-  const val = textarea?.value || '';
-  const isHebrew = /[֐-׿]/.test(val);
-  preview.style.direction = isHebrew ? 'rtl' : 'ltr';
-  preview.style.textAlign = isHebrew ? 'right' : 'left';
-  preview.style.marginBottom = val ? '6px' : '0';
-  preview.textContent = val.split('\n').slice(0, 3).join('\n');
 }
 function hideNoteToolbar() {
   setTimeout(() => {
@@ -18162,10 +18140,9 @@ window._onAuthReady = (user) => {
   customExercises = JSON.parse(_LS.get('ironlog_custom_ex') || '[]');
   plannedWorkouts = (() => { try { return JSON.parse(_LS.get('ironlog_planned') || '[]') || []; } catch(e) { return []; } })();
 
-  // Restore any in-progress session and today's plan card now that real,
-  // brand-scoped data is actually loaded (moved here from a bare
-  // setTimeout(...,0) that used to fire before auth resolved).
-  if (typeof restoreSession === 'function') restoreSession();
+  // Always land on Home — any in-progress workout from before the app was
+  // closed is discarded, not restored or offered back.
+  if (typeof _discardSessionAndShowHome === 'function') _discardSessionAndShowHome();
   checkFinishReady();
   if (typeof renderTodayPlanCard === 'function') renderTodayPlanCard();
   if (localStorage.getItem('ironlog_modal') === 'calendar' && typeof openCalendar === 'function') openCalendar();
@@ -18176,10 +18153,19 @@ window._onAuthReady = (user) => {
         if (typeof renderWorkoutsTab2 === 'function') renderWorkoutsTab2();
       })
     : Promise.resolve();
-  // Hide the app-boot loading screen only once this settles — loadFromFirestore
-  // already re-renders the home goal-ring with final synced data internally, so
-  // waiting for it here means that ring is fully drawn before it's ever revealed.
-  _fsLoadDone.then(() => { if (window._hideAppLoadingOverlay) window._hideAppLoadingOverlay(); });
+  // Hide the app-boot loading screen only once this settles. The very first
+  // goal-ring render each session (above, via showTodayStartScreen while still
+  // hidden behind the overlay, using only local data) always happens before
+  // dataset.inited is set, so it can never play the "just achieved" animation —
+  // it just silently snaps to the achieved state. Force one more reset here so
+  // this final, Firestore-synced render is the one that detects the transition
+  // and animates it live, right as the overlay clears, instead of the
+  // celebration having already silently played out unseen.
+  _fsLoadDone.then(() => {
+    if (typeof _resetWeekProgressForReplay === 'function') _resetWeekProgressForReplay();
+    if (typeof renderTodayWeekProgress === 'function') renderTodayWeekProgress(true);
+    if (window._hideAppLoadingOverlay) window._hideAppLoadingOverlay();
+  });
   if (typeof loadLibrary === 'function') loadLibrary();
 
   // Restore debug role if super_admin had one saved
@@ -22407,11 +22393,8 @@ function deleteCoachWorkout(id) {
      .comment-box (see showNoteToolbar/hideNoteToolbar) or an nwf-name-page field
      (see _nwfFieldFocus) is focused. All of these autosave live via their own
      oninput handlers, so Done only ever needs to close the keyboard. -->
-<div id="note-kbd-done-bar" style="display:none;flex-direction:column;position:fixed;left:0;right:0;bottom:0;max-width:430px;margin:0 auto;z-index:9500;background:#1a1a1a;border-top:1px solid #2a2a2a;box-sizing:border-box;padding:8px 12px;">
-  <div id="note-kbd-preview" style="font-family:'DM Sans';font-size:13px;line-height:1.4;color:var(--muted);overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;word-break:break-word;"></div>
-  <div style="display:flex;justify-content:flex-end;align-items:center;">
-    <button onclick="document.activeElement?.blur();" style="background:var(--accent);border:none;border-radius:20px;color:#000;font-family:'DM Sans';font-size:15px;font-weight:900;padding:9px 20px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Done</button>
-  </div>
+<div id="note-kbd-done-bar" style="display:none;position:fixed;left:0;right:0;bottom:0;max-width:430px;margin:0 auto;z-index:9500;background:#1a1a1a;border-top:1px solid #2a2a2a;box-sizing:border-box;justify-content:flex-end;align-items:center;padding:8px 12px;">
+  <button onclick="document.activeElement?.blur();" style="background:var(--accent);border:none;border-radius:20px;color:#000;font-family:'DM Sans';font-size:15px;font-weight:900;padding:9px 20px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Done</button>
 </div>
 
 <!-- KG / Reps editor sheet — body-level so position:fixed works outside any stacking context -->
