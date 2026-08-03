@@ -988,8 +988,13 @@ async function createUserDoc(user) {
   return data;
 }
 
+let _authNullGraceTimer = null;
 onAuthStateChanged(auth, async (user) => {
+  console.log('[AUTH-DBG]', performance.now().toFixed(0), 'onAuthStateChanged fired, user=', user ? user.uid : null);
   if (user) {
+    // A real user showed up — cancel any pending "show auth screen" grace
+    // timer scheduled below for an earlier, transient null callback.
+    clearTimeout(_authNullGraceTimer);
     try {
       await loadBrandConfig();
       const userData = await createUserDoc(user);
@@ -1010,6 +1015,7 @@ onAuthStateChanged(auth, async (user) => {
         if (expDate < now) {
           await signOut(auth);
           showExpiredScreen(userData.accountExpires, 'account');
+          if (window._hideAppLoadingOverlay) window._hideAppLoadingOverlay();
           return;
         }
       }
@@ -1067,11 +1073,21 @@ onAuthStateChanged(auth, async (user) => {
       }
     }
     // ────────────────────────────────────────────────────
-    window._currentUser = null;
-    window._currentUserData = null;
-    if (!document.getElementById('expiredScreen')?.style.display || document.getElementById('expiredScreen').style.display === 'none') {
-      showAuthScreen();
-    }
+    // Firebase can fire this callback once with user=null while it's still
+    // checking a persisted session, then fire again moments later with the
+    // real user. Acting on that immediately (showing the auth screen's logo,
+    // hiding the loading overlay) flashed it before the real "logged in"
+    // callback took over. Give it a brief grace window — only treat this as
+    // a genuine logged-out state if no real-user callback arrives in time.
+    clearTimeout(_authNullGraceTimer);
+    _authNullGraceTimer = setTimeout(() => {
+      window._currentUser = null;
+      window._currentUserData = null;
+      if (!document.getElementById('expiredScreen')?.style.display || document.getElementById('expiredScreen').style.display === 'none') {
+        showAuthScreen();
+      }
+      if (window._hideAppLoadingOverlay) window._hideAppLoadingOverlay();
+    }, 400);
   }
 });
 
@@ -1113,6 +1129,14 @@ function hidAuthScreen() {
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
 </head>
 <body>
+
+<!-- App boot loading screen — visible from first paint (not toggled via JS
+     display:none like the other overlays) so there's no flash of the app
+     shell/auth screen underneath before auth + data have actually resolved. -->
+<div id="app-loading-overlay" style="position:fixed;inset:0;z-index:100000;background:#0a0a0a;display:flex;align-items:center;justify-content:center;opacity:1;transition:opacity .35s ease;">
+  <div style="font-family:'DM Sans';font-size:16px;font-weight:700;color:#fff;letter-spacing:.9px;">LOADING</div>
+</div>
+<script>window._appLoadStart = performance.now();</script>
 
 <!-- AUTH SCREEN -->
 <div id="auth-screen" style="display:none;position:fixed;inset:0;z-index:9999;background:#0a0a0a;flex-direction:column;align-items:center;justify-content:center;padding:24px;">
@@ -2269,14 +2293,11 @@ function autoSaveDraft() {
   _LS.set('ironlog_draft_id', String(_draftId));
   workouts.unshift({id:_draftId, name, date:_draftId, exercises, _draft:true});
   save();
-  // renderHistory() rebuilds the whole (currently off-screen) History tab list —
-  // expensive, and this function runs on every single set toggle. Debounce it so
-  // rapid taps don't each pay for a full synchronous rebuild that blocks the tap's
-  // own visual feedback; it only needs to be current by the time History is opened.
-  clearTimeout(_autoSaveDraftHistoryTimer);
-  _autoSaveDraftHistoryTimer = setTimeout(renderHistory, 250);
+  // No renderHistory() call here — switchTab('progress') already renders it
+  // fresh every time the History tab is actually opened, so refreshing it here
+  // on every set toggle was just an expensive, unnecessary rebuild of an
+  // off-screen list that blocked the tap's own visual feedback.
 }
-let _autoSaveDraftHistoryTimer = null;
 
 function clearDraft() {
   if (_draftId) {
@@ -4740,14 +4761,11 @@ function showToast(msg, opts) { /* toasts disabled */ }
 function fmt(ts) { return new Date(ts).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}); }
 function fmtShort(ts) { return new Date(ts).toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
 document.getElementById('dateBadgeText').textContent = new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}).toUpperCase();
-// Restore any in-progress session from before page refresh
-setTimeout(restoreSession, 0);
-setTimeout(() => {
-  checkFinishReady();
-  renderTodayPlanCard();
-  const savedModal = localStorage.getItem('ironlog_modal');
-  if (savedModal === 'calendar') openCalendar();
-}, 0);
+// Session/plan-card restoration now happens inside _onAuthReady, once real
+// (brand-scoped) data has actually loaded — see there. Running it here via a
+// bare setTimeout(...,0) fired before auth resolves, so it operated on empty
+// defaults and rendered the generic start screen even when a real in-progress
+// session existed, briefly flashing it before the correct state took over.
 
 // ══════════════════════════════════════════════════════
 //  RENDER HELPERS
@@ -18144,10 +18162,24 @@ window._onAuthReady = (user) => {
   customExercises = JSON.parse(_LS.get('ironlog_custom_ex') || '[]');
   plannedWorkouts = (() => { try { return JSON.parse(_LS.get('ironlog_planned') || '[]') || []; } catch(e) { return []; } })();
 
-  if (typeof showToast === 'function')  window.loadFromFirestore(user.uid).then(loaded => {
-    if (typeof renderHistory === 'function') renderHistory();
-    if (typeof renderWorkoutsTab2 === 'function') renderWorkoutsTab2();
-    });
+  // Restore any in-progress session and today's plan card now that real,
+  // brand-scoped data is actually loaded (moved here from a bare
+  // setTimeout(...,0) that used to fire before auth resolved).
+  if (typeof restoreSession === 'function') restoreSession();
+  checkFinishReady();
+  if (typeof renderTodayPlanCard === 'function') renderTodayPlanCard();
+  if (localStorage.getItem('ironlog_modal') === 'calendar' && typeof openCalendar === 'function') openCalendar();
+
+  const _fsLoadDone = (typeof showToast === 'function')
+    ? window.loadFromFirestore(user.uid).then(loaded => {
+        if (typeof renderHistory === 'function') renderHistory();
+        if (typeof renderWorkoutsTab2 === 'function') renderWorkoutsTab2();
+      })
+    : Promise.resolve();
+  // Hide the app-boot loading screen only once this settles — loadFromFirestore
+  // already re-renders the home goal-ring with final synced data internally, so
+  // waiting for it here means that ring is fully drawn before it's ever revealed.
+  _fsLoadDone.then(() => { if (window._hideAppLoadingOverlay) window._hideAppLoadingOverlay(); });
   if (typeof loadLibrary === 'function') loadLibrary();
 
   // Restore debug role if super_admin had one saved
@@ -22284,8 +22316,7 @@ function deleteCoachWorkout(id) {
 
 <!-- Workout loading overlay — must be outside w2-sheet (which has will-change:transform) -->
 <div id="workout-loading-overlay" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,1);align-items:center;justify-content:center;flex-direction:column;opacity:0;transition:opacity .8s ease;">
-  <div id="workout-loading-ring" style="width:90px;height:90px;border-radius:50%;-webkit-mask:radial-gradient(transparent 56%,#000 56%);mask:radial-gradient(transparent 56%,#000 56%);"></div>
-  <div style="margin-top:18px;font-family:'DM Sans';font-size:16px;font-weight:700;color:#fff;letter-spacing:.9px;">LOADING WORKOUT</div>
+  <div style="font-family:'DM Sans';font-size:16px;font-weight:700;color:#fff;letter-spacing:.9px;">LOADING WORKOUT</div>
 </div>
 
 <!-- Exercises-tab exercise detail (separate clean overlay) -->
@@ -26345,74 +26376,151 @@ function closeW2Sheet() {
   if (_exSec) _exSec.style.display = '';
 }
 
-function _runWorkoutLoadingAnim(onDone) {
+// App-boot loading screen (#app-loading-overlay, visible from first paint) —
+// hides once auth + data are ready, but never before 800ms so it doesn't just
+// flash, and the home screen's goal-ring ends up fully rendered with final
+// data behind it instead of visibly popping/jumping into place after reveal.
+function _hideAppLoadingOverlay() {
+  const el = document.getElementById('app-loading-overlay');
+  if (!el || el.dataset.hidden === '1') return;
+  el.dataset.hidden = '1';
+  const MIN_MS = 800;
+  const elapsed = performance.now() - (window._appLoadStart || 0);
+  const remain = Math.max(0, MIN_MS - elapsed);
+  setTimeout(() => {
+    el.style.opacity = '0';
+    setTimeout(() => { el.style.display = 'none'; }, 350);
+  }, remain);
+}
+window._hideAppLoadingOverlay = _hideAppLoadingOverlay;
+// Safety net — never leave the user stuck behind the loading screen if some
+// step in the auth/data chain throws or hangs unexpectedly.
+setTimeout(_hideAppLoadingOverlay, 6000);
+
+// Fades the overlay fully in first, then calls onFadedIn — so building the
+// exercise list/images (potentially a visible hitch) only ever happens once
+// the workout screen is completely hidden behind it, not concurrently with
+// the fade-in transition itself.
+function _runWorkoutLoadingAnim(onFadedIn) {
   const _ov = document.getElementById('workout-loading-overlay');
-  const _ring = document.getElementById('workout-loading-ring');
-  if (!_ov || !_ring) { if (onDone) setTimeout(onDone, 200); return; }
-  const _accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#e8ff47';
+  if (!_ov) { if (onFadedIn) onFadedIn(); return; }
   _ov.style.background = 'rgba(0,0,0,1)';
   _ov.style.transition = 'opacity .8s ease';
   _ov.style.opacity = '0';
   _ov.style.display = 'flex';
-  requestAnimationFrame(() => requestAnimationFrame(() => { _ov.style.opacity = '1'; }));
-  let _t0 = null;
-  const DURATION = 2000;
-  function _step(ts) {
-    if (!_t0) _t0 = ts;
-    const p = Math.min((ts - _t0) / DURATION, 1);
-    const deg = p * 360;
-    if (p >= 1) {
-      _ring.style.background = _accent;
-    } else {
-      _ring.style.background = `conic-gradient(from 0deg, ${_accent} 0deg ${deg}deg, #1e1e1e ${deg}deg 360deg)`;
-    }
-    if (p < 1) {
-      requestAnimationFrame(_step);
-    } else {
-      if (onDone) onDone();
-      setTimeout(() => {
-        _ov.style.transition = 'opacity .35s ease';
-        _ov.style.opacity = '0';
-        setTimeout(() => { _ov.style.display = 'none'; }, 350);
-      }, 250);
-    }
-  }
-  requestAnimationFrame(_step);
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    _ov.style.opacity = '1';
+    if (!onFadedIn) return;
+    const _onEnd = (e) => {
+      if (e.target !== _ov || e.propertyName !== 'opacity') return;
+      _ov.removeEventListener('transitionend', _onEnd);
+      onFadedIn();
+    };
+    _ov.addEventListener('transitionend', _onEnd);
+  }));
 }
 window._runWorkoutLoadingAnim = _runWorkoutLoadingAnim;
 
+function _hideWorkoutLoadingAnim() {
+  const _ov = document.getElementById('workout-loading-overlay');
+  if (!_ov) return;
+  _ov.style.transition = 'opacity .35s ease';
+  _ov.style.opacity = '0';
+  setTimeout(() => { _ov.style.display = 'none'; }, 350);
+}
+window._hideWorkoutLoadingAnim = _hideWorkoutLoadingAnim;
+
+// Fades the loading overlay out only once every exercise thumbnail has actually
+// finished loading (instead of a fixed timer), so images are guaranteed visible
+// the moment it clears. Tracks images already in the DOM plus any that show up
+// shortly after (exercise photos can resolve async via localforage/IndexedDB),
+// with a hard cap so a stuck/broken image can never leave the overlay stuck.
+function _waitForExerciseImagesLoaded(callback, maxWait = 2500) {
+  const list = document.getElementById('exerciseList');
+  if (!list) { callback(); return; }
+  let settled = false;
+  let scanDone = false;
+  const pending = new Set();
+  const finish = () => {
+    if (settled) return;
+    settled = true;
+    obs.disconnect();
+    clearTimeout(hardTimer);
+    callback();
+  };
+  const track = (img) => {
+    if (img.complete) return;
+    pending.add(img);
+    const done = () => {
+      pending.delete(img);
+      img.removeEventListener('load', done);
+      img.removeEventListener('error', done);
+      if (scanDone && pending.size === 0) finish();
+    };
+    img.addEventListener('load', done);
+    img.addEventListener('error', done);
+  };
+  list.querySelectorAll('.ex-photo-box img').forEach(track);
+  const obs = new MutationObserver(muts => {
+    muts.forEach(m => m.addedNodes.forEach(n => {
+      if (n.nodeType !== 1) return;
+      if (n.tagName === 'IMG') track(n);
+      n.querySelectorAll?.('img').forEach(track);
+    }));
+  });
+  obs.observe(list, { childList: true, subtree: true });
+  const hardTimer = setTimeout(finish, maxWait);
+  // Give async photo lookups a brief window to actually insert their <img> tag
+  // before treating the initial scan as complete.
+  setTimeout(() => { scanDone = true; if (pending.size === 0) finish(); }, 150);
+}
+
+// Keeps the "LOADING WORKOUT" overlay up for at least MIN_MS total, using that
+// time to load the exercises/images — only fading out early once images are
+// both ready AND the minimum has elapsed, whichever comes later.
+function _finishWorkoutLoading(startTs, MIN_MS = 800) {
+  _waitForExerciseImagesLoaded(() => {
+    const remain = Math.max(0, MIN_MS - (performance.now() - startTs));
+    setTimeout(_hideWorkoutLoadingAnim, remain);
+  });
+}
+
 function _wtabLoadWorkout(idx) {
-  // Build the workout (incl. exercise images) immediately, in parallel with the
-  // loading animation — it's fully hidden behind the opaque overlay the whole
-  // time anyway, so there's no reason to wait until the animation finishes to
-  // start it. Previously that meant thumbnails visibly popped in right as the
-  // overlay faded away instead of already being ready.
-  _runWorkoutLoadingAnim();
-  window._activeTabHighlight = null;
-  window._loadFromToday = false;
-  window._wtabSelectedIdx = null;
-  loadWorkout(idx);
-  switchTab('log');
-  const _now = Date.now();
-  window._sessionStartTime = _now;
-  _LS.set('ironlog_session_start', String(_now));
+  // Wait for the overlay to fully fade in (fully hiding the Workouts tab) before
+  // building the workout — building it only starts once nothing of the old
+  // screen is left visible, instead of racing the fade-in transition.
+  _runWorkoutLoadingAnim(() => {
+    const _loadStart = performance.now();
+    window._activeTabHighlight = null;
+    window._loadFromToday = false;
+    window._wtabSelectedIdx = null;
+    loadWorkout(idx);
+    switchTab('log');
+    const _now = Date.now();
+    window._sessionStartTime = _now;
+    _LS.set('ironlog_session_start', String(_now));
+    _finishWorkoutLoading(_loadStart);
+  });
 }
 window._wtabLoadWorkout = _wtabLoadWorkout;
 
 function w2SheetStart() {
   const idx = window._w2SheetIdx;
   closeW2Sheet();
-  // See _wtabLoadWorkout — build the workout in parallel with the loading
-  // animation instead of waiting for it to finish, so images are already ready.
-  _runWorkoutLoadingAnim();
-  window._activeTabHighlight = null;
-  window._loadFromToday = false;
-  window._wtabSelectedIdx = null;
-  loadWorkout(idx);
-  switchTab('log');
-  const _now = Date.now();
-  window._sessionStartTime = _now;
-  _LS.set('ironlog_session_start', String(_now));
+  // See _wtabLoadWorkout — wait for the fade-in to fully complete before
+  // building the workout.
+  _runWorkoutLoadingAnim(() => {
+    const _loadStart = performance.now();
+    window._activeTabHighlight = null;
+    window._loadFromToday = false;
+    window._wtabSelectedIdx = null;
+    loadWorkout(idx);
+    switchTab('log');
+    const _now = Date.now();
+    window._sessionStartTime = _now;
+    _LS.set('ironlog_session_start', String(_now));
+    _finishWorkoutLoading(_loadStart);
+  });
 }
 
 window.openW2Sheet = openW2Sheet;
