@@ -8729,15 +8729,37 @@ function applyTodayFilters() {
     return filtered.length > 0 && filtered.every(c => c.classList.contains('completed'));
   })();
   if (_allFilteredDone) {
+    // Was the message already showing FOR THIS SAME MUSCLE before this call?
+    // Only scroll to reveal it on the transition into "all done" (or a switch
+    // to a different, also-all-done muscle) — not on every subsequent
+    // re-render while that exact state holds (e.g. an unrelated set toggle),
+    // which would fight any scrolling the user is doing themselves. The
+    // element itself is shared across all muscles, so display!=='none' alone
+    // can't tell "still Legs" apart from "just switched to Shoulders".
+    const _wasAlreadyShown = !!emptyMsg && emptyMsg.style.display !== 'none' && emptyMsg.dataset.shownForMuscle === _todayMuscleFilter;
     if (!emptyMsg) {
       emptyMsg = document.createElement('div');
       emptyMsg.id = 'today-filter-empty-msg';
       emptyMsg.style.cssText = 'text-align:center;padding:24px 16px;font-family:"DM Sans";font-size:22px;font-weight:700;';
+      // The fixed bottom tab bar (56px + safe-area) sits on top of the last bit
+      // of normal document flow — scrollIntoView has no idea it's there, so
+      // without this the message can land scrolled to just behind/under it.
+      emptyMsg.style.scrollMarginBottom = 'calc(56px + env(safe-area-inset-bottom) + 16px)';
       document.getElementById('exerciseList').after(emptyMsg);
     }
     const muscleColor = _mcolors[_todayMuscleFilter] || '#4caf50';
     emptyMsg.innerHTML = `<span style="color:${muscleColor}">${_todayMuscleFilter}</span> exercises done !`;
+    emptyMsg.dataset.shownForMuscle = _todayMuscleFilter;
     emptyMsg.style.display = '';
+    // Scroll down to the bottom of the list so the "<muscle> exercises done!"
+    // message (which sits right after it) is actually visible — whether the
+    // filter was just tapped (and everything in it already happened to be
+    // done) or it was already active and this is the moment the last exercise
+    // in it just got completed. Delayed to let the filter's own staggered
+    // show/hide animations (up to ~600ms) finish first — same reasoning as
+    // _scrollToNextExercise's own wait — otherwise this scrolls against a
+    // layout that's still mid-transition and lands in the wrong place.
+    if (!_wasAlreadyShown) setTimeout(() => emptyMsg.scrollIntoView({ behavior: 'smooth', block: 'end' }), 620);
   } else if (emptyMsg) {
     emptyMsg.style.display = 'none';
   }
@@ -10421,7 +10443,10 @@ function markSetDone(btn, exId) {
       }
     }
   }
-  if (_todayHideDone) applyTodayFilters();
+  // Muscle-filter view also needs a refresh here, not just hide-done — it's what
+  // shows/scrolls-to the "<muscle> exercises done!" message the moment the last
+  // set in a filtered muscle group gets checked off.
+  if (_todayHideDone || _todayMuscleFilter) applyTodayFilters();
   checkFinishReady();
   updateTodayMuscleChips();
   refreshCardMiniCharts(exId);
@@ -10472,7 +10497,14 @@ function _refreshExPRSlots(id) {
   // blank (avoids growing the exercise-sets-count row into two lines just for this).
   const _prActiveRows = [...card.querySelectorAll('.set-row:not(.ignored)')];
   const _prDoneCount = _prActiveRows.filter(r => r.querySelector('.set-done-btn.done')).length;
-  if (card.classList.contains('completed') && _prDoneCount === 0 && _prActiveRows.length > 0) {
+  // Warmup sets carry the same .ignored class as manually-ignored ones, so they're
+  // correctly excluded from _prActiveRows for PR purposes — but that means a warmup
+  // set marked done wouldn't count toward _prDoneCount either, incorrectly showing
+  // "No sets completed" even though something genuinely was. Check across ALL rows
+  // (warmup included) for that specific warning; PR/star calculations below still
+  // correctly use the warmup-excluded _prActiveRows/_prDoneCount.
+  const _anyDoneAtAll = [...card.querySelectorAll('.set-row')].some(r => r.querySelector('.set-done-btn.done'));
+  if (card.classList.contains('completed') && !_anyDoneAtAll && _prActiveRows.length > 0) {
     if (prRow) prRow.innerHTML = `<span style="font-family:'DM Sans';font-size:12px;font-weight:600;color:#ff4747;">No sets completed</span>`;
     card.dataset.prWeight = '0';
     card.dataset.prVol = '0';
@@ -10647,7 +10679,10 @@ function toggleDone(id) {
       else list.prepend(card);
       refreshOrderNums();
       refreshCardMiniCharts(id);
-      if (_todayHideDone) applyTodayFilters();
+      // Also refresh when a muscle filter is active — shows/scrolls-to the
+      // "<muscle> exercises done!" message when finishing the last exercise
+      // in the currently filtered group.
+      if (_todayHideDone || _todayMuscleFilter) applyTodayFilters();
       if (window._updateWorkoutProgress) _updateWorkoutProgress();
       _scrollToNextExercise();
     }
@@ -11022,7 +11057,11 @@ function _updateExSetCount(exId) {
   // warning is shown in the PR-stars slot instead (see _refreshExPRSlots), since PRs are
   // impossible with no done sets anyway, so that space is already free — no need to grow
   // this row into two lines.
-  if (doneCount > 0 && !window._isNewWorkoutFlow) {
+  // `doneCount` excludes warmup/ignored rows (correctly, for the "X/Y sets" figure), but
+  // that means a warmup-only completion would never take this branch at all and so never
+  // show the "Done" tag either — `isCompleted` (the card's own completed state, set by
+  // Finish Exercise regardless of which sets were done) is the real signal to key off of.
+  if ((doneCount > 0 || isCompleted) && !window._isNewWorkoutFlow) {
     const doneTag = isCompleted ? `<span style="font-family:'DM Sans';font-size:13px;font-weight:400;color:#555;margin:0 6px;">|</span><span style="font-family:'DM Sans';font-size:13px;font-weight:700;color:var(--accent);">Done</span>` : '';
     countRow.innerHTML = `<span style="font-family:'DM Sans';font-size:13px;font-weight:600;color:#34d399;">${doneCount}/${count} sets</span>${doneTag}`;
     return;
@@ -11044,7 +11083,12 @@ function _updatePartialDoneIndicator(exId) {
   const doneCount = rows.filter(r => r.querySelector('.set-done-btn.done')).length;
   const totalCount = rows.length;
   const isPartial = !isCompleted && doneCount > 0 && doneCount < totalCount;
-  const isEmptyCompleted = isCompleted && doneCount === 0 && totalCount > 0;
+  // doneCount excludes warmup/ignored rows (correctly, for the partial-progress
+  // fraction) — but that means a warmup-only completion would read as "0 done"
+  // here and show the red X icon instead of the checkmark. Check across ALL
+  // rows (warmup included) for whether anything was actually done at all.
+  const _anyDoneAtAll = card ? [...card.querySelectorAll('.set-row')].some(r => r.querySelector('.set-done-btn.done')) : false;
+  const isEmptyCompleted = isCompleted && !_anyDoneAtAll && totalCount > 0;
 
   if (noDoneCheck) noDoneCheck.style.display = (!isCompleted && !isPartial) ? 'flex' : 'none';
   if (doneCheck) {
