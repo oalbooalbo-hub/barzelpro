@@ -2269,8 +2269,14 @@ function autoSaveDraft() {
   _LS.set('ironlog_draft_id', String(_draftId));
   workouts.unshift({id:_draftId, name, date:_draftId, exercises, _draft:true});
   save();
-  renderHistory();
+  // renderHistory() rebuilds the whole (currently off-screen) History tab list —
+  // expensive, and this function runs on every single set toggle. Debounce it so
+  // rapid taps don't each pay for a full synchronous rebuild that blocks the tap's
+  // own visual feedback; it only needs to be current by the time History is opened.
+  clearTimeout(_autoSaveDraftHistoryTimer);
+  _autoSaveDraftHistoryTimer = setTimeout(renderHistory, 250);
 }
+let _autoSaveDraftHistoryTimer = null;
 
 function clearDraft() {
   if (_draftId) {
