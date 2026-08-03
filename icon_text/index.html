@@ -10538,7 +10538,13 @@ function _scrollToNextExercise(wait = 80) {
   // up wrong (leaving still-pending exercises stranded off-screen).
   clearTimeout(_scrollToNextExerciseTimer);
   _scrollToNextExerciseTimer = setTimeout(() => {
-    const all = [...document.querySelectorAll('.exercise-card:not(.completed)')];
+    // A card that's currently open in the detail overlay has been moved out of
+    // #exerciseList — if this debounced call fires late (e.g. right as the user
+    // opens a different exercise after finishing the previous one), don't scroll
+    // the list at all while they're actively focused in the overlay; it can only
+    // yank the page out from under a tap they're mid-making inside it.
+    if (window._exDetailCardId) return;
+    const all = [...document.querySelectorAll('#exerciseList .exercise-card:not(.completed)')];
     const visible = all.filter(c => c.offsetParent !== null && c.dataset.filterState !== 'hidden');
     const nextCard = _todayMuscleFilter
       ? visible.find(c => c.dataset.exmuscle === _todayMuscleFilter || c.dataset.muscle === _todayMuscleFilter)
