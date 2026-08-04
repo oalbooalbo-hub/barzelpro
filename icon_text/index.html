@@ -1212,7 +1212,7 @@ function hidAuthScreen() {
 </div>
 
 <div class="tabs">
-  <button class="tab active" id="tab-log-btn" onclick="switchTab('log')">
+  <button class="tab active" id="tab-log-btn" onclick="_onHomeTabTap()">
   <svg class="tab-icon" width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" id="House-Chimney--Streamline-Ultimate" height="22" width="22" style="display:block;flex-shrink:0;"> <path d="M19.5 8.4V3.5A0.5 0.5 0 0 0 19 3h-2a0.5 0.5 0 0 0 -0.5 0.5v2.14l-4.162 -3.829a0.5 0.5 0 0 0 -0.678 0l-11 10.321A0.5 0.5 0 0 0 1 13h2.5v9.5a1 1 0 0 0 1 1h15a1 1 0 0 0 1 -1V13H23a0.5 0.5 0 0 0 0.339 -0.868Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> </svg>
   <span class="tab-label">Home</span>
 </button>
@@ -1835,7 +1835,7 @@ function hidAuthScreen() {
     </div>
     <div style="display:flex;gap:10px;">
       <button onclick="closeKgEditor()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:700;padding:13px;cursor:pointer;">Cancel</button>
-      <button onclick="confirmKgEditor()" style="flex:2;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:20px;font-weight:700;padding:13px;cursor:pointer;">Done</button>
+      <button onclick="confirmKgEditor()" style="flex:2;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:20px;font-weight:700;padding:13px;cursor:pointer;">Save</button>
     </div>
   </div>
 </div>
@@ -1984,7 +1984,7 @@ function hidAuthScreen() {
     </div>
     <div class="modal-body" id="calBody" style="padding-bottom:calc(90px + env(safe-area-inset-bottom));"></div>
   </div>
-  <button onclick="closeCalendar()" style="position:fixed;bottom:calc(16px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:calc(min(430px,100%) - 32px);padding:18px;background:transparent;color:var(--muted);border:1px solid #333;border-radius:100px;font-family:'DM Sans';font-size:16px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;z-index:210;">CLOSE</button>
+  <button onclick="closeCalendar()" style="position:fixed;bottom:calc(16px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:calc(min(430px,100%) - 32px);padding:18px;background:#000;color:var(--muted);border:1px solid var(--muted);border-radius:100px;font-family:'DM Sans';font-size:16px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;z-index:210;">CLOSE</button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -3304,7 +3304,7 @@ function renderWeekStatus() {
   wrap.innerHTML = days.map((d, i) => `
     <div class="week-status-day" data-completed="${d.completed ? '1' : '0'}" onclick="event.stopPropagation();selectWeekStatusDay(${i})" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:5px 0;border-radius:10px;cursor:pointer;-webkit-tap-highlight-color:transparent;">
       <div class="wsd-circle" style="width:46px;height:${d.completed ? '62px' : '46px'};border-radius:${d.completed ? '23px' : '50%'};background:${d.completed ? '#38bdf8' : '#2a2a2a'};border:2px solid transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;box-sizing:border-box;transition:background .2s,border-color .2s;">
-        ${d.completed ? `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>` : ''}
+        ${d.completed ? `<svg class="wsd-check" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>` : ''}
         <span class="wsd-label" style="font-family:'DM Sans';font-size:12px;font-weight:700;color:${d.completed ? '#000' : 'var(--muted)'};letter-spacing:.3px;">${labels[i]}</span>
       </div>
     </div>`).join('');
@@ -3320,12 +3320,19 @@ function selectWeekStatusDay(idx) {
   if (wrap) {
     wrap.querySelectorAll('.week-status-day').forEach((el, i) => {
       const isSel = i === idx;
+      const isCompleted = el.dataset.completed === '1';
       const circle = el.querySelector('.wsd-circle');
+      const check = el.querySelector('.wsd-check');
+      const label = el.querySelector('.wsd-label');
       if (circle) {
-        // Both completed and non-completed days keep their fixed fill/label color
-        // regardless of selection — selection only adds a bright grey edge around
-        // the shape.
         circle.style.borderColor = isSel ? '#ccc' : 'transparent';
+        if (isCompleted) {
+          circle.style.background = isSel ? '#000' : '#38bdf8';
+        } else {
+          circle.style.background = isSel ? '#000' : '#2a2a2a';
+        }
+        if (check) check.setAttribute('stroke', isSel && isCompleted ? 'var(--accent)' : '#000');
+        if (label && isCompleted) label.style.color = isSel ? 'var(--accent)' : '#000';
         if (isSel) {
           circle.style.animation = 'none';
           requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -4353,7 +4360,7 @@ function _setWorkoutHeroPhoto(name) {
       <span id="workout-above-elapsed-val" style="font-family:'DM Sans';font-size:13px;font-weight:700;color:#888;letter-spacing:.3px;">0:00</span>
       <span id="workout-above-elapsed-dot" style="width:4px;height:4px;border-radius:50%;background:#888;display:inline-block;transition:opacity 0.8s ease;opacity:0;"></span>
       <button id="workout-hero-close-btn" onclick="if(typeof clearSession==='function')clearSession()" style="position:absolute;right:16px;background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
     <div id="workout-hero-progress-wrap" style="height:6px;background:#222;overflow:hidden;display:none;width:80%;margin:-2px auto;border-radius:3px;"><div id="workout-progress-fill" style="height:100%;background:#39FF14;width:0%;transition:width .4s cubic-bezier(.4,0,.2,1);"></div></div>` : ''}
@@ -7990,6 +7997,15 @@ function _syncShareBtn() {
   wrap.style.display = (onLog && startVisible) ? 'flex' : 'none';
 }
 
+// Home tab button handler: ignore taps that would just re-select the
+// already-active Home tab, but let every other call site keep calling
+// switchTab('log') directly so their forced-refresh behavior is unaffected.
+function _onHomeTabTap() {
+  if (window._activeTab === 'log') return;
+  switchTab('log');
+}
+window._onHomeTabTap = _onHomeTabTap;
+
 function switchTab(tab) {
   // Coach mode: intercept coach-specific tabs
   if (window._coachMode && (tab === 'coach-profile' || tab === 'coach-clients')) {
@@ -9013,7 +9029,7 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
   const _defMusKey = _defaultExImgs[_exMuscle];
   const _showDefaultPhoto = () => {
     if (_defMusKey) {
-      photoBox.innerHTML = `<img src="images/${_defMusKey}_exercise_default.webp" style="width:100%;height:100%;object-fit:cover;display:block;filter:brightness(0.65);">`;
+      photoBox.innerHTML = `<img src="images/${_defMusKey}_exercise_default.webp" style="width:100%;height:100%;object-fit:cover;display:block;">`;
       photoBox.querySelector('img').onerror = () => { photoBox.innerHTML = `<div style="color:${muscleColor};opacity:0.4;">${_svgIcon}</div>`; };
     } else {
       photoBox.innerHTML = `<div style="color:${muscleColor};opacity:0.4;">${_svgIcon}</div>`;
@@ -20050,7 +20066,7 @@ function buildExerciseLibraryHtml(selectedMuscle) {
     const _svgIcon = _svgFallbacks[muscle] || '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M8 12h8"/></svg>';
     const _exPhoto = localStorage.getItem(`ironlog_ex_photo_thumb_${exName}`) || localStorage.getItem(`ironlog_ex_photo_${exName}`);
     const _thumbInner = _exPhoto
-      ? `<img src="${_exPhoto}" style="width:100%;height:100%;object-fit:cover;filter:brightness(0.8);display:block;">`
+      ? `<img src="${_exPhoto}" style="width:100%;height:100%;object-fit:cover;display:block;">`
       : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:${color};opacity:0.5;">${_svgIcon}</div>`;
     const thumbHtml = `<div style="position:relative;width:80px;height:80px;flex-shrink:0;margin:8px 12px 8px 10px;">
       <div style="width:100%;height:100%;border:1px solid #1e1e1e;border-radius:8px;overflow:hidden;background:#0d0d0d;">${_thumbInner}</div>
@@ -21320,7 +21336,7 @@ function exitCoachMode() {
   // Restore original tabs preserving injected icons
   const tabs = document.querySelector('.tabs');
   tabs.innerHTML = `
-    <button class="tab active" id="tab-log-btn" onclick="switchTab('log')">${_getTabIcon('tab-log-btn')}<span>Today</span></button>
+    <button class="tab active" id="tab-log-btn" onclick="_onHomeTabTap()">${_getTabIcon('tab-log-btn')}<span>Today</span></button>
     <button class="tab" id="tab-workouts-btn" onclick="if(!window._createNewMode)switchTab('workouts2')">
   <svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" id="Paper-Write--Streamline-Ultimate" height="22" width="22" style="display:block;flex-shrink:0;"> <path d="M18.5 19v3.5a1 1 0 0 1 -1 1h-16a1 1 0 0 1 -1 -1v-18a1 1 0 0 1 1 -1h3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="M14.5 3.5h3a1 1 0 0 1 1 1V8" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="M8 1.999a1.5 1.5 0 1 0 3 0 1.5 1.5 0 1 0 -3 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="M10.915 2.5H13.5a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-8a1 1 0 0 1 -1 -1v-1a1 1 0 0 1 1 -1h2.585" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="m3.5 9.499 12 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="m3.5 13.499 9.466 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="m3.5 17.499 7.983 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> <path d="m17 17.5 -3.5 1 1 -3.5 5.982 -5.982a1.768 1.768 0 0 1 2.5 2.5Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"></path> </svg>
   <span>Workouts</span>
@@ -22393,7 +22409,7 @@ function deleteCoachWorkout(id) {
       <span id="ex-detail-above-elapsed-val" style="font-family:'DM Sans';font-size:13px;font-weight:700;color:#888;letter-spacing:.3px;">0:00</span>
       <span id="ex-detail-above-elapsed-dot" style="width:4px;height:4px;border-radius:50%;background:#888;display:inline-block;transition:opacity 0.8s ease;opacity:0;"></span>
       <button id="ex-detail-back-btn" onclick="document.getElementById('page-exercises')?.classList.contains('active') ? closeExTabDetail() : _maybeCloseExDetail()" style="position:absolute;right:16px;background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><line x1="5" y1="12" x2="19" y2="12" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/><polyline points="13,6 19,12 13,18" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><line x1="5" y1="12" x2="19" y2="12" stroke="#888" stroke-width="2.5" stroke-linecap="round"/><polyline points="13,6 19,12 13,18" stroke="#888" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
     </div>
     <div id="ex-detail-progress-wrap" style="display:none;height:6px;background:#222;overflow:hidden;width:80%;margin:-2px auto;border-radius:3px;">
@@ -22450,11 +22466,12 @@ function deleteCoachWorkout(id) {
 <div id="strength-target-overlay" onclick="closeStrengthTargetSheet()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:8999;"></div>
 <div id="strength-target-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;z-index:9000;background:#1a1a1a;border-top:1px solid #2a2a2a;border-radius:20px 20px 0 0;padding:12px 20px calc(28px + env(safe-area-inset-bottom,0px));box-sizing:border-box;">
   <div style="width:36px;height:4px;border-radius:2px;background:#444;margin:0 auto 18px;"></div>
+  <div id="week-status-detail" style="text-align:center;font-family:'DM Sans';font-size:20px;font-weight:600;color:var(--muted);min-height:18px;margin-bottom:10px;"></div>
+  <div style="border-top:1px solid #444;margin-bottom:30px;"></div>
   <div id="week-status-completed-count" style="font-family:'DM Sans';font-size:54px;font-weight:800;color:var(--text);text-align:center;line-height:1;margin-bottom:10px;"></div>
-  <div style="font-family:'DM Sans';font-size:18px;font-weight:800;color:var(--text);text-align:center;margin-bottom:14px;letter-spacing:.3px;">COMPLETED WORKOUTS</div>
-  <div id="week-status-detail" style="text-align:center;font-family:'DM Sans';font-size:20px;font-weight:600;color:var(--muted);min-height:18px;margin-bottom:20px;"></div>
+  <div style="font-family:'DM Sans';font-size:18px;font-weight:800;color:var(--text);text-align:center;margin-bottom:20px;letter-spacing:.3px;">COMPLETED WORKOUTS</div>
   <div id="week-status-days" style="display:flex;justify-content:space-between;gap:2px;padding-bottom:30px;"></div>
-  <div style="border-top:1px solid #444;padding-bottom:69px;"></div>
+  <div style="border-top:1px solid #444;padding-bottom:30px;"></div>
   <div style="font-family:'DM Sans';font-size:18px;font-weight:800;color:var(--text);text-align:center;margin-bottom:18px;letter-spacing:.3px;">MY WEEKLY GOAL</div>
   <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:28px;">
     <div style="display:flex;align-items:center;justify-content:center;gap:0;">
@@ -23480,7 +23497,7 @@ function openRepsPopup(span, exId) {
       <div style="display:flex;gap:8px;">
         <button class="editor-action-btn editor-tap-btn" onclick="cancelRepsEditor()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:18px;font-weight:700;padding:0 11px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Cancel</button>
         <button class="editor-action-btn editor-tap-btn" onclick="repsEditorReset()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:18px;font-weight:700;padding:0 11px;cursor:pointer;-webkit-tap-highlight-color:transparent;opacity:${prevReps>0?'1':'0.35'};pointer-events:${prevReps>0?'auto':'none'};">Prev</button>
-        <button class="editor-action-btn editor-tap-btn" onclick="confirmRepsEditor()" style="flex:2;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:18px;font-weight:700;padding:0 11px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Done</button>
+        <button class="editor-action-btn editor-tap-btn" onclick="confirmRepsEditor()" style="flex:2;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:18px;font-weight:700;padding:0 11px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Save</button>
       </div>
     </div>`;
 
@@ -24279,7 +24296,7 @@ closeInlineKgEditor(false);
       <div style="display:flex;gap:8px;">
         <button class="editor-action-btn editor-tap-btn" onclick="cancelInlineKgEditor()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:18px;font-weight:700;padding:0 11px;cursor:pointer;">Cancel</button>
         <button class="editor-action-btn editor-tap-btn" onclick="kgPadReset()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:18px;font-weight:700;padding:0 11px;cursor:pointer;opacity:${prevKg>0?'1':'0.35'};pointer-events:${prevKg>0?'auto':'none'};">Prev</button>
-        <button class="editor-action-btn editor-tap-btn" onclick="confirmKgEditor()" style="flex:2;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:18px;font-weight:700;padding:0 11px;cursor:pointer;">Done</button>
+        <button class="editor-action-btn editor-tap-btn" onclick="confirmKgEditor()" style="flex:2;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:18px;font-weight:700;padding:0 11px;cursor:pointer;">Save</button>
       </div>
     </div>`;
 
@@ -25001,7 +25018,7 @@ function saveExPhotoCrop() {
           if (img) {
             img.src = url11;
           } else {
-            photoBox.innerHTML = `<img src="${url11}" style="width:100%;height:100%;object-fit:cover;filter:brightness(0.8);display:block;">`;
+            photoBox.innerHTML = `<img src="${url11}" style="width:100%;height:100%;object-fit:cover;display:block;">`;
           }
         }
       }
