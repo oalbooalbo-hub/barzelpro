@@ -1258,10 +1258,13 @@ function hidAuthScreen() {
           <circle id="today-progress-ring" cx="150" cy="150" r="117.86" fill="none" stroke="#999" stroke-opacity="0.55" stroke-width="25.71" stroke-linecap="round" stroke-dasharray="740.52" stroke-dashoffset="740.52" transform="rotate(-90 150 150)" style="transition:stroke-dashoffset .6s ease,stroke .4s ease,stroke-opacity .4s ease;"/>
           <g id="today-progress-goal-ring" transform="rotate(-90 150 150)"></g>
         </svg>
-        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;">
-          <span style="font-family:'DM Sans';font-size:14px;font-weight:700;color:#ccc;letter-spacing:.5px;text-transform:uppercase;">This Week</span>
-          <span id="today-progress-count" style="font-family:'DM Sans';font-size:32px;font-weight:800;color:var(--text);line-height:1;">0/3</span>
-          <span style="font-family:'DM Sans';font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.3px;">workouts</span>
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transform:translateY(5px);">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;transform:translateY(3px);">
+            <span style="font-family:'DM Sans';font-size:14px;font-weight:700;color:#ccc;letter-spacing:.5px;text-transform:uppercase;">This Week</span>
+            <span id="today-progress-count" style="font-family:'DM Sans';font-size:32px;font-weight:800;color:var(--text);line-height:1;">0/3</span>
+            <span style="font-family:'DM Sans';font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.3px;">workouts</span>
+          </div>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-top:5px;"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
       </div>
     </div>
@@ -1492,6 +1495,10 @@ function hidAuthScreen() {
   <button onclick="switchTab('exercises')" style="width:100%;background:transparent;border:none;border-radius:10px;color:var(--accent);font-family:'DM Sans';font-size:15px;font-weight:600;padding:14px 12px;cursor:pointer;text-align:left;">🏋️ Exercises</button>
   <button onclick="closeDataModal();openDataModal()" style="width:100%;background:transparent;border:none;border-radius:10px;color:#f0f0f0;font-family:'DM Sans';font-size:15px;font-weight:600;padding:14px 12px;cursor:pointer;text-align:left;">📦 My Data</button>
   <button onclick="openBWModal()" style="width:100%;background:transparent;border:none;border-radius:10px;color:#34d399;font-family:'DM Sans';font-size:15px;font-weight:600;padding:14px 12px;cursor:pointer;text-align:left;">⚖️ Body Weight <span id="userMenuBWVal" style="color:#aaa;font-size:11px;"></span></button>
+  <button onclick="toggleAppSound()" style="width:100%;background:transparent;border:none;border-radius:10px;color:#7ec8e3;font-family:'DM Sans';font-size:15px;font-weight:600;padding:14px 12px;cursor:pointer;text-align:left;display:flex;align-items:center;justify-content:space-between;">
+    <span>🔊 App Sound</span>
+    <span id="soundToggleLabel" style="font-size:11px;font-weight:700;color:#aaa;letter-spacing:.5px;"></span>
+  </button>
 
   <div id="userMenuNotifications" style="display:none;border-top:1px solid #2a2a2a;margin:10px 0 0;padding-top:10px;">
     <div style="font-size:11px;color:#555;font-weight:600;letter-spacing:1px;padding:4px 12px 8px;">NOTIFICATIONS</div>
@@ -1924,21 +1931,21 @@ function hidAuthScreen() {
           <svg width="28" height="28" viewBox="0 0 24 24" fill="#e8ff47" style="flex-shrink:0;"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
           <div>
             <div style="font-family:'DM Sans';font-size:14px;font-weight:800;color:#e8ff47;letter-spacing:.5px;">MAX</div>
-            <div style="font-family:'DM Sans';font-size:13px;font-weight:500;color:var(--muted);line-height:1.5;margin-top:2px;">Heaviest weight you've ever lifted for a single set of this exercise. This star lights up when today's session beats that all-time best weight.</div>
+            <div style="font-family:'DM Sans';font-size:13px;font-weight:500;color:var(--muted);line-height:1.5;margin-top:2px;"><span style="color:#fff;">Heaviest weight</span> you've ever lifted for a single set of this exercise. This star lights up when today's session beats that all-time best weight.</div>
           </div>
         </div>
         <div style="display:flex;gap:12px;align-items:flex-start;">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="#ff8c42" style="flex-shrink:0;"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
           <div>
             <div style="font-family:'DM Sans';font-size:14px;font-weight:800;color:#ff8c42;letter-spacing:.5px;">B.SET</div>
-            <div style="font-family:'DM Sans';font-size:13px;font-weight:500;color:var(--muted);line-height:1.5;margin-top:2px;">Your best set — the weight × reps combination with the highest estimated one-rep max (weight × (1 + reps ÷ 30)). This can hit a new high even without adding weight — e.g. squeezing out extra reps at the same load.</div>
+            <div style="font-family:'DM Sans';font-size:13px;font-weight:500;color:var(--muted);line-height:1.5;margin-top:2px;"><span style="color:#fff;">Your best set</span> — the weight × reps combination with the highest estimated one-rep max (weight × (1 + reps ÷ 30)). This can hit a new high even without adding weight — e.g. squeezing out extra reps at the same load.</div>
           </div>
         </div>
         <div style="display:flex;gap:12px;align-items:flex-start;">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="#a78bfa" style="flex-shrink:0;"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
           <div>
             <div style="font-family:'DM Sans';font-size:14px;font-weight:800;color:#a78bfa;letter-spacing:.5px;">VOL</div>
-            <div style="font-family:'DM Sans';font-size:13px;font-weight:500;color:var(--muted);line-height:1.5;margin-top:2px;">Total volume — weight × reps summed across every completed set. Rewards the total work done in the exercise, not just one best set.</div>
+            <div style="font-family:'DM Sans';font-size:13px;font-weight:500;color:var(--muted);line-height:1.5;margin-top:2px;"><span style="color:#fff;">Total volume</span> — weight × reps summed across every completed set. Rewards the total work done in the exercise, not just one best set.</div>
           </div>
         </div>
         <div style="font-family:'DM Sans';font-size:12px;font-weight:500;color:#555;line-height:1.5;border-top:1px solid var(--border);padding-top:14px;">The number on each star shows how many exercises set a new record in that category this workout.</div>
@@ -2907,7 +2914,20 @@ function cancelTodayPlan() {
 // Plays a small sound effect by key (see window.SOUNDS in config.js). Swallows
 // errors silently — a missing file or a browser blocking autoplay shouldn't ever
 // break the surrounding UI flow.
+function _isSoundEnabled() { return localStorage.getItem('ironlog_sound_enabled') === '1'; }
+function toggleAppSound() {
+  localStorage.setItem('ironlog_sound_enabled', _isSoundEnabled() ? '0' : '1');
+  _updateSoundToggleUI();
+}
+function _updateSoundToggleUI() {
+  const label = document.getElementById('soundToggleLabel');
+  if (label) label.textContent = _isSoundEnabled() ? 'ON' : 'OFF';
+}
+window.toggleAppSound = toggleAppSound;
+window._updateSoundToggleUI = _updateSoundToggleUI;
+
 function _playSound(key) {
+  if (!_isSoundEnabled()) return;
   const src = window.SOUNDS && window.SOUNDS[key];
   if (!src) return;
   try {
@@ -4300,6 +4320,8 @@ function _openTodayInfoPanel(w) {
   window.scrollTo({ top: 0, behavior: 'instant' });
   panel.style.opacity = '1';
   panel.style.transform = 'translateY(0)';
+  const chevron = document.getElementById('workout-hero-chevron');
+  if (chevron) chevron.style.transform = 'rotate(180deg)';
 }
 window._openTodayInfoPanel = _openTodayInfoPanel;
 
@@ -4310,6 +4332,8 @@ function _closeTodayInfoPanel() {
   const closeBar = document.getElementById('today-info-close-bar');
   if (panel) { panel.style.opacity = '0'; panel.style.transform = 'translateY(10px)'; }
   if (closeBar) closeBar.style.display = 'none';
+  const chevron = document.getElementById('workout-hero-chevron');
+  if (chevron) chevron.style.transform = 'rotate(0deg)';
   ['workout-finish-btn', 'workout-pr-stars'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.visibility = '';
@@ -4364,12 +4388,13 @@ function _setWorkoutHeroPhoto(name) {
       </button>
     </div>
     <div id="workout-hero-progress-wrap" style="height:6px;background:#222;overflow:hidden;display:none;width:80%;margin:-2px auto;border-radius:3px;"><div id="workout-progress-fill" style="height:100%;background:#39FF14;width:0%;transition:width .4s cubic-bezier(.4,0,.2,1);"></div></div>` : ''}
-    <div style="position:relative;margin:${window._isNewWorkoutFlow ? '0' : '4px'} 10px 0;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;"${window._isNewWorkoutFlow ? '' : ` onclick="_openWorkoutHeroMenu()"`}>
+    <div style="position:relative;margin:${window._isNewWorkoutFlow ? '0' : '4px'} 10px 0;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;">
       <img src="${photo}" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;filter:brightness(0.85);">
       ${window._isNewWorkoutFlow ? `<button onclick="event.stopPropagation();_openPhotoModalFromHero()" style="position:absolute;top:8px;right:8px;z-index:4;background:rgba(0,0,0,0.55);border:none;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>` : ''}
       ${localStorage.getItem(`ironlog_workout_video_${name}`) ? `<button onclick="event.stopPropagation();const _v=localStorage.getItem('ironlog_workout_video_${name}');if(_v)window.open(_v,'_blank');" style="position:absolute;top:8px;left:10px;z-index:4;display:flex;align-items:center;gap:5px;background:transparent;border:none;padding:4px 6px;border-radius:4px;cursor:pointer;-webkit-tap-highlight-color:transparent;"><svg width="13" height="13" viewBox="0 0 24 24" fill="var(--accent)" stroke="none"><polygon points="5,3 19,12 5,21"/></svg><span style="color:var(--accent);font-family:'DM Sans';font-size:11px;font-weight:700;letter-spacing:.5px;">PLAY</span></button>` : ''}
-      <div style="position:absolute;bottom:0;left:0;right:0;padding:10px 14px 12px;pointer-events:none;text-align:right;">
-        <div id="workout-hero-name" data-name="${name||''}" onclick="if(window._isNewWorkoutFlow)_startHeroNameEdit(this)" style="font-family:'DM Sans';font-size:20px;font-weight:900;color:#fff;max-width:60%;margin-left:auto;line-height:1.2;pointer-events:${window._isNewWorkoutFlow?'auto':'none'};cursor:${window._isNewWorkoutFlow?'pointer':'default'};-webkit-tap-highlight-color:transparent;${_heroNameDir(name)}">${_heroNameHtml(name)}</div>
+      ${window._isNewWorkoutFlow ? '' : `<button onclick="event.stopPropagation();_openWorkoutHeroMenu()" style="position:absolute;bottom:8px;right:1px;z-index:4;background:#000;border:none;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;"><svg id="workout-hero-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;transition:transform .25s ease;transform:rotate(${window._todayInfoPanelOpen ? '180deg' : '0deg'});"><polyline points="6 9 12 15 18 9"/></svg></button>`}
+      <div style="position:absolute;bottom:0;left:0;right:0;padding:10px ${window._isNewWorkoutFlow ? '14px' : '34px'} 12px 14px;pointer-events:none;text-align:right;">
+        <div id="workout-hero-name" data-name="${name||''}" onclick="${window._isNewWorkoutFlow ? '_startHeroNameEdit(this)' : 'event.stopPropagation();_openWorkoutHeroMenu()'}" style="font-family:'DM Sans';font-size:20px;font-weight:900;color:#fff;max-width:60%;margin-left:auto;line-height:1.2;pointer-events:auto;cursor:pointer;-webkit-tap-highlight-color:transparent;${_heroNameDir(name)}">${_heroNameHtml(name)}</div>
       </div>
     </div>
     ${window._isNewWorkoutFlow ? '' : `<div style="display:flex;align-items:flex-end;padding:8px 10px 4px;gap:8px;position:relative;">
@@ -4748,7 +4773,8 @@ function saveCustom() {
 function showToast(msg, opts) { /* toasts disabled */ }
 function fmt(ts) { return new Date(ts).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}); }
 function fmtShort(ts) { return new Date(ts).toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
-document.getElementById('dateBadgeText').textContent = new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}).toUpperCase();
+document.getElementById('dateBadgeText').textContent = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'}).toUpperCase();
+_updateSoundToggleUI();
 // Session/plan-card restoration now happens inside _onAuthReady, once real
 // (brand-scoped) data has actually loaded — see there. Running it here via a
 // bare setTimeout(...,0) fired before auth resolves, so it operated on empty
@@ -6544,6 +6570,8 @@ function _toggleExDetailMuscles() {
   };
 
   if (existing) {
+    const chevron = document.getElementById('ex-detail-photo-chevron');
+    if (chevron) chevron.style.transform = 'rotate(0deg)';
     const closeBtn = document.getElementById('ex-detail-close-btn');
     existing.style.transition = _EX_DETAIL_TOGGLE_EXIT_T;
     existing.style.transform  = 'translateY(48px)';
@@ -6569,6 +6597,8 @@ function _toggleExDetailMuscles() {
   const exName = (document.getElementById('ex-detail-overlay-title')?.textContent || '').trim();
   const exDef  = getAllExercises().find(x => x.name === exName || x.label === exName);
 
+  const chevron = document.getElementById('ex-detail-photo-chevron');
+  if (chevron) chevron.style.transform = 'rotate(180deg)';
   // visibility:hidden (not display:none) — keeps the button's box reserved in the
   // flex row so the exercise name (its row sibling) doesn't shift position.
   if (finishBtn) finishBtn.style.visibility = 'hidden';
@@ -8294,7 +8324,7 @@ function renderWorkoutsTab2() {
 
     const _wKey = (w.name||'').trim().toLowerCase();
     const _lastTs = _w2LastDateMap.get(_wKey) || 0;
-    const lastDate = _lastTs ? new Date(_lastTs).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '';
+    const lastDate = _lastTs ? new Date(_lastTs).toLocaleDateString('en-GB',{day:'numeric',month:'short'}) : '';
     const workoutPhoto = _getWorkoutPhoto(w.name);
 
     // Action button
@@ -8343,7 +8373,7 @@ function renderWorkoutsTab2() {
         <div id="w2-card-photo-${i}" style="position:relative;width:80%;flex-shrink:0;overflow:hidden;cursor:pointer;" onclick="openW2Sheet(${i})">
           ${workoutPhoto ? `<img src="${workoutPhoto}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.72);">` : ''}
           <div style="position:absolute;bottom:0;left:0;right:0;padding:10px 14px 12px;pointer-events:none;text-align:right;">
-            ${lastDate ? `<div style="font-family:'DM Sans';font-size:11px;font-weight:600;color:rgba(255,255,255,0.55);margin-bottom:2px;">${lastDate}</div>` : ''}
+            ${lastDate ? `<div style="font-family:'DM Sans';font-size:11px;font-weight:600;color:rgba(255,255,255,0.55);margin-bottom:2px;">Last Time: ${lastDate}</div>` : ''}
             <div style="font-family:'DM Sans';font-size:20px;font-weight:900;color:#fff;line-height:1.2;${_nwDir}">${_nwHtml}</div>
           </div>
         </div>
@@ -11272,7 +11302,7 @@ function addSet(exId, defaultKg=null, defaultReps=null, defaultDone=false, defau
   const repsValClass = defaultReps!==null ? 'reps-spin-val prefilled' : 'reps-spin-val';
   const repsHidden = defaultReps!==null ? defaultReps : '';
   tr.innerHTML = `
-    <td style="padding:10px 4px 10px 12px;"><div style="display:flex;align-items:center;gap:4px;"><span class="set-num" data-n="${n}" onclick="openSetOptions(this,'${exId}')" style="font-size:14px;font-weight:700;color:#aaa;width:28px;height:28px;border-radius:50%;border:1.5px solid #555;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;-webkit-tap-highlight-color:transparent;">${n}</span><span class="set-type-tag" onclick="openSetOptions(this,'${exId}')" style="font-size:16px;font-weight:300;display:inline-block;width:14px;text-align:center;cursor:pointer;"></span></div></td>
+    <td style="padding:10px 4px 10px 12px;"><div style="display:flex;align-items:center;gap:4px;"><span class="set-num" data-n="${n}" onclick="openSetOptions(this,'${exId}')" style="font-size:14px;font-weight:700;color:#aaa;width:28px;height:28px;border-radius:50%;border:1.5px solid #555;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;-webkit-tap-highlight-color:transparent;">${n}</span><span class="set-type-tag" onclick="openSetOptions(this,'${exId}')" style="font-size:16px;font-weight:300;display:inline-flex;align-items:center;justify-content:center;width:14px;text-align:center;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span></div></td>
     <td style="padding:6px 4px;text-align:center;"><div class="kg-box-wrap" style="background:var(--surface2);border:none;border-radius:8px;padding:0 6px 0 10px;width:130px;height:44px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:space-between;gap:4px;cursor:pointer;transition:border-color .2s;" onclick="openInlineKgEditor(this.querySelector('input'),'${exId}')"><input class="${kgClass}" type="number" placeholder="—" min="0" step="0.5" ${kg} data-orig-bw="0" readonly onclick="event.stopPropagation();openInlineKgEditor(this,'${exId}')" oninput="this.classList.remove('prefilled');dismissBanner(this);saveSession();updateVolProgressBar(this.closest('.exercise-card')?.id)" style="background:transparent;border:none;outline:none;font-size:20px;font-weight:700;color:var(--text);width:100%;min-width:0;font-family:'DM Sans';height:100%;box-sizing:border-box;"/><span class="kg-unit-label" style="color:#fff;font-size:14px;font-weight:300;flex-shrink:0;">Kg</span></div></td>
     <td>
       <div class="reps-spinner rep-box-wrap" style="background:var(--surface2);border:none;border-radius:8px;padding:0 4px 0 8px;width:70px;height:44px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:space-between;gap:2px;cursor:pointer;transition:border-color .2s;" onclick="openRepsPopup(this.querySelector('span'),'${exId}')">
@@ -22433,8 +22463,9 @@ function deleteCoachWorkout(id) {
   <div id="ex-detail-overlay-body">
     <!-- Photo (21:9) + FINISH — scrollable, not sticky -->
     <div id="ex-detail-photo-wrap" style="display:none;">
-      <div id="ex-detail-photo-tap-wrap" onclick="_toggleExDetailMuscles()" style="position:relative;margin:4px 2px 0;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;cursor:pointer;">
+      <div id="ex-detail-photo-tap-wrap" style="position:relative;margin:4px 2px 0;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;">
         <img id="ex-detail-photo-img" src="" style="width:100%;height:100%;object-fit:cover;display:block;">
+        <button onclick="event.stopPropagation();_toggleExDetailMuscles()" style="position:absolute;bottom:3px;right:3px;z-index:4;background:#000;border:none;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;"><svg id="ex-detail-photo-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;transition:transform .25s ease;"><polyline points="6 9 12 15 18 9"/></svg></button>
       </div>
       <!-- FINISH + exercise name — below image -->
       <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 2px 4px;gap:8px;">
@@ -22674,7 +22705,7 @@ function deleteCoachWorkout(id) {
   <div style="width:36px;height:3px;background:#555;border-radius:2px;margin:12px auto 4px;"></div>
   <div style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#888;letter-spacing:.8px;text-align:center;padding:6px 0 12px;">SET OPTIONS</div>
   <button onclick="setSetType('regular')" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:16px;-webkit-tap-highlight-color:transparent;">
-    <span style="font-size:16px;font-weight:300;color:#aaa;width:20px;text-align:center;flex-shrink:0;">1</span>Regular set<span id="set-opt-check-regular" style="display:none;margin-left:auto;flex-shrink:0;line-height:1;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+    <span style="width:20px;text-align:center;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>Regular set<span id="set-opt-check-regular" style="display:none;margin-left:auto;flex-shrink:0;line-height:1;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
   </button>
   <button onclick="setSetType('warmup')" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:16px;-webkit-tap-highlight-color:transparent;">
     <span style="font-size:16px;font-weight:300;color:#fbbf24;width:20px;text-align:center;flex-shrink:0;">W</span>Warm up set<span id="set-opt-check-warmup" style="display:none;margin-left:auto;flex-shrink:0;line-height:1;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
@@ -25145,7 +25176,7 @@ function setSetType(type) {
   if (type === 'regular') {
     delete row.dataset.setType;
     row.style.opacity = '';
-    if (tag) { tag.textContent = ''; tag.style.color = ''; }
+    if (tag) { tag.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>'; tag.style.color = ''; }
     // Remove warmup ignored state
     row.dataset.ignored = '';
     row.classList.remove('ignored');
@@ -26765,7 +26796,7 @@ function _updateKgDisplay(val, isBWMode) {
 <div id="ex-float-bar" style="display:none;flex-direction:row;">
   <button id="ex-float-note" onclick="exFloatAction('note')" title="Note" style="position:relative;">
     <svg class="ex-float-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-    <span id="ex-float-note-badge" style="display:none;position:absolute;top:3px;right:4px;line-height:1;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+    <span id="ex-float-note-badge" style="display:none;position:absolute;top:1px;right:8px;line-height:1;font-family:'DM Sans';font-size:20px;font-weight:900;color:var(--accent);">!</span>
     <span class="ex-float-label">Note</span>
   </button>
   <button id="ex-float-timer" onclick="exFloatAction('timer')" title="Timer" style="position:relative;">
