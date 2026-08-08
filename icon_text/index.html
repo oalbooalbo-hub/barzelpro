@@ -1,4 +1,4 @@
-﻿﻿<!-- BARZELPRO index.html | Version: v3.7 | Build: 2026-04-20 -->
+<!-- BARZELPRO index.html | Version: v3.7 | Build: 2026-04-20 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -2416,15 +2416,11 @@ function _checkFinishReadyImpl() {
       return true;
     }).length > 0;
   })();
-    // Check if there's a planned strength workout for today
-    const _todayNow = new Date();
-    const _hasTodayPlan = (plannedWorkouts||[]).some(p => {
-      if (p.type === 'cardio') return false;
-      const d = new Date(p.date);
-      return d.getFullYear()===_todayNow.getFullYear() && d.getMonth()===_todayNow.getMonth() && d.getDate()===_todayNow.getDate();
-    });
+    // Shown whenever workouts exist, regardless of whether a plan exists for today —
+    // the home page no longer swaps this button out for a plan card/preview (that's
+    // now only surfaced as an accent border on the Workouts tab).
     const _lw = document.getElementById('today-load-btn-wrap');
-    if (_lw) _lw.style.display = (_hasWk && !_hasTodayPlan) ? '' : 'none';
+    if (_lw) _lw.style.display = _hasWk ? '' : 'none';
   }
 }
 
@@ -3422,17 +3418,12 @@ function renderTodayPlanCard() {
   const replaceBtn = document.getElementById('today-replace-btn');
   if (!cardEl) { setTimeout(renderTodayPlanCard, 50); return; }
 
-  const _now = new Date();
-  const _ty = _now.getFullYear(), _tm = _now.getMonth(), _td = _now.getDate();
-  const plan = (plannedWorkouts||[]).find(p => {
-    if (p.type === 'cardio') return false;
-    const d = new Date(p.date);
-    return d.getFullYear() === _ty && d.getMonth() === _tm && d.getDate() === _td;
-  });
-
-  if (!plan) {
-    cardEl.style.display = 'none';
-    const hasWorkouts = (() => {
+  // Home page no longer surfaces a dedicated "planned workout for today" card — that
+  // feature now lives only as an accent border on its card in the Workouts tab. This
+  // always renders the same as the old "no plan for today" state, so nothing else about
+  // the home page changes.
+  cardEl.style.display = 'none';
+  const hasWorkouts = (() => {
     const _dn = JSON.parse(_LS.get('ironlog_deleted_tab_names')||'[]');
     const _seen = new Set();
     return (workouts||[]).filter(w => {
@@ -3444,123 +3435,10 @@ function renderTodayPlanCard() {
       return true;
     }).length > 0;
   })();
-    if (loadWrap) loadWrap.style.display = hasWorkouts ? '' : 'none';
-    if (replaceBtn) replaceBtn.style.display = 'none';
-    const deletePlanBtn = document.getElementById('today-delete-plan-btn');
-    if (deletePlanBtn) deletePlanBtn.style.display = 'none';
-    return;
-  }
-
-  // Hide LOAD button, show Replace
-  if (loadWrap) loadWrap.style.display = 'none';
-  if (replaceBtn) { replaceBtn.style.display = ''; replaceBtn.style.color = 'var(--text)'; }
-  cardEl.style.display = 'block';
-
-  const BODY_ORDER = ['Chest','Back','Legs','Shoulders','Arms','Core','Mix'];
-  const colors = ['#e8ff47','#7ec8e3','#ff8c42','#a78bfa','#34d399','#f87171','#20d4c8'];
-  const exs = plan.exercises || [];
-  const muscleCounts = {};
-  exs.forEach(e => { const m = e.muscle||'Chest'; muscleCounts[m]=(muscleCounts[m]||0)+1; });
-  const totalEx = exs.length;
-  const totalSets = _getPlanTotalSets(exs, plan.name||'');
-  const chartId = 'today-plan-chart';
-  const xlabId = 'today-plan-xlab';
-  const detId = 'today-plan-det';
-
-  const filterId = 'today-plan-mfilter';
-  const filterLabelId = 'today-plan-mfilter-label';
-
-  const _todayPlanNamedW = workouts.find(w=>!w._draft&&w.name===plan.name);
-  const exDetails = exs.map(e => {
-    const isHebrew = /[\u0590-\u05FF]/.test(e.name||'');
-    const exMuscle = e.muscle || getAllExercises().find(x=>x.name===e.name||x.label===e.name)?.muscle || '';
-    let exSetCount = (e.sets||[]).filter(s=>!s.ignored).length;
-    if (!exSetCount) {
-      const srcW = _todayPlanNamedW || workouts.find(w=>!w._draft&&w.exercises.some(ex=>ex.name===e.name));
-      const srcEx = srcW?.exercises.find(ex=>ex.name===e.name);
-      exSetCount = srcEx ? (srcEx.sets||[]).filter(s=>!s.ignored).length : 0;
-    }
-    const content = `<span style="flex:1;color:var(--text);font-weight:600;${isHebrew?'text-align:right;direction:rtl;':''}">${e.name}</span><span style="display:inline-flex;align-items:center;gap:0;flex-shrink:0;"><span style="color:var(--muted);font-family:'Bebas Neue';font-size:16px;line-height:1;width:16px;text-align:center;">X</span><span style="color:var(--muted);font-family:'Bebas Neue';font-size:16px;line-height:1;width:20px;text-align:left;">${exSetCount}</span></span>`;
-    return `<div class="ldet-ex-row" data-muscle="${exMuscle}" style="padding:7px 14px;border-top:1px solid var(--border);font-size:12px;color:var(--text);display:flex;align-items:center;gap:8px;transition:background .2s;">${content}</div>`;
-  }).join('');
-
-  const todayMfilterMuscles = ['All', ...BODY_ORDER.filter(m => muscleCounts[m])];
-  const todayMfilterRow = Object.keys(muscleCounts).length > 1
-    ? `<div id="${filterId}" data-muscles='${JSON.stringify(todayMfilterMuscles)}' data-idx="0" style="display:flex;align-items:center;justify-content:center;border-top:1px solid var(--border);padding:2px 0;">
-        <button onclick="calPlanCycleFilter('${detId}',-1)" style="background:transparent;border:none;color:#fff;font-size:24px;font-weight:400;padding:0 10px;cursor:pointer;flex-shrink:0;display:flex;align-items:flex-end;height:36px;padding-bottom:6px;">‹</button>
-        <div id="${filterLabelId}" style="min-width:80px;text-align:center;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:.5px;color:#fff;transition:color .15s;display:flex;align-items:center;justify-content:center;height:36px;">ALL</div>
-        <button onclick="calPlanCycleFilter('${detId}',1)" style="background:transparent;border:none;color:#fff;font-size:24px;font-weight:400;padding:0 10px;cursor:pointer;flex-shrink:0;display:flex;align-items:flex-end;height:36px;padding-bottom:6px;">›</button>
-      </div>`
-    : '';
-
-  const safeName = (plan.name||'').replace(/`/g,'\\`').replace(/\$/g,'\\$');
-  const nameIsHebrew = /[\u0590-\u05FF]/.test(plan.name||'');
-  const nameDir = nameIsHebrew ? 'direction:rtl;text-align:right;' : 'direction:ltr;text-align:left;';
-
-  cardEl.innerHTML = `<div class="load-hist-item" style="width:100%;margin-bottom:0;">
-    <div style="display:flex;align-items:stretch;gap:6px;padding:10px 10px 10px 12px;">
-      <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
-        <div class="load-hist-name" onclick="toggleTodayPlanDet()" style="cursor:pointer;color:#34d399;${nameDir}">${safeName}</div>
-        <div style="flex:1;position:relative;">
-          <div onclick="toggleTodayPlanDet()" style="height:55px;margin-top:8px;cursor:pointer;"><canvas id="${chartId}" style="pointer-events:none;"></canvas></div>
-        </div>
-        <div id="${xlabId}" style="display:flex;justify-content:space-around;padding:2px 0 0;"></div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;justify-content:space-between;">
-        ${localStorage.getItem('ironlog_wip_plan_id') === plan.planId
-          ? `<button onclick="showWipToast()" style="background:transparent;border:1px solid #34d399;border-radius:7px;color:#34d399;font-size:16px;font-weight:700;padding:7px 14px;cursor:pointer;white-space:nowrap;font-family:'DM Sans';">WIP</button>`
-          : `<button onclick="loadOrSwitchWorkouts()" style="background:transparent;border:1px solid rgba(255,140,66,.4);border-radius:7px;color:#ff8c42;font-size:16px;font-weight:700;padding:7px 14px;cursor:pointer;white-space:nowrap;font-family:'DM Sans';">Go</button>`
-        }
-        ${(()=>{ const durations=workouts.filter(x=>!x._draft&&!x._template&&x.name===plan.name&&x.durationMins>0).slice(0,3).map(x=>x.durationMins); if(!durations.length) return '<div style="height:4px;"></div>'; const avg=durations.reduce((a,b)=>a+b,0)/durations.length; const rounded=Math.ceil(avg/5)*5; return `<div style="display:flex;align-items:center;justify-content:center;gap:3px;padding:2px 0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7ec8e3" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg><span style="font-size:11px;color:#7ec8e3;font-weight:700;">~${rounded}m</span></div>`; })()}
-        <table style="border-collapse:collapse;border:1px solid var(--border);border-radius:6px;overflow:hidden;width:100%;">
-          <tr><td style="font-size:14px;font-family:'Bebas Neue';color:var(--muted);letter-spacing:.5px;padding:4px 8px;border-bottom:1px solid var(--border);white-space:nowrap;">EX</td><td style="font-family:'Bebas Neue';font-size:14px;color:var(--text);text-align:right;padding:4px 8px;border-bottom:1px solid var(--border);">${totalEx}</td></tr>
-          <tr><td style="font-size:14px;font-family:'Bebas Neue';color:var(--muted);letter-spacing:.5px;padding:4px 8px;white-space:nowrap;">SETS</td><td style="font-family:'Bebas Neue';font-size:14px;color:var(--text);text-align:right;padding:4px 8px;">${totalSets}</td></tr>
-        </table>
-      </div>
-    </div>
-    <div id="${detId}" data-chartid="${chartId}" data-xlabid="${xlabId}" data-filterid="${filterId}" data-filterlabelid="${filterLabelId}" data-planid="${plan.planId}" style="max-height:0;overflow:hidden;transition:max-height .3s ease;">
-      ${todayMfilterRow}
-      ${exDetails}
-      <div style="padding:10px 12px 12px;">
-        <button onclick="cancelTodayPlan()" style="width:100%;background:transparent;border:1px solid rgba(255,255,255,.15);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:700;padding:11px;cursor:pointer;transition:background .2s;" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'">Cancel Plan</button>
-      </div>
-    </div>
-  </div>`;
-
-  // Render bar chart
-  setTimeout(() => {
-    const canvas = document.getElementById(chartId);
-    if (!canvas) return;
-    const existing = Chart.getChart(canvas);
-    if (existing) existing.destroy();
-    const data = BODY_ORDER.map(m => muscleCounts[m]||0);
-    new Chart(canvas.getContext('2d'), {
-      type: 'bar',
-      data: { labels: BODY_ORDER.map(m=>displayMuscle(m)), datasets: [{ data, backgroundColor: colors.map(c=>c+'99'), borderColor: colors, borderWidth: 1.5, borderRadius: 4 }] },
-      options: { responsive: true, maintainAspectRatio: false, layout: { padding: { top: 14 } },
-        plugins: { legend: { display: false }, tooltip: { enabled: false } },
-        scales: { x: { ticks: { display: false }, grid: { display: false } }, y: { display: false } } },
-      plugins: [{ id: 'todayPlanLabels', afterDraw(chart) {
-        const ctx = chart.ctx;
-        chart.data.datasets.forEach((ds,di) => {
-          chart.getDatasetMeta(di).data.forEach((bar,idx) => {
-            const val = ds.data[idx]; if (!val) return;
-            ctx.save(); ctx.fillStyle = '#aaa'; ctx.font = 'bold 10px DM Sans,sans-serif';
-            ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-            ctx.fillText(val, bar.x, bar.y - 2); ctx.restore();
-          });
-        });
-      }}]
-    });
-    const labelWrap = document.getElementById(xlabId);
-    if (labelWrap) {
-      labelWrap.innerHTML = BODY_ORDER.map((m, mi) => {
-        const abbr = {Chest:'CH',Back:'BA',Legs:'LE',Shoulders:'SH',Arms:'AR',Core:'AB',Mix:'CP'}[m] || m.slice(0,2).toUpperCase();
-        const labelColor = data[mi] > 0 ? colors[mi] : '#444';
-        return `<span style="flex:1;text-align:center;font-size:10px;font-weight:700;color:${labelColor};cursor:default;padding:1px 0;letter-spacing:.3px;font-family:'DM Sans',sans-serif;">${abbr}</span>`;
-      }).join('');
-    }
-  }, 50);
+  if (loadWrap) loadWrap.style.display = hasWorkouts ? '' : 'none';
+  if (replaceBtn) replaceBtn.style.display = 'none';
+  const deletePlanBtn = document.getElementById('today-delete-plan-btn');
+  if (deletePlanBtn) deletePlanBtn.style.display = 'none';
 }
 
 function _headerWorkoutModeOff() {
@@ -4387,7 +4265,7 @@ function _setWorkoutHeroPhoto(name) {
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
-    <div id="workout-hero-progress-wrap" style="height:6px;background:#222;overflow:hidden;display:none;width:80%;margin:-2px auto;border-radius:3px;"><div id="workout-progress-fill" style="height:100%;background:#39FF14;width:0%;transition:width .4s cubic-bezier(.4,0,.2,1);"></div></div>` : ''}
+    <div id="workout-hero-progress-wrap" style="height:6px;background:transparent;display:none;gap:3px;width:80%;margin:-2px auto;"></div>` : ''}
     <div style="position:relative;margin:${window._isNewWorkoutFlow ? '0' : '4px'} 10px 0;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;">
       <img src="${photo}" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;filter:brightness(0.85);">
       ${window._isNewWorkoutFlow ? `<button onclick="event.stopPropagation();_openPhotoModalFromHero()" style="position:absolute;top:8px;right:8px;z-index:4;background:rgba(0,0,0,0.55);border:none;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>` : ''}
@@ -4432,24 +4310,45 @@ function _setWorkoutHeroPhoto(name) {
   _syncWorkoutHeaderSpacer();
   requestAnimationFrame(_syncWorkoutHeaderSpacer);
 }
+function _renderProgressSegments(wrap, total, done) {
+  // Segments fill left-to-right in completion order — not tied to which specific exercise
+  // is done or where it sits in the list. Only grow/shrink the tail (never a wholesale
+  // rebuild), so already-filled segments keep their DOM node — and therefore their
+  // transition — even if `total` blips briefly, e.g. a card temporarily detaching from
+  // #exerciseList while its full-screen detail overlay is open.
+  while (wrap.children.length < total) {
+    const seg = document.createElement('div');
+    seg.style.cssText = 'flex:1;height:100%;min-width:2px;border-radius:2px;background:#333;overflow:hidden;position:relative;';
+    seg.innerHTML = '<div class="progress-seg-fill" style="position:absolute;inset:0;background:#39FF14;transform:scaleX(0);transform-origin:left;transition:transform .8s ease;"></div>';
+    wrap.appendChild(seg);
+  }
+  while (wrap.children.length > total) {
+    wrap.lastElementChild.remove();
+  }
+  [...wrap.children].forEach((seg, i) => {
+    const fill = seg.querySelector('.progress-seg-fill');
+    if (fill) fill.style.transform = i < done ? 'scaleX(1)' : 'scaleX(0)';
+  });
+}
 function _updateWorkoutProgress() {
   const section  = document.getElementById('workout-progress-section');
-  const fill     = document.getElementById('workout-progress-fill');
+  const wrap     = document.getElementById('workout-hero-progress-wrap');
   const fraction = document.getElementById('workout-progress-fraction');
   const prStars  = document.getElementById('workout-pr-stars');
-  const topWrap  = document.getElementById('workout-hero-progress-wrap');
-  if (!section || !fill || !fraction) return;
-  const total = document.querySelectorAll('#exerciseList .exercise-card').length;
-  const done  = document.querySelectorAll('#exerciseList .exercise-card.completed').length;
+  if (!section || !wrap || !fraction) return;
+  const cards = [...document.querySelectorAll('#exerciseList .exercise-card')];
+  const total = cards.length;
+  const done  = cards.filter(c => c.classList.contains('completed')).length;
   fraction.innerHTML = done > 0
     ? `<span style="font-size:32px;font-weight:900;color:#fff;">${done}</span><span style="font-size:32px;font-weight:300;color:#888;margin:0 4px;">of</span><span style="font-size:32px;font-weight:900;color:#888;">${total}</span>`
     : `${total}`;
-  fill.style.width = total > 0 ? (done / total * 100) + '%' : '0%';
-  if (topWrap) topWrap.style.display = total > 0 ? 'block' : 'none';
-  const exFill = document.getElementById('ex-detail-progress-fill');
+  // One segment per exercise in the list (not a single smooth fill), so adding/removing
+  // exercises reshapes the bar itself — segments fill left-to-right as exercises are
+  // completed, in order, regardless of which specific exercise each one represents.
+  _renderProgressSegments(wrap, total, done);
+  wrap.style.display = total > 0 ? 'flex' : 'none';
   const exWrap = document.getElementById('ex-detail-progress-wrap');
-  if (exFill) exFill.style.width = fill.style.width;
-  if (exWrap) exWrap.style.display = total > 0 ? 'block' : 'none';
+  if (exWrap) { _renderProgressSegments(exWrap, total, done); exWrap.style.display = total > 0 ? 'flex' : 'none'; }
   if (prStars) {
     let weightPRs = 0, volPRs = 0, volumePRs = 0;
     document.querySelectorAll('#exerciseList .exercise-card').forEach(c => {
@@ -5720,7 +5619,7 @@ const _COMP_SUBS = [
 ];
 const _COMP_COLORS = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171' };
 
-function _nExHighlightMuscle(bodyPart) {
+function _nExHighlightMuscle(bodyPart, preserveSubMuscles) {
   W2_ALL_MUSCLE_IDS.forEach(id => {
     const el = document.getElementById('nex-' + id);
     if (el) { el.setAttribute('fill','#2a2a2a'); el.setAttribute('opacity','1'); }
@@ -5732,7 +5631,7 @@ function _nExHighlightMuscle(bodyPart) {
   const cb = document.getElementById('nex-muscle-checkbox');
   const dotsEl = document.getElementById('nex-slider-dots');
   if (bodyPart === 'Mix') {
-    window._newExSelectedSubMuscles = [];
+    if (!preserveSubMuscles) window._newExSelectedSubMuscles = [];
     slider.min = 0; slider.max = _COMP_SUBS.length; slider.value = 0;
     wrap.style.display = 'block';
     label.textContent = 'All'; label.style.color = '#aaa';
@@ -5768,7 +5667,7 @@ function _nExHighlightMuscle(bodyPart) {
   const bpLbl2 = document.getElementById('nex-bodypart-label');
   if (bpLbl2) { bpLbl2.textContent = ''; }
   if (subList.length === 0) { wrap.style.display = 'none'; return; }
-  window._newExSelectedSubMuscles = [];
+  if (!preserveSubMuscles) window._newExSelectedSubMuscles = [];
   slider.min = 0; slider.max = subList.length; slider.value = 0;
   wrap.style.display = 'block';
   const c = color || '#aaa';
@@ -6461,17 +6360,12 @@ function _buildMuscleDiagramWrap(exDef, alignLeft) {
     if (el) { el.setAttribute('fill', color); el.setAttribute('opacity','0.9'); }
   });
 
-  // Hide unused body side
-  const hasFront = Object.keys(hmap).some(id => id.startsWith('bf-'));
-  const hasBack  = Object.keys(hmap).some(id => id.startsWith('bb-'));
-  const frontDiv = bc.children[0];
-  const backDiv  = bc.children[1];
-  const _oneSide = (hasFront && !hasBack) || (!hasFront && hasBack);
-  if (hasFront && !hasBack && backDiv) {
-    backDiv.style.display = 'none';
-  } else if (!hasFront && hasBack && frontDiv) {
-    frontDiv.style.display = 'none';
-  }
+  // Always show both front and back body images, regardless of which side the
+  // exercise's highlighted muscles fall on — previously hid whichever side had no
+  // highlighted muscles and rescaled/shifted the remaining one to fill the space.
+  const hasFront = true;
+  const hasBack  = true;
+  const _oneSide = false;
 
   // Match new-exercise body size:
   // — both sides visible → full width; one side → 50% width (same as one side in new exercise)
@@ -6550,6 +6444,8 @@ function _toggleExDetailMuscles() {
   const overlayBody = document.getElementById('ex-detail-overlay-body');
   const finishBtn   = document.getElementById('ex-detail-finish-btn');
   const backBtn     = document.getElementById('ex-detail-back-btn');
+  const menuBtn     = document.getElementById('ex-detail-menu-btn');
+  const menuBtnNp   = document.getElementById('ex-detail-menu-btn-nophoto');
   const floatBar    = document.getElementById('ex-float-bar');
   const floatBarBlk = document.getElementById('ex-float-bar-block');
   const existing    = document.getElementById('ex-detail-muscles-section');
@@ -6559,6 +6455,8 @@ function _toggleExDetailMuscles() {
     if (finishBtn) finishBtn.style.visibility = '';
     // Position:absolute — safe to display:none/'' without affecting sibling layout.
     if (backBtn) backBtn.style.display = '';
+    if (menuBtn) menuBtn.style.display = '';
+    if (menuBtnNp) menuBtnNp.style.display = '';
     if (floatBar && floatBar.dataset.musclesHide !== undefined) {
       floatBar.style.display = floatBar.dataset.musclesHide;
       delete floatBar.dataset.musclesHide;
@@ -6605,6 +6503,8 @@ function _toggleExDetailMuscles() {
   // The top-right back chevron is redundant with (and confusable next to) the new
   // CLOSE button, so hide it while the muscles view is open.
   if (backBtn) backBtn.style.display = 'none';
+  if (menuBtn) menuBtn.style.display = 'none';
+  if (menuBtnNp) menuBtnNp.style.display = 'none';
   overlayBody?.querySelectorAll(':scope > .exercise-card').forEach(c => { c.style.display = 'none'; });
   if (floatBar) {
     floatBar.dataset.musclesHide = floatBar.style.display || '';
@@ -7147,6 +7047,8 @@ function _toggleExDetailStats() {
   const overlayBody = document.getElementById('ex-detail-overlay-body');
   const finishBtn   = document.getElementById('ex-detail-finish-btn');
   const backBtn     = document.getElementById('ex-detail-back-btn');
+  const menuBtn     = document.getElementById('ex-detail-menu-btn');
+  const menuBtnNp   = document.getElementById('ex-detail-menu-btn-nophoto');
   const existing    = document.getElementById('ex-detail-stats-section');
 
   const _restoreUnderlyingView = () => {
@@ -7154,6 +7056,8 @@ function _toggleExDetailStats() {
     overlayBody?.querySelectorAll(':scope > .exercise-card').forEach(c => { c.style.display = ''; });
     if (finishBtn) finishBtn.style.visibility = '';
     if (backBtn) backBtn.style.display = '';
+    if (menuBtn) menuBtn.style.display = '';
+    if (menuBtnNp) menuBtnNp.style.display = '';
     if (overlayBody && overlayBody.dataset.statsOverflow !== undefined) {
       overlayBody.style.overflowY = overlayBody.dataset.statsOverflow;
       delete overlayBody.dataset.statsOverflow;
@@ -7188,6 +7092,8 @@ function _toggleExDetailStats() {
   document.getElementById('ex-float-stats')?.classList.add('active');
   if (finishBtn) finishBtn.style.visibility = 'hidden';
   if (backBtn) backBtn.style.display = 'none';
+  if (menuBtn) menuBtn.style.display = 'none';
+  if (menuBtnNp) menuBtnNp.style.display = 'none';
   // Neither the PROGRESS nor YOUR BEST pane should let the page scroll while open.
   if (overlayBody) {
     overlayBody.dataset.statsOverflow = overlayBody.style.overflowY || '';
@@ -8226,7 +8132,7 @@ function renderWorkoutsTab2() {
       ${_wHasCoach ? `<button onclick="switchWTabView('coach')" id="wTab-seg-coach" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_wTabView==='coach'?'#7ec8e3':'#555'};transition:color .15s;">COACH</button>` : ''}
       <div id="wTab-seg-indicator" style="position:absolute;bottom:0;height:2px;left:calc(100%/${_wSegViews.length}*${_wSegIdx});width:calc(100%/${_wSegViews.length});background:${_wSegIndicatorColor};transition:none;"></div>
     </div>
-    <button id="w2-add-btn" onclick="startNewWorkout(true)" style="flex-shrink:0;padding:4px 8px 4px 12px;border:none;background:transparent;color:${_wTabView==='custom'?'var(--accent)':'#555'};cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;"><svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></button>
+    ${window._planStrengthKey ? '' : `<button id="w2-add-btn" onclick="startNewWorkout(true)" style="flex-shrink:0;padding:4px 8px 4px 12px;border:none;background:transparent;color:${_wTabView==='custom'?'var(--accent)':'#555'};cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;"><svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></button>`}
   </div>`;
   if (toggleBar) {
     toggleBar.innerHTML = _wToggleHtml;
@@ -8269,7 +8175,32 @@ function renderWorkoutsTab2() {
 
   const _noSpecialMode = !window._replacePlanId && !window._planStrengthKey && !window._loadFromToday;
   const _selIdx = window._wtabSelectedIdx;
+  // Calendar "+ Plan Workout" pick mode — single-select a workout to plan for the
+  // target date (window._planStrengthKey, a 'y-m-d' key set by planStrengthFromCal).
+  // Distinct from the normal-browse selection above (_selIdx/_wtabSelectedIdx).
+  const _isPlanStrengthMode = !!window._planStrengthKey;
+  const _planSelIdx = window._planStrengthSelectedIdx;
+  // Hide the main bottom tab bar entirely in this mode — it would otherwise sit fixed
+  // on top of (and hide) the Cancel/Save row below. Restored on every other render.
+  const _tabsBarEl = document.querySelector('.tabs');
+  if (_tabsBarEl) _tabsBarEl.style.display = _isPlanStrengthMode ? 'none' : '';
   const MUSCLE_COLORS = {Chest:'#e8ff47',Back:'#7ec8e3',Legs:'#ff8c42',Shoulders:'#a78bfa',Arms:'#34d399',Core:'#f87171',Mix:'#20d4c8'};
+  // Today's planned workout (if any) gets an accent-colored card border below — this is
+  // the only place that surfaces "planned for today" now; the home page no longer shows
+  // a dedicated plan card/preview for it.
+  const _wtabNow = new Date();
+  const _wtabTy = _wtabNow.getFullYear(), _wtabTm = _wtabNow.getMonth(), _wtabTd = _wtabNow.getDate();
+  const _wtabTodayPlanName = (plannedWorkouts||[]).find(p => {
+    if (p.type === 'cardio') return false;
+    const d = new Date(p.date);
+    return d.getFullYear() === _wtabTy && d.getMonth() === _wtabTm && d.getDate() === _wtabTd;
+  })?.name;
+  // Bump today's planned workout to the top of the list, ahead of the normal
+  // most-recent-first sort — it's the one the user is most likely here for.
+  if (_wtabTodayPlanName) {
+    const _tpIdx = sorted.findIndex(w => w.name === _wtabTodayPlanName);
+    if (_tpIdx > 0) sorted.unshift(sorted.splice(_tpIdx, 1)[0]);
+  }
 
   if (!sorted.length) {
     el.innerHTML = `<div class="empty-state" style="margin-top:24px;"><span style="color:#fff;">No workouts yet.</span></div>
@@ -8367,19 +8298,31 @@ function renderWorkoutsTab2() {
       return ws.slice(0, best).join(' ') + '<br>' + ws.slice(best).join(' ');
     })();
     const _nwDir = _nwHebrew ? 'direction:rtl;' : '';
+    const _isTodayPlanned = !!_wtabTodayPlanName && w.name === _wtabTodayPlanName;
+    const _isPlanPicked = _isPlanStrengthMode && _planSelIdx === i;
+    const _showAccentBorder = _isPlanStrengthMode ? _isPlanPicked : _isTodayPlanned;
 
     const cardInner = `
-      <div style="position:relative;display:flex;border-radius:14px;overflow:hidden;aspect-ratio:21/9;background:#1a1a1a;border:1px solid #2a2a2a;">
-        <div id="w2-card-photo-${i}" style="position:relative;width:80%;flex-shrink:0;overflow:hidden;cursor:pointer;" onclick="openW2Sheet(${i})">
-          ${workoutPhoto ? `<img src="${workoutPhoto}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.72);">` : ''}
-          <div style="position:absolute;bottom:0;left:0;right:0;padding:10px 14px 12px;pointer-events:none;text-align:right;">
-            ${lastDate ? `<div style="font-family:'DM Sans';font-size:11px;font-weight:600;color:rgba(255,255,255,0.55);margin-bottom:2px;">Last Time: ${lastDate}</div>` : ''}
-            <div style="font-family:'DM Sans';font-size:20px;font-weight:900;color:#fff;line-height:1.2;${_nwDir}">${_nwHtml}</div>
+      <div style="position:relative;">
+        ${(!_isPlanStrengthMode && _isTodayPlanned) ? `<span style="position:absolute;top:0;left:14px;transform:translateY(-50%);background:var(--bg);color:var(--accent);font-family:'DM Sans';font-size:10px;font-weight:800;letter-spacing:.4px;padding:0 6px;line-height:1.4;white-space:nowrap;z-index:2;">Today's Plan</span>` : ''}
+        <div style="position:relative;display:flex;border-radius:14px;overflow:hidden;aspect-ratio:21/9;background:#1a1a1a;${_showAccentBorder ? 'border:2px solid var(--accent);' : 'border:1px solid #2a2a2a;'}">
+          <div id="w2-card-photo-${i}" style="position:relative;width:80%;flex-shrink:0;overflow:hidden;cursor:pointer;" onclick="${_isPlanStrengthMode ? `_wtabToggleStrengthPick(${i})` : `openW2Sheet(${i})`}">
+            ${workoutPhoto ? `<img src="${workoutPhoto}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.72);">` : ''}
+            <div style="position:absolute;bottom:0;left:0;right:0;padding:10px 14px 12px;pointer-events:none;text-align:right;">
+              ${lastDate ? `<div style="font-family:'DM Sans';font-size:11px;font-weight:600;color:rgba(255,255,255,0.55);margin-bottom:2px;">Last Time: ${lastDate}</div>` : ''}
+              <div style="font-family:'DM Sans';font-size:20px;font-weight:900;color:#fff;line-height:1.2;${_nwDir}">${_nwHtml}</div>
+            </div>
           </div>
+          ${_isPlanStrengthMode
+            ? `<button onclick="_wtabToggleStrengthPick(${i})" title="Select workout" style="width:20%;flex-shrink:0;background:linear-gradient(to right, #161616, #3a3a3a);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;">
+                <span style="width:32px;height:32px;border-radius:50%;border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;background:${_isPlanPicked ? 'var(--accent)' : 'transparent'};transition:background .15s;">
+                  ${_isPlanPicked ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>` : ''}
+                </span>
+              </button>`
+            : `<button id="w2-card-play-${i}" onclick="_wtabLoadWorkout(${i})" title="Start workout" style="width:20%;flex-shrink:0;background:linear-gradient(to right, #161616, #3a3a3a);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="#7ec8e3"><polygon points="6,4 20,12 6,20"/></svg>
+              </button>`}
         </div>
-        <button id="w2-card-play-${i}" onclick="_wtabLoadWorkout(${i})" title="Start workout" style="width:20%;flex-shrink:0;background:linear-gradient(to right, #161616, #3a3a3a);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="#7ec8e3"><polygon points="6,4 20,12 6,20"/></svg>
-        </button>
       </div>`;
 
     rowsHtml += `<div style="padding:5px 2px;${_isDimmed?'opacity:0.25;pointer-events:none;':''}">
@@ -8396,10 +8339,15 @@ function renderWorkoutsTab2() {
     </div>
     <button onclick="_wtabCancelSelection();" style="width:100%;margin-top:8px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--muted);font-family:'DM Sans';font-size:14px;font-weight:600;padding:10px;cursor:pointer;">Cancel</button>` : '';
 
-  const _bottomBtns = _selActionBtns || `<button onclick="startNewWorkout(true);" style="width:100%;margin-top:12px;background:transparent;border:1px dashed var(--border);border-radius:12px;color:var(--muted);font-family:'DM Sans';font-size:15px;font-weight:700;padding:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+  const _bottomBtns = _isPlanStrengthMode
+    ? `<div style="position:fixed;left:0;right:0;bottom:0;max-width:430px;margin:0 auto;z-index:500;background:var(--bg);border-top:1px solid var(--border);box-sizing:border-box;padding:16px 16px calc(env(safe-area-inset-bottom,0px) + 16px);display:flex;gap:10px;">
+      <button onclick="_wtabCancelStrengthPlan();" style="flex:1;background:transparent;border:1px solid rgba(255,255,255,0.18);border-radius:12px;color:rgba(255,255,255,0.65);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Cancel</button>
+      <button onclick="_wtabSaveStrengthPlan();" ${_planSelIdx===null||_planSelIdx===undefined ? 'disabled' : ''} style="flex:1;background:var(--accent);border:none;border-radius:12px;color:#000;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;padding:14px;cursor:pointer;opacity:${_planSelIdx===null||_planSelIdx===undefined ? '0.4' : '1'};-webkit-tap-highlight-color:transparent;">Save</button>
+    </div>`
+    : (_selActionBtns || `<button onclick="startNewWorkout(true);" style="width:100%;margin-top:12px;background:transparent;border:1px dashed var(--border);border-radius:12px;color:var(--muted);font-family:'DM Sans';font-size:15px;font-weight:700;padding:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
     <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
     Create New Workout
-  </button>`;
+  </button>`);
 
   // ALL view: append library workouts below user workouts
   let _libRowsHtml = '';
@@ -16146,6 +16094,7 @@ function renderCalDayContent(key, ws, cs) {
     // Show existing plans
     const BODY_ORDER_C = ['Chest','Back','Legs','Shoulders','Arms','Core','Mix'];
     const COLORS_C = ['#e8ff47','#7ec8e3','#ff8c42','#a78bfa','#34d399','#f87171','#20d4c8'];
+    let _dayStrengthPlan = null;
     planned.forEach((p, pi) => {
       const isCardio = p.type === 'cardio';
       if (isCardio) {
@@ -16173,104 +16122,29 @@ function renderCalDayContent(key, ws, cs) {
         </div>`;
         return;
       }
-      // Strength plan — Workouts-tab style card
-      const exs = p.exercises||[];
-      const muscleCounts = {};
-      exs.forEach(e => { const m=e.muscle||'Chest'; muscleCounts[m]=(muscleCounts[m]||0)+1; });
-      const totalEx = exs.length;
-      const totalSets = _getPlanTotalSets(exs, p.name||'');
-      const chartId = `cal-plan-chart-${p.planId.replace(/[^a-z0-9]/gi,'_')}`;
-      const xlabId = `cal-plan-xlab-${p.planId.replace(/[^a-z0-9]/gi,'_')}`;
-      const detId = `cal-plan-det-${p.planId.replace(/[^a-z0-9]/gi,'_')}`;
-      const chevId = `cal-plan-chev-${p.planId.replace(/[^a-z0-9]/gi,'_')}`;
-      const filterId = `cal-plan-mfilter-${p.planId.replace(/[^a-z0-9]/gi,'_')}`;
-      const filterLabelId = `cal-plan-mfilter-label-${p.planId.replace(/[^a-z0-9]/gi,'_')}`;
-      const isHebrew = /[\u0590-\u05FF]/.test(p.name||'');
-      const _calPlanNamedW = workouts.find(w=>!w._draft&&w.name===p.name);
-      const exDetails = exs.map(e => {
-        const isHebrew = /[\u0590-\u05FF]/.test(e.name||'');
-        const exMuscle = e.muscle || getAllExercises().find(x=>x.name===e.name||x.label===e.name)?.muscle || 'Chest';
-        let exSetCount = (e.sets||[]).filter(s=>!s.ignored).length;
-        if (!exSetCount) {
-          const srcW = _calPlanNamedW || workouts.find(w=>!w._draft&&w.exercises.some(ex=>ex.name===e.name));
-          const srcEx = srcW?.exercises.find(ex=>ex.name===e.name);
-          exSetCount = srcEx ? (srcEx.sets||[]).filter(s=>!s.ignored).length : 0;
-        }
-        const content = `<span style="flex:1;color:var(--text);font-weight:600;${isHebrew?'text-align:right;direction:rtl;':''}">${e.name}</span><span style="display:inline-flex;align-items:center;gap:0;flex-shrink:0;"><span style="color:var(--muted);font-family:'Bebas Neue';font-size:16px;line-height:1;width:16px;text-align:center;">X</span><span style="color:var(--muted);font-family:'Bebas Neue';font-size:16px;line-height:1;width:20px;text-align:left;">${exSetCount}</span></span>`;
-        return `<div class="ldet-ex-row" data-muscle="${exMuscle}" style="padding:7px 14px;border-top:1px solid var(--border);font-size:12px;color:var(--text);display:flex;align-items:center;gap:8px;transition:background .2s;">${content}</div>`;
-      }).join('');
-      const _calMfilterMuscles = ['All', ...BODY_ORDER_C.filter(m => muscleCounts[m])];
-      const calMfilterRow = Object.keys(muscleCounts).length > 1
-        ? `<div id="${filterId}" data-muscles='${JSON.stringify(_calMfilterMuscles)}' data-idx="0" style="display:flex;align-items:center;justify-content:center;border-top:1px solid var(--border);padding:2px 0;">
-            <button onclick="calPlanCycleFilter('${detId}',-1)" style="background:transparent;border:none;color:#fff;font-size:24px;font-weight:400;padding:0 10px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;height:36px;padding-bottom:6px;">‹</button>
-            <div id="${filterLabelId}" style="min-width:80px;text-align:center;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:.5px;color:#fff;transition:color .15s;display:flex;align-items:center;justify-content:center;height:36px;">ALL</div>
-            <button onclick="calPlanCycleFilter('${detId}',1)" style="background:transparent;border:none;color:#fff;font-size:24px;font-weight:400;padding:0 10px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;height:36px;padding-bottom:6px;">›</button>
-          </div>`
-        : '';
-      const isWip = localStorage.getItem('ironlog_wip_plan_id') === p.planId;
-      html += `<div class="load-hist-item" style="margin-bottom:8px;">
-        <div style="display:flex;align-items:stretch;gap:6px;padding:10px 10px 10px 12px;">
-          <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
-            <span style="font-size:10px;color:var(--accent);font-weight:600;letter-spacing:.5px;margin-bottom:2px;">Planned strength</span>
-            <div class="load-hist-name" onclick="toggleLoadDetail('${detId}',null)" style="cursor:pointer;">${p.name}</div>
-            <div style="flex:1;position:relative;">
-              <div onclick="toggleLoadDetail('${detId}',null)" style="height:75px;margin-top:4px;cursor:pointer;" title="Toggle details"><canvas id="${chartId}" style="pointer-events:none;"></canvas></div>
-            </div>
-            <div id="${xlabId}" style="display:flex;justify-content:space-around;padding:2px 0 0;"></div>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;justify-content:space-between;">
-            <div style="display:flex;flex-direction:column;gap:4px;align-items:stretch;">
-              <div style="display:flex;flex-direction:row;gap:4px;align-items:center;justify-content:flex-end;">
-                ${isWip ? '' : `<button onclick="deletePlannedWorkout('${p.planId}')" style="background:transparent;border:none;color:#555;cursor:pointer;padding:5px;border-radius:6px;display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M3 5h14M8 5V3h4v2M5 5l1 11a1 1 0 001 1h6a1 1 0 001-1l1-11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><line x1="8" y1="9" x2="8" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="12" y1="9" x2="12" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>`}
-                ${!isFutureDay ? (isWip
-                  ? `<button onclick="showWipToast()" style="background:transparent;border:1px solid #34d399;border-radius:7px;color:#34d399;font-size:13px;font-weight:700;padding:7px 0;cursor:pointer;white-space:nowrap;min-width:52px;text-align:center;">WIP</button>`
-                  : `<button onclick="loadPlannedWorkout('${p.planId}')" style="background:transparent;border:1px solid #ff8c42;border-radius:7px;color:#ff8c42;font-size:13px;font-weight:700;padding:7px 0;cursor:pointer;white-space:nowrap;min-width:52px;text-align:center;">Go</button>`) : ''}
-              </div>
-              ${isWip ? '' : `<div style="display:flex;flex-direction:row;gap:6px;align-items:center;">
-              <button onclick="replacePlannedWorkout('${p.planId}','${key}')" style="background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--muted);font-size:12px;font-weight:700;padding:6px 8px;cursor:pointer;width:100%;">Replace</button>
-              </div>`}
-            ${(()=>{ const durations=workouts.filter(x=>!x._draft&&!x._template&&x.name===p.name&&x.durationMins>0).slice(0,3).map(x=>x.durationMins); if(!durations.length) return '<div style="height:4px;"></div>'; const avg=durations.reduce((a,b)=>a+b,0)/durations.length; const rounded=Math.ceil(avg/5)*5; return `<div style="display:flex;align-items:center;justify-content:center;gap:3px;padding:2px 0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7ec8e3" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg><span style="font-size:11px;color:#7ec8e3;font-weight:700;">~${rounded}m</span></div>`; })()}
-            </div>
-            <table style="border-collapse:collapse;margin-top:auto;padding-top:4px;width:100%;border:1px solid var(--border);border-radius:6px;overflow:hidden;">
-              <tr><td style="font-size:14px;font-family:'Bebas Neue';color:var(--muted);letter-spacing:.5px;padding:4px 8px 4px 8px;white-space:nowrap;border-bottom:1px solid var(--border);">EX</td><td style="font-family:'Bebas Neue';font-size:14px;color:var(--text);text-align:right;padding:4px 8px;border-bottom:1px solid var(--border);">${totalEx}</td></tr>
-              <tr><td style="font-size:14px;font-family:'Bebas Neue';color:var(--muted);letter-spacing:.5px;padding:4px 8px 4px 8px;white-space:nowrap;">SETS</td><td style="font-family:'Bebas Neue';font-size:14px;color:var(--text);text-align:right;padding:4px 8px;">${totalSets}</td></tr>
-            </table>
-          </div>
-        </div>
-        <div id="${detId}" data-chartid="${chartId}" data-xlabid="${xlabId}" data-filterid="${filterId}" data-filterlabelid="${filterLabelId}" style="max-height:0;overflow:hidden;transition:max-height .3s ease;">
-          ${calMfilterRow}
-          ${exDetails}
-        </div>
-      </div>`;
-      // Render chart after DOM
-      setTimeout(() => {
-        const cv = document.getElementById(chartId);
-        if (!cv) return;
-        const existingChart = Chart.getChart(cv);
-        if (existingChart) existingChart.destroy();
-        const data = BODY_ORDER_C.map(m=>muscleCounts[m]||0);
-        const calPlanChart = new Chart(cv.getContext('2d'), {
-          type:'bar',
-          data:{labels:BODY_ORDER_C.map(m=>({Chest:'CH',Back:'BA',Legs:'LE',Shoulders:'SH',Arms:'AR',Core:'AB',Mix:'CP'}[m]||m.slice(0,2))),datasets:[{data,backgroundColor:COLORS_C.map(c=>c+'99'),borderColor:COLORS_C,borderWidth:1.5,borderRadius:4}]},
-          options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:10}},
-            plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{ticks:{display:false},grid:{display:false}},y:{display:false}}},
-          plugins:[{id:'cpl_'+chartId,afterDraw(chart){const ctx=chart.ctx;chart.data.datasets.forEach((ds,di)=>{chart.getDatasetMeta(di).data.forEach((bar,idx)=>{const val=ds.data[idx];if(!val)return;ctx.save();ctx.fillStyle='#aaa';ctx.font='bold 9px DM Sans,sans-serif';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText(val,bar.x,bar.y-2);ctx.restore();});});}}]
-        });
-        const xl = document.getElementById(xlabId);
-        if (xl) xl.innerHTML = BODY_ORDER_C.map((m,mi)=>{
-          const hasEx = data[mi]>0;
-          return `<span style="flex:1;text-align:center;font-size:10px;font-weight:700;color:${hasEx?COLORS_C[mi]:'#444'};cursor:default;font-family:'DM Sans';">${({Chest:'CH',Back:'BA',Legs:'LE',Shoulders:'SH',Arms:'AR',Core:'AB',Mix:'CP'}[m]||m.slice(0,2))}</span>`;
-        }).join('');
-      }, 80);
+      // Strength-planned workouts no longer render the rich Workouts-tab-style card
+      // (chart, EX/SETS, Go/Replace/Delete) they used to — just captured here so the
+      // button below can be replaced with a simple name display instead. The plan itself
+      // still drives the Workouts-tab accent border and "today's plan first" ordering.
+      _dayStrengthPlan = p;
     });
-    html += `<div style="display:flex;gap:8px;margin-top:8px;">
-      <button ${!isPlannable ? 'disabled' : `onclick="planStrengthFromCal('${key}')"`} style="background:transparent;border:1px dashed ${isPlannable?'rgba(232,255,71,.3)':'rgba(255,255,255,.1)'};border-radius:10px;color:${isPlannable?'var(--accent)':'#444'};font-family:'DM Sans';font-size:13px;font-weight:600;cursor:${isPlannable?'pointer':'default'};padding:10px;flex:1;text-align:center;${!isPlannable?'pointer-events:none;':''}">+ Plan Strength</button>
-    </div>`;
-  } else {
-    html += `<div style="display:flex;gap:8px;margin-top:8px;">
-      <button ${!isPlannable ? 'disabled' : `onclick="planStrengthFromCal('${key}')"`} style="background:transparent;border:1px dashed ${isPlannable?'rgba(232,255,71,.3)':'rgba(255,255,255,.1)'};border-radius:10px;color:${isPlannable?'var(--accent)':'#444'};font-family:'DM Sans';font-size:13px;font-weight:600;cursor:${isPlannable?'pointer':'default'};padding:10px;flex:1;text-align:center;${!isPlannable?'pointer-events:none;':''}">+ Plan Strength</button>
-    </div>`;
+    html += _dayStrengthPlan
+      ? `<div style="margin-top:8px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <div style="min-width:0;">
+            <div style="font-family:'DM Sans';font-size:16px;color:var(--accent);font-weight:600;letter-spacing:.5px;margin-bottom:2px;">Planned workout</div>
+            <div style="font-family:'DM Sans';font-size:20px;font-weight:700;color:var(--text);">${_dayStrengthPlan.name}</div>
+          </div>
+          <button onclick="event.stopPropagation();deletePlannedWorkout('${_dayStrengthPlan.planId}')" style="background:transparent;border:none;color:#555;cursor:pointer;padding:6px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M3 5h14M8 5V3h4v2M5 5l1 11a1 1 0 001 1h6a1 1 0 001-1l1-11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><line x1="8" y1="9" x2="8" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="12" y1="9" x2="12" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+        </div>`
+      : (realWs.length > 0 ? '' : `<div style="display:flex;gap:8px;margin-top:8px;">
+      <button ${!isPlannable ? 'disabled' : `onclick="planStrengthFromCal('${key}')"`} style="background:transparent;border:1px dashed ${isPlannable?'var(--accent)':'rgba(255,255,255,.1)'};border-radius:10px;color:${isPlannable?'var(--accent)':'#444'};font-family:'DM Sans';font-size:20px;font-weight:600;cursor:${isPlannable?'pointer':'default'};padding:10px;flex:1;text-align:center;${!isPlannable?'pointer-events:none;':''}">+ Plan Workout</button>
+    </div>`);
   }
+  // No "+ Plan Workout" prompt when the day already has a completed workout logged
+  // (realWs) — there's nothing left to plan for a day that's already done.
+  // Past days (!isPlannable) get no "+ Plan Workout" button at all — it used to render
+  // disabled/greyed out here, but a control you can't use has no reason to still take up
+  // space on days that can never be planned.
   return html;
 }
 
@@ -16873,60 +16747,14 @@ function loadPlannedWorkout(planId) {
 }
 
 function loadOrSwitchWorkouts() {
-  // Check if there's a planned workout for today
-  const _todayD = new Date(); _todayD.setHours(0,0,0,0);
-  const _todayPlan = (plannedWorkouts||[]).find(p => {
-    if (p.type === 'cardio') return false;
-    const d = new Date(p.date); d.setHours(0,0,0,0);
-    return d.getTime() === _todayD.getTime();
-  });
-  if (_todayPlan) {
-    const anySetDone = !!document.querySelector('#exerciseList .set-done-btn.done') ||
-                       !!document.querySelector('#exerciseList .exercise-card.completed');
-    const doLoad = () => {
-      resetWorkoutState();
-      showTodayWorkoutArea(false);
-      const _wn = document.getElementById('workoutName');
-      if (_wn) _wn.value = _todayPlan.name;
-      // Find last saved workout with same name to restore comments
-      const _lastW = workouts.filter(w=>!w._draft&&!w._template&&w.name===_todayPlan.name).sort((a,b)=>b.date-a.date)[0];
-      (_todayPlan.exercises||[]).forEach(exData => {
-        const ex = getAllExercises().find(e=>e.name===exData.name||e.label===exData.name)
-          || {name:exData.name, label:exData.name, muscle:exData.muscle||'Chest', custom:true};
-        const lastEx = _lastW?.exercises.find(e=>e.name===exData.name);
-        const comment = lastEx?.comment || '';
-        addExerciseCard(ex, false, comment ? {sets:[], completed:false, comment, open:true} : null);
-        if (comment) {
-          const cards = document.querySelectorAll('#exerciseList .exercise-card');
-          const card = cards[cards.length-1];
-          if (card) setTimeout(() => {
-            const noteArea = document.getElementById(`comment-area-${card.id}`);
-            if (noteArea) noteArea.classList.add('open');
-            updateNoteBtn(card.id);
-          }, 100);
-        }
-      });
-      localStorage.setItem('ironlog_wip_plan_id', _todayPlan.planId);
-      checkFinishReady();
-    };
-    if (!anySetDone) { doLoad(); return; }
-    const overlay = document.createElement('div');
-    overlay.className = 'delete-confirm-overlay';
-    overlay.innerHTML = `
-      <div class="delete-confirm-sheet">
-        <div class="delete-confirm-title">Load Workout ?</div>
-        <div class="delete-confirm-sub">Your current workout progress will be lost.</div>
-        <div class="delete-confirm-btns">
-          <button class="btn-del-cancel" id="_loCancel">Cancel</button>
-          <button class="btn-del-yes" id="_loConfirm">Load</button>
-        </div>
-      </div>`;
-    document.body.appendChild(overlay);
-    overlay.querySelector('#_loCancel').onclick = () => overlay.remove();
-    overlay.querySelector('#_loConfirm').onclick = () => { overlay.remove(); doLoad(); };
-  } else {
-    switchTab('workouts2');
-  }
+  // Always go to the Workouts tab for manual selection — this is the only caller of this
+  // function (the home page START WORKOUT button), so the "auto-load today's plan
+  // directly" branch this used to have could only ever run once that button became
+  // reachable while a plan existed, which never happened before the home page stopped
+  // hiding it in that case. That path loaded exercises with a bare fallback object
+  // (no real photo/session data) whenever they weren't found via getAllExercises(),
+  // producing wrong/mismatched thumbnails instead of picking the workout normally.
+  switchTab('workouts2');
 }
 
 function _wtabAnimateBottomBtns(selIdx) {
@@ -16967,6 +16795,64 @@ function _wtabAnimateBottomBtns(selIdx) {
     box.style.opacity = '1';
   }, 200);
 }
+
+// Calendar "+ Plan Workout" pick mode (window._planStrengthKey) — single-select a
+// workout, then Save writes it into plannedWorkouts for that date and returns to the
+// calendar on that day; Cancel just returns without saving. See renderWorkoutsTab2's
+// _isPlanStrengthMode branch for the card/button UI this drives.
+function _wtabToggleStrengthPick(idx) {
+  window._planStrengthSelectedIdx = (window._planStrengthSelectedIdx === idx) ? null : idx;
+  // _keepWorkoutsTabState (not _inPlanStrengthMode) is what renderWorkoutsTab2 checks to
+  // avoid wiping _planStrengthKey on this re-render — same guard switchWTabView already
+  // relies on for its own re-renders while a special mode is active.
+  window._keepWorkoutsTabState = true;
+  renderWorkoutsTab2();
+}
+window._wtabToggleStrengthPick = _wtabToggleStrengthPick;
+
+function _wtabSaveStrengthPlan() {
+  const idx = window._planStrengthSelectedIdx;
+  const psk = window._planStrengthKey;
+  if (idx === null || idx === undefined || !psk) return;
+  const w = workouts[idx];
+  if (!w) return;
+  const [_sy,_sm,_sd] = psk.split('-').map(Number);
+  plannedWorkouts.push({
+    planId: Date.now().toString(),
+    name: w.name,
+    date: new Date(_sy,_sm,_sd).getTime(),
+    exercises: w.exercises.map(e => ({name:e.name, muscle:e.muscle||'Chest'}))
+  });
+  savePlanned();
+  window._planStrengthKey = null;
+  window._planStrengthSelectedIdx = null;
+  // Re-render now (mode flags already cleared above) so the fixed Cancel/Save bar and
+  // its z-index:500 actually leave the DOM — just restoring .tabs' display wasn't enough,
+  // since that bar sat above #calendarOverlay's own z-index:160 and stayed visible on top
+  // of it otherwise.
+  renderWorkoutsTab2();
+  calYear = _sy; calMonth = _sm; selectedCalDay = psk;
+  openCalendar();
+  setTimeout(() => selectCalDay(psk), 100);
+  showToast('Workout planned!');
+}
+window._wtabSaveStrengthPlan = _wtabSaveStrengthPlan;
+
+function _wtabCancelStrengthPlan() {
+  const psk = window._planStrengthKey;
+  window._planStrengthKey = null;
+  window._planStrengthSelectedIdx = null;
+  renderWorkoutsTab2();
+  if (psk) {
+    const [_sy,_sm,_sd] = psk.split('-').map(Number);
+    calYear = _sy; calMonth = _sm; selectedCalDay = psk;
+    openCalendar();
+    setTimeout(() => selectCalDay(psk), 100);
+  } else {
+    switchTab('log');
+  }
+}
+window._wtabCancelStrengthPlan = _wtabCancelStrengthPlan;
 
 function _wtabCancelSelection() {
   window._wtabSelectedIdx = null;
@@ -22442,9 +22328,7 @@ function deleteCoachWorkout(id) {
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><line x1="5" y1="12" x2="19" y2="12" stroke="#888" stroke-width="2.5" stroke-linecap="round"/><polyline points="13,6 19,12 13,18" stroke="#888" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
     </div>
-    <div id="ex-detail-progress-wrap" style="display:none;height:6px;background:#222;overflow:hidden;width:80%;margin:-2px auto;border-radius:3px;">
-      <div id="ex-detail-progress-fill" style="height:100%;background:#39FF14;width:0%;transition:width .4s cubic-bezier(.4,0,.2,1);"></div>
-    </div>
+    <div id="ex-detail-progress-wrap" style="display:none;height:6px;background:transparent;gap:3px;width:80%;margin:-2px auto;"></div>
   </div>
   <!-- No photo: simple sticky header -->
   <div id="ex-detail-no-photo-wrap" style="display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top)+12px) 16px 10px;flex-shrink:0;">
@@ -22463,7 +22347,7 @@ function deleteCoachWorkout(id) {
   <div id="ex-detail-overlay-body">
     <!-- Photo (21:9) + FINISH — scrollable, not sticky -->
     <div id="ex-detail-photo-wrap" style="display:none;">
-      <div id="ex-detail-photo-tap-wrap" style="position:relative;margin:4px 2px 0;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;">
+      <div id="ex-detail-photo-tap-wrap" onclick="if(document.getElementById('ex-detail-stats-section'))_toggleExDetailStats()" style="position:relative;margin:4px 2px 0;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;">
         <img id="ex-detail-photo-img" src="" style="width:100%;height:100%;object-fit:cover;display:block;">
         <button onclick="event.stopPropagation();_toggleExDetailMuscles()" style="position:absolute;bottom:3px;right:3px;z-index:4;background:#000;border:none;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;"><svg id="ex-detail-photo-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;transition:transform .25s ease;"><polyline points="6 9 12 15 18 9"/></svg></button>
       </div>
@@ -23546,8 +23430,11 @@ function openRepsPopup(span, exId) {
   // Focus enter — dim other cards, hide footer
   _kgEditorFocusEnter(exId);
 
-  // Scroll so the tapped set row stays visible above the fixed editor sheet
-  setTimeout(() => {
+  // Scroll so the tapped set row stays visible above the fixed editor sheet. Two rAFs
+  // (not a fixed setTimeout) — just enough to guarantee the sheet's own slide-open rAF
+  // above has already set display:block and the browser has laid it out, so its height
+  // is measurable; a fixed delay was leaving a visible stall before the list scrolled.
+  requestAnimationFrame(() => requestAnimationFrame(() => {
     const editorHeight = document.getElementById('kg-editor-sheet')?.getBoundingClientRect().height || 300;
     const _safeBottom = window.innerHeight - editorHeight - 16;
     const overlayBody = document.getElementById('ex-detail-overlay-body');
@@ -23571,7 +23458,7 @@ function openRepsPopup(span, exId) {
         window.scrollBy({ top: setRect.bottom - _safeBottom, behavior: 'smooth' });
       }
     }
-  }, 320);
+  }));
 }
 
 function _repsUpdateBox() {
@@ -23659,6 +23546,12 @@ function _closeRepsEditor(silent = false, switching = false) {
       const _spacerH     = _closeSpacer?.offsetHeight ?? 0;
       const _scrollNow   = _closeBody?.scrollTop ?? 0;
       const _scrollBack  = Math.max(0, _scrollNow - _spacerH);
+      // Scroll back right away, in parallel with the sheet's own spring-close animation,
+      // instead of waiting for that animation's onDone — waiting left the list sitting at
+      // its scrolled-up offset for the full spring duration before visibly settling.
+      if (_spacerH > 0 && _closeBody && _scrollNow > _scrollBack) {
+        _fastScrollTo(_closeBody, _scrollBack);
+      }
       _springAnimate(_sheet, 0, _sheetH, 280, 25, () => {
         _sheet.style.display = 'none';
         _sheet.style.animation = '';
@@ -23667,12 +23560,8 @@ function _closeRepsEditor(silent = false, switching = false) {
         document.getElementById('kg-editor-sheet-inner').innerHTML = '';
         if (editorRow?.classList.contains('reps-inline-editor-row')) editorRow.remove();
         if (_spacerH > 0 && _closeBody && _scrollNow > _scrollBack) {
-          // Mirror the open animation: scroll the sets back down to their natural position
-          _fastScrollTo(_closeBody, _scrollBack);
-          setTimeout(() => {
-            _closeSpacer?.remove();
-            requestAnimationFrame(() => _syncExDetailBodyTop());
-          }, 150);
+          _closeSpacer?.remove();
+          requestAnimationFrame(() => _syncExDetailBodyTop());
         } else {
           document.getElementById('_kgScrollSpacer')?.remove();
           requestAnimationFrame(() => { _syncExDetailBodyTop(); _scrollExDetailToPhoto(); });
@@ -24208,8 +24097,11 @@ closeInlineKgEditor(false);
   window._activeInlineEditorDiv = editorDiv;
   inputEl.closest('.kg-box-wrap')?.classList.add('editing');
   _kgEditorFocusEnter(exId);
-  // Scroll so the tapped set row stays visible above the fixed editor sheet
-  setTimeout(() => {
+  // Scroll so the tapped set row stays visible above the fixed editor sheet. Two rAFs
+  // (not a fixed setTimeout) — just enough to guarantee the sheet's own slide-open rAF
+  // further below has already set display:block and the browser has laid it out, so its
+  // height is measurable; a fixed delay was leaving a visible stall before the list scrolled.
+  requestAnimationFrame(() => requestAnimationFrame(() => {
     const editorHeight = document.getElementById('kg-editor-sheet')?.getBoundingClientRect().height || 300;
     const _safeBottom = window.innerHeight - editorHeight - 16;
     const overlayBody = document.getElementById('ex-detail-overlay-body');
@@ -24233,7 +24125,7 @@ closeInlineKgEditor(false);
         window.scrollBy({ top: setRect.bottom - _safeBottom, behavior: 'smooth' });
       }
     }
-  }, 320);
+  }));
   // Save original state for Cancel restore
   window._kgEditorOrigVal = inputEl.value;
   window._kgEditorOrigDisplay = inputEl.style.display;
@@ -24426,6 +24318,12 @@ if (restoreFocus) _kgEditorFocusLeave();
       const _spacerH     = _closeSpacer?.offsetHeight ?? 0;
       const _scrollNow   = _closeBody?.scrollTop ?? 0;
       const _scrollBack  = Math.max(0, _scrollNow - _spacerH);
+      // Scroll back right away, in parallel with the sheet's own spring-close animation,
+      // instead of waiting for that animation's onDone — waiting left the list sitting at
+      // its scrolled-up offset for the full spring duration before visibly settling.
+      if (_spacerH > 0 && _closeBody && _scrollNow > _scrollBack) {
+        _fastScrollTo(_closeBody, _scrollBack);
+      }
       _springAnimate(_sheet, 0, _sheetH, 280, 25, () => {
         _sheet.style.display = 'none';
         _sheet.style.animation = '';
@@ -24433,12 +24331,8 @@ if (restoreFocus) _kgEditorFocusLeave();
         _sheet.style.pointerEvents = '';
         document.getElementById('kg-editor-sheet-inner').innerHTML = '';
         if (_spacerH > 0 && _closeBody && _scrollNow > _scrollBack) {
-          // Mirror the open animation: scroll the sets back down to their natural position
-          _fastScrollTo(_closeBody, _scrollBack);
-          setTimeout(() => {
-            _closeSpacer?.remove();
-            requestAnimationFrame(() => _syncExDetailBodyTop());
-          }, 150);
+          _closeSpacer?.remove();
+          requestAnimationFrame(() => _syncExDetailBodyTop());
         } else {
           document.getElementById('_kgScrollSpacer')?.remove();
           requestAnimationFrame(() => { _syncExDetailBodyTop(); _scrollExDetailToPhoto(); });
@@ -25127,6 +25021,9 @@ let _setOptionsRow = null;
 let _setOptionsExId = null;
 
 function openSetOptions(btn, exId) {
+  // Don't let the set-type (W/D/chevron) tap open this sheet on top of an already-open
+  // KG/REP editor sheet — the two sheets would stack/fight for the same bottom space.
+  if (_inlineKgEditorId || _repsEditorSpan) return;
   _setOptionsRow = btn.closest('tr');
   _setOptionsExId = exId;
   const currentType = _setOptionsRow?.dataset?.setType || 'regular';
@@ -25267,7 +25164,10 @@ function editExerciseDetail() {
   if (saveBtn) saveBtn.textContent = 'SAVE CHANGES';
   _renderNewExPills(window._newExMuscle);
   _nExSetupBodySVG();
-  _nExHighlightMuscle(window._newExMuscle);
+  // preserveSubMuscles=true — this call would otherwise wipe the subMuscles selection
+  // just loaded above (window._newExSelectedSubMuscles) back to empty/"All" before the
+  // user ever touches anything, silently discarding it if they hit Save right away.
+  _nExHighlightMuscle(window._newExMuscle, true);
   // Close extab overlay if open (it sits above the modal at z-index:250)
   if (document.getElementById('extab-ex-overlay')?.style.display !== 'none')
     closeExtabExOverlay();
