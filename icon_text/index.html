@@ -4318,6 +4318,7 @@ function _renderProgressSegments(wrap, total, done) {
   // #exerciseList while its full-screen detail overlay is open.
   while (wrap.children.length < total) {
     const seg = document.createElement('div');
+    seg.dataset.freshlyCreated = '1';
     seg.style.cssText = 'flex:1;height:100%;min-width:2px;border-radius:2px;background:#333;overflow:hidden;position:relative;';
     seg.innerHTML = '<div class="progress-seg-fill" style="position:absolute;inset:0;background:#39FF14;transform:scaleX(0);transform-origin:left;transition:transform .8s ease;"></div>';
     wrap.appendChild(seg);
@@ -4327,7 +4328,23 @@ function _renderProgressSegments(wrap, total, done) {
   }
   [...wrap.children].forEach((seg, i) => {
     const fill = seg.querySelector('.progress-seg-fill');
-    if (fill) fill.style.transform = i < done ? 'scaleX(1)' : 'scaleX(0)';
+    if (!fill) return;
+    const target = i < done ? 'scaleX(1)' : 'scaleX(0)';
+    if (seg.dataset.freshlyCreated === '1') {
+      delete seg.dataset.freshlyCreated;
+      if (target === 'scaleX(1)') {
+        // The tail segment can get removed+recreated here (the while-loops above) while
+        // its exercise's card is mid-flight between #exerciseList and the full-screen
+        // detail overlay, which temporarily detaches it and blips the count. If that
+        // freshly-created node's very first state is already "done", force the browser
+        // to commit the empty state on its own paint first — otherwise there's nothing
+        // to animate from and it just snaps straight to full (most visible on the last
+        // exercise, since the tail is always what gets rebuilt).
+        fill.style.transform = 'scaleX(0)';
+        void fill.offsetWidth;
+      }
+    }
+    fill.style.transform = target;
   });
 }
 function _updateWorkoutProgress() {
@@ -4339,8 +4356,12 @@ function _updateWorkoutProgress() {
   const cards = [...document.querySelectorAll('#exerciseList .exercise-card')];
   const total = cards.length;
   const done  = cards.filter(c => c.classList.contains('completed')).length;
+  // Same neon green as the progress bar's own fill (.progress-seg-fill) once every
+  // exercise is completed — both numbers, not just the "done" one, so "7 of 7" reads
+  // as a single all-green unit rather than a done/total pairing.
+  const _allDone = total > 0 && done === total;
   fraction.innerHTML = done > 0
-    ? `<span style="font-size:32px;font-weight:900;color:#fff;">${done}</span><span style="font-size:32px;font-weight:300;color:#888;margin:0 4px;">of</span><span style="font-size:32px;font-weight:900;color:#888;">${total}</span>`
+    ? `<span style="font-size:32px;font-weight:900;color:${_allDone ? '#39FF14' : '#fff'};">${done}</span><span style="font-size:32px;font-weight:300;color:${_allDone ? '#39FF14' : '#888'};margin:0 4px;">of</span><span style="font-size:32px;font-weight:900;color:${_allDone ? '#39FF14' : '#888'};">${total}</span>`
     : `${total}`;
   // One segment per exercise in the list (not a single smooth fill), so adding/removing
   // exercises reshapes the bar itself — segments fill left-to-right as exercises are
@@ -5636,7 +5657,7 @@ function _nExHighlightMuscle(bodyPart, preserveSubMuscles) {
     wrap.style.display = 'block';
     label.textContent = 'All'; label.style.color = '#aaa';
     slider.style.accentColor = 'var(--accent)';
-    if (cb) { cb.classList.remove('done'); cb.style.visibility = 'hidden'; }
+    if (cb) { cb.classList.toggle('done', (window._newExSelectedSubMuscles || []).length === 0); cb.style.visibility = 'visible'; }
     const bpLbl = document.getElementById('nex-bodypart-label');
     if (bpLbl) { bpLbl.textContent = ''; bpLbl.style.color = '#aaa'; }
     const lRow = document.getElementById('nex-slider-label-row');
@@ -5673,7 +5694,7 @@ function _nExHighlightMuscle(bodyPart, preserveSubMuscles) {
   const c = color || '#aaa';
   label.style.color = c; label.textContent = 'All';
   slider.style.accentColor = c;
-  if (cb) { cb.classList.remove('done'); cb.style.visibility = 'hidden'; }
+  if (cb) { cb.classList.toggle('done', (window._newExSelectedSubMuscles || []).length === 0); cb.style.visibility = 'visible'; }
   if (dotsEl) {
     dotsEl.innerHTML = Array.from({length: subList.length + 1}, () =>
       '<div style="width:5px;height:5px;border-radius:50%;background:#666;flex-shrink:0;"></div>'
@@ -5700,7 +5721,7 @@ function _nExSliderChange(val) {
     if (idx === 0) {
       if (label) { label.textContent = 'All'; label.style.color = '#aaa'; }
       if (slider) slider.style.accentColor = 'var(--accent)';
-      if (cb) { cb.style.visibility = 'hidden'; cb.classList.remove('done'); }
+      if (cb) { cb.style.visibility = 'visible'; cb.classList.toggle('done', (window._newExSelectedSubMuscles || []).length === 0); }
       if (bpLbl) { bpLbl.textContent = ''; }
       _nExSliderHighlight('All', 'Mix');
     } else {
@@ -5718,7 +5739,7 @@ function _nExSliderChange(val) {
   const subList = NEX_BODY_SUBMUSCLES[bodyPart] || [];
   if (idx === 0) {
     if (label) label.textContent = 'All';
-    if (cb) { cb.style.visibility = 'hidden'; cb.classList.remove('done'); }
+    if (cb) { cb.style.visibility = 'visible'; cb.classList.toggle('done', (window._newExSelectedSubMuscles || []).length === 0); }
     _nExSliderHighlight('All', bodyPart);
   } else {
     const name = subList[idx - 1];
@@ -5738,7 +5759,15 @@ function _nExCheckboxChange(checked) {
   const bodyPart = window._newExMuscle;
   const slider = document.getElementById('nex-muscle-slider');
   const idx = parseInt(slider?.value || 0);
-  if (idx === 0) return;
+  if (idx === 0) {
+    // "All" — a one-way reset: tapping it clears any specific picks and always ends up
+    // checked, since there's no single sub-muscle to select in place of "everything".
+    window._newExSelectedSubMuscles = [];
+    const cb = document.getElementById('nex-muscle-checkbox');
+    if (cb) cb.classList.add('done');
+    _nExSliderHighlight('All', bodyPart);
+    return;
+  }
   const name = bodyPart === 'Mix' ? (_COMP_SUBS[idx - 1] || {}).n : (NEX_BODY_SUBMUSCLES[bodyPart] || [])[idx - 1];
   if (!name) return;
   window._newExSelectedSubMuscles = window._newExSelectedSubMuscles || [];
@@ -5774,11 +5803,11 @@ function _nExSliderHighlight(subMuscle, bodyPart) {
       });
     });
     if (!sel.includes(subMuscle)) {
-      const sv = _COMP_SUBS.find(x => x.n === subMuscle);
-      const c = sv ? (_COMP_COLORS[sv.bp] || '#aaa') : '#aaa';
+      // Not yet selected — previewed via slider position only, so shown as bright grey
+      // rather than the muscle's actual color; it only turns to color once checked.
       (NEX_SUB_MUSCLE_IDS[subMuscle] || []).forEach(id => {
         const el = document.getElementById('nex-' + id);
-        if (el) { el.setAttribute('fill', c); el.setAttribute('opacity','0.9'); }
+        if (el) { el.setAttribute('fill', '#999'); el.setAttribute('opacity','0.9'); }
       });
     }
     return;
@@ -5804,9 +5833,11 @@ function _nExSliderHighlight(subMuscle, bodyPart) {
     });
   });
   if (!selected.includes(subMuscle)) {
+    // Not yet selected — previewed via slider position only, so shown as bright grey
+    // rather than the muscle's actual color; it only turns to color once checked.
     (NEX_SUB_MUSCLE_IDS[subMuscle] || []).forEach(id => {
       const el = document.getElementById('nex-' + id);
-      if (el) { el.setAttribute('fill', color); el.setAttribute('opacity','0.9'); }
+      if (el) { el.setAttribute('fill', '#999'); el.setAttribute('opacity','0.9'); }
     });
   }
 }
@@ -6075,7 +6106,7 @@ function openWeekSummary(weekStartStr) {
   const workoutRows = dayLabels.map((label, i) => {
     const names = (workoutsByDay[i] || []).join(', ');
     return `<div style="display:flex;align-items:center;padding:8px 0;border-bottom:1px solid #1e1e1e;">
-      <div style="width:56px;flex-shrink:0;font-family:'DM Sans';font-size:13px;font-weight:700;color:${names?'#ccc':'var(--muted)'};letter-spacing:.5px;">${label}</div>
+      <div style="width:56px;flex-shrink:0;font-family:'DM Sans';font-size:13px;font-weight:700;color:${names?'var(--accent)':'var(--muted)'};letter-spacing:.5px;">${label}</div>
       <div style="font-family:'DM Sans';font-size:14px;font-weight:600;color:${names?'#ccc':'var(--muted)'};">${names || '—'}</div>
     </div>`;
   }).join('');
@@ -8714,23 +8745,24 @@ function applyTodayFilters() {
     }
   });
 
-  // Show "X exercises done!" at the bottom of the filtered list when all visible are completed
+  // Show "X exercises done!" (or "All exercises done!" when no muscle filter is active)
+  // at the bottom of the list when everything currently visible is completed.
   let emptyMsg = document.getElementById('today-filter-empty-msg');
   const _mcolors = {Chest:'#e8ff47',Back:'#7ec8e3',Legs:'#ff8c42',Shoulders:'#a78bfa',Arms:'#34d399',Core:'#f87171',Mix:'#20d4c8'};
-  const _allFilteredDone = _todayMuscleFilter && (() => {
+  const _filterKey = _todayMuscleFilter || '__all__';
+  const _allFilteredDone = (() => {
     const filtered = [...document.querySelectorAll('#exerciseList .exercise-card')]
-      .filter(c => (c.dataset.exmuscle || 'Chest') === _todayMuscleFilter);
+      .filter(c => !_todayMuscleFilter || (c.dataset.exmuscle || 'Chest') === _todayMuscleFilter);
     return filtered.length > 0 && filtered.every(c => c.classList.contains('completed'));
   })();
   if (_allFilteredDone) {
-    // Was the message already showing FOR THIS SAME MUSCLE before this call?
-    // Only scroll to reveal it on the transition into "all done" (or a switch
-    // to a different, also-all-done muscle) — not on every subsequent
-    // re-render while that exact state holds (e.g. an unrelated set toggle),
-    // which would fight any scrolling the user is doing themselves. The
-    // element itself is shared across all muscles, so display!=='none' alone
-    // can't tell "still Legs" apart from "just switched to Shoulders".
-    const _wasAlreadyShown = !!emptyMsg && emptyMsg.style.display !== 'none' && emptyMsg.dataset.shownForMuscle === _todayMuscleFilter;
+    // Was the message already showing for this same filter (or lack of one) before this
+    // call? Only scroll to reveal it on the transition into "all done" (or a switch to a
+    // different, also-all-done muscle/no-filter) — not on every subsequent re-render
+    // while that exact state holds (e.g. an unrelated set toggle), which would fight any
+    // scrolling the user is doing themselves. The element itself is shared across all
+    // muscles/no-filter, so display!=='none' alone can't tell them apart.
+    const _wasAlreadyShown = !!emptyMsg && emptyMsg.style.display !== 'none' && emptyMsg.dataset.shownForMuscle === _filterKey;
     if (!emptyMsg) {
       emptyMsg = document.createElement('div');
       emptyMsg.id = 'today-filter-empty-msg';
@@ -8742,8 +8774,10 @@ function applyTodayFilters() {
       document.getElementById('exerciseList').after(emptyMsg);
     }
     const muscleColor = _mcolors[_todayMuscleFilter] || '#4caf50';
-    emptyMsg.innerHTML = `<span style="color:${muscleColor}">${_todayMuscleFilter}</span> exercises done !`;
-    emptyMsg.dataset.shownForMuscle = _todayMuscleFilter;
+    emptyMsg.innerHTML = _todayMuscleFilter
+      ? `<span style="color:${muscleColor}">${_todayMuscleFilter}</span> exercises done !`
+      : `<span style="color:#39FF14">All</span> exercises done !`;
+    emptyMsg.dataset.shownForMuscle = _filterKey;
     emptyMsg.style.display = '';
     // Scroll down to the bottom of the list so the "<muscle> exercises done!"
     // message (which sits right after it) is actually visible — whether the
@@ -8765,8 +8799,9 @@ function _updateAllExCircleColors() {
     const color = _todayMuscleFilter ? (_mc[card.dataset.muscle] || '#888') : null;
     const circle = document.getElementById(`no-done-check-${card.id}`);
     if (circle) circle.style.borderColor = color || '#555';
-    const checkSvg = document.querySelector(`#done-check-${card.id} svg`);
-    if (checkSvg) checkSvg.setAttribute('stroke', color || '#fff');
+    // done-check's own SVG (green checkmark or red X) is never touched here — it's
+    // always green-checkmark or red-X regardless of muscle filter (see
+    // _updatePartialDoneIndicator), not recolored to the filter's color.
     const dot = document.getElementById(`nwf-dot-${card.id}`);
     if (dot) dot.style.background = color || '#555';
   });
@@ -10437,10 +10472,10 @@ function markSetDone(btn, exId) {
       }
     }
   }
-  // Muscle-filter view also needs a refresh here, not just hide-done — it's what
-  // shows/scrolls-to the "<muscle> exercises done!" message the moment the last
-  // set in a filtered muscle group gets checked off.
-  if (_todayHideDone || _todayMuscleFilter) applyTodayFilters();
+  // Always refresh — not just when hide-done/a muscle filter is active — since this is
+  // also what shows/scrolls-to the "<muscle> exercises done!" (or plain "All exercises
+  // done!" with no filter) message the moment the last exercise gets checked off.
+  applyTodayFilters();
   checkFinishReady();
   updateTodayMuscleChips();
   refreshCardMiniCharts(exId);
@@ -10673,10 +10708,10 @@ function toggleDone(id) {
       else list.prepend(card);
       refreshOrderNums();
       refreshCardMiniCharts(id);
-      // Also refresh when a muscle filter is active — shows/scrolls-to the
-      // "<muscle> exercises done!" message when finishing the last exercise
-      // in the currently filtered group.
-      if (_todayHideDone || _todayMuscleFilter) applyTodayFilters();
+      // Always refresh — shows/scrolls-to the "<muscle> exercises done!" (or plain
+      // "All exercises done!" with no filter) message when finishing the last exercise,
+      // whether in a filtered muscle group or browsing unfiltered.
+      applyTodayFilters();
       if (window._updateWorkoutProgress) _updateWorkoutProgress();
       _scrollToNextExercise();
     }
@@ -11091,9 +11126,10 @@ function _updatePartialDoneIndicator(exId) {
       if (isEmptyCompleted) {
         doneCheck.innerHTML = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ff4747" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
       } else {
-        const _mc = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171', Mix:'#20d4c8' };
-        const _color = _todayMuscleFilter ? (_mc[card?.dataset.muscle] || '#fff') : '#fff';
-        doneCheck.innerHTML = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="${_color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+        // A properly completed exercise (sets actually done) always shows a green
+        // checkmark, regardless of muscle filter — matching the checkmark green used
+        // elsewhere in the app (e.g. the set-options menu).
+        doneCheck.innerHTML = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
       }
     }
   }
@@ -18121,7 +18157,9 @@ window._onAuthReady = (user) => {
   if (typeof _discardSessionAndShowHome === 'function') _discardSessionAndShowHome();
   checkFinishReady();
   if (typeof renderTodayPlanCard === 'function') renderTodayPlanCard();
-  if (localStorage.getItem('ironlog_modal') === 'calendar' && typeof openCalendar === 'function') openCalendar();
+  // Always land on Home (see above) — don't reopen the calendar even if it was left open
+  // when the app was last closed; just clear the stale flag openCalendar() would have set.
+  localStorage.removeItem('ironlog_modal');
 
   const _fsLoadDone = (typeof showToast === 'function')
     ? window.loadFromFirestore(user.uid).then(loaded => {
@@ -25142,8 +25180,10 @@ function closeExDetailMenu() {
 function editExerciseDetail() {
   const name = (document.getElementById('ex-detail-overlay-title')?.textContent || document.getElementById('ex-detail-overlay-title-nophoto')?.textContent || '').trim();
   if (!name) return;
-  // Find exercise data
-  const exData = customExercises.find(e => e.name === name) || { name, muscle: 'Chest' };
+  // Find exercise data — getAllExercises() (not just customExercises) so exercises that
+  // were only ever used in a workout, never explicitly customized, still resolve their
+  // real muscle (inferred from the built-in library) instead of falling back to Chest.
+  const exData = getAllExercises().find(e => e.name === name || e.label === name) || { name, muscle: 'Chest' };
   // Set up edit mode
   window._editExName = name;
   window._newExPhoto32 = null;
