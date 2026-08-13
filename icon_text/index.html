@@ -715,7 +715,7 @@ body.ex-tab-detail-open #ex-float-bar{display:none !important;}
   background-origin: border-box;
   background-clip: padding-box, border-box;
 }
-.cal-day.today{border:1px solid #ff69b4;color:var(--text);}
+.cal-day.today{border:1px solid #fff;color:var(--text);}
 .cal-day.today.selected{border-color:transparent;}
 .cal-day.selected{outline:2px solid #ff8c42;outline-offset:1px;border-radius:50%;}
 .cal-day.empty{opacity:0;}
@@ -1465,9 +1465,12 @@ function hidAuthScreen() {
 <!-- EXERCISES -->
 <div class="page" id="page-exercises" style="padding-top:calc(60px + env(safe-area-inset-top));padding-bottom:calc(120px + env(safe-area-inset-bottom));padding-left:10px;padding-right:10px;">
   <div id="exercisesTabContent"></div>
-  <div id="pick-mode-btns" style="display:none;flex-direction:row;gap:10px;position:fixed;bottom:0;left:0;right:0;z-index:60;padding:16px 16px calc(env(safe-area-inset-bottom,0px) + 16px);background:var(--bg);max-width:430px;margin:0 auto;">
-    <button onclick="exitPickMode()" style="flex:1;background:transparent;border:1px solid rgba(255,255,255,0.18);border-radius:12px;color:rgba(255,255,255,0.65);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Back</button>
-    <button id="pick-mode-done-btn" onclick="donePickMode()" style="flex:1;background:var(--accent);border:none;border-radius:12px;color:#000;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Done</button>
+  <div id="pick-mode-btns" style="display:none;flex-direction:column;gap:10px;position:fixed;bottom:0;left:0;right:0;z-index:60;padding:16px 16px calc(env(safe-area-inset-bottom,0px) + 16px);background:var(--bg);max-width:430px;margin:0 auto;">
+    <div id="pick-mode-count-label" style="text-align:center;color:#888;font-family:'DM Sans',sans-serif;font-size:30px;font-weight:600;min-height:36px;"></div>
+    <div style="display:flex;flex-direction:row;gap:10px;">
+      <button onclick="exitPickMode()" style="flex:1;background:transparent;border:1px solid rgba(255,255,255,0.18);border-radius:12px;color:rgba(255,255,255,0.65);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Back</button>
+      <button id="pick-mode-done-btn" onclick="donePickMode()" style="flex:1;background:var(--accent);border:none;border-radius:12px;color:#000;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Done</button>
+    </div>
   </div>
 </div>
 
@@ -1490,7 +1493,6 @@ function hidAuthScreen() {
 
   <div style="height:1px;background:#2a2a2a;margin:10px 0;"></div>
 
-  <button id="userMenuDeviceBtn" onclick="toggleDesktopOverride()" style="display:block;width:100%;background:transparent;border:none;border-radius:10px;color:#7ec8e3;font-family:'DM Sans';font-size:15px;font-weight:600;padding:14px 12px;cursor:pointer;text-align:left;">🖥️ <span id="deviceOverrideLabel">Switch to Desktop View</span></button>
   <button onclick="switchTab('progress')" style="width:100%;background:transparent;border:none;border-radius:10px;color:#34d399;font-family:'DM Sans';font-size:15px;font-weight:600;padding:14px 12px;cursor:pointer;text-align:left;">📊 Progress</button>
   <button onclick="switchTab('exercises')" style="width:100%;background:transparent;border:none;border-radius:10px;color:var(--accent);font-family:'DM Sans';font-size:15px;font-weight:600;padding:14px 12px;cursor:pointer;text-align:left;">🏋️ Exercises</button>
   <button onclick="closeDataModal();openDataModal()" style="width:100%;background:transparent;border:none;border-radius:10px;color:#f0f0f0;font-family:'DM Sans';font-size:15px;font-weight:600;padding:14px 12px;cursor:pointer;text-align:left;">📦 My Data</button>
@@ -2161,11 +2163,14 @@ window.BarzelpNet = {
 };
 
 // ── Migrate photo keys from localStorage → localForage and free space ────
+// Workout photos are intentionally excluded here: _getWorkoutPhoto() and every other
+// workout-photo read site are synchronous localStorage reads, so sweeping those keys
+// into (async) localForage made them vanish on the next reload — the app would fall
+// back to the default banner with no error. Only exercise photos are read through
+// localforage, so only they belong in this migration.
 function _migratePhotosToIDB() {
   if (!window.localforage) return;
-  const photoKeys = Object.keys(localStorage).filter(k =>
-    k.startsWith('ironlog_ex_photo_') || k.startsWith('ironlog_workout_photo_')
-  );
+  const photoKeys = Object.keys(localStorage).filter(k => k.startsWith('ironlog_ex_photo_'));
   photoKeys.forEach(k => {
     const val = localStorage.getItem(k);
     if (!val) return;
@@ -2177,6 +2182,27 @@ function _migratePhotosToIDB() {
     });
   });
 }
+// One-time repair: earlier builds also swept ironlog_workout_photo_* keys into
+// localForage (see above), stranding them somewhere _getWorkoutPhoto() never looks.
+// Move any survivors back into localStorage so previously-replaced photos reappear.
+function _restoreWorkoutPhotosFromIDB() {
+  if (!window.localforage || localStorage.getItem('_workoutPhotosRestoredV1')) return;
+  window.localforage.keys().then(keys => {
+    const stray = keys.filter(k => k.startsWith('ironlog_workout_photo_'));
+    if (!stray.length) return;
+    return Promise.all(stray.map(k =>
+      window.localforage.getItem(k).then(val => {
+        if (val && !localStorage.getItem(k)) {
+          try { localStorage.setItem(k, val); } catch(_) {}
+        }
+        return window.localforage.removeItem(k);
+      }).catch(() => {})
+    ));
+  }).then(() => {
+    localStorage.setItem('_workoutPhotosRestoredV1', '1');
+    if (typeof renderWorkoutsTab2 === 'function') renderWorkoutsTab2();
+  }).catch(() => {});
+}
 // Run once on load; flag so it only runs once per session. Deferred via
 // requestIdleCallback (not a flat setTimeout) so this non-critical IndexedDB work
 // naturally yields to whatever's still busy on the main thread right after boot —
@@ -2186,6 +2212,8 @@ if (!sessionStorage.getItem('_photosIDBMigrated')) {
   sessionStorage.setItem('_photosIDBMigrated', '1');
   if ('requestIdleCallback' in window) requestIdleCallback(_migratePhotosToIDB, { timeout: 3000 });
   else setTimeout(_migratePhotosToIDB, 1500);
+  if ('requestIdleCallback' in window) requestIdleCallback(_restoreWorkoutPhotosFromIDB, { timeout: 3000 });
+  else setTimeout(_restoreWorkoutPhotosFromIDB, 1500);
 }
 
 // ── Migration: copy localStorage → IndexedDB once ─────
@@ -3309,6 +3337,8 @@ function _getWeekStatusData() {
   return days;
 }
 
+const _WEEK_DAY_LABELS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+const _WEEK_DAY_FULL_LABELS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 function renderWeekStatus() {
   const wrap = document.getElementById('week-status-days');
   if (!wrap) return;
@@ -3316,7 +3346,7 @@ function renderWeekStatus() {
   window._weekStatusData = days;
   const countEl = document.getElementById('week-status-completed-count');
   if (countEl) countEl.textContent = days.filter(d => d.completed).length;
-  const labels = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+  const labels = _WEEK_DAY_LABELS;
   wrap.innerHTML = days.map((d, i) => `
     <div class="week-status-day" data-completed="${d.completed ? '1' : '0'}" onclick="event.stopPropagation();selectWeekStatusDay(${i})" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:5px 0;border-radius:10px;cursor:pointer;-webkit-tap-highlight-color:transparent;">
       <div class="wsd-circle" style="width:46px;height:${d.completed ? '62px' : '46px'};border-radius:${d.completed ? '23px' : '50%'};background:${d.completed ? '#38bdf8' : '#2a2a2a'};border:2px solid transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;box-sizing:border-box;transition:background .2s,border-color .2s;">
@@ -3341,14 +3371,10 @@ function selectWeekStatusDay(idx) {
       const check = el.querySelector('.wsd-check');
       const label = el.querySelector('.wsd-label');
       if (circle) {
-        circle.style.borderColor = isSel ? '#ccc' : 'transparent';
-        if (isCompleted) {
-          circle.style.background = isSel ? '#000' : '#38bdf8';
-        } else {
-          circle.style.background = isSel ? '#000' : '#2a2a2a';
-        }
-        if (check) check.setAttribute('stroke', isSel && isCompleted ? 'var(--accent)' : '#000');
-        if (label && isCompleted) label.style.color = isSel ? 'var(--accent)' : '#000';
+        circle.style.borderColor = isSel ? '#ff8c42' : 'transparent';
+        circle.style.background = isCompleted ? '#38bdf8' : '#2a2a2a';
+        if (check) check.setAttribute('stroke', '#000');
+        if (label && isCompleted) label.style.color = '#000';
         if (isSel) {
           circle.style.animation = 'none';
           requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -3358,6 +3384,8 @@ function selectWeekStatusDay(idx) {
       }
     });
   }
+  const dayLabel = document.getElementById('week-status-day-label');
+  if (dayLabel) dayLabel.textContent = _WEEK_DAY_FULL_LABELS[idx] || '';
   const detail = document.getElementById('week-status-detail');
   if (!detail || !d) return;
   detail.textContent = d.completed ? d.name : '-';
@@ -3741,9 +3769,32 @@ function _finishHeroNameEdit(el) {
 function _nwfUpdateNextBtn() {
   const btn  = document.getElementById('nwf-name-next-btn');
   const btn2 = document.getElementById('nwf-bottom-next-btn');
-  const hasName = !!(document.getElementById('nwf-name-input')?.value.trim() || document.getElementById('workoutName')?.value.trim());
+  const isDup = document.getElementById('nwf-name-dup-msg')?.style.display === 'inline';
+  const hasName = !isDup && !!(document.getElementById('nwf-name-input')?.value.trim() || document.getElementById('workoutName')?.value.trim());
   if (btn)  btn.style.opacity = hasName ? '1' : '0.35';
   if (btn2) { btn2.style.background = hasName ? 'var(--accent)' : '#444'; btn2.style.color = hasName ? '#000' : '#fff'; }
+}
+function _nwfSetNameDupState(isDup) {
+  const inp = document.getElementById('nwf-name-input');
+  const box = document.getElementById('nwf-name-box');
+  const msg = document.getElementById('nwf-name-dup-msg');
+  if (inp) inp.style.color = isDup ? '#ff4747' : '#fff';
+  if (box) box.style.borderColor = isDup ? '#ff4747' : '#444';
+  if (msg) msg.style.display = isDup ? 'inline' : 'none';
+}
+function _nwfHandleNameBlur(inp) {
+  const v = inp.value.trim();
+  if (!v) { _nwfSetNameDupState(false); return; }
+  const nl = v.toLowerCase();
+  const isDup = (workouts||[]).some((w,i) => !w._draft && (window._editingWorkoutIdx!=null && i===window._editingWorkoutIdx ? false : (w.name||'').trim().toLowerCase()===nl));
+  _nwfSetNameDupState(isDup);
+  if (isDup) {
+    const wn = document.getElementById('workoutName');
+    if (wn) wn.value = '';
+    const ne = document.getElementById('nwf-hero-name');
+    if (ne) { ne.dataset.name = ''; ne.innerHTML = ''; }
+    if (typeof _nwfUpdateNextBtn === 'function') _nwfUpdateNextBtn();
+  }
 }
 const _NWF_FIELD_IDS = ['nwf-name-input', 'nwf-description', 'nwf-video-link'];
 function _nwfFieldFocus(titleId, boxId, on) {
@@ -3815,6 +3866,7 @@ function _newExFieldFocus(on) {
 }
 window._newExFieldFocus = _newExFieldFocus;
 function _openNwfNamePage() {
+  if (typeof _nwfSetNameDupState === 'function') _nwfSetNameDupState(false);
   const nameEl = document.getElementById('nwf-hero-name');
   const cur = (document.getElementById('workoutName')?.value || '').trim();
   if (nameEl) {
@@ -5383,7 +5435,9 @@ function _updatePickModeDoneBtn() {
   if (!btn || !btnsWrap) return;
   const n = _pickModeSelected.length;
   btnsWrap.style.display = _pickMode ? 'flex' : 'none';
-  btn.textContent = n > 0 ? `Done (${n})` : 'Done';
+  const countLabel = document.getElementById('pick-mode-count-label');
+  if (countLabel) countLabel.innerHTML = n > 0 ? `<span style="color:var(--accent);">${n}</span> exercise${n===1?'':'s'} added` : '';
+  btn.textContent = 'Done';
   btn.style.opacity = '1';
   btn.style.background = n > 0 ? (window._coachMode ? '#7ec8e3' : 'var(--accent)') : '#444';
   btn.style.color = n > 0 ? '#000' : '#fff';
@@ -8817,8 +8871,28 @@ function filterTodayByMuscle(muscle) {
   _updateAllExCircleColors();
   // Wait for the filter show/hide animations (up to ~200ms stagger + 380ms) to
   // fully settle before scrolling — see _scrollToNextExercise for why.
-  _scrollToNextExercise(620);
+  _scrollAddExerciseIntoView(620);
 }
+
+// Selecting/deselecting a body-part chip changes how many cards are visible, which
+// moves the "+ ADD EXERCISE" row up or down — scroll it into view so it stays reachable
+// without the user having to hunt for it after filtering.
+function _scrollAddExerciseIntoView(wait = 80) {
+  clearTimeout(_scrollAddExerciseIntoViewTimer);
+  _scrollAddExerciseIntoViewTimer = setTimeout(() => {
+    if (window._exDetailCardId) return;
+    const row = document.querySelector('.add-ex-row');
+    if (!row) return;
+    // The fixed Back/Save bar sits on top of the scroll area's bottom edge, so a plain
+    // block:'end' scroll lands the row underneath it — give it a scroll-margin equal to
+    // the bar's height (plus a small gap) so it settles just above the buttons instead.
+    const bar = document.getElementById('nwf-bottom-bar');
+    const barH = bar && bar.style.display !== 'none' ? bar.offsetHeight : 0;
+    row.style.scrollMarginBottom = (barH + 16) + 'px';
+    row.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, wait);
+}
+let _scrollAddExerciseIntoViewTimer = null;
 
 function toggleTodayHideDone() {
   _todayHideDone = !_todayHideDone;
@@ -8879,11 +8953,16 @@ function updateTodayMuscleChips() {
         const col=_mc[m]||'#888', abbr=_ma[m]||m.slice(0,4), act=_todayMuscleFilter===m;
         return `<button onclick="filterTodayByMuscle('${m}')" style="${_bb}position:relative;background:${act?col+'33':'rgba(255,255,255,.05)'};border:1px solid ${act?col:'#333'};"><span style="font-size:18px;font-weight:700;color:${act?col:'#888'};line-height:1;">${c}</span><span style="font-size:13px;font-weight:600;color:${act?col:'#888'};letter-spacing:.2px;line-height:1;white-space:nowrap;">${abbr}</span></button>`;
       }).join('');
-      _chipsRowHtml = `<div style="display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding-bottom:8px;">${_allBtn}${_muscBtns}</div>`;
+      _chipsRowHtml = `<div style="display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;scrollbar-width:none;-webkit-overflow-scrolling:touch;">${_allBtn}${_muscBtns}</div>`;
     }
 
-    // Chips only in header scroll area
+    // Chips only in header scroll area — innerHTML replaces the scrollable chips
+    // strip with a brand-new node each time a body part is tapped, which would
+    // otherwise reset it to scrollLeft 0 and visually "jump" the chips back to the
+    // start instead of just recoloring the tapped one in place.
+    const _prevChipsScroll = scrollEl.firstElementChild?.scrollLeft || 0;
     scrollEl.innerHTML = _chipsRowHtml;
+    if (scrollEl.firstElementChild) scrollEl.firstElementChild.scrollLeft = _prevChipsScroll;
 
     // Cancel / Save fixed at bottom
     const _nwfBar = document.getElementById('nwf-bottom-bar');
@@ -9133,7 +9212,16 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
     trashBtn.className = 'nw-trash-btn';
     trashBtn.style.cssText = 'background:transparent;border:none;color:#555;cursor:pointer;padding:2px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;';
     trashBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
-    trashBtn.onclick = (e) => { e.stopPropagation(); card.remove(); saveSession?.(); };
+    trashBtn.onclick = (e) => {
+      e.stopPropagation();
+      card.remove();
+      saveSession?.();
+      // Removing a card can eliminate the last exercise of a body part — refresh the
+      // muscle filter chips so a now-empty body part's chip disappears/un-highlights.
+      updateTodayMuscleChips();
+      if (_todayMuscleFilter) _updateAllExCircleColors();
+      checkFinishReady();
+    };
     trashWrap.append(trashBtn);
     header.append(trashWrap, contentArea);
   } else {
@@ -12004,6 +12092,7 @@ function finishWorkout() {
 function saveWorkoutToList() {
   const _wasNewFlow = !!window._isNewWorkoutFlow;
   const _wasFromWorkouts = !!window._newFromWorkouts;
+  const _wasEditingWorkout = window._editingWorkoutIdx !== undefined && !!workouts[window._editingWorkoutIdx];
   const name = document.getElementById('workoutName').value.trim() || 'Unnamed Workout';
   const description = (document.getElementById('nwf-description')?.value || '').trim();
   const _nwfVidLink = (document.getElementById('nwf-video-link')?.value || '').trim();
@@ -12164,10 +12253,10 @@ function saveWorkoutToList() {
               <div style="display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:50%;background:#34d399;margin-bottom:14px;">
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
               </div>
-              <div style="font-family:'DM Sans',sans-serif;font-size:32px;font-weight:900;color:#fff;line-height:1.15;letter-spacing:-0.5px;margin-bottom:16px;">Workout created !</div>
+              <div style="font-family:'DM Sans',sans-serif;font-size:32px;font-weight:900;color:#fff;line-height:1.15;letter-spacing:-0.5px;margin-bottom:16px;">${_wasEditingWorkout ? 'Workout updated !' : 'Workout created !'}</div>
             </div>
-            <button onclick="_nwfStartWorkout();" style="width:100%;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:20px;font-weight:900;-webkit-text-stroke:0.4px currentColor;padding:16px;cursor:pointer;text-align:center;">Start Workout</button>
-            <button onclick="${exitOnclick}" style="width:100%;background:transparent;border:1px solid var(--border);border-radius:10px;color:#888;font-family:'DM Sans';font-size:16px;font-weight:400;padding:16px;cursor:pointer;text-align:center;">Back to Workouts</button>
+            <button onclick="_nwfStartWorkout();" style="width:100%;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:20px;font-weight:600;-webkit-text-stroke:0.4px currentColor;padding:16px;cursor:pointer;text-align:center;">Start Workout</button>
+            <button onclick="${exitOnclick}" style="width:100%;background:transparent;border:1px solid var(--border);border-radius:10px;color:#888;font-family:'DM Sans';font-size:20px;font-weight:600;padding:16px;cursor:pointer;text-align:center;">Back to Workouts</button>
           `;
         if (actionsRow.parentNode) actionsRow.parentNode.insertBefore(optDiv, actionsRow);
         else document.getElementById('today-workout-area')?.prepend(optDiv);
@@ -12577,7 +12666,7 @@ function _confirmWorkoutPhotoStep() {
   document.getElementById('workoutPhotoModalOverlay').classList.remove('open');
   const name = (document.getElementById('workoutName')?.value || '').trim();
   if (window._pendingWorkoutPhoto && name) {
-    localStorage.setItem(`ironlog_workout_photo_${name}`, window._pendingWorkoutPhoto);
+    _saveWorkoutPhotoWithRetry(`ironlog_workout_photo_${name}`, window._pendingWorkoutPhoto);
     _setWorkoutHeroPhoto(name);
     window._pendingWorkoutPhoto = null;
   }
@@ -17409,7 +17498,7 @@ window.addEventListener('load', function() {
     <div style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;color:#aaa;letter-spacing:.2px;margin-top:2px;">Step 1 of 2</div>
   </div>
   <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 10px calc(env(safe-area-inset-bottom,0px) + 96px);">
-    <div style="position:relative;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;">
+    <div onclick="_openPhotoModalFromHero()" style="position:relative;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;">
       <img id="nwf-hero-bg" src="images/workout_background.webp" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;filter:brightness(0.85);">
       <button onclick="event.stopPropagation();_openPhotoModalFromHero()" style="position:absolute;top:8px;right:8px;z-index:4;background:rgba(0,0,0,0.55);border:none;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
@@ -17419,13 +17508,13 @@ window.addEventListener('load', function() {
         <div style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:rgba(255,255,255,0.45);letter-spacing:1px;text-transform:uppercase;">preview</div>
       </div>
     </div>
-    <div id="nwf-name-title" style="font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;color:#fff;letter-spacing:0;margin-top:14px;margin-bottom:6px;padding:0 2px;transition:color .2s;">Workout Name</div>
+    <div id="nwf-name-title" style="font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;color:#fff;letter-spacing:0;margin-top:14px;margin-bottom:6px;padding:0 2px;transition:color .2s;display:flex;align-items:center;gap:8px;">Workout Name<span id="nwf-name-dup-msg" style="display:none;color:#ff4747;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;">Name already exists</span></div>
     <div id="nwf-name-box" style="background:#111;border:1px solid #444;border-radius:12px;padding:10px 14px;transition:border-color .2s;">
       <input id="nwf-name-input" type="text" autocomplete="off" enterkeyhint="done" spellcheck="false" placeholder="Name your workout..."
              style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;caret-color:#34d399;-webkit-text-fill-color:#fff;box-sizing:border-box;"
              onfocus="_nwfFieldFocus('nwf-name-title','nwf-name-box',true)"
-             oninput="(function(v){const _hb=/[֐-׿]/.test(v);const _ni=document.getElementById('nwf-name-input');_ni.style.direction=_hb?'rtl':'ltr';_ni.style.textAlign=_hb?'right':'left';const wn=document.getElementById('workoutName');if(wn)wn.value=v.trim();const ne=document.getElementById('nwf-hero-name');if(ne){ne.dataset.name=v.trim();ne.innerHTML=v.trim()?_heroNameHtml(v.trim()):'';ne.style.direction=_hb?'rtl':'';}if(typeof _nwfUpdateNextBtn==='function')_nwfUpdateNextBtn();})(this.value)"
-             onblur="_nwfFieldFocus('nwf-name-title','nwf-name-box',false);(function(inp){const v=inp.value.trim();if(!v)return;const nl=v.toLowerCase();const isDup=(workouts||[]).some((w,i)=>!w._draft&&(window._editingWorkoutIdx!=null&&i===window._editingWorkoutIdx?false:(w.name||'').trim().toLowerCase()===nl));if(isDup){inp.style.color='#ff4747';setTimeout(()=>{inp.style.color='';},1500);if(typeof _showAddSetMsg==='function')_showAddSetMsg('A workout with this name already exists');const wn=document.getElementById('workoutName');if(wn)wn.value='';const ne=document.getElementById('nwf-hero-name');if(ne){ne.dataset.name='';ne.innerHTML='';}if(typeof _nwfUpdateNextBtn==='function')_nwfUpdateNextBtn();}})(this)"
+             oninput="(function(v){const _hb=/[֐-׿]/.test(v);const _ni=document.getElementById('nwf-name-input');_ni.style.direction=_hb?'rtl':'ltr';_ni.style.textAlign=_hb?'right':'left';const wn=document.getElementById('workoutName');if(wn)wn.value=v.trim();const ne=document.getElementById('nwf-hero-name');if(ne){ne.dataset.name=v.trim();ne.innerHTML=v.trim()?_heroNameHtml(v.trim()):'';ne.style.direction=_hb?'rtl':'';}if(typeof _nwfSetNameDupState==='function')_nwfSetNameDupState(false);if(typeof _nwfUpdateNextBtn==='function')_nwfUpdateNextBtn();})(this.value)"
+             onblur="_nwfFieldFocus('nwf-name-title','nwf-name-box',false);if(typeof _nwfHandleNameBlur==='function')_nwfHandleNameBlur(this)"
              onkeydown="if(event.key==='Enter')this.blur()">
     </div>
     <div id="nwf-desc-title" style="font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;color:#fff;letter-spacing:0;margin-top:14px;margin-bottom:6px;padding:0 2px;transition:color .2s;">Description <span style="color:#888;font-weight:500;">(optional)</span></div>
@@ -21035,38 +21124,6 @@ function applyDeviceLayout() {
   const mode = _getDeviceMode();
   const isDesktop = mode === 'desktop';
   document.body.classList.toggle('desktop-mode', isDesktop);
-  _updateDeviceOverrideLabel();
-}
-
-function _updateDeviceOverrideLabel() {
-  const label = document.getElementById('deviceOverrideLabel');
-  if (!label) return;
-  const mode = _getDeviceMode();
-  const auto = _detectIsDesktop() ? 'desktop' : 'mobile';
-  const override = localStorage.getItem(DEVICE_OVERRIDE_KEY);
-  if (override) {
-    label.textContent = mode === 'desktop'
-      ? 'Switch to Mobile View'
-      : 'Switch to Desktop View';
-  } else {
-    label.textContent = auto === 'desktop'
-      ? 'Switch to Mobile View'
-      : 'Switch to Desktop View';
-  }
-}
-
-function toggleDesktopOverride() {
-  const current = _getDeviceMode();
-  const auto = _detectIsDesktop() ? 'desktop' : 'mobile';
-  const override = localStorage.getItem(DEVICE_OVERRIDE_KEY);
-  if (override) {
-    // Clear override — go back to auto-detected
-    localStorage.removeItem(DEVICE_OVERRIDE_KEY);
-  } else {
-    // Set override to opposite of current
-    localStorage.setItem(DEVICE_OVERRIDE_KEY, current === 'desktop' ? 'mobile' : 'desktop');
-  }
-  applyDeviceLayout();
 }
 
 // Apply on load and on resize
@@ -21085,8 +21142,6 @@ document.addEventListener('wheel', e => { if (e.ctrlKey) e.preventDefault(); }, 
 
 document.addEventListener('DOMContentLoaded', () => {
   applyDeviceLayout();
-  // Update label text after DOM is ready
-  setTimeout(_updateDeviceOverrideLabel, 100);
 });
 window.addEventListener('resize', () => applyDeviceLayout());
 
@@ -22419,6 +22474,7 @@ function deleteCoachWorkout(id) {
 <div id="strength-target-overlay" onclick="closeStrengthTargetSheet()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:8999;"></div>
 <div id="strength-target-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;z-index:9000;background:#1a1a1a;border-top:1px solid #2a2a2a;border-radius:20px 20px 0 0;padding:12px 20px calc(28px + env(safe-area-inset-bottom,0px));box-sizing:border-box;">
   <div style="width:36px;height:4px;border-radius:2px;background:#444;margin:0 auto 18px;"></div>
+  <div id="week-status-day-label" style="text-align:center;font-family:'DM Sans';font-size:12px;font-weight:700;color:#ccc;letter-spacing:.8px;min-height:14px;margin-bottom:4px;"></div>
   <div id="week-status-detail" style="text-align:center;font-family:'DM Sans';font-size:20px;font-weight:600;color:var(--muted);min-height:18px;margin-bottom:10px;"></div>
   <div style="border-top:1px solid #444;margin-bottom:30px;"></div>
   <div id="week-status-completed-count" style="font-family:'DM Sans';font-size:54px;font-weight:800;color:var(--text);text-align:center;line-height:1;margin-bottom:10px;"></div>
@@ -25329,6 +25385,7 @@ function confirmDeleteExercise() {
       // muscle filter chips so a now-empty body part's chip disappears/un-highlights.
       updateTodayMuscleChips();
       if (_todayMuscleFilter) _updateAllExCircleColors();
+      checkFinishReady();
     }
   }, 300);
 }
@@ -25731,6 +25788,33 @@ function _updateWorkoutCropPreview() {
   ctx.fillRect(0, 0, 630, 270);
 }
 
+// Writes a workout photo, and if localStorage is full, prunes photo entries for
+// workouts that no longer exist (renamed/deleted workouts leave their old photo
+// key behind forever otherwise) and retries once before giving up.
+function _saveWorkoutPhotoWithRetry(key, url) {
+  try {
+    localStorage.setItem(key, url);
+    return true;
+  } catch (e) {
+    if (!(e && (e.name === 'QuotaExceededError' || e.code === 22))) {
+      showToast('Photo not saved');
+      return false;
+    }
+  }
+  const validNames = new Set((workouts||[]).map(w => w.name));
+  Object.keys(localStorage).forEach(k => {
+    if (!k.startsWith('ironlog_workout_photo_')) return;
+    if (!validNames.has(k.slice('ironlog_workout_photo_'.length))) localStorage.removeItem(k);
+  });
+  try {
+    localStorage.setItem(key, url);
+    return true;
+  } catch (e2) {
+    showToast('Storage full — photo not saved');
+    return false;
+  }
+}
+
 function saveWorkoutRectCrop() {
   const s = _wRectState;
   if (!s.img) return;
@@ -25776,16 +25860,28 @@ function saveWorkoutRectCrop() {
   } else {
     const w = workouts[_workoutPhotoIdx];
     if (w) {
-      try { localStorage.setItem(`ironlog_workout_photo_${w.name}`, url); } catch(e) {}
+      // The name field can already hold an unsaved rename (Step 1 of 2 lets you edit the
+      // name and photo in either order before the final Save commits it to w.name), so
+      // write under whichever name saveWorkoutToList() will actually use, not the stale
+      // w.name — otherwise the photo gets orphaned under the pre-rename key.
+      const _liveName = (document.getElementById('nwf-hero-name')?.dataset?.name || document.getElementById('workoutName')?.value || '').trim();
+      const _targetName = _liveName || w.name;
+      _saveWorkoutPhotoWithRetry(`ironlog_workout_photo_${_targetName}`, url);
+      if (_liveName && _liveName !== w.name) {
+        _saveWorkoutPhotoWithRetry(`ironlog_workout_photo_${w.name}`, url);
+      }
       closeWorkoutPhotoCropper();
       renderWorkoutsTab2();
       if (typeof _setWorkoutHeroPhoto === 'function') _setWorkoutHeroPhoto(w.name);
       const _w2Ph = document.getElementById('w2-sheet-photo');
       if (_w2Ph) _w2Ph.src = url;
+      const _nwfBgEdit = document.getElementById('nwf-hero-bg');
+      const _nwfPageEdit = document.getElementById('nwf-name-page');
+      if (_nwfBgEdit && _nwfPageEdit && _nwfPageEdit.style.display !== 'none') _nwfBgEdit.src = url;
     } else {
       const _nwfName = (document.getElementById('nwf-hero-name')?.dataset?.name || document.getElementById('workoutName')?.value || '').trim();
       if (_nwfName) {
-        try { localStorage.setItem(`ironlog_workout_photo_${_nwfName}`, url); } catch(e) {}
+        _saveWorkoutPhotoWithRetry(`ironlog_workout_photo_${_nwfName}`, url);
       }
       const nwfBg = document.getElementById('nwf-hero-bg');
       if (nwfBg) nwfBg.src = url;
