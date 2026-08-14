@@ -1465,7 +1465,7 @@ function hidAuthScreen() {
 <!-- EXERCISES -->
 <div class="page" id="page-exercises" style="padding-top:calc(60px + env(safe-area-inset-top));padding-bottom:calc(120px + env(safe-area-inset-bottom));padding-left:10px;padding-right:10px;">
   <div id="exercisesTabContent"></div>
-  <div id="pick-mode-btns" style="display:none;flex-direction:column;gap:10px;position:fixed;bottom:0;left:0;right:0;z-index:60;padding:16px 16px calc(env(safe-area-inset-bottom,0px) + 16px);background:var(--bg);max-width:430px;margin:0 auto;">
+  <div id="pick-mode-btns" style="display:none;flex-direction:column;gap:10px;position:fixed;bottom:0;left:0;right:0;z-index:60;padding:16px 16px calc(env(safe-area-inset-bottom,0px) + 16px);background:var(--bg);max-width:430px;margin:0 auto;border-top:1px solid #ccc;">
     <div id="pick-mode-count-label" style="text-align:center;color:#888;font-family:'DM Sans',sans-serif;font-size:30px;font-weight:600;min-height:36px;"></div>
     <div style="display:flex;flex-direction:row;gap:10px;">
       <button onclick="exitPickMode()" style="flex:1;background:transparent;border:1px solid rgba(255,255,255,0.18);border-radius:12px;color:rgba(255,255,255,0.65);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Back</button>
@@ -1757,8 +1757,8 @@ function hidAuthScreen() {
         <span id="newExPhotoLabel" style="font-family:'DM Sans';font-size:12px;color:#fff;font-weight:700;letter-spacing:.5px;cursor:pointer;" onclick="openNewExPhotoSheet()">Change Image <span style="color:#888;font-weight:500;">(optional)</span></span>
       </div>
       <!-- Name -->
-      <input id="newExInput" type="text" autocomplete="off" enterkeyhint="done" style="width:100%;background:#1a1a1a;border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans';font-size:16px;font-weight:600;padding:14px;box-sizing:border-box;outline:none;" placeholder="Exercise name" oninput="const _hb=/[\u0590-\u05FF]/.test(this.value);this.style.direction=_hb?'rtl':'ltr';this.style.textAlign=_hb?'right':'left';document.getElementById('newExDuplicateNote').style.display='none';this.style.borderColor='var(--border)';const _sb=document.getElementById('newExSaveBtn');const _has=!!this.value.trim();_sb.style.opacity=_has?'1':'0.35';_sb.style.cursor=_has?'pointer':'not-allowed';" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onfocus="_newExFieldFocus(true)" onblur="_newExFieldFocus(false)"/>
-      <div id="newExDuplicateNote" style="display:none;color:#ff8c42;font-family:'DM Sans';font-size:12px;font-weight:600;text-align:center;margin-top:-8px;">⚠ An exercise with this name already exists</div>
+      <input id="newExInput" type="text" autocomplete="off" enterkeyhint="done" style="width:100%;background:#1a1a1a;border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans';font-size:16px;font-weight:600;padding:14px;box-sizing:border-box;outline:none;" placeholder="Exercise name" oninput="const _hb=/[\u0590-\u05FF]/.test(this.value);this.style.direction=_hb?'rtl':'ltr';this.style.textAlign=_hb?'right':'left';document.getElementById('newExDuplicateNote').style.display='none';this.style.borderColor='var(--border)';const _sb=document.getElementById('newExSaveBtn');const _has=!!this.value.trim();_sb.style.opacity=_has?'1':'0.35';_sb.style.cursor=_has?'pointer':'not-allowed';" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onfocus="_newExFieldFocus(true)" onblur="_newExFieldFocus(false);_newExCheckDuplicate()"/>
+      <div id="newExDuplicateNote" style="display:none;color:#ff4747;font-family:'DM Sans';font-size:12px;font-weight:600;text-align:center;margin-top:-8px;">⚠ An exercise with this name already exists</div>
       <!-- Body part -->
       <div>
         <div style="font-family:'DM Sans';font-size:15px;font-weight:700;color:#fff;letter-spacing:.5px;margin-bottom:10px;">Primary Body Part</div>
@@ -2273,6 +2273,17 @@ function getAllExercises() {
   _getAllExercisesCache = all;
   _getAllExercisesCacheKey = cacheKey;
   return all;
+}
+
+// Checks a proposed exercise name against every muscle-group list, not just the
+// user's own custom exercises — a name already used by a built-in exercise under
+// any body part (Legs, Chest, etc.) counts as a duplicate too.
+function _exerciseNameExistsInAnyList(name) {
+  if (customExercises.some(e => e.name === name)) return true;
+  for (const items of Object.values(_defaultExercises || {})) {
+    if (items.some(i => i.name === name)) return true;
+  }
+  return false;
 }
 
 const MUSCLES = ['All','Chest','Back','Legs','Shoulders','Arms','Core','Mix'];
@@ -4281,7 +4292,7 @@ function _closeTodayInfoPanel() {
     const bodyWrapEl = document.getElementById('w2-sheet-body-wrap');
     const scrollArea = document.getElementById('w2-scroll-area');
     const grad = document.getElementById('w2-list-gradient');
-    if (descEl && scrollArea) scrollArea.parentNode.insertBefore(descEl, scrollArea);
+    if (descEl && scrollArea) scrollArea.prepend(descEl);
     if (titleEl && grad) grad.parentNode.insertBefore(titleEl, grad);
     if (bodyWrapEl && grad) {
       grad.parentNode.insertBefore(bodyWrapEl, grad);
@@ -5436,7 +5447,7 @@ function _updatePickModeDoneBtn() {
   const n = _pickModeSelected.length;
   btnsWrap.style.display = _pickMode ? 'flex' : 'none';
   const countLabel = document.getElementById('pick-mode-count-label');
-  if (countLabel) countLabel.innerHTML = n > 0 ? `<span style="color:var(--accent);">${n}</span> exercise${n===1?'':'s'} added` : '';
+  if (countLabel) countLabel.innerHTML = n > 0 ? `<span style="color:var(--accent);">+${n}</span> Exercises` : 'Pick exercises';
   btn.textContent = 'Done';
   btn.style.opacity = '1';
   btn.style.background = n > 0 ? (window._coachMode ? '#7ec8e3' : 'var(--accent)') : '#444';
@@ -5932,6 +5943,36 @@ function closeNewExModal() {
   const _vInp = document.getElementById('newExVideoUrl');
   if (_vInp) _vInp.value = '';
 }
+// Runs the same duplicate check confirmNewEx() would apply, but as soon as the name
+// field loses focus — so the Save button reflects an invalid name immediately instead
+// of only after the user taps Save.
+function _newExCheckDuplicate() {
+  const inp = document.getElementById('newExInput');
+  const note = document.getElementById('newExDuplicateNote');
+  const saveBtn = document.getElementById('newExSaveBtn');
+  if (!inp) return false;
+  const name = inp.value.trim();
+  const oldName = window._editExName || null;
+  let isDup = false;
+  if (name && name !== oldName) {
+    if (window._exploreExerciseMode) {
+      isDup = (_libraryExercises||[]).some(e => e.name === name);
+    } else if (window._coachMode) {
+      isDup = (_coachExercises||[]).some(e => e.name === name);
+    } else {
+      const hidden = JSON.parse(_LS.get('ironlog_hidden_ex') || '[]');
+      isDup = _exerciseNameExistsInAnyList(name) && !hidden.includes(name);
+    }
+  }
+  if (note) note.style.display = isDup ? 'block' : 'none';
+  inp.style.borderColor = isDup ? '#ff4747' : 'var(--border)';
+  if (saveBtn) {
+    const canSave = !!name && !isDup;
+    saveBtn.style.opacity = canSave ? '1' : '0.35';
+    saveBtn.style.cursor = canSave ? 'pointer' : 'not-allowed';
+  }
+  return isDup;
+}
 function confirmNewEx() {
   const name = document.getElementById('newExInput').value.trim();
   if (!name) {
@@ -6021,7 +6062,7 @@ function confirmNewEx() {
       const note = document.getElementById('newExDuplicateNote');
       const input = document.getElementById('newExInput');
       if (note) note.style.display = 'block';
-      if (input) input.style.borderColor = '#ff8c42';
+      if (input) input.style.borderColor = '#ff4747';
       return;
     }
     closeNewExModal();
@@ -6048,7 +6089,7 @@ function confirmNewEx() {
       const note = document.getElementById('newExDuplicateNote');
       const input = document.getElementById('newExInput');
       if (note) note.style.display = 'block';
-      if (input) input.style.borderColor = '#ff8c42';
+      if (input) input.style.borderColor = '#ff4747';
       return;
     }
     closeNewExModal();
@@ -6078,14 +6119,14 @@ function confirmNewEx() {
     return;
   }
 
-  const exists = customExercises.some(e => e.name === name);
+  const exists = _exerciseNameExistsInAnyList(name);
   const hidden = JSON.parse(_LS.get('ironlog_hidden_ex') || '[]');
   const isHidden = hidden.includes(name);
   if (exists && !isHidden) {
     const note = document.getElementById('newExDuplicateNote');
     const inp = document.getElementById('newExInput');
     if (note) note.style.display = 'block';
-    if (inp) inp.style.borderColor = '#ff8c42';
+    if (inp) inp.style.borderColor = '#ff4747';
     return;
   }
   if (isHidden) {
@@ -8871,7 +8912,11 @@ function filterTodayByMuscle(muscle) {
   _updateAllExCircleColors();
   // Wait for the filter show/hide animations (up to ~200ms stagger + 380ms) to
   // fully settle before scrolling — see _scrollToNextExercise for why.
-  _scrollAddExerciseIntoView(620);
+  // Creating/editing a workout (Step 2 of 2) scrolls to reveal the "+ ADD EXERCISE"
+  // row so it stays reachable after filtering; an active Today session has no such
+  // button and should keep scrolling to the next matching exercise instead.
+  if (window._isNewWorkoutFlow) _scrollAddExerciseIntoView(620);
+  else _scrollToNextExercise(620);
 }
 
 // Selecting/deselecting a body-part chip changes how many cards are visible, which
@@ -9455,12 +9500,18 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
     setTimeout(() => { updateIgnoreButtons(id); _updateExSetCount(id); }, 150);
     // Restore comment
     if (sessionData.comment) {
-      const box = body.querySelector(`#comment-${id}`);
+      // Not body.querySelector — .comment-area was already moved out of `body` to be
+      // a direct child of `card` a few lines above (see _commentArea/card.appendChild),
+      // so body.querySelector(...) always misses it and this silently no-ops.
+      const box = card.querySelector(`#comment-${id}`);
       if (box) {
         box.value = sessionData.comment;
         if (/[\u0590-\u05FF]/.test(sessionData.comment)) { box.style.direction='rtl'; box.style.textAlign='right'; }
         updateNoteBtn(id);
-        // Auto-expand note area
+        // Mark the note area open so it's already expanded *whenever the card itself
+        // gets opened* \u2014 but don't force card.dataset.open here. Exercise lists should
+        // load collapsed; a saved note shouldn't auto-expand the whole card, only be
+        // ready to show once the user taps it open.
         const noteArea = document.getElementById(`comment-area-${id}`);
         if (noteArea) noteArea.classList.add('open');
       }
@@ -9496,7 +9547,15 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
       }
     });
     setTimeout(() => { updateVolProgressBar(id); updateIgnoreButtons(id); }, 50);
-    // Prefill comment from last same-named (or any) workout
+  } else {
+    addSet(id);
+  }
+
+  // Prefill comment from last same-named (or any) workout \u2014 independent of whether
+  // prior SET data exists (hasHistory above): a note can be saved on an exercise
+  // even when its sets are empty/ignored, and getLastSets() only looks at sets, so
+  // gating this on hasHistory was silently dropping notes whenever that happened.
+  if (!sessionData) {
     const _curWName = (document.getElementById('workoutName')?.value||'').trim();
     let _prevComment = '';
     for (const _pw of workouts) {
@@ -9513,20 +9572,21 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
       }
     }
     if (_prevComment) {
-      const _noteBox = body.querySelector(`#comment-${id}`);
+      // Not body.querySelector — .comment-area was already moved out of `body` to be
+      // a direct child of `card` earlier in this function, so body.querySelector(...)
+      // always misses it here too (same issue as the sessionData restore block above).
+      const _noteBox = card.querySelector(`#comment-${id}`);
       if (_noteBox) {
         _noteBox.value = _prevComment;
         if (/[\u0590-\u05FF]/.test(_prevComment)) { _noteBox.style.direction='rtl'; _noteBox.style.textAlign='right'; }
         updateNoteBtn(id);
+        // Mark the note area open (expanded once the card itself opens) without
+        // forcing the card open \u2014 see the matching comment in the sessionData
+        // restore block above. Exercise lists should load collapsed.
         const _noteArea = document.getElementById(`comment-area-${id}`);
         if (_noteArea) _noteArea.classList.add('open');
-        // .comment-area is display:none!important unless the card itself is open \u2014
-        // without this the note above gets marked "open" but stays invisible.
-        card.dataset.open = 'true';
       }
     }
-  } else {
-    addSet(id);
   }
 
   if (asDone && !sessionData) {
@@ -11729,6 +11789,19 @@ function _positionNoteKbdBar() {
   const vv = window.visualViewport;
   const gap = vv ? Math.max(0, window.innerHeight - (vv.height + vv.offsetTop)) : 0;
   bar.style.bottom = gap + 'px';
+  // Once the keyboard has actually opened (gap > 0), scroll the note box so its
+  // bottom edge clears the Done bar instead of sitting hidden behind it. Only do
+  // this once per focus session — bar.dataset flag reset in hideNoteToolbar —
+  // so it doesn't keep yanking the scroll position on every viewport tick.
+  if (gap > 0 && !bar.dataset.scrolledForNote) {
+    bar.dataset.scrolledForNote = '1';
+    const id = window._noteEditingId;
+    const area = id ? document.getElementById(`comment-area-${id}`) : null;
+    if (area) {
+      area.style.scrollMarginBottom = (bar.offsetHeight + 12) + 'px';
+      area.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+  }
 }
 function showNoteToolbar(id) {
   // Hide/shade the same page-level chrome (muscle chips, today-actions, add-ex
@@ -11813,7 +11886,7 @@ function hideNoteToolbar() {
     // Restore the chrome that showNoteToolbar's _kgEditorFocusEnter hid/shaded.
     _kgEditorFocusLeave();
     const kbdBar = document.getElementById('note-kbd-done-bar');
-    if (kbdBar) kbdBar.style.display = 'none';
+    if (kbdBar) { kbdBar.style.display = 'none'; delete kbdBar.dataset.scrolledForNote; }
     window.visualViewport?.removeEventListener('resize', _positionNoteKbdBar);
     window.visualViewport?.removeEventListener('scroll', _positionNoteKbdBar);
     // Restore the float bar now that the keyboard has closed — only if it's
@@ -13024,17 +13097,24 @@ function loadWorkout(idx) {
       // particular instance doesn't have one — otherwise a note goes missing the
       // moment one session doesn't happen to re-type it.
       const _resolvedComment = exData.comment || getLastComment(exData.name) || '';
-      // `open: true` when there's a comment — addExerciseCard's sessionData-restore
-      // path already auto-reveals the note (adds .open to the comment-area), but that
-      // has no visible effect unless the card itself also opens: `.comment-area` is
-      // `display:none!important` while `card.dataset.open` isn't 'true'.
-      const sessionDataOverride = sourceSets.length || _resolvedComment ? {sets:sourceSets, completed:isDraft&&exData.sets?.every(s=>s.ignored||s.done), comment:_resolvedComment, open:!!_resolvedComment} : null;
+      // open stays false here — loading a saved workout should show a collapsed
+      // exercise list (like tapping a workout from Workouts tab always has), not
+      // auto-expand every card that happens to have sets/a note. addExerciseCard
+      // still restores the note text and marks its .comment-area ready to show
+      // once the user actually opens that exercise.
+      const sessionDataOverride = sourceSets.length || _resolvedComment ? {sets:sourceSets, completed:isDraft&&exData.sets?.every(s=>s.ignored||s.done), comment:_resolvedComment, open:false} : null;
       addExerciseCard(ex, false, sessionDataOverride);
       const cards = document.querySelectorAll('#exerciseList .exercise-card');
       const card = cards[cards.length-1];
       if (card) {
         const cid = card.id;
-        setTimeout(()=>{ if(card.dataset.open==='true') toggleCardCollapse(cid); }, 50);
+        // No longer calling toggleCardCollapse(cid) here: addExerciseCard already
+        // renders the card open/collapsed to match dataset.open at construction time
+        // (its `isOpen` check builds the body with the right class up front), so this
+        // toggle was flipping an already-correctly-open card straight back to closed —
+        // confirmed live via console: dataset.open went 'true' -> 'false' right here,
+        // which re-triggers the .comment-area display:none!important gate and hides
+        // any note the card was opened to show.
         // Auto-expand note if comment exists
         if (_resolvedComment) setTimeout(() => {
           const noteArea = document.getElementById(`comment-area-${cid}`);
@@ -14065,16 +14145,18 @@ function restoreWorkout(wi) {
       // tag gets reapplied below — only truly manual-ignored (non-typed) sets are
       // dropped when loading a finished workout as a fresh template.
       const sourceSets = (exData.sets||[]).filter(s=>!(s.ignored&&!s.setType)).map(s=>({kg:s.kg,reps:s.reps,done:isDraft?!!s.done:false,ignored:!!s.ignored,setType:s.setType||'',bwExtra:s.bwExtra!=null?s.bwExtra:null}));
-      // `open: true` when there's a comment — addExerciseCard's sessionData-restore
-      // path already auto-reveals the note (adds .open to the comment-area), but that
-      // has no visible effect unless the card itself also opens: `.comment-area` is
-      // `display:none!important` while `card.dataset.open` isn't 'true'.
-      const sessionDataOverride = sourceSets.length || exData.comment ? {sets:sourceSets, completed:isDraft&&exData.sets?.every(s=>s.ignored||s.done), comment:exData.comment||'', open:!!exData.comment} : null;
+      // open stays false — see the matching comment in loadWorkout(): a restored
+      // workout's exercise list should load collapsed, not auto-expand cards that
+      // happen to have sets/a note.
+      const sessionDataOverride = sourceSets.length || exData.comment ? {sets:sourceSets, completed:isDraft&&exData.sets?.every(s=>s.ignored||s.done), comment:exData.comment||'', open:false} : null;
       addExerciseCard(ex, false, sessionDataOverride);
       const cards = document.querySelectorAll('#exerciseList .exercise-card');
       const card = cards[cards.length-1];
       if (card) {
-        setTimeout(()=>{ if(card.dataset.open==='true') toggleCardCollapse(card.id); },50);
+        // No toggleCardCollapse(card.id) here — see loadWorkout()'s matching comment:
+        // addExerciseCard already renders the card open/collapsed to match
+        // dataset.open at construction, so toggling an already-open card just
+        // collapsed it back and hid any note it was opened to show.
         if (exData.comment) setTimeout(() => {
           const noteArea = document.getElementById(`comment-area-${card.id}`);
           if (noteArea) noteArea.classList.add('open');
@@ -22163,10 +22245,10 @@ function deleteCoachWorkout(id) {
       <div id="w2-sheet-name" onclick="if(window._editingWorkoutIdx!=null)openWorkoutNameModal()" style="font-family:'DM Sans';font-size:20px;font-weight:900;color:#fff;max-width:60%;margin-left:auto;line-height:1.2;pointer-events:auto;cursor:default;-webkit-tap-highlight-color:transparent;"></div>
     </div>
   </div>
+  <!-- Scrollable content area — description scrolls with the exercise list/body diagram -->
+  <div id="w2-scroll-area" style="overflow-y:auto;overflow-x:hidden;flex:1;-webkit-overflow-scrolling:touch;scrollbar-width:none;position:relative;overscroll-behavior:contain;">
   <!-- Description (shown only when non-empty) -->
   <div id="w2-sheet-description" style="display:none;padding:10px 20px 2px;font-family:'DM Sans';font-size:16px;font-weight:400;color:#aaa;line-height:1.5;white-space:pre-wrap;word-break:break-word;flex-shrink:0;"></div>
-  <!-- Scrollable content area — body diagram scrolls with exercise list -->
-  <div id="w2-scroll-area" style="overflow-y:auto;overflow-x:hidden;flex:1;-webkit-overflow-scrolling:touch;scrollbar-width:none;position:relative;overscroll-behavior:contain;">
   <!-- Exercises section (hidden when opened from active session) -->
   <div id="w2-exercises-section">
   <!-- Exercises label -->
@@ -22494,7 +22576,7 @@ function deleteCoachWorkout(id) {
 </div>
 
 <!-- Workout session menu sheet -->
-<div id="workout-menu-overlay" onclick="closeWorkoutMenu()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:300;"></div>
+<div id="workout-menu-overlay" onclick="closeWorkoutMenu()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:300;"></div>
 <div id="workout-menu-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:#1a1a1a;border-radius:20px 20px 0 0;z-index:301;padding:0 16px calc(16px + env(safe-area-inset-bottom));">
   <div style="width:36px;height:3px;background:#555;border-radius:2px;margin:12px auto 4px;"></div>
   <div style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#888;letter-spacing:.8px;text-align:center;padding:6px 0 12px;">WORKOUT OPTIONS</div>
@@ -22528,7 +22610,7 @@ function deleteCoachWorkout(id) {
 <input id="workout-change-image-input" type="file" accept="image/*" style="display:none" onchange="_handleChangeWorkoutImage(this)">
 
 <!-- Exercise detail menu sheet -->
-<div id="ex-detail-menu-overlay" onclick="closeExDetailMenu()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:300;"></div>
+<div id="ex-detail-menu-overlay" onclick="closeExDetailMenu()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:300;"></div>
 <div id="ex-detail-menu-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:#1a1a1a;border-radius:20px 20px 0 0;z-index:301;padding:0 16px calc(16px + env(safe-area-inset-bottom));">
   <div style="width:36px;height:3px;background:#555;border-radius:2px;margin:12px auto 4px;"></div>
   <div style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#888;letter-spacing:.8px;text-align:center;padding:6px 0 12px;">EXERCISE OPTIONS</div>
@@ -22603,7 +22685,7 @@ function deleteCoachWorkout(id) {
 </div>
 
 <!-- Exercise Photo Picker Sheet -->
-<div id="ex-photo-sheet-overlay" onclick="closeExPhotoSheet()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:300;"></div>
+<div id="ex-photo-sheet-overlay" onclick="closeExPhotoSheet()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:300;"></div>
 <div id="ex-photo-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:#1a1a1a;border-radius:20px 20px 0 0;z-index:301;padding:0 16px calc(16px + env(safe-area-inset-bottom));">
   <div style="width:36px;height:3px;background:#555;border-radius:2px;margin:12px auto 4px;"></div>
   <div id="ex-photo-sheet-title" style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#888;letter-spacing:.8px;text-align:center;padding:8px 0 12px;">EXERCISE PHOTO</div>
@@ -22678,7 +22760,13 @@ function deleteCoachWorkout(id) {
 </div>
 
 <!-- Set Options Sheet -->
-<div id="set-options-overlay" onclick="closeSetOptions()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:300;"></div>
+<!-- Split into two bands (instead of one inset:0 overlay) so the row the menu applies
+     to can sit in the gap between them, fully undimmed — z-index alone can't lift a
+     deeply-nested row above this fixed overlay since ancestor elements (cards/lists
+     using position:relative) form their own stacking contexts a child z-index can't
+     escape, so carving a real gap out of the overlay is the only reliable fix. -->
+<div id="set-options-overlay" onclick="closeSetOptions()" style="display:none;position:fixed;top:0;left:0;right:0;background:rgba(0,0,0,0.85);z-index:300;"></div>
+<div id="set-options-overlay-bottom" onclick="closeSetOptions()" style="display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,0.85);z-index:300;"></div>
 <div id="set-options-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:#1a1a1a;border-radius:20px 20px 0 0;z-index:301;padding:0 16px calc(16px + env(safe-area-inset-bottom));">
   <div style="width:36px;height:3px;background:#555;border-radius:2px;margin:12px auto 4px;"></div>
   <div style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#888;letter-spacing:.8px;text-align:center;padding:6px 0 12px;">SET OPTIONS</div>
@@ -25113,12 +25201,31 @@ window.removeExPhoto = removeExPhoto;
 // ── SET OPTIONS (chevron menu) ─────────────────────────────
 let _setOptionsRow = null;
 let _setOptionsExId = null;
+let _setOptionsScrollParent = null;
+let _setOptionsScrollParentOrigPadding = '';
+
+function _findScrollableAncestor(el) {
+  let node = el?.parentElement;
+  while (node && node !== document.body) {
+    const cs = getComputedStyle(node);
+    if ((cs.overflowY === 'auto' || cs.overflowY === 'scroll') && node.scrollHeight > node.clientHeight + 1) return node;
+    node = node.parentElement;
+  }
+  return null;
+}
 
 function openSetOptions(btn, exId) {
   // Don't let the set-type (W/D/chevron) tap open this sheet on top of an already-open
   // KG/REP editor sheet — the two sheets would stack/fight for the same bottom space.
   if (_inlineKgEditorId || _repsEditorSpan) return;
-  _setOptionsRow = btn.closest('tr');
+  // Tapping the set that already has this menu open toggles it closed instead of
+  // just re-opening the same sheet.
+  const _tappedRow = btn.closest('tr');
+  if (_setOptionsRow && _setOptionsRow === _tappedRow && document.getElementById('set-options-sheet').style.display !== 'none') {
+    closeSetOptions();
+    return;
+  }
+  _setOptionsRow = _tappedRow;
   _setOptionsExId = exId;
   const currentType = _setOptionsRow?.dataset?.setType || 'regular';
   ['regular', 'warmup', 'drop'].forEach(t => {
@@ -25126,17 +25233,63 @@ function openSetOptions(btn, exId) {
     if (el) el.style.display = t === currentType ? 'flex' : 'none';
   });
   if (window._historyPush) window._historyPush('set-options');
-  document.getElementById('set-options-overlay').style.display = 'block';
+  const _setNumEl = _setOptionsRow?.querySelector('.set-num');
+  if (_setNumEl) { _setNumEl.style.color = 'var(--accent)'; _setNumEl.style.borderColor = 'var(--accent)'; }
+  const _topOverlay = document.getElementById('set-options-overlay');
+  const _botOverlay = document.getElementById('set-options-overlay-bottom');
+  _topOverlay.style.display = 'block';
+  _botOverlay.style.display = 'block';
   const _soSht = document.getElementById('set-options-sheet');
   _soSht.style.animation = 'none';
   _soSht.offsetHeight;
   _soSht.style.animation = 'sheetUp .25s ease';
   _soSht.style.display = 'block';
+  if (_setOptionsRow) {
+    // If the row is near the bottom of its scrollable list (e.g. the last set of
+    // the last exercise), there may be no room left to scroll it above the sheet
+    // at all — temporarily pad the scroll container's bottom so there's always
+    // enough room, restored again in closeSetOptions().
+    _setOptionsScrollParent = _findScrollableAncestor(_setOptionsRow);
+    if (_setOptionsScrollParent) {
+      _setOptionsScrollParentOrigPadding = _setOptionsScrollParent.style.paddingBottom;
+      const _curPad = parseFloat(getComputedStyle(_setOptionsScrollParent).paddingBottom) || 0;
+      const _needed = _soSht.offsetHeight + 32;
+      if (_needed > _curPad) _setOptionsScrollParent.style.paddingBottom = _needed + 'px';
+    }
+    // Scroll the row above the sheet first (instant, not smooth — the overlay bands
+    // below are sized from its final position, so they'd be measuring a moving
+    // target otherwise), then carve it out of the dim overlay by splitting the
+    // overlay into a band above and a band below the row's on-screen rect. z-index
+    // on the row/cells can't lift it above this overlay (ancestor elements form
+    // their own stacking contexts a child z-index can't escape), so leaving a real
+    // gap in the overlay is what actually keeps that row undimmed.
+    _setOptionsRow.style.scrollMarginBottom = (_soSht.offsetHeight + 16) + 'px';
+    _setOptionsRow.style.scrollMarginTop = '80px';
+    _setOptionsRow.scrollIntoView({ behavior: 'auto', block: 'nearest' });
+    const _r = _setOptionsRow.getBoundingClientRect();
+    _topOverlay.style.height = Math.max(0, _r.top) + 'px';
+    _botOverlay.style.top = _r.bottom + 'px';
+  }
 }
 
 function closeSetOptions() {
   document.getElementById('set-options-overlay').style.display = 'none';
+  document.getElementById('set-options-overlay-bottom').style.display = 'none';
+  document.getElementById('set-options-overlay').style.height = '';
+  document.getElementById('set-options-overlay-bottom').style.top = '';
   document.getElementById('set-options-sheet').style.display = 'none';
+  if (_setOptionsRow) {
+    _setOptionsRow.style.scrollMarginBottom = '';
+    _setOptionsRow.style.scrollMarginTop = '';
+    // Clearing (not hardcoding) falls back to the .set-num class rule's color:#aaa/
+    // border:#555 — same reset convention used elsewhere in this file (e.g. ~10248).
+    const _setNumEl = _setOptionsRow.querySelector('.set-num');
+    if (_setNumEl) { _setNumEl.style.color = ''; _setNumEl.style.borderColor = ''; }
+  }
+  if (_setOptionsScrollParent) {
+    _setOptionsScrollParent.style.paddingBottom = _setOptionsScrollParentOrigPadding;
+    _setOptionsScrollParent = null;
+  }
   _setOptionsRow = null;
   _setOptionsExId = null;
   requestAnimationFrame(() => { _syncExDetailBodyTop(); _scrollExDetailToPhoto(); });
@@ -26196,22 +26349,18 @@ function _renderW2MusclesInto(w) {
     if (el) { el.setAttribute('fill', color); el.setAttribute('opacity','0.9'); }
   });
 
-  // Apply exercise-overlay-style body image: scale, shift, one-side visibility, muscle list
+  // Apply exercise-overlay-style body image: scale, shift, muscle list. Always shows
+  // both front and back panels regardless of which muscles are highlighted — no
+  // longer hides one side when only front-only or back-only muscles are worked.
   const _w2Body = document.getElementById('w2-body-container');
   if (_w2Body) {
     const _w2Parent = _w2Body.parentElement;
-    const _hasFront = Object.keys(highlightMap).some(id => id.startsWith('bf-'));
-    const _hasBack  = Object.keys(highlightMap).some(id => id.startsWith('bb-'));
-    const _w2OneSide = (_hasFront && !_hasBack) || (!_hasFront && _hasBack);
-    const _w2BackOnly  = !_hasFront && _hasBack;
-    const _w2FrontOnly = _hasFront && !_hasBack;
     const _frontDiv = _w2Body.children[0];
     const _backDiv  = _w2Body.children[1];
-    if (_frontDiv) _frontDiv.style.display = _w2BackOnly ? 'none' : '';
-    if (_backDiv)  _backDiv.style.display  = _w2FrontOnly ? 'none' : '';
-    const _w2Shift = _w2FrontOnly ? 'translateX(68px) ' : _w2OneSide ? 'translateX(114px) ' : 'translateX(50px) ';
-    _w2Body.style.width = _w2OneSide ? '50%' : '100%';
-    _w2Body.style.transform = `${_w2Shift}scale(0.8) translateZ(0)`;
+    if (_frontDiv) _frontDiv.style.display = '';
+    if (_backDiv)  _backDiv.style.display  = '';
+    _w2Body.style.width = '100%';
+    _w2Body.style.transform = 'translateX(50px) scale(0.8) translateZ(0)';
     _w2Body.style.transformOrigin = 'top center';
     if (_w2Parent) { _w2Parent.style.position = 'relative'; _w2Parent.style.overflow = 'visible'; }
 
