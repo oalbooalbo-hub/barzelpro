@@ -1274,7 +1274,7 @@ function hidAuthScreen() {
     </div>
     <div id="today-plan-card" style="width:100%;max-width:380px;display:none;"></div>
     <div style="width:100%;max-width:380px;">
-      <button id="today-coach-btn" onclick="switchTab('coach-profile')" style="width:100%;height:55px;display:flex;align-items:center;justify-content:center;background:transparent;color:#ccc;border:1px solid #ccc;border-radius:26px;font-family:'DM Sans';font-size:14px;letter-spacing:0;cursor:pointer;box-sizing:border-box;line-height:1;font-weight:700;opacity:0;transform:translateY(24px);">GET A COACH</button>
+      <button id="today-coach-btn" onclick="openCoachesGallery()" style="width:100%;height:55px;display:flex;align-items:center;justify-content:center;background:transparent;color:#ccc;border:1px solid #ccc;border-radius:26px;font-family:'DM Sans';font-size:14px;letter-spacing:0;cursor:pointer;box-sizing:border-box;line-height:1;font-weight:700;opacity:0;transform:translateY(24px);">GET A COACH</button>
     </div>
     <div id="today-load-btn-wrap" style="width:100%;max-width:380px;display:none;">
       <button onclick="window._isNewWorkoutFlow=false;window._loadFromToday=true;loadOrSwitchWorkouts()" style="width:100%;height:100px;display:flex;align-items:center;justify-content:center;background:var(--accent);color:#000;border:1px solid var(--accent);border-radius:26px;font-family:'DM Sans';font-size:22px;letter-spacing:0;cursor:pointer;box-sizing:border-box;line-height:1;font-weight:700;">START WORKOUT</button>
@@ -3364,7 +3364,7 @@ function renderWeekStatus() {
   const labels = _WEEK_DAY_LABELS;
   wrap.innerHTML = days.map((d, i) => `
     <div class="week-status-day" data-completed="${d.completed ? '1' : '0'}" onclick="event.stopPropagation();selectWeekStatusDay(${i})" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:5px 0;border-radius:10px;cursor:pointer;-webkit-tap-highlight-color:transparent;">
-      <div class="wsd-circle" style="width:46px;height:${d.completed ? '62px' : '46px'};border-radius:${d.completed ? '23px' : '50%'};background:${d.completed ? '#38bdf8' : '#2a2a2a'};border:2px solid transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;box-sizing:border-box;transition:background .2s,border-color .2s;">
+      <div class="wsd-circle" style="width:46px;height:${d.completed ? '62px' : '46px'};border-radius:${d.completed ? '23px' : '50%'};background:${d.completed ? 'var(--accent)' : '#2a2a2a'};border:2px solid transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;box-sizing:border-box;transition:background .2s,border-color .2s;">
         ${d.completed ? `<svg class="wsd-check" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>` : ''}
         <span class="wsd-label" style="font-family:'DM Sans';font-size:12px;font-weight:700;color:${d.completed ? '#000' : 'var(--muted)'};letter-spacing:.3px;">${labels[i]}</span>
       </div>
@@ -3387,7 +3387,7 @@ function selectWeekStatusDay(idx) {
       const label = el.querySelector('.wsd-label');
       if (circle) {
         circle.style.borderColor = isSel ? '#ff8c42' : 'transparent';
-        circle.style.background = isCompleted ? '#38bdf8' : '#2a2a2a';
+        circle.style.background = isCompleted ? 'var(--accent)' : '#2a2a2a';
         if (check) check.setAttribute('stroke', '#000');
         if (label && isCompleted) label.style.color = '#000';
         if (isSel) {
@@ -17994,6 +17994,33 @@ document.getElementById("installBtn").addEventListener("click", async () => {
   </div>
 </div>
 
+<!-- COACHES GALLERY (Home "GET A COACH" entry point) -->
+<div id="coachesOverlay" style="display:none;position:fixed;inset:0;z-index:9000;background:#0a0a0a;overflow-y:auto;">
+  <div style="max-width:430px;margin:0 auto;padding:16px;">
+    <!-- Title row — same structure/style as the Workouts tab's own title -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0 6px;">
+      <span style="font-family:'DM Sans';font-size:20px;font-weight:700;color:var(--text);">Coaches</span>
+      <button onclick="closeCoachesGallery()" style="background:transparent;border:1px solid #2a2a2a;border-radius:8px;color:#888;font-size:16px;width:32px;height:32px;cursor:pointer;-webkit-tap-highlight-color:transparent;">✕</button>
+    </div>
+    <!-- Male/Female segmented filter — same visual pattern as the Workouts tab's
+         ALL/CUSTOM segmented control, minus the "+" add button. -->
+    <div style="display:flex;gap:0;align-items:center;margin-top:4px;">
+      <div id="coaches-seg-wrap" style="position:relative;display:flex;flex:1;">
+        <button onclick="switchCoachesFilter('male')" id="coaches-seg-male" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:var(--accent);transition:color .15s;">MALE</button>
+        <button onclick="switchCoachesFilter('female')" id="coaches-seg-female" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:#555;transition:color .15s;">FEMALE</button>
+        <div id="coaches-seg-indicator" style="position:absolute;bottom:0;height:2px;left:0;width:50%;background:var(--accent);transition:left .2s,background .2s;"></div>
+      </div>
+    </div>
+    <!-- Carousel — one full-width slide at a time, swipe left/right; each photo is a
+         340px-diameter (170px radius) circle with Name/Profession/Availability below
+         it. Height is auto (not fixed) so it always fits the photo + text together. -->
+    <div id="coaches-carousel-wrap" style="width:100%;overflow:hidden;margin-top:16px;">
+      <div id="coaches-carousel-track" style="display:flex;width:100%;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;"></div>
+    </div>
+    <div id="coaches-carousel-dots" style="display:flex;justify-content:center;align-items:center;gap:6px;margin-top:4px;"></div>
+  </div>
+</div>
+
 <!-- COACH PROFILE VIEW (CLIENT) -->
 <div id="coachProfileViewOverlay" style="display:none;position:fixed;inset:0;z-index:9200;background:#0a0a0a;overflow-y:auto;">
   <div style="max-width:430px;margin:0 auto;padding:16px;">
@@ -20059,6 +20086,114 @@ function openFindCoach() {
 function closeFindCoach() {
   document.getElementById('findCoachOverlay').style.display = 'none';
 }
+
+// ── COACHES GALLERY (Home "GET A COACH" button) ─────────────────────────
+// Pure image browsing — no coach data/names attached to the pictures. Images
+// live in ./coach_male/ and ./coach_female/, named 1.<ext>, 2.<ext>, ... with
+// no gaps. Since this is a static site (no server directory listing), the
+// only way to discover which images exist is to probe sequential filenames
+// and stop at the first index where none of the tried extensions load.
+function _probeImageExists(url) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => resolve(true);
+    img.onerror = () => resolve(false);
+    img.src = url;
+  });
+}
+async function _findCoachGalleryImages(gender) {
+  const folder = gender === 'female' ? 'coach_female' : 'coach_male';
+  const exts = ['jpg', 'jpeg', 'png', 'webp'];
+  const found = [];
+  const MAX = 50; // sanity cap so a misconfigured folder can't probe forever
+  for (let i = 1; i <= MAX; i++) {
+    let hit = null;
+    for (const ext of exts) {
+      const url = `./${folder}/${i}.${ext}`;
+      if (await _probeImageExists(url)) { hit = url; break; }
+    }
+    if (!hit) break;
+    found.push(hit);
+  }
+  return found;
+}
+// Name/Profession/Availability per photo — a static site can't store real coach
+// records, so this reads a hand-maintained JSON file that lives next to the
+// images: coach_male/data.json / coach_female/data.json, an array of
+// {name, profession, availability} in the same order as 1.jpg, 2.jpg, ...
+async function _loadCoachGalleryData(gender) {
+  const folder = gender === 'female' ? 'coach_female' : 'coach_male';
+  try {
+    const res = await fetch(`./${folder}/data.json`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch (_) {
+    return [];
+  }
+}
+function openCoachesGallery() {
+  document.getElementById('coachesOverlay').style.display = 'block';
+  switchCoachesFilter(window._coachesGalleryFilter || 'male');
+}
+function closeCoachesGallery() {
+  document.getElementById('coachesOverlay').style.display = 'none';
+}
+async function switchCoachesFilter(gender) {
+  window._coachesGalleryFilter = gender;
+  const maleBtn = document.getElementById('coaches-seg-male');
+  const femaleBtn = document.getElementById('coaches-seg-female');
+  const indicator = document.getElementById('coaches-seg-indicator');
+  if (maleBtn) maleBtn.style.color = gender === 'male' ? 'var(--accent)' : '#555';
+  if (femaleBtn) femaleBtn.style.color = gender === 'female' ? 'var(--accent)' : '#555';
+  if (indicator) indicator.style.left = gender === 'male' ? '0' : '50%';
+  const track = document.getElementById('coaches-carousel-track');
+  const dots = document.getElementById('coaches-carousel-dots');
+  if (track) track.innerHTML = `<div style="flex:0 0 100%;display:flex;align-items:center;justify-content:center;color:#555;font-family:'DM Sans';font-size:13px;">Loading...</div>`;
+  if (dots) dots.innerHTML = '';
+  const [images, coachData] = await Promise.all([_findCoachGalleryImages(gender), _loadCoachGalleryData(gender)]);
+  const _stillOnThisFilter = window._coachesGalleryFilter === gender;
+  if (!track || !_stillOnThisFilter) return;
+  if (!images.length) {
+    track.innerHTML = `<div style="flex:0 0 100%;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 24px;color:#555;font-family:'DM Sans';font-size:13px;">No coaches to show here yet.</div>`;
+    return;
+  }
+  track.innerHTML = images.map((src, i) => {
+    const info = coachData[i] || {};
+    // profession can be a single string or an array (profession1/2/3...) — each
+    // entry renders on its own line either way.
+    const professions = Array.isArray(info.profession) ? info.profession : (info.profession ? [info.profession] : []);
+    const professionsHtml = professions.map(p =>
+      `<div style="font-family:'DM Sans';font-size:13px;font-weight:600;color:#888;margin-top:3px;">${p}</div>`
+    ).join('');
+    return `<div style="flex:0 0 100%;scroll-snap-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:8px 20px 20px;box-sizing:border-box;">
+      <img src="${src}" style="width:340px;height:340px;border-radius:50%;object-fit:cover;display:block;">
+      <div style="text-align:center;">
+        <div style="font-family:'DM Sans';font-size:24px;font-weight:700;color:var(--text);">${info.name || ''}</div>
+        ${professionsHtml}
+        <div style="font-family:'DM Sans';font-size:12px;font-weight:600;color:var(--accent);margin-top:3px;">${info.availability || ''}</div>
+      </div>
+    </div>`;
+  }).join('');
+  // Dots — one per photo, kept in sync with swiping via the track's own scroll
+  // position (assignment, not addEventListener, so re-rendering the carousel on
+  // filter switch cleanly replaces the previous handler instead of stacking).
+  if (dots) {
+    dots.innerHTML = images.map((_, i) =>
+      `<div class="coaches-dot" data-i="${i}" style="width:6px;height:6px;border-radius:50%;background:${i === 0 ? 'var(--accent)' : '#444'};transition:background .2s;flex-shrink:0;"></div>`
+    ).join('');
+  }
+  track.onscroll = () => {
+    if (!dots) return;
+    const idx = Math.round(track.scrollLeft / track.clientWidth);
+    dots.querySelectorAll('.coaches-dot').forEach((d, i) => {
+      d.style.background = i === idx ? 'var(--accent)' : '#444';
+    });
+  };
+}
+window.openCoachesGallery = openCoachesGallery;
+window.closeCoachesGallery = closeCoachesGallery;
+window.switchCoachesFilter = switchCoachesFilter;
 
 function loadFindCoachSites() {
   const myUid = window._currentUser?.uid;
