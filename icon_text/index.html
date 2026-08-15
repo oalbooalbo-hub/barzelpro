@@ -5447,7 +5447,7 @@ function _updatePickModeDoneBtn() {
   const n = _pickModeSelected.length;
   btnsWrap.style.display = _pickMode ? 'flex' : 'none';
   const countLabel = document.getElementById('pick-mode-count-label');
-  if (countLabel) countLabel.innerHTML = n > 0 ? `<span style="color:var(--accent);">+${n}</span> Exercises` : 'Pick exercises';
+  if (countLabel) countLabel.innerHTML = n > 0 ? `<span style="color:var(--accent);">+${n}</span>` : 'Pick exercises';
   btn.textContent = 'Done';
   btn.style.opacity = '1';
   btn.style.background = n > 0 ? (window._coachMode ? '#7ec8e3' : 'var(--accent)') : '#444';
@@ -18046,6 +18046,7 @@ document.getElementById("installBtn").addEventListener("click", async () => {
       <button onclick="switchAdminTab('sites')" id="adminTabSites" style="flex:1;padding:10px;border:none;background:transparent;color:#666;font-family:'DM Sans';font-size:12px;font-weight:700;cursor:pointer;">Sites</button>
       <button onclick="switchAdminTab('licenses')" id="adminTabLicenses" style="flex:1;padding:10px;border:none;background:transparent;color:#666;font-family:'DM Sans';font-size:12px;font-weight:700;cursor:pointer;">Licenses</button>
       <button onclick="switchAdminTab('people')" id="adminTabPeople" style="flex:1;padding:10px;border:none;background:transparent;color:#666;font-family:'DM Sans';font-size:12px;font-weight:700;cursor:pointer;">Invite</button>
+      <button onclick="switchAdminTab('branding')" id="adminTabBranding" style="flex:1;padding:10px;border:none;background:transparent;color:#666;font-family:'DM Sans';font-size:12px;font-weight:700;cursor:pointer;">Branding</button>
     </div>
 
     <!-- USERS TAB -->
@@ -18118,6 +18119,24 @@ document.getElementById("installBtn").addEventListener("click", async () => {
         <div id="bulkInviteResult" style="display:none;margin-bottom:10px;"></div>
 
         <button onclick="runBulkInvite()" style="width:100%;background:#34d39922;border:1px solid #34d39955;border-radius:10px;color:#34d399;font-family:'DM Sans';font-size:14px;font-weight:700;padding:13px;cursor:pointer;">Send Invites</button>
+      </div>
+    </div>
+
+    <!-- BRANDING TAB -->
+    <div id="adminTabContentBranding" style="display:none;">
+      <div style="background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:16px;">
+        <div style="font-family:'Bebas Neue';font-size:14px;letter-spacing:1px;color:#555;margin-bottom:6px;">ACCENT COLOR</div>
+        <div style="font-size:12px;color:#555;line-height:1.6;margin-bottom:14px;">Sets the highlight color used throughout the app (buttons, active states, badges) for this brand.</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+          <input id="adminAccentColorPicker" type="color" value="#e8ff47" oninput="document.getElementById('adminAccentColorHex').value=this.value;document.getElementById('adminAccentPreviewSwatch').style.background=this.value;" style="width:44px;height:44px;border:1px solid #2a2a2a;border-radius:8px;background:transparent;padding:0;cursor:pointer;flex-shrink:0;"/>
+          <input id="adminAccentColorHex" type="text" placeholder="#e8ff47" oninput="if(/^#[0-9a-fA-F]{6}$/.test(this.value)){document.getElementById('adminAccentColorPicker').value=this.value;document.getElementById('adminAccentPreviewSwatch').style.background=this.value;}" style="flex:1;background:#1e1e1e;border:1px solid #333;border-radius:8px;color:#f0f0f0;font-family:'DM Sans';font-size:14px;padding:12px;outline:none;box-sizing:border-box;"/>
+          <div id="adminAccentPreviewSwatch" style="width:44px;height:44px;border-radius:8px;background:#e8ff47;flex-shrink:0;"></div>
+        </div>
+        <div id="adminAccentSaveMsg" style="display:none;font-size:12px;font-weight:600;margin-bottom:10px;"></div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="setAdminAccentDefault()" style="flex:1;background:transparent;border:1px solid #333;border-radius:10px;color:#888;font-family:'DM Sans';font-size:14px;font-weight:700;padding:13px;cursor:pointer;">Default</button>
+          <button onclick="saveAdminBrandAccent()" style="flex:2;background:#a78bfa22;border:1px solid #a78bfa55;border-radius:10px;color:#a78bfa;font-family:'DM Sans';font-size:14px;font-weight:700;padding:13px;cursor:pointer;">Save Accent Color</button>
+        </div>
       </div>
     </div>
   </div>
@@ -18816,7 +18835,7 @@ function closeAdminPanel() {
 
 function switchAdminTab(tab) {
   _adminTab = tab;
-  ['users','sites','licenses','people'].forEach(t => {
+  ['users','sites','licenses','people','branding'].forEach(t => {
     document.getElementById('adminTabContent' + t.charAt(0).toUpperCase() + t.slice(1)).style.display = t === tab ? '' : 'none';
     const btn = document.getElementById('adminTab' + t.charAt(0).toUpperCase() + t.slice(1));
     if (btn) { btn.style.background = t === tab ? '#a78bfa' : 'transparent'; btn.style.color = t === tab ? '#000' : '#666'; }
@@ -18825,6 +18844,48 @@ function switchAdminTab(tab) {
   if (tab === 'sites') loadAdminSites();
   if (tab === 'licenses') loadAdminLicenses();
   if (tab === 'people') initBulkInvite();
+  if (tab === 'branding') {
+    const current = window._brandConfig?.accentColor || BRAND_DEFAULTS.accentColor;
+    const picker = document.getElementById('adminAccentColorPicker');
+    const hex = document.getElementById('adminAccentColorHex');
+    const swatch = document.getElementById('adminAccentPreviewSwatch');
+    if (picker) picker.value = current;
+    if (hex) hex.value = current;
+    if (swatch) swatch.style.background = current;
+    const msg = document.getElementById('adminAccentSaveMsg');
+    if (msg) msg.style.display = 'none';
+  }
+}
+
+function setAdminAccentDefault() {
+  const def = '#47d1fa';
+  const picker = document.getElementById('adminAccentColorPicker');
+  const hex = document.getElementById('adminAccentColorHex');
+  const swatch = document.getElementById('adminAccentPreviewSwatch');
+  if (picker) picker.value = def;
+  if (hex) hex.value = def;
+  if (swatch) swatch.style.background = def;
+}
+
+function saveAdminBrandAccent() {
+  const hex = document.getElementById('adminAccentColorHex')?.value.trim();
+  const msg = document.getElementById('adminAccentSaveMsg');
+  if (!/^#[0-9a-fA-F]{6}$/.test(hex || '')) {
+    if (msg) { msg.style.display = 'block'; msg.style.color = '#ff4747'; msg.textContent = 'Enter a valid hex color (e.g. #e8ff47)'; }
+    return;
+  }
+  if (!window._fbDb || !window._fbDoc || !window._fbSetDoc) {
+    if (msg) { msg.style.display = 'block'; msg.style.color = '#ff4747'; msg.textContent = 'Not connected — try again in a moment'; }
+    return;
+  }
+  const ref = window._fbDoc(window._fbDb, 'brands', window.BRAND_ID);
+  window._fbSetDoc(ref, { accentColor: hex }, { merge: true }).then(() => {
+    window._brandConfig = { ...(window._brandConfig || {}), accentColor: hex };
+    applyBrandConfig(window._brandConfig);
+    if (msg) { msg.style.display = 'block'; msg.style.color = '#34d399'; msg.textContent = 'Saved — accent color updated'; }
+  }).catch(e => {
+    if (msg) { msg.style.display = 'block'; msg.style.color = '#ff4747'; msg.textContent = 'Save failed: ' + e.message; }
+  });
 }
 
 function loadAdminUsers() {
@@ -25205,10 +25266,14 @@ let _setOptionsScrollParent = null;
 let _setOptionsScrollParentOrigPadding = '';
 
 function _findScrollableAncestor(el) {
+  // Match on overflow-y alone, not on whether it's *currently* overflowing — with
+  // only 3-4 sets the content can fit with no overflow yet, but we're about to add
+  // bottom padding specifically to create room to scroll into, so requiring
+  // pre-existing overflow here would miss exactly the case that needs the padding.
   let node = el?.parentElement;
   while (node && node !== document.body) {
     const cs = getComputedStyle(node);
-    if ((cs.overflowY === 'auto' || cs.overflowY === 'scroll') && node.scrollHeight > node.clientHeight + 1) return node;
+    if (cs.overflowY === 'auto' || cs.overflowY === 'scroll') return node;
     node = node.parentElement;
   }
   return null;
