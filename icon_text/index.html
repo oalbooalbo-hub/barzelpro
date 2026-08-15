@@ -18015,7 +18015,7 @@ document.getElementById("installBtn").addEventListener("click", async () => {
          340px-diameter (170px radius) circle with Name/Profession/Availability below
          it. Height is auto (not fixed) so it always fits the photo + text together. -->
     <div id="coaches-carousel-wrap" style="width:100%;overflow:hidden;margin-top:16px;">
-      <div id="coaches-carousel-track" style="display:flex;width:100%;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;"></div>
+      <div id="coaches-carousel-track" style="display:flex;width:100%;box-sizing:border-box;padding:0 6%;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;"></div>
     </div>
     <div id="coaches-carousel-dots" style="display:flex;justify-content:center;align-items:center;gap:6px;margin-top:4px;"></div>
   </div>
@@ -20101,33 +20101,48 @@ function _probeImageExists(url) {
     img.src = url;
   });
 }
+const _coachGalleryImageCache = {};
 async function _findCoachGalleryImages(gender) {
+  if (_coachGalleryImageCache[gender]) return _coachGalleryImageCache[gender];
   const folder = gender === 'female' ? 'coach_female' : 'coach_male';
   const exts = ['jpg', 'jpeg', 'png', 'webp'];
-  const found = [];
   const MAX = 50; // sanity cap so a misconfigured folder can't probe forever
-  for (let i = 1; i <= MAX; i++) {
-    let hit = null;
-    for (const ext of exts) {
-      const url = `./${folder}/${i}.${ext}`;
-      if (await _probeImageExists(url)) { hit = url; break; }
-    }
-    if (!hit) break;
-    found.push(hit);
+  // Probe every index × extension combo in parallel instead of one at a time —
+  // discovery doesn't need to happen in order, only the final contiguous-run
+  // check does, so there's no reason to pay for N sequential round-trips when
+  // one parallel wave (bounded by the slowest single probe) does the same job.
+  const perIndex = await Promise.all(
+    Array.from({ length: MAX }, (_, idx) => {
+      const i = idx + 1;
+      return Promise.all(exts.map(ext => {
+        const url = `./${folder}/${i}.${ext}`;
+        return _probeImageExists(url).then(ok => ok ? url : null);
+      })).then(results => results.find(Boolean) || null);
+    })
+  );
+  const found = [];
+  for (const url of perIndex) {
+    if (!url) break;
+    found.push(url);
   }
+  _coachGalleryImageCache[gender] = found;
   return found;
 }
 // Name/Profession/Availability per photo — a static site can't store real coach
 // records, so this reads a hand-maintained JSON file that lives next to the
 // images: coach_male/data.json / coach_female/data.json, an array of
 // {name, profession, availability} in the same order as 1.jpg, 2.jpg, ...
+const _coachGalleryDataCache = {};
 async function _loadCoachGalleryData(gender) {
+  if (_coachGalleryDataCache[gender]) return _coachGalleryDataCache[gender];
   const folder = gender === 'female' ? 'coach_female' : 'coach_male';
   try {
     const res = await fetch(`./${folder}/data.json`);
     if (!res.ok) return [];
     const data = await res.json();
-    return Array.isArray(data) ? data : [];
+    const result = Array.isArray(data) ? data : [];
+    _coachGalleryDataCache[gender] = result;
+    return result;
   } catch (_) {
     return [];
   }
@@ -20163,18 +20178,30 @@ async function switchCoachesFilter(gender) {
     // profession can be a single string or an array (profession1/2/3...) — each
     // entry renders on its own line either way.
     const professions = Array.isArray(info.profession) ? info.profession : (info.profession ? [info.profession] : []);
-    const professionsHtml = professions.map(p =>
-      `<div style="font-family:'DM Sans';font-size:13px;font-weight:600;color:#888;margin-top:3px;">${p}</div>`
+    const professionsHtml = professions.map((p, pIdx) =>
+      `<div style="font-family:'DM Sans';font-size:18px;font-weight:600;color:#888;margin-top:${pIdx === 0 ? 10 : 3}px;background:rgba(255,255,255,0.06);border-radius:10px;padding:4px 14px;display:inline-block;">${p}</div>`
     ).join('');
-    return `<div style="flex:0 0 100%;scroll-snap-align:center;scroll-snap-stop:always;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:8px 20px 20px;box-sizing:border-box;">
-      <img src="${src}" style="width:280px;height:280px;border-radius:50%;object-fit:cover;display:block;">
-      <div style="text-align:center;">
-        <div style="font-family:'DM Sans';font-size:24px;font-weight:700;color:var(--text);">${info.name || ''}</div>
-        ${professionsHtml}
-        <div style="font-family:'DM Sans';font-size:12px;font-weight:600;color:var(--accent);margin-top:3px;">${info.availability || ''}</div>
+    return `<div style="flex:0 0 88%;scroll-snap-align:center;scroll-snap-stop:always;display:flex;align-items:center;justify-content:center;padding:64px 8px 20px;box-sizing:border-box;">
+      <div style="width:100%;display:flex;flex-direction:column;align-items:center;gap:12px;padding:8px 16px 24px;border:1px solid rgba(255,255,255,0.3);border-radius:20px;box-sizing:border-box;">
+        <img src="${src}" style="width:280px;height:280px;border-radius:50%;object-fit:cover;display:block;margin-top:-60px;">
+        <div style="text-align:center;">
+          <div style="font-family:'DM Sans';font-size:24px;font-weight:700;color:var(--text);">${info.name || ''}</div>
+          <div style="font-family:'DM Sans';font-size:15px;font-weight:600;color:#999;letter-spacing:.5px;margin-top:2px;">PERSONAL TRAINER</div>
+          ${professionsHtml}
+          <div style="font-family:'DM Sans';font-size:14px;font-weight:600;color:var(--accent);margin-top:10px;">${info.availability || ''}</div>
+        </div>
+        ${info.whatsapp ? `<a href="https://wa.me/${String(info.whatsapp).replace(/[^0-9]/g,'')}" target="_blank" rel="noopener" style="margin-top:2px;display:inline-flex;align-items:center;justify-content:center;gap:9px;background:#25D366;border-radius:24px;padding:11px 22px;text-decoration:none;-webkit-tap-highlight-color:transparent;">
+          <svg width="19" height="19" viewBox="0 0 32 32" fill="#fff"><path d="M16.004 3C9.377 3 4 8.373 4 15c0 2.63.86 5.06 2.32 7.03L4.9 27.1a1 1 0 0 0 1.23 1.23l5.06-1.42A11.94 11.94 0 0 0 16 27c6.627 0 12-5.373 12-12S22.63 3 16.004 3zm6.03 16.86c-.26.73-1.51 1.4-2.08 1.47-.53.07-1.2.1-1.94-.12-.45-.14-1.03-.33-1.77-.65-3.12-1.35-5.15-4.5-5.3-4.71-.16-.21-1.27-1.69-1.27-3.22 0-1.53.8-2.28 1.09-2.6.28-.31.62-.39.82-.39.21 0 .41 0 .59.01.19.01.44-.07.68.53.26.63.88 2.17.96 2.33.08.16.13.35.02.56-.1.21-.15.34-.3.52-.15.18-.31.4-.44.53-.15.15-.3.31-.13.6.16.29.72 1.2 1.55 1.95 1.07.96 1.97 1.26 2.26 1.4.29.15.46.13.63-.07.18-.21.75-.87.95-1.17.2-.29.4-.24.66-.14.27.09 1.71.81 2 .96.29.14.48.21.55.33.07.13.07.72-.19 1.44z"/></svg>
+          <span style="font-family:'DM Sans';font-size:13px;font-weight:700;color:#fff;letter-spacing:.3px;white-space:nowrap;">CHAT ON WHATSAPP</span>
+        </a>` : ''}
       </div>
     </div>`;
   }).join('');
+  // Replacing innerHTML doesn't reset the track's own scroll position (only its
+  // children get swapped out), so without this a filter switch made while scrolled
+  // to e.g. the 3rd card would land on whatever card is now at that same scroll
+  // offset instead of starting over from the first one.
+  track.scrollLeft = 0;
   // Dots — one per photo, kept in sync with swiping via the track's own scroll
   // position (assignment, not addEventListener, so re-rendering the carousel on
   // filter switch cleanly replaces the previous handler instead of stacking).
@@ -20185,7 +20212,10 @@ async function switchCoachesFilter(gender) {
   }
   track.onscroll = () => {
     if (!dots) return;
-    const idx = Math.round(track.scrollLeft / track.clientWidth);
+    // Cards are 88% width (peek layout), not the full track width, so the scroll
+    // distance between consecutive slides equals a slide's own width, not clientWidth.
+    const slideWidth = track.children[0]?.offsetWidth || track.clientWidth;
+    const idx = Math.round(track.scrollLeft / slideWidth);
     dots.querySelectorAll('.coaches-dot').forEach((d, i) => {
       d.style.background = i === idx ? 'var(--accent)' : '#444';
     });
