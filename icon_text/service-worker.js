@@ -1,8 +1,8 @@
 /**
- * service-worker.js — BARZELPRO PWA Service Worker v2.3.0
+ * service-worker.js — BARZELPRO PWA Service Worker v2.5.0
  */
 
-const APP_VERSION   = 'v2.1.2';
+const APP_VERSION   = 'v2.5.0';
 const STATIC_CACHE  = `barzelpro-static-${APP_VERSION}`;
 const RUNTIME_CACHE = `barzelpro-runtime-${APP_VERSION}`;
 
@@ -90,18 +90,23 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // 4. index.html / config.js / HTML navigations — network-first (3s timeout)
+  // 4. index.html / config.js / HTML navigations / *.json data files —
+  // network-first (3s timeout). JSON is included here (not left to rule 5)
+  // because hand-edited data files like coach_male/data.json need to be picked
+  // up on next load, not stuck serving whatever was cached the first time a
+  // device ever fetched them.
   if (
     request.headers.get('accept')?.includes('text/html') ||
     url.pathname.endsWith('.html') ||
     url.pathname.endsWith('/') ||
+    url.pathname.endsWith('.json') ||
     url.pathname.includes('config.js')
   ) {
     event.respondWith(networkFirst(request));
     return;
   }
 
-  // 5. Everything else (images, JSON, etc.) — cache-first
+  // 5. Everything else (images, etc.) — cache-first
   event.respondWith(cacheFirst(request));
 });
 
