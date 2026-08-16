@@ -813,6 +813,15 @@ body.ex-tab-detail-open #ex-float-bar{display:none !important;}
 .tab .tab-label{display:block;overflow:hidden;max-height:14px;margin-top:3px;opacity:1;transition:max-height .22s ease,margin-top .22s ease,opacity .16s ease;}
 .tab.active .tab-icon{transform:scale(1.45);}
 .tab.active .tab-label{max-height:0;margin-top:0;opacity:0;}
+
+/* ── NEW WORKOUT — floating field labels (title sits inside the box until
+   the box is focused or filled, then animates up above it) ─────────────── */
+.nwf-field{position:relative;margin-top:14px;padding-top:20.2px;}
+.nwf-field-label{position:absolute;left:14px;top:30.2px;font-family:'DM Sans',sans-serif;font-size:18px;font-weight:600;color:#666;line-height:1.3;letter-spacing:0;pointer-events:none;transform-origin:left top;transition:transform .22s cubic-bezier(.4,0,.2,1),color .2s ease;z-index:2;white-space:nowrap;display:flex;align-items:center;gap:8px;}
+.nwf-field.is-float .nwf-field-label{transform:translate(-12px,-30.2px) scale(.7778);color:#fff;}
+.nwf-field.is-float.is-active .nwf-field-label{color:var(--accent);}
+.nwf-field.is-float .nwf-field-label .nwf-optional{display:none;}
+.nwf-field-box{background:#111;border:1px solid #444;border-radius:12px;padding:10px 14px;transition:border-color .2s;}
 </style>
 <script src="config.js"></script>
 <script>
@@ -1326,7 +1335,7 @@ function hidAuthScreen() {
   <div id="today-workout-area" style="display:none;overflow-x:visible;">
     <div id="workout-sticky-header" style="position:fixed;top:0;left:0;right:0;max-width:430px;margin-left:auto;margin-right:auto;z-index:25;background:#0a0a0a;padding-top:10px;">
       <div id="workout-hero-photo" style="display:none;width:100%;overflow:hidden;"></div>
-      <div id="nwf-ex-count-display" style="display:none;text-align:center;padding:18px 0 14px;"></div>
+      <div id="nwf-ex-count-display" style="display:none;text-align:center;padding:0 0 8px;margin-top:-7px;"></div>
       <div id="workout-progress-section" style="display:none;"></div>
       <div id="todayMuscleChipsWrap" style="display:none;align-items:center;gap:0;flex-wrap:nowrap;padding:4px 10px 10px;width:100%;box-sizing:border-box;overflow:hidden;border-bottom:1px solid #2a2a2a;">
         <div id="todayMuscleChipsFixed" style="display:flex;gap:6px;flex-shrink:0;padding-right:6px;"></div>
@@ -1356,7 +1365,7 @@ function hidAuthScreen() {
             <div style="font-family:'DM Sans',sans-serif;font-size:24px;font-weight:800;color:#fff;line-height:1.2;">Let's Build Your Workout</div>
             <div style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;color:#888;margin-top:8px;margin-bottom:16px;">Start adding exercises from library</div>
           </div>
-          <button class="btn-add-exercise" onclick="enterPickMode(_todayMuscleFilter)">+ ADD EXERCISE</button>
+          <button class="btn-add-exercise" onclick="enterPickMode(_todayMuscleFilter)">+ ADD EXERCISES</button>
         </div>
       </div>
       <div id="ex-nav-detail" style="overflow-y:auto;">
@@ -2414,10 +2423,17 @@ function _checkFinishReadyImpl() {
     if (_countDisplay) {
       if (window._isNewWorkoutFlow && !_showPrompt) {
         const _exCount = document.querySelectorAll('#exerciseList .exercise-card').length;
-        _countDisplay.innerHTML = `<div style="font-family:'DM Sans',sans-serif;font-size:48px;font-weight:900;color:#fff;line-height:1;">${_exCount}</div><div style="font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;color:#888;margin-top:4px;">exercises</div>`;
+        _countDisplay.innerHTML = `<div style="display:inline-flex;align-items:center;justify-content:center;gap:14px;">
+          <div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:48px;font-weight:900;color:#fff;line-height:1;">${_exCount}</div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;color:#888;margin-top:4px;">exercises</div>
+          </div>
+          <div id="nwf-body-mini-slot" style="display:none;align-items:center;"></div>
+        </div>`;
         _countDisplay.style.display = 'block';
         _countDisplay.style.cursor = 'pointer';
         _countDisplay.onclick = () => { if (_todayMuscleFilter) filterTodayByMuscle(null); };
+        if (typeof _nwfSyncBodyMini === 'function') _nwfSyncBodyMini();
       } else {
         _countDisplay.style.display = 'none';
       }
@@ -3812,10 +3828,32 @@ function _nwfHandleNameBlur(inp) {
   }
 }
 const _NWF_FIELD_IDS = ['nwf-name-input', 'nwf-description', 'nwf-video-link'];
+// Floating label: title sits inside the box (as a hint) until the box is
+// focused or holds a value, then it animates up above the box via the
+// .nwf-field.is-float / .is-active CSS classes (see <style>).
+function _nwfFieldHasValue(wrap) {
+  const el = wrap && wrap.querySelector('input,textarea');
+  return !!(el && el.value.trim());
+}
+function _nwfSyncFieldFloatByEl(el) {
+  const wrap = el && el.closest('.nwf-field');
+  if (wrap) wrap.classList.toggle('is-float', _nwfFieldHasValue(wrap));
+}
+function _nwfInitFieldFloats() {
+  ['nwf-name-field', 'nwf-desc-field', 'nwf-video-field'].forEach(id => {
+    const wrap = document.getElementById(id);
+    if (wrap) wrap.classList.toggle('is-float', _nwfFieldHasValue(wrap));
+  });
+}
+window._nwfInitFieldFloats = _nwfInitFieldFloats;
 function _nwfFieldFocus(titleId, boxId, on) {
   const title = document.getElementById(titleId);
   const box = document.getElementById(boxId);
-  if (title) title.style.color = on ? 'var(--accent)' : '#fff';
+  const wrap = (title || box) && (title || box).closest('.nwf-field');
+  if (wrap) {
+    wrap.classList.toggle('is-active', on);
+    wrap.classList.toggle('is-float', on || _nwfFieldHasValue(wrap));
+  }
   if (box) box.style.borderColor = on ? 'var(--accent)' : '#444';
 
   // Same "Done" bar pinned above the keyboard as note-editing (showNoteToolbar/
@@ -3901,6 +3939,7 @@ function _openNwfNamePage() {
   const nwfNameInput = document.getElementById('nwf-name-input');
   if (nwfNameInput) { nwfNameInput.value = cur; const _ni_rtl = /[֐-׿]/.test(cur); nwfNameInput.style.direction = _ni_rtl ? 'rtl' : 'ltr'; nwfNameInput.style.textAlign = _ni_rtl ? 'right' : 'left'; nwfNameInput.style.color = ''; }
   _nwfUpdateNextBtn();
+  if (typeof _nwfInitFieldFloats === 'function') _nwfInitFieldFloats();
   const _nwfPageTitle = document.getElementById('nwf-page-title');
   if (_nwfPageTitle) _nwfPageTitle.textContent = (window._editingWorkoutIdx != null) ? 'EDIT WORKOUT' : 'NEW WORKOUT';
   if (window._closers) window._closers['nwf-name'] = () => _cancelNwfNamePage();
@@ -4520,15 +4559,20 @@ function _syncExToggleBarHeight() {
     // nonzero value of its own — measuring both directly (rather than assuming pg
     // starts at the viewport top, which a flat "padding = bar.offsetHeight" implicitly
     // did) is what keeps this correct regardless of where pg actually settles.
-    // pg.getBoundingClientRect().top is unaffected by pg's own padding-top, so it's
-    // safe to read before updating it below. +10 for a bit of breathing room below
-    // the pill-bar divider, same as the workout screen's spacer.
+    // +10 for a bit of breathing room below the pill-bar divider, same as the
+    // workout screen's spacer.
     const barBottom = bar.getBoundingClientRect().bottom;
-    // pg.getBoundingClientRect().top is viewport-relative, so it drifts by the
-    // current scroll offset — cancel that out (+ scrollY) so a sync that runs
-    // while still scrolled (e.g. right as a muscle-tab switch resets scroll on
-    // a later frame) doesn't bake that transient offset into the padding.
-    const pgTop = pg.getBoundingClientRect().top + window.scrollY;
+    // pg.active gets a translateY(48px)->0 entrance slide (index.html ~110)
+    // whenever it's not the log page and not delayed-reveal, and this syncs
+    // repeatedly while that's still running (see the staggered re-sync calls
+    // at the call site) — getBoundingClientRect() bakes in the live transform
+    // offset, so reading it mid-slide fed a different padding into each
+    // re-sync and made the content visibly jump. offsetTop is unaffected by
+    // transforms, so combine it with the (non-animated) offsetParent's own
+    // viewport position for a number that stays stable through the animation
+    // (same fix as _syncW2TopPad above).
+    const offsetParent = pg.offsetParent || document.body;
+    const pgTop = offsetParent.getBoundingClientRect().top + pg.offsetTop;
     pg.style.paddingTop = Math.max(0, barBottom - pgTop + 10) + 'px';
   } else {
     pg.style.paddingTop = '';
@@ -5417,7 +5461,25 @@ function enterPickMode(muscle) {
   if (title) title.style.display = 'none';
   if (muscle) window._exTabMuscle = muscle;
   const btnsWrap = document.getElementById('pick-mode-btns');
-  if (btnsWrap) btnsWrap.style.display = 'flex';
+  if (btnsWrap) {
+    // Slide/fade the "pick exercises" bar (count label + Back/Done) in only
+    // after the exercises page's own entrance animation has settled — it's
+    // either tabSlideUp (.4s, index.html ~110) or, if delayed-reveal, a
+    // .3s-delayed .15s fade (~.45s total). Showing the bar immediately made
+    // it appear mid-slide, adding to the page's own settle-in jumpiness.
+    btnsWrap.style.transition = 'none';
+    btnsWrap.style.opacity = '0';
+    btnsWrap.style.transform = 'translateY(24px)';
+    btnsWrap.style.display = 'flex';
+    setTimeout(() => {
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        btnsWrap.style.transition = 'transform 0.4s cubic-bezier(0.2,0.8,0.3,1), opacity 0.3s ease';
+        btnsWrap.style.opacity = '';
+        btnsWrap.style.transform = '';
+        btnsWrap.addEventListener('transitionend', () => { btnsWrap.style.transition = ''; }, { once: true });
+      }));
+    }, 450);
+  }
   // Hide the toggle bar in pick mode — keep visible in new workout flow
   const _etb = document.getElementById('exercisesToggleBar');
   if (_etb && !window._isNewWorkoutFlow) _etb.style.display = 'none';
@@ -8986,6 +9048,11 @@ function updateTodayMuscleChips() {
       _counts[m] = (_counts[m]||0) + 1;
     });
     const _entries = Object.entries(_counts);
+    // The active filter's body part can lose its last exercise (deleted from
+    // the filtered list) — its chip then stops rendering below, but the stale
+    // filter value would otherwise keep every other muscle's cards hidden too.
+    // Reset it, same as the regular (non-new-workout) branch already does below.
+    if (_todayMuscleFilter && !_counts[_todayMuscleFilter]) { _todayMuscleFilter = null; applyTodayFilters(); }
     const _hasEx = _entries.length > 0;
     wrap.style.display = _hasEx ? 'flex' : 'none';
 
@@ -17594,34 +17661,41 @@ window.addEventListener('load', function() {
         <div style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:rgba(255,255,255,0.45);letter-spacing:1px;text-transform:uppercase;">preview</div>
       </div>
     </div>
-    <div id="nwf-name-title" style="font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;color:#fff;letter-spacing:0;margin-top:14px;margin-bottom:6px;padding:0 2px;transition:color .2s;display:flex;align-items:center;gap:8px;">Workout Name<span id="nwf-name-dup-msg" style="display:none;color:#ff4747;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;">Name already exists</span></div>
-    <div id="nwf-name-box" style="background:#111;border:1px solid #444;border-radius:12px;padding:10px 14px;transition:border-color .2s;">
-      <input id="nwf-name-input" type="text" autocomplete="off" enterkeyhint="done" spellcheck="false" placeholder="Name your workout..."
-             style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;caret-color:#34d399;-webkit-text-fill-color:#fff;box-sizing:border-box;"
-             onfocus="_nwfFieldFocus('nwf-name-title','nwf-name-box',true)"
-             oninput="(function(v){const _hb=/[֐-׿]/.test(v);const _ni=document.getElementById('nwf-name-input');_ni.style.direction=_hb?'rtl':'ltr';_ni.style.textAlign=_hb?'right':'left';const wn=document.getElementById('workoutName');if(wn)wn.value=v.trim();const ne=document.getElementById('nwf-hero-name');if(ne){ne.dataset.name=v.trim();ne.innerHTML=v.trim()?_heroNameHtml(v.trim()):'';ne.style.direction=_hb?'rtl':'';}if(typeof _nwfSetNameDupState==='function')_nwfSetNameDupState(false);if(typeof _nwfUpdateNextBtn==='function')_nwfUpdateNextBtn();})(this.value)"
-             onblur="_nwfFieldFocus('nwf-name-title','nwf-name-box',false);if(typeof _nwfHandleNameBlur==='function')_nwfHandleNameBlur(this)"
-             onkeydown="if(event.key==='Enter')this.blur()">
+    <div class="nwf-field" id="nwf-name-field">
+      <div id="nwf-name-title" class="nwf-field-label">Workout Name<span id="nwf-name-dup-msg" style="display:none;color:#ff4747;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;">Name already exists</span></div>
+      <div id="nwf-name-box" class="nwf-field-box">
+        <input id="nwf-name-input" type="text" autocomplete="off" enterkeyhint="done" spellcheck="false" placeholder=""
+               style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-family:'DM Sans',sans-serif;font-size:18px;font-weight:600;caret-color:#34d399;-webkit-text-fill-color:#fff;box-sizing:border-box;"
+               onfocus="_nwfFieldFocus('nwf-name-title','nwf-name-box',true)"
+               oninput="(function(v){const _hb=/[֐-׿]/.test(v);const _ni=document.getElementById('nwf-name-input');_ni.style.direction=_hb?'rtl':'ltr';_ni.style.textAlign=_hb?'right':'left';const wn=document.getElementById('workoutName');if(wn)wn.value=v.trim();const ne=document.getElementById('nwf-hero-name');if(ne){ne.dataset.name=v.trim();ne.innerHTML=v.trim()?_heroNameHtml(v.trim()):'';ne.style.direction=_hb?'rtl':'';}if(typeof _nwfSetNameDupState==='function')_nwfSetNameDupState(false);if(typeof _nwfUpdateNextBtn==='function')_nwfUpdateNextBtn();})(this.value)"
+               onblur="_nwfFieldFocus('nwf-name-title','nwf-name-box',false);if(typeof _nwfHandleNameBlur==='function')_nwfHandleNameBlur(this)"
+               onkeydown="if(event.key==='Enter')this.blur()">
+      </div>
     </div>
-    <div id="nwf-desc-title" style="font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;color:#fff;letter-spacing:0;margin-top:14px;margin-bottom:6px;padding:0 2px;transition:color .2s;">Description <span style="color:#888;font-weight:500;">(optional)</span></div>
-    <div id="nwf-desc-box" style="background:#111;border:1px solid #444;border-radius:12px;padding:10px 14px 12px;transition:border-color .2s;">
-      <textarea id="nwf-description" placeholder="Add details about the workout focus..." rows="2" spellcheck="false"
-                style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:400;line-height:1.5;resize:none;overflow:hidden;caret-color:#34d399;-webkit-text-fill-color:#fff;box-sizing:border-box;"
-                onfocus="_nwfFieldFocus('nwf-desc-title','nwf-desc-box',true)"
-                onblur="_nwfFieldFocus('nwf-desc-title','nwf-desc-box',false)"
-                oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px';var _rtl=/[֐-׿]/.test(this.value);this.style.direction=_rtl?'rtl':'ltr';this.style.textAlign=_rtl?'right':'left';"></textarea>
+    <div class="nwf-field" id="nwf-desc-field">
+      <div id="nwf-desc-title" class="nwf-field-label">Description <span class="nwf-optional" style="color:#888;font-weight:500;">(optional)</span></div>
+      <div id="nwf-desc-box" class="nwf-field-box" style="padding-bottom:12px;">
+        <textarea id="nwf-description" placeholder="" rows="2" spellcheck="false"
+                  style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-family:'DM Sans',sans-serif;font-size:18px;font-weight:400;line-height:1.5;resize:none;overflow:hidden;caret-color:#34d399;-webkit-text-fill-color:#fff;box-sizing:border-box;"
+                  onfocus="_nwfFieldFocus('nwf-desc-title','nwf-desc-box',true)"
+                  onblur="_nwfFieldFocus('nwf-desc-title','nwf-desc-box',false)"
+                  oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px';var _rtl=/[֐-׿]/.test(this.value);this.style.direction=_rtl?'rtl':'ltr';this.style.textAlign=_rtl?'right':'left';"></textarea>
+      </div>
     </div>
-    <div id="nwf-video-title" style="font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;color:#fff;letter-spacing:0;margin-top:14px;margin-bottom:6px;padding:0 2px;transition:color .2s;">Video link <span style="color:#888;font-weight:500;">(optional)</span></div>
-    <div id="nwf-video-box" style="background:#111;border:1px solid #444;border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:8px;transition:border-color .2s;">
-      <input id="nwf-video-link" type="url" inputmode="url" placeholder="https://..." spellcheck="false" autocomplete="off"
-             style="flex:1;background:transparent;border:none;outline:none;color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:400;caret-color:#34d399;-webkit-text-fill-color:#fff;box-sizing:border-box;min-width:0;"
-             onfocus="_nwfFieldFocus('nwf-video-title','nwf-video-box',true)"
-             onblur="_nwfFieldFocus('nwf-video-title','nwf-video-box',false)">
-      <button onclick="navigator.clipboard.readText().then(t=>{const i=document.getElementById('nwf-video-link');if(i)i.value=t;}).catch(()=>{})" style="background:transparent;border:none;padding:2px;cursor:pointer;flex-shrink:0;-webkit-tap-highlight-color:transparent;display:flex;align-items:center;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-        </svg>
-      </button>
+    <div class="nwf-field" id="nwf-video-field">
+      <div id="nwf-video-title" class="nwf-field-label">Video link <span class="nwf-optional" style="color:#888;font-weight:500;">(optional)</span></div>
+      <div id="nwf-video-box" class="nwf-field-box" style="display:flex;align-items:center;gap:8px;">
+        <input id="nwf-video-link" type="url" inputmode="url" placeholder="" spellcheck="false" autocomplete="off"
+               style="flex:1;background:transparent;border:none;outline:none;color:#fff;font-family:'DM Sans',sans-serif;font-size:18px;font-weight:400;caret-color:#34d399;-webkit-text-fill-color:#fff;box-sizing:border-box;min-width:0;"
+               onfocus="_nwfFieldFocus('nwf-video-title','nwf-video-box',true)"
+               oninput="_nwfSyncFieldFloatByEl(this)"
+               onblur="_nwfFieldFocus('nwf-video-title','nwf-video-box',false)">
+        <button onclick="const i=document.getElementById('nwf-video-link');navigator.clipboard.readText().then(t=>{if(i){i.value=t;_nwfSyncFieldFloatByEl(i);}}).catch(()=>{})" style="background:transparent;border:none;padding:2px;cursor:pointer;flex-shrink:0;-webkit-tap-highlight-color:transparent;display:flex;align-items:center;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+          </svg>
+        </button>
+      </div>
     </div>
   </div>
   <div id="nwf-bottom-btns" style="flex-shrink:0;padding:16px 16px calc(env(safe-area-inset-bottom,0px) + 16px);display:flex;gap:10px;background:#0a0a0a;">
@@ -26513,35 +26587,13 @@ function _w2BuildExerciseList(workout) {
   el.innerHTML = html;
 }
 
-// Populates the (singleton, relocatable) description/tags/body-diagram elements
-// for a given workout. Operates purely by element id, so it works identically
-// whether those elements currently live inside #w2-sheet or have been moved
-// into #today-info-panel (see _openTodayInfoPanel) — getElementById doesn't
-// care which parent a node is attached to.
-function _renderW2MusclesInto(w) {
-  const _descEl = document.getElementById('w2-sheet-description');
-  if (_descEl) {
-    const _desc = (w.description || '').trim();
-    _descEl.textContent = _desc;
-    const _descRtl = /[֐-׿]/.test(_desc);
-    _descEl.style.direction = _descRtl ? 'rtl' : 'ltr';
-    _descEl.style.textAlign = _descRtl ? 'right' : 'left';
-    _descEl.style.display = _desc ? 'block' : 'none';
-  }
-
-  const muscleCounts = {};
-  (w.exercises || []).forEach(e => {
-    const m = e.muscle || getAllExercises().find(x=>x.name===e.name||x.label===e.name)?.muscle || 'Other';
-    muscleCounts[m] = (muscleCounts[m]||0) + 1;
-  });
-  const activeMuscles = Object.keys(muscleCounts);
-
-  W2_ALL_MUSCLE_IDS.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) { el.setAttribute('fill','#2a2a2a'); el.setAttribute('opacity','1'); }
-  });
-
-  // Collect SVG IDs to highlight: use sub-muscles if defined, else fall back to full body part
+// Collects SVG element ids to highlight for a given workout-like object
+// ({exercises:[{name,muscle,subMuscles}]}) → {id: color}, using sub-muscles
+// if defined, else falling back to the full body part. Shared by
+// _renderW2MusclesInto (the real front/back diagram, keyed by its own
+// unprefixed ids) and _nwfSyncBodyMini (a cloned mini copy on Step 2 of 2,
+// keyed by 'mini-'+id — see there for why it needs its own clone).
+function _computeMuscleHighlightMap(w) {
   const highlightMap = {};
   (w.exercises || []).forEach(e => {
     const m = e.muscle || getAllExercises().find(x=>x.name===e.name||x.label===e.name)?.muscle || 'Other';
@@ -26577,6 +26629,85 @@ function _renderW2MusclesInto(w) {
       }
     }
   });
+  return highlightMap;
+}
+
+// Small, always-visible front/back body diagram shown next to the exercise
+// count on Step 2 of 2 (new-workout builder) — a lightweight CLONE of
+// #w2-body-container rather than the real (singleton, relocatable) one, since
+// that singleton already gets moved between the W2 sheet and the Today info
+// panel (see _openTodayInfoPanel) and can't also live here at the same time.
+// Every id inside the clone (including the chest clip-path ids) is
+// re-prefixed with 'mini-' so it never collides with the real diagram's ids.
+function _nwfGetBodyMini() {
+  let mini = document.getElementById('nwf-body-mini');
+  if (mini) return mini;
+  const src = document.getElementById('w2-body-container');
+  if (!src) return null;
+  mini = src.cloneNode(true);
+  mini.id = 'nwf-body-mini';
+  const idEls = [...mini.querySelectorAll('[id]')];
+  const idMap = {};
+  idEls.forEach(el => { idMap[el.id] = 'mini-' + el.id; });
+  idEls.forEach(el => { el.id = idMap[el.id]; });
+  mini.querySelectorAll('[clip-path]').forEach(el => {
+    const m = /^url\(#(.+)\)$/.exec(el.getAttribute('clip-path') || '');
+    if (m && idMap[m[1]]) el.setAttribute('clip-path', `url(#${idMap[m[1]]})`);
+  });
+  mini.style.cssText = 'display:flex;gap:6px;width:200px;flex-shrink:0;pointer-events:none;';
+  [...mini.children].forEach(d => { d.style.cssText = 'flex:1;min-width:0;'; });
+  return mini;
+}
+function _nwfSyncBodyMini() {
+  const host = document.getElementById('nwf-body-mini-slot');
+  if (!host) return;
+  const cards = [...document.querySelectorAll('#exerciseList .exercise-card')];
+  const mini = cards.length ? _nwfGetBodyMini() : null;
+  if (!mini) { host.style.display = 'none'; return; }
+  if (mini.parentElement !== host) host.appendChild(mini);
+  host.style.display = 'flex';
+  W2_ALL_MUSCLE_IDS.forEach(id => {
+    const el = document.getElementById('mini-' + id);
+    if (el) { el.setAttribute('fill', '#2a2a2a'); el.setAttribute('opacity', '1'); }
+  });
+  const w = { exercises: cards.map(c => ({ name: c.dataset.exname, muscle: c.dataset.exmuscle || 'Chest' })) };
+  const highlightMap = _computeMuscleHighlightMap(w);
+  Object.entries(highlightMap).forEach(([id, color]) => {
+    const el = document.getElementById('mini-' + id);
+    if (el) { el.setAttribute('fill', color); el.setAttribute('opacity', '0.9'); }
+  });
+}
+window._nwfSyncBodyMini = _nwfSyncBodyMini;
+
+// Populates the (singleton, relocatable) description/tags/body-diagram elements
+// for a given workout. Operates purely by element id, so it works identically
+// whether those elements currently live inside #w2-sheet or have been moved
+// into #today-info-panel (see _openTodayInfoPanel) — getElementById doesn't
+// care which parent a node is attached to.
+function _renderW2MusclesInto(w) {
+  const _descEl = document.getElementById('w2-sheet-description');
+  if (_descEl) {
+    const _desc = (w.description || '').trim();
+    _descEl.textContent = _desc;
+    const _descRtl = /[֐-׿]/.test(_desc);
+    _descEl.style.direction = _descRtl ? 'rtl' : 'ltr';
+    _descEl.style.textAlign = _descRtl ? 'right' : 'left';
+    _descEl.style.display = _desc ? 'block' : 'none';
+  }
+
+  const muscleCounts = {};
+  (w.exercises || []).forEach(e => {
+    const m = e.muscle || getAllExercises().find(x=>x.name===e.name||x.label===e.name)?.muscle || 'Other';
+    muscleCounts[m] = (muscleCounts[m]||0) + 1;
+  });
+  const activeMuscles = Object.keys(muscleCounts);
+
+  W2_ALL_MUSCLE_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.setAttribute('fill','#2a2a2a'); el.setAttribute('opacity','1'); }
+  });
+
+  const highlightMap = _computeMuscleHighlightMap(w);
   Object.entries(highlightMap).forEach(([id, color]) => {
     const el = document.getElementById(id);
     if (el) { el.setAttribute('fill', color); el.setAttribute('opacity','0.9'); }
