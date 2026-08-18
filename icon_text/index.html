@@ -819,10 +819,12 @@ body.ex-tab-detail-open #ex-float-bar{display:none !important;}
    the box is focused or filled, then animates up above it) ─────────────── */
 .nwf-field{position:relative;margin-top:14px;padding-top:20.2px;}
 .nwf-field-label{position:absolute;left:14px;top:30.2px;font-family:'DM Sans',sans-serif;font-size:18px;font-weight:600;color:#666;line-height:1.3;letter-spacing:0;pointer-events:none;transform-origin:left top;transition:transform .22s cubic-bezier(.4,0,.2,1),color .2s ease;z-index:2;white-space:nowrap;display:flex;align-items:center;gap:8px;}
-.nwf-field.is-float .nwf-field-label{transform:translate(-12px,-30.2px) scale(.7778);color:#fff;}
+.nwf-field.is-float .nwf-field-label{transform:translate(-12px,-30.2px) scale(.7778);color:#aaa;}
 .nwf-field.is-float.is-active .nwf-field-label{color:var(--accent);}
 .nwf-field.is-float .nwf-field-label .nwf-optional{display:none;}
 .nwf-field-box{background:#111;border:1px solid #444;border-radius:12px;padding:10px 14px;transition:border-color .2s;}
+@keyframes nwfSpin{to{transform:rotate(360deg);}}
+.nwf-video-spinner{animation:nwfSpin .7s linear infinite;}
 </style>
 <script src="config.js"></script>
 <script>
@@ -1756,7 +1758,7 @@ function hidAuthScreen() {
   <div class="modal-sheet" style="padding:0;border-radius:16px;border:1px solid var(--border);width:100%;max-width:calc(100vw - 16px);box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column;max-height:calc(100vh - 16px);">
     <!-- Header -->
     <div style="display:flex;align-items:center;justify-content:center;padding:18px 16px 14px;position:relative;">
-      <span id="newExModalTitle" style="font-family:'DM Sans';font-size:20px;font-weight:700;color:#34d399;">New Exercise</span>
+      <span id="newExModalTitle" style="font-family:'DM Sans';font-size:20px;font-weight:700;color:#fff;">New Exercise</span>
       <button onclick="window._exploreExerciseMode=false;if(window._editExName){window._editExName=null;const t=document.getElementById('newExModalTitle');const s=document.getElementById('newExSaveBtn');if(t)t.textContent='New Exercise';if(s)s.textContent='SAVE EXERCISE';document.getElementById('newExModalOverlay').classList.remove('open');}else{closeNewExModal();}" style="position:absolute;right:16px;background:transparent;border:none;cursor:pointer;display:flex;align-items:center;padding:0;flex-shrink:0;-webkit-tap-highlight-color:transparent;">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><line x1="5" y1="12" x2="19" y2="12" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><polyline points="13,6 19,12 13,18" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
@@ -1768,18 +1770,22 @@ function hidAuthScreen() {
           <img id="newExPhotoDefaultImg" src="" style="width:100%;height:100%;object-fit:cover;display:none;filter:brightness(0.75);" onerror="this.style.display='none'">
           <img id="newExPhotoImg" src="" style="display:none;width:100%;height:100%;object-fit:cover;">
         </div>
-        <span id="newExPhotoLabel" style="font-family:'DM Sans';font-size:12px;color:#fff;font-weight:700;letter-spacing:.5px;cursor:pointer;" onclick="openNewExPhotoSheet()">Change Image <span style="color:#888;font-weight:500;">(optional)</span></span>
+        <span id="newExPhotoLabel" style="display:none;font-family:'DM Sans';font-size:12px;color:#fff;font-weight:700;letter-spacing:.5px;cursor:pointer;" onclick="openNewExPhotoSheet()">Change Image <span style="color:#888;font-weight:500;">(optional)</span></span>
       </div>
       <!-- Name -->
-      <input id="newExInput" type="text" autocomplete="off" enterkeyhint="done" style="width:100%;background:#1a1a1a;border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans';font-size:16px;font-weight:600;padding:14px;box-sizing:border-box;outline:none;" placeholder="Exercise name" oninput="const _hb=/[\u0590-\u05FF]/.test(this.value);this.style.direction=_hb?'rtl':'ltr';this.style.textAlign=_hb?'right':'left';document.getElementById('newExDuplicateNote').style.display='none';this.style.borderColor='var(--border)';const _sb=document.getElementById('newExSaveBtn');const _has=!!this.value.trim();_sb.style.opacity=_has?'1':'0.35';_sb.style.cursor=_has?'pointer':'not-allowed';" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onfocus="_newExFieldFocus(true)" onblur="_newExFieldFocus(false);_newExCheckDuplicate()"/>
-      <div id="newExDuplicateNote" style="display:none;color:#ff4747;font-family:'DM Sans';font-size:12px;font-weight:600;text-align:center;margin-top:-8px;">⚠ An exercise with this name already exists</div>
+      <div class="nwf-field" id="newEx-name-field" style="margin-top:0;">
+        <div id="newEx-name-title" class="nwf-field-label">Exercise Name<span id="newExDuplicateNote" style="display:none;color:#ff4747;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;transform:translateY(1px);">Name already exists</span></div>
+        <div id="newEx-name-box" class="nwf-field-box">
+          <input id="newExInput" type="text" autocomplete="off" enterkeyhint="done" style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-family:'DM Sans',sans-serif;font-size:18px;font-weight:600;caret-color:#34d399;-webkit-text-fill-color:#fff;box-sizing:border-box;" oninput="const _hb=/[\u0590-\u05FF]/.test(this.value);this.style.direction=_hb?'rtl':'ltr';this.style.textAlign=_hb?'right':'left';document.getElementById('newExDuplicateNote').style.display='none';_newExNameBoxBorder('#444');const _sb=document.getElementById('newExSaveBtn');const _has=!!this.value.trim();_sb.style.opacity=_has?'1':'0.35';_sb.style.cursor=_has?'pointer':'not-allowed';_nwfSyncFieldFloatByEl(this);" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onfocus="_newExFieldFocus('newEx-name-title','newEx-name-box',true)" onblur="_newExFieldFocus('newEx-name-title','newEx-name-box',false);_newExCheckDuplicate()"/>
+        </div>
+      </div>
       <!-- Body part -->
       <div>
-        <div style="font-family:'DM Sans';font-size:15px;font-weight:700;color:#fff;letter-spacing:.5px;margin-bottom:10px;">Primary Body Part</div>
+        <div style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;color:#aaa;letter-spacing:0;margin-bottom:10px;">Primary Body Part</div>
         <div id="newExMusclePills" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;"></div>
         <!-- Body SVG diagram -->
         <div id="nex-body-container" style="display:flex;gap:18px;width:100%;box-sizing:border-box;margin-top:-26px;transform:scale(0.770) translateZ(0);transform-origin:top center;pointer-events:none;backface-visibility:hidden;"></div>
-        <div style="font-family:'DM Sans';font-size:15px;font-weight:700;color:#fff;letter-spacing:.5px;margin-top:-67px;margin-bottom:6px;">Muscles <span style="color:#888;font-weight:500;">(optional)</span></div>
+        <div style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;color:#aaa;letter-spacing:0;margin-top:-67px;margin-bottom:6px;">Muscles <span style="color:#888;font-weight:500;">(optional)</span></div>
         <!-- Muscle slider -->
         <div id="nex-slider-wrap" style="display:none;margin-top:-4px;">
           <div id="nex-slider-label-row" style="width:60%;margin:0 auto;">
@@ -1800,11 +1806,11 @@ function hidAuthScreen() {
           </div>
         </div>
         <!-- Video URL -->
-        <div style="margin-top:16px;">
-          <div style="font-family:'DM Sans';font-size:15px;font-weight:700;color:#fff;letter-spacing:.5px;margin-bottom:8px;">Video Link <span style="color:#888;font-weight:500;">(optional)</span></div>
-          <div style="background:#111;border:1px solid #444;border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:8px;">
-            <input id="newExVideoUrl" type="url" inputmode="url" placeholder="https://..." spellcheck="false" autocomplete="off" style="flex:1;background:transparent;border:none;outline:none;color:#fff;font-family:'DM Sans';font-size:14px;font-weight:400;caret-color:#34d399;-webkit-text-fill-color:#fff;box-sizing:border-box;min-width:0;" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onfocus="_newExFieldFocus(true)" onblur="_newExFieldFocus(false)"/>
-            <button onclick="navigator.clipboard.readText().then(t=>{const i=document.getElementById('newExVideoUrl');if(i)i.value=t;}).catch(()=>{})" style="background:transparent;border:none;padding:2px;cursor:pointer;flex-shrink:0;-webkit-tap-highlight-color:transparent;display:flex;align-items:center;">
+        <div class="nwf-field" id="newEx-video-field">
+          <div id="newEx-video-title" class="nwf-field-label">Video Link <span class="nwf-optional" style="color:#888;font-weight:500;">(optional)</span><span id="newExVideoNote" style="display:none;font-family:'DM Sans';font-size:13px;font-weight:600;transform:translateY(2px);"></span></div>
+          <div id="newEx-video-box" class="nwf-field-box" style="display:flex;align-items:center;gap:8px;">
+            <input id="newExVideoUrl" type="url" inputmode="url" spellcheck="false" autocomplete="off" style="flex:1;background:transparent;border:none;outline:none;color:#fff;font-family:'DM Sans',sans-serif;font-size:18px;font-weight:400;caret-color:#34d399;-webkit-text-fill-color:#fff;box-sizing:border-box;min-width:0;" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" oninput="_nwfSyncFieldFloatByEl(this)" onfocus="_newExFieldFocus('newEx-video-title','newEx-video-box',true);const _vb=document.getElementById('newExVideoIconBtn');if(_vb)_vb.innerHTML=_NWF_VIDEO_ICON_SVG;const _vn=document.getElementById('newExVideoNote');if(_vn)_vn.style.display='none'" onblur="_newExFieldFocus('newEx-video-title','newEx-video-box',false);_newExVerifyVideoLink(this.value.trim())"/>
+            <button id="newExVideoIconBtn" onclick="const i=document.getElementById('newExVideoUrl');navigator.clipboard.readText().then(t=>{if(i){i.value=t;_nwfSyncFieldFloatByEl(i);_newExVerifyVideoLink(t.trim());}}).catch(()=>{})" style="background:transparent;border:none;padding:2px;cursor:pointer;flex-shrink:0;-webkit-tap-highlight-color:transparent;display:flex;align-items:center;">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
               </svg>
@@ -3462,6 +3468,15 @@ function closeStrengthTargetSheet(save) {
   } else {
     workoutWeekTarget = parseInt(localStorage.getItem('ironlog_workout_target')) || 3;
   }
+  if (sheet.dataset.swipeClosing) {
+    // Already slid off-screen by the swipe-down gesture (see
+    // _initSwipeDownToClose) — replaying sheetSlideDown here would restart it
+    // from the animation's own translateY(0) keyframe, snapping the sheet
+    // back on-screen for a frame before sliding back down again.
+    sheet.style.display = 'none';
+    overlay.style.display = 'none';
+    return;
+  }
   sheet.style.animation = 'sheetSlideDown .2s ease forwards';
   setTimeout(() => {
     sheet.style.display = 'none';
@@ -3576,6 +3591,10 @@ function startNewWorkout(fromWorkouts=false) {
 }
 function _doStartNewWorkout(fromWorkouts=false) {
   window._isNewWorkoutFlow = true;
+  // editWorkoutFromTab sets this when editing, but doesn't reliably clear it on
+  // every way out of that flow — a genuinely new workout must never inherit a
+  // stale index, or the Step 1/2 title wrongly reads "EDIT WORKOUT".
+  window._editingWorkoutIdx = undefined;
   window._newFromToday = !fromWorkouts;
   window._newFromWorkouts = !!fromWorkouts;
   window._activeTabHighlight = 'workouts';
@@ -3828,6 +3847,55 @@ function _nwfHandleNameBlur(inp) {
     if (typeof _nwfUpdateNextBtn === 'function') _nwfUpdateNextBtn();
   }
 }
+const _NWF_VIDEO_ICON_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+const _NWF_VIDEO_SPINNER_SVG = `<svg class="nwf-video-spinner" width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="42" stroke-dashoffset="14"/></svg>`;
+const _NWF_VIDEO_CHECK_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 9 18 20 6"/></svg>`;
+const _NWF_VIDEO_X_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff4747" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>`;
+// Verifies a pasted/typed video link once the user is done editing it (on
+// blur, or right after a paste) — swaps the field's copy/paste icon for a
+// spinner while a HEAD request is in flight, and leaves a short status note
+// next to the field's label. mode:'no-cors' means we can only tell whether
+// the host was reachable at all, not read a real HTTP status (a 404 still
+// "verifies" as reachable) — the best a purely client-side, backend-less
+// check can do. Shared by the new-workout video-link field and the New/Edit
+// Exercise one (each passes its own icon-button/note element ids and keeps
+// its own verify token, so the two fields' in-flight checks never race).
+const _videoVerifyTokens = {};
+async function _verifyVideoLinkField(url, btnId, noteId) {
+  const btn = document.getElementById(btnId);
+  const note = document.getElementById(noteId);
+  const myToken = (_videoVerifyTokens[btnId] = (_videoVerifyTokens[btnId] || 0) + 1);
+  if (!url) {
+    if (btn) btn.innerHTML = _NWF_VIDEO_ICON_SVG;
+    if (note) note.style.display = 'none';
+    return;
+  }
+  if (btn) btn.innerHTML = _NWF_VIDEO_SPINNER_SVG;
+  if (note) { note.textContent = 'Verifying link…'; note.style.color = '#888'; note.style.display = 'inline'; }
+  let ok = false;
+  try {
+    if (!/^https?:\/\//i.test(url)) throw new Error('bad url');
+    await Promise.race([
+      fetch(url, { method: 'HEAD', mode: 'no-cors' }),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 6000))
+    ]);
+    ok = true;
+  } catch (_) {
+    ok = false;
+  }
+  // A newer verification (new value, or the field going empty) started after
+  // this one — don't let a slow/late response stomp on the current state.
+  if (myToken !== _videoVerifyTokens[btnId]) return;
+  if (btn) btn.innerHTML = ok ? _NWF_VIDEO_CHECK_SVG : _NWF_VIDEO_X_SVG;
+  if (note) {
+    note.textContent = ok ? 'Link verified' : 'Could not reach this link';
+    note.style.color = ok ? 'var(--accent)' : '#ff4747';
+  }
+}
+function _nwfVerifyVideoLink(url) { return _verifyVideoLinkField(url, 'nwf-video-icon-btn', 'nwf-video-note'); }
+function _newExVerifyVideoLink(url) { return _verifyVideoLinkField(url, 'newExVideoIconBtn', 'newExVideoNote'); }
+window._nwfVerifyVideoLink = _nwfVerifyVideoLink;
+window._newExVerifyVideoLink = _newExVerifyVideoLink;
 const _NWF_FIELD_IDS = ['nwf-name-input', 'nwf-description', 'nwf-video-link'];
 // Floating label: title sits inside the box (as a hint) until the box is
 // focused or holds a value, then it animates up above the box via the
@@ -3888,8 +3956,23 @@ function _nwfFieldFocus(titleId, boxId, on) {
   }
 }
 window._nwfFieldFocus = _nwfFieldFocus;
+// Sets the "Exercise Name" field's box border directly — that field has no
+// is-active state of its own to drive it (duplicate-name checking needs the
+// border red independent of focus), unlike every other .nwf-field box here.
+function _newExNameBoxBorder(color) {
+  const box = document.getElementById('newEx-name-box');
+  if (box) box.style.borderColor = color;
+}
 const _NEWEX_FIELD_IDS = ['newExInput', 'newExVideoUrl'];
-function _newExFieldFocus(on) {
+function _newExFieldFocus(titleId, boxId, on) {
+  const title = document.getElementById(titleId);
+  const box = document.getElementById(boxId);
+  const wrap = (title || box) && (title || box).closest('.nwf-field');
+  if (wrap) {
+    wrap.classList.toggle('is-active', on);
+    wrap.classList.toggle('is-float', on || _nwfFieldHasValue(wrap));
+  }
+  if (box) box.style.borderColor = on ? 'var(--accent)' : '#444';
   const bar = document.getElementById('newExBottomBar');
   // Same "Done" bar pinned above the keyboard as note-editing and the new-workout
   // name page (showNoteToolbar/_nwfFieldFocus) — owned directly here since these
@@ -4077,7 +4160,7 @@ function _proceedFromNwfNamePage() {
   }
   if (window._editingWorkoutIdx != null) {
     const _et = document.getElementById('_nwf-edit-title');
-    if (_et) _et.innerHTML = '<div style="font-family:\'DM Sans\',sans-serif;font-size:20px;font-weight:700;color:#34d399;letter-spacing:0;line-height:1.2;">EDIT WORKOUT</div><div style="font-family:\'DM Sans\',sans-serif;font-size:14px;font-weight:500;color:#aaa;letter-spacing:.2px;margin-top:2px;">Step 2 of 2</div>';
+    if (_et) _et.innerHTML = '<div style="font-family:\'DM Sans\',sans-serif;font-size:20px;font-weight:700;color:#fff;letter-spacing:0;line-height:1.2;">EDIT WORKOUT</div><div style="font-family:\'DM Sans\',sans-serif;font-size:14px;font-weight:500;color:#aaa;letter-spacing:.2px;margin-top:2px;">Step 2 of 2</div>';
   }
   setTimeout(() => {
     const _animEls = [
@@ -5595,13 +5678,11 @@ function donePickMode() {
         if (_exList) { _exList.style.transition = ''; }
       }, { once: true });
     }, 80);
-    setTimeout(() => {
-      const _exCount = document.querySelectorAll('#exerciseList .exercise-card').length;
-      if (_exCount > 6) {
-        const _addBtn = document.querySelector('.btn-add-exercise');
-        if (_addBtn) _addBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }, 400);
+    // Same "+ ADD EXERCISE" scroll-into-view used everywhere else this button's
+    // position can shift (see _scrollAddExerciseIntoView) — lands it just above
+    // Back/Save instead of the old >6-exercises/block:'center' heuristic, which
+    // didn't account for that fixed bar and skipped short lists entirely.
+    _scrollAddExerciseIntoView(400);
   } else {
     exitPickMode();
     switchTab('log');
@@ -5668,8 +5749,16 @@ function openNewExModal(muscle) {
   window._newExPhotoThumb = null;
   const input = document.getElementById('newExInput');
   if (input) input.value = '';
+  _nwfSyncFieldFloatByEl(input);
   const _nsb = document.getElementById('newExSaveBtn');
   if (_nsb) { _nsb.style.opacity = '0.35'; _nsb.style.cursor = 'not-allowed'; }
+  const _nxVideo = document.getElementById('newExVideoUrl');
+  if (_nxVideo) _nxVideo.value = '';
+  _nwfSyncFieldFloatByEl(_nxVideo);
+  const _nxVideoBtn = document.getElementById('newExVideoIconBtn');
+  if (_nxVideoBtn) _nxVideoBtn.innerHTML = _NWF_VIDEO_ICON_SVG;
+  const _nxVideoNote = document.getElementById('newExVideoNote');
+  if (_nxVideoNote) _nxVideoNote.style.display = 'none';
   // Reset photo
   const _nxDefImg = document.getElementById('newExPhotoDefaultImg');
   if (_nxDefImg) { _nxDefImg.src = _EX_DEFAULT_PHOTOS[window._newExMuscle] || ''; _nxDefImg.style.display = 'block'; }
@@ -5999,9 +6088,8 @@ function closeNewExModal() {
   if (title) title.textContent = 'New Exercise';
   if (saveBtn) saveBtn.textContent = 'SAVE EXERCISE';
   const note = document.getElementById('newExDuplicateNote');
-  const inp = document.getElementById('newExInput');
   if (note) note.style.display = 'none';
-  if (inp) inp.style.borderColor = 'var(--border)';
+  _newExNameBoxBorder('#444');
   window._newExPhotoMode = false;
   window._newExPhoto = null;
   window._newExPhoto32 = null;
@@ -6031,8 +6119,8 @@ function _newExCheckDuplicate() {
       isDup = _exerciseNameExistsInAnyList(name) && !hidden.includes(name);
     }
   }
-  if (note) note.style.display = isDup ? 'block' : 'none';
-  inp.style.borderColor = isDup ? '#ff4747' : 'var(--border)';
+  if (note) note.style.display = isDup ? 'inline' : 'none';
+  _newExNameBoxBorder(isDup ? '#ff4747' : '#444');
   if (saveBtn) {
     const canSave = !!name && !isDup;
     saveBtn.style.opacity = canSave ? '1' : '0.35';
@@ -6044,7 +6132,7 @@ function confirmNewEx() {
   const name = document.getElementById('newExInput').value.trim();
   if (!name) {
     const _inp = document.getElementById('newExInput');
-    _inp.style.borderColor = '#ff4747';
+    _newExNameBoxBorder('#ff4747');
     _inp.scrollIntoView({ behavior: 'smooth', block: 'center' });
     return;
   }
@@ -6127,9 +6215,8 @@ function confirmNewEx() {
     const exists = (_libraryExercises||[]).some(e => e.name === name);
     if (exists) {
       const note = document.getElementById('newExDuplicateNote');
-      const input = document.getElementById('newExInput');
-      if (note) note.style.display = 'block';
-      if (input) input.style.borderColor = '#ff4747';
+      if (note) note.style.display = 'inline';
+      _newExNameBoxBorder('#ff4747');
       return;
     }
     closeNewExModal();
@@ -6154,9 +6241,8 @@ function confirmNewEx() {
     const exists = (_coachExercises || []).some(e => e.name === name);
     if (exists) {
       const note = document.getElementById('newExDuplicateNote');
-      const input = document.getElementById('newExInput');
-      if (note) note.style.display = 'block';
-      if (input) input.style.borderColor = '#ff4747';
+      if (note) note.style.display = 'inline';
+      _newExNameBoxBorder('#ff4747');
       return;
     }
     closeNewExModal();
@@ -6191,9 +6277,8 @@ function confirmNewEx() {
   const isHidden = hidden.includes(name);
   if (exists && !isHidden) {
     const note = document.getElementById('newExDuplicateNote');
-    const inp = document.getElementById('newExInput');
-    if (note) note.style.display = 'block';
-    if (inp) inp.style.borderColor = '#ff4747';
+    if (note) note.style.display = 'inline';
+    _newExNameBoxBorder('#ff4747');
     return;
   }
   if (isHidden) {
@@ -9053,7 +9138,15 @@ function updateTodayMuscleChips() {
     // the filtered list) — its chip then stops rendering below, but the stale
     // filter value would otherwise keep every other muscle's cards hidden too.
     // Reset it, same as the regular (non-new-workout) branch already does below.
-    if (_todayMuscleFilter && !_counts[_todayMuscleFilter]) { _todayMuscleFilter = null; applyTodayFilters(); }
+    if (_todayMuscleFilter && !_counts[_todayMuscleFilter]) {
+      _todayMuscleFilter = null;
+      applyTodayFilters();
+      // Same reason as filterTodayByMuscle's own call below — landing back on
+      // "no body part selected" (here, because a deletion emptied the active
+      // filter out from under the user, not a chip tap) should still leave
+      // "+ ADD EXERCISE" reachable just above Back/Save, not scrolled off.
+      _scrollAddExerciseIntoView(620);
+    }
     const _hasEx = _entries.length > 0;
     wrap.style.display = _hasEx ? 'flex' : 'none';
 
@@ -9093,6 +9186,10 @@ function updateTodayMuscleChips() {
     if (_nl) _nl.style.paddingBottom = '120px';
     _syncWorkoutHeaderSpacer();
     requestAnimationFrame(_syncWorkoutHeaderSpacer);
+    // Keep the mini body diagram in sync with the active body-part chip, not
+    // just the exercise count — this is the only place both filterTodayByMuscle
+    // (chip taps) and exercise add/remove funnel through in this flow.
+    if (typeof _nwfSyncBodyMini === 'function') _nwfSyncBodyMini();
     return;
   }
   // Not in new-workout flow — hide the bottom bar if visible
@@ -11921,6 +12018,12 @@ function _noteKbdBarDelete() {
   el.value = '';
   el.dispatchEvent(new Event('input', { bubbles: true }));
   el.focus();
+  // The video-link "Could not reach this link" note is only ever cleared on
+  // blur/paste (see _verifyVideoLinkField) — Delete keeps the keyboard open
+  // and never blurs, so it'd otherwise leave a stale error showing against a
+  // now-empty field.
+  if (el.id === 'nwf-video-link' && typeof _nwfVerifyVideoLink === 'function') _nwfVerifyVideoLink('');
+  if (el.id === 'newExVideoUrl' && typeof _newExVerifyVideoLink === 'function') _newExVerifyVideoLink('');
 }
 function showNoteToolbar(id) {
   // Hide/shade the same page-level chrome (muscle chips, today-actions, add-ex
@@ -12501,6 +12604,84 @@ function cancelFinish() {
   document.getElementById('summaryOverlay').classList.remove('open');
 }
 
+// Swipe-down-to-dismiss for a bottom-sheet modal — same drag-follows-finger,
+// snap-back-or-close-past-80px behavior as the calendar's own version (see
+// openCalendar), just without a competing horizontal gesture to steer around.
+// scrollElId (optional) gates the drag so it only starts once that element's
+// own content is already scrolled to the top, instead of hijacking a scroll.
+// sheetOrOverlayId can name either a .modal-overlay (its .modal-sheet child is
+// what gets dragged) or, for sheets built without that wrapper/class (e.g.
+// strength-target-sheet), the sheet element's own id directly.
+function _initSwipeDownToClose(sheetOrOverlayId, closeFn, scrollElId) {
+  const el = document.getElementById(sheetOrOverlayId);
+  const sheet = el?.querySelector('.modal-sheet') || el;
+  if (!sheet) return;
+  const scrollEl = scrollElId ? document.getElementById(scrollElId) : null;
+  let dragging = false, startY = 0, dy = 0;
+  sheet.addEventListener('touchstart', e => {
+    if (scrollEl && scrollEl.scrollTop > 0) { dragging = false; return; }
+    startY = e.touches[0].clientY;
+    dragging = true;
+    dy = 0;
+  }, { passive: true });
+  sheet.addEventListener('touchmove', e => {
+    if (!dragging) return;
+    dy = e.touches[0].clientY - startY;
+    if (dy <= 0) { dy = 0; return; }
+    // Block the native scroll/rubber-band bounce on whatever's underneath —
+    // left alone, it fires at the same time as this transform (scrollEl is
+    // already known to be at scrollTop 0) and its own snap-back on release is
+    // what reads as the sheet glitching/yanking up right before it closes.
+    e.preventDefault();
+    sheet.style.transition = 'none';
+    sheet.style.transform = `translateY(${dy * 0.6}px)`;
+  }, { passive: false });
+  const _end = () => {
+    if (!dragging) return;
+    dragging = false;
+    if (dy > 80) {
+      // Past the threshold — keep sliding down and off-screen in the same
+      // direction the finger was already dragging, THEN close. Snapping back
+      // to translateY(0) first (like the cancel case below) would visibly
+      // yank the sheet back up right before it disappears.
+      sheet.style.transition = 'transform .2s ease-in';
+      sheet.style.transform = 'translateY(100%)';
+      // Lets a close function that plays its own exit animation (e.g.
+      // closeStrengthTargetSheet's sheetSlideDown) know the sheet is already
+      // off-screen, so it can skip replaying that animation from scratch.
+      sheet.dataset.swipeClosing = '1';
+      setTimeout(() => {
+        closeFn();
+        sheet.style.transition = '';
+        sheet.style.transform = '';
+        delete sheet.dataset.swipeClosing;
+      }, 200);
+    } else {
+      sheet.style.transition = 'transform .25s ease';
+      sheet.style.transform = '';
+      setTimeout(() => { sheet.style.transition = ''; }, 250);
+    }
+  };
+  sheet.addEventListener('touchend', _end, { passive: true });
+  sheet.addEventListener('touchcancel', _end, { passive: true });
+}
+_initSwipeDownToClose('weekSummaryOverlay', closeWeekSummary);
+_initSwipeDownToClose('summaryOverlay', cancelFinish, 'summaryBody');
+// workoutPhotoModalOverlay and strength-target-sheet are defined further down
+// in the HTML than this script block — deferred to DOMContentLoaded so their
+// elements actually exist by the time getElementById looks for them (calling
+// this synchronously here, mid-parse, would silently no-op on both).
+document.addEventListener('DOMContentLoaded', () => {
+  _initSwipeDownToClose('workoutPhotoModalOverlay', _backToWorkoutNameStep);
+  _initSwipeDownToClose('strength-target-sheet', () => closeStrengthTargetSheet(false));
+  // The "..." menu sheets — workout hero menu, and the exercise-detail menu
+  // (shared by both the in-workout "..." and the Exercises-tab one).
+  _initSwipeDownToClose('workout-menu-sheet', closeWorkoutMenu);
+  _initSwipeDownToClose('ex-detail-menu-sheet', closeExDetailMenu);
+  // Exercise photo picker (camera/gallery/remove) — Edit Exercise's "Exercise Photo".
+  _initSwipeDownToClose('ex-photo-sheet', closeExPhotoSheet);
+});
+
 function openPRStarsInfo() {
   if (window._historyPush) window._historyPush('prStarsInfo');
   document.getElementById('prStarsInfoOverlay').classList.add('open');
@@ -12932,6 +13113,11 @@ function _finalizeNewWorkoutArea() {
   if (_ptw) _ptw.style.display = 'none';
   updateTodayMuscleChips();
   checkFinishReady();
+  // Landing on Step 2 fresh (e.g. "Next" from an existing workout's name page,
+  // where exercises are already there and no body-part chip is selected yet)
+  // is a third way to reach "no body part selected" that filterTodayByMuscle's
+  // own scroll-into-view call never sees — nothing was tapped to trigger it.
+  if (!_todayMuscleFilter) _scrollAddExerciseIntoView(620);
   const _hdr = document.getElementById('workout-sticky-header');
   if (_hdr) { _hdr.style.paddingTop = 'calc(env(safe-area-inset-top) + 80px)'; _hdr.style.zIndex = '31'; }
   document.getElementById('_nwf-back-wrapper')?.remove();
@@ -16010,14 +16196,66 @@ function openCalendar() {
   if (!window._calSwipeInit) {
     window._calSwipeInit = true;
     const cb = document.getElementById('calBody');
-    let _swX = 0;
+    const sheet = document.querySelector('#calendarOverlay .modal-sheet');
+    let _swX = 0, _swY = 0;
     let _swOnGrid = false;
-    cb.addEventListener('touchstart', e => { _swX = e.touches[0].clientX; _swOnGrid = !!e.target.closest('.cal-grid'); }, {passive:true});
-    cb.addEventListener('touchend', e => {
-      if (!_swOnGrid) return;
-      const dx = e.changedTouches[0].clientX - _swX;
-      if (Math.abs(dx) > 40) calNav(dx < 0 ? 1 : -1);
+    // Which gesture this touch turns out to be — decided on the first move past
+    // a small deadzone, so a slightly-diagonal swipe doesn't get read as both a
+    // month-nav swipe and a close-drag at once. 'v' only ever starts if the body
+    // was already scrolled to the top, so it never steals a normal content scroll.
+    let _swAxis = null;
+    let _swDy = 0;
+    cb.addEventListener('touchstart', e => {
+      _swX = e.touches[0].clientX;
+      _swY = e.touches[0].clientY;
+      _swOnGrid = !!e.target.closest('.cal-grid');
+      _swAxis = null;
+      _swDy = 0;
     }, {passive:true});
+    cb.addEventListener('touchmove', e => {
+      const dx = e.touches[0].clientX - _swX;
+      const dy = e.touches[0].clientY - _swY;
+      if (!_swAxis) {
+        if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+        _swAxis = (Math.abs(dy) > Math.abs(dx) && dy > 0 && cb.scrollTop <= 0) ? 'v' : 'h';
+        if (_swAxis === 'v' && sheet) sheet.style.transition = 'none';
+      }
+      if (_swAxis === 'v' && sheet) {
+        // Block the native scroll/rubber-band bounce underneath — left alone,
+        // it fires alongside this transform and its own snap-back on release
+        // is what reads as the sheet glitching/yanking up right before close.
+        e.preventDefault();
+        _swDy = Math.max(0, dy);
+        sheet.style.transform = `translateY(${_swDy * 0.6}px)`;
+      }
+    }, {passive:false});
+    const _swEnd = e => {
+      if (_swAxis === 'v' && sheet) {
+        if (_swDy > 80) {
+          // Past the threshold — keep sliding down in the same direction the
+          // finger was already dragging, THEN close. Snapping back to
+          // translateY(0) first (like the cancel case below) would visibly
+          // yank the sheet back up right before it disappears.
+          sheet.style.transition = 'transform .2s ease-in';
+          sheet.style.transform = 'translateY(100%)';
+          setTimeout(() => {
+            closeCalendar();
+            sheet.style.transition = '';
+            sheet.style.transform = '';
+          }, 200);
+        } else {
+          sheet.style.transition = 'transform .25s ease';
+          sheet.style.transform = '';
+          setTimeout(() => { sheet.style.transition = ''; }, 250);
+        }
+      } else if (_swOnGrid) {
+        const dx = e.changedTouches[0].clientX - _swX;
+        if (Math.abs(dx) > 40) calNav(dx < 0 ? 1 : -1);
+      }
+      _swAxis = null;
+    };
+    cb.addEventListener('touchend', _swEnd, {passive:true});
+    cb.addEventListener('touchcancel', _swEnd, {passive:true});
   }
   const now = new Date();
   calYear = now.getFullYear(); calMonth = now.getMonth();
@@ -17717,7 +17955,7 @@ window.addEventListener('load', function() {
       </div>
     </div>
     <div class="nwf-field" id="nwf-name-field">
-      <div id="nwf-name-title" class="nwf-field-label">Workout Name<span id="nwf-name-dup-msg" style="display:none;color:#ff4747;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;">Name already exists</span></div>
+      <div id="nwf-name-title" class="nwf-field-label">Workout Name<span id="nwf-name-dup-msg" style="display:none;color:#ff4747;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;transform:translateY(1px);">Name already exists</span></div>
       <div id="nwf-name-box" class="nwf-field-box">
         <input id="nwf-name-input" type="text" autocomplete="off" enterkeyhint="done" spellcheck="false" placeholder=""
                style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-family:'DM Sans',sans-serif;font-size:18px;font-weight:600;caret-color:#34d399;-webkit-text-fill-color:#fff;box-sizing:border-box;"
@@ -17738,14 +17976,14 @@ window.addEventListener('load', function() {
       </div>
     </div>
     <div class="nwf-field" id="nwf-video-field">
-      <div id="nwf-video-title" class="nwf-field-label">Video link <span class="nwf-optional" style="color:#888;font-weight:500;">(optional)</span></div>
+      <div id="nwf-video-title" class="nwf-field-label">Video link <span class="nwf-optional" style="color:#888;font-weight:500;">(optional)</span><span id="nwf-video-note" style="display:none;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;transform:translateY(2px);"></span></div>
       <div id="nwf-video-box" class="nwf-field-box" style="display:flex;align-items:center;gap:8px;">
         <input id="nwf-video-link" type="url" inputmode="url" placeholder="" spellcheck="false" autocomplete="off"
                style="flex:1;background:transparent;border:none;outline:none;color:#fff;font-family:'DM Sans',sans-serif;font-size:18px;font-weight:400;caret-color:#34d399;-webkit-text-fill-color:#fff;box-sizing:border-box;min-width:0;"
-               onfocus="_nwfFieldFocus('nwf-video-title','nwf-video-box',true)"
+               onfocus="_nwfFieldFocus('nwf-video-title','nwf-video-box',true);const _vb=document.getElementById('nwf-video-icon-btn');if(_vb)_vb.innerHTML=_NWF_VIDEO_ICON_SVG;const _vn=document.getElementById('nwf-video-note');if(_vn)_vn.style.display='none'"
                oninput="_nwfSyncFieldFloatByEl(this)"
-               onblur="_nwfFieldFocus('nwf-video-title','nwf-video-box',false)">
-        <button onclick="const i=document.getElementById('nwf-video-link');navigator.clipboard.readText().then(t=>{if(i){i.value=t;_nwfSyncFieldFloatByEl(i);}}).catch(()=>{})" style="background:transparent;border:none;padding:2px;cursor:pointer;flex-shrink:0;-webkit-tap-highlight-color:transparent;display:flex;align-items:center;">
+               onblur="_nwfFieldFocus('nwf-video-title','nwf-video-box',false);_nwfVerifyVideoLink(this.value.trim())">
+        <button id="nwf-video-icon-btn" onclick="const i=document.getElementById('nwf-video-link');navigator.clipboard.readText().then(t=>{if(i){i.value=t;_nwfSyncFieldFloatByEl(i);_nwfVerifyVideoLink(t.trim());}}).catch(()=>{})" style="background:transparent;border:none;padding:2px;cursor:pointer;flex-shrink:0;-webkit-tap-highlight-color:transparent;display:flex;align-items:center;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
           </svg>
@@ -23479,6 +23717,11 @@ function toggleWtabCardMenu(idx) {
     sheet.id = 'workout-options-sheet';
     sheet.style.cssText = 'position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:#1a1a1a;border-radius:20px 20px 0 0;z-index:301;padding:0 16px calc(16px + env(safe-area-inset-bottom));';
     document.body.appendChild(sheet);
+    // closeWtabMenu removes both elements outright rather than hiding them, so
+    // a fresh pair (and this listener) is (re)built from scratch each open —
+    // unlike the other swipe-to-close sheets, this one can't be wired up once
+    // up front (see _initSwipeDownToClose's other call sites).
+    _initSwipeDownToClose('workout-options-sheet', closeWtabMenu);
   }
   const w = workouts[idx];
   const hasPhoto = w ? !!localStorage.getItem(`ironlog_workout_photo_${w.name}`) : false;
@@ -25811,10 +26054,16 @@ function editExerciseDetail() {
   window._newExSelectedSubMuscles = exData.subMuscles || [];
   const input = document.getElementById('newExInput');
   if (input) input.value = name;
+  _nwfSyncFieldFloatByEl(input);
   const _edsb = document.getElementById('newExSaveBtn');
   if (_edsb) { _edsb.style.opacity = '1'; _edsb.style.cursor = 'pointer'; }
   const videoInput = document.getElementById('newExVideoUrl');
   if (videoInput) videoInput.value = exData.videoUrl || '';
+  _nwfSyncFieldFloatByEl(videoInput);
+  const _edVideoBtn = document.getElementById('newExVideoIconBtn');
+  if (_edVideoBtn) _edVideoBtn.innerHTML = _NWF_VIDEO_ICON_SVG;
+  const _edVideoNote = document.getElementById('newExVideoNote');
+  if (_edVideoNote) _edVideoNote.style.display = 'none';
   // Update title and button
   const title = document.getElementById('newExModalTitle');
   const saveBtn = document.getElementById('newExSaveBtn');
@@ -26763,8 +27012,8 @@ function _nwfGetBodyMini() {
 function _nwfSyncBodyMini() {
   const host = document.getElementById('nwf-body-mini-slot');
   if (!host) return;
-  const cards = [...document.querySelectorAll('#exerciseList .exercise-card')];
-  const mini = cards.length ? _nwfGetBodyMini() : null;
+  const allCards = [...document.querySelectorAll('#exerciseList .exercise-card')];
+  const mini = allCards.length ? _nwfGetBodyMini() : null;
   if (!mini) { host.style.display = 'none'; return; }
   if (mini.parentElement !== host) host.appendChild(mini);
   host.style.display = 'flex';
@@ -26772,6 +27021,10 @@ function _nwfSyncBodyMini() {
     const el = document.getElementById('mini-' + id);
     if (el) { el.setAttribute('fill', '#2a2a2a'); el.setAttribute('opacity', '1'); }
   });
+  // A selected body-part chip should highlight only that body part, not every
+  // muscle the workout as a whole touches — same filtering applyTodayFilters
+  // already does for the exercise list itself.
+  const cards = _todayMuscleFilter ? allCards.filter(c => (c.dataset.exmuscle || 'Chest') === _todayMuscleFilter) : allCards;
   const w = { exercises: cards.map(c => ({ name: c.dataset.exname, muscle: c.dataset.exmuscle || 'Chest' })) };
   const highlightMap = _computeMuscleHighlightMap(w);
   Object.entries(highlightMap).forEach(([id, color]) => {
