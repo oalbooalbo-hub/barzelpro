@@ -4498,7 +4498,7 @@ function _updateWorkoutProgress() {
       const lc  = n > 0 ? color : '#444';
       const num = n > 0 ? `<span style="position:absolute;font-size:14px;font-weight:500;color:#000;line-height:1;transform:translateY(1px);">${n}</span>` : '';
       const lbl = ['MAX','B.SET','VOL'][idx] || '';
-      return `<span data-pr="${idx}" data-count="${n}" style="display:inline-flex;flex-direction:column;align-items:center;gap:2px;"><span style="position:relative;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;"><svg width="32" height="32" viewBox="0 0 24 24" fill="${f}"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>${num}</span><span style="font-size:8px;font-weight:700;color:${lc};letter-spacing:.5px;line-height:1;">${lbl}</span></span>`;
+      return `<span data-pr="${idx}" data-count="${n}" style="display:inline-flex;flex-direction:column;align-items:center;gap:2px;"><span style="position:relative;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;"><svg width="32" height="32" viewBox="0 0 24 24" fill="${f}"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>${num}</span><span style="font-size:8px;font-weight:700;color:${lc};letter-spacing:.5px;line-height:11px;transform:translateY(1px);display:inline-block;">${lbl}</span></span>`;
     };
     prStars.innerHTML = star('#e8ff47', weightPRs, 0) + star('#ff8c42', volPRs, 1) + star('#a78bfa', volumePRs, 2);
     const newSpans = prStars.querySelectorAll('span[data-pr]');
@@ -11876,6 +11876,27 @@ function _positionNoteKbdBar() {
         .find(h => h && h.offsetParent !== null && getComputedStyle(h).display !== 'none');
       const headerH = header ? header.offsetHeight : 0;
       const kbdH = bar.offsetHeight + 12;
+      // A short exercise (1-2 sets) makes for a short card/page — sometimes
+      // shorter than viewport height + keyboard height combined, leaving no
+      // scrollable room at all to bring the note above the keyboard no matter
+      // what block:'start'/'end' is asked for below. Pad out whichever element
+      // is actually scrolling (the ex-detail overlay body, or the page/body
+      // itself) by the missing amount so there's always at least enough room —
+      // restored again in hideNoteToolbar once the keyboard closes.
+      let scroller = area.parentElement;
+      while (scroller && scroller !== document.body) {
+        const oy = getComputedStyle(scroller).overflowY;
+        if ((oy === 'auto' || oy === 'scroll') && scroller.scrollHeight > scroller.clientHeight + 1) break;
+        scroller = scroller.parentElement;
+      }
+      if (!scroller || scroller === document.body) scroller = document.scrollingElement || document.documentElement;
+      const maxScroll = scroller.scrollHeight - scroller.clientHeight;
+      const deficit = gap - maxScroll;
+      if (deficit > 0) {
+        if (scroller.dataset.noteKbdPadOrig === undefined) scroller.dataset.noteKbdPadOrig = scroller.style.paddingBottom || '';
+        scroller.style.paddingBottom = `calc(${scroller.dataset.noteKbdPadOrig || '0px'} + ${deficit}px)`;
+        window._noteKbdPaddedScroller = scroller;
+      }
       area.style.scrollMarginTop = headerH + 8 + 'px';
       area.style.scrollMarginBottom = kbdH + 'px';
       // Bottom-aligning (like before) reads best for a short note — it sits right
@@ -11987,6 +12008,13 @@ function hideNoteToolbar() {
     if (kbdBar) { kbdBar.style.display = 'none'; delete kbdBar.dataset.scrolledForNote; }
     window.visualViewport?.removeEventListener('resize', _positionNoteKbdBar);
     window.visualViewport?.removeEventListener('scroll', _positionNoteKbdBar);
+    // Undo the temporary bottom-padding boost _positionNoteKbdBar may have added
+    // to make room to scroll a short exercise's note above the keyboard.
+    if (window._noteKbdPaddedScroller) {
+      window._noteKbdPaddedScroller.style.paddingBottom = window._noteKbdPaddedScroller.dataset.noteKbdPadOrig || '';
+      delete window._noteKbdPaddedScroller.dataset.noteKbdPadOrig;
+      window._noteKbdPaddedScroller = null;
+    }
     // Restore the float bar now that the keyboard has closed — only if it's
     // still supposed to be showing for this card (exFloatCardId still set).
     if (window._exFloatCardId) {
