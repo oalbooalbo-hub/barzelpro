@@ -583,6 +583,7 @@ body.ex-tab-detail-open #ex-float-bar{display:none !important;}
 @keyframes tapPopScale{0%{transform:scale(.8)}60%{transform:scale(1.12)}100%{transform:scale(1)}}
 .wsd-circle{transition:border-color .2s ease;}
 @keyframes modalFadeIn{from{opacity:0}to{opacity:1}}
+@keyframes findingPulse{0%{opacity:0}50%{opacity:1}100%{opacity:0}}
 @keyframes calSlideInRight{from{opacity:0;transform:translateX(32px)}to{opacity:1;transform:translateX(0)}}
 @keyframes calSlideInLeft{from{opacity:0;transform:translateX(-32px)}to{opacity:1;transform:translateX(0)}}
 .modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:12px auto 0;flex-shrink:0;}
@@ -1283,7 +1284,7 @@ function hidAuthScreen() {
     </div>
     <div id="today-plan-card" style="width:100%;max-width:380px;display:none;"></div>
     <div style="width:100%;max-width:380px;">
-      <button id="today-coach-btn" onclick="openCoachesGallery()" style="width:100%;height:55px;display:flex;align-items:center;justify-content:center;background:transparent;color:#ccc;border:1px solid #ccc;border-radius:26px;font-family:'DM Sans';font-size:14px;letter-spacing:0;cursor:pointer;box-sizing:border-box;line-height:1;font-weight:700;opacity:0;transform:translateY(24px);">FIND A COACH</button>
+      <button id="today-coach-btn" onclick="openCoachesGallery()" style="width:100%;height:55px;display:flex;align-items:center;justify-content:center;background:transparent;color:#ccc;border:1px solid #ccc;border-radius:26px;font-family:'DM Sans';font-size:16px;letter-spacing:0;cursor:pointer;box-sizing:border-box;line-height:1;font-weight:700;opacity:0;transform:translateY(24px);">FIND A COACH</button>
     </div>
     <div id="today-load-btn-wrap" style="width:100%;max-width:380px;display:none;">
       <button onclick="window._isNewWorkoutFlow=false;window._loadFromToday=true;loadOrSwitchWorkouts()" style="width:100%;height:100px;display:flex;align-items:center;justify-content:center;background:var(--accent);color:#000;border:1px solid var(--accent);border-radius:26px;font-family:'DM Sans';font-size:22px;letter-spacing:0;cursor:pointer;box-sizing:border-box;line-height:1;font-weight:700;">START WORKOUT</button>
@@ -4372,7 +4373,7 @@ function _setWorkoutHeroPhoto(name) {
       </button>
     </div>
     <div id="workout-hero-progress-wrap" style="height:6px;background:transparent;display:none;gap:3px;width:80%;margin:-2px auto;"></div>` : ''}
-    <div style="position:relative;margin:${window._isNewWorkoutFlow ? '0' : '4px'} 10px 0;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;">
+    <div ${window._isNewWorkoutFlow ? '' : `onclick="if(window._todayInfoPanelOpen)_closeTodayInfoPanel()"`} style="position:relative;margin:${window._isNewWorkoutFlow ? '0' : '4px'} 10px 0;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;">
       <img src="${photo}" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;filter:brightness(0.85);">
       ${window._isNewWorkoutFlow ? `<button onclick="event.stopPropagation();_openPhotoModalFromHero()" style="position:absolute;top:8px;right:8px;z-index:4;background:rgba(0,0,0,0.55);border:none;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>` : ''}
       ${localStorage.getItem(`ironlog_workout_video_${name}`) ? `<button onclick="event.stopPropagation();const _v=localStorage.getItem('ironlog_workout_video_${name}');if(_v)window.open(_v,'_blank');" style="position:absolute;top:8px;left:10px;z-index:4;display:flex;align-items:center;gap:5px;background:transparent;border:none;padding:4px 6px;border-radius:4px;cursor:pointer;-webkit-tap-highlight-color:transparent;"><svg width="13" height="13" viewBox="0 0 24 24" fill="var(--accent)" stroke="none"><polygon points="5,3 19,12 5,21"/></svg><span style="color:var(--accent);font-family:'DM Sans';font-size:11px;font-weight:700;letter-spacing:.5px;">PLAY</span></button>` : ''}
@@ -4495,7 +4496,7 @@ function _updateWorkoutProgress() {
     const star = (color, n, idx) => {
       const f   = n > 0 ? color : '#333';
       const lc  = n > 0 ? color : '#444';
-      const num = n > 0 ? `<span style="position:absolute;font-size:14px;font-weight:900;color:#000;line-height:1;">${n}</span>` : '';
+      const num = n > 0 ? `<span style="position:absolute;font-size:14px;font-weight:500;color:#000;line-height:1;transform:translateY(1px);">${n}</span>` : '';
       const lbl = ['MAX','B.SET','VOL'][idx] || '';
       return `<span data-pr="${idx}" data-count="${n}" style="display:inline-flex;flex-direction:column;align-items:center;gap:2px;"><span style="position:relative;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;"><svg width="32" height="32" viewBox="0 0 24 24" fill="${f}"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>${num}</span><span style="font-size:8px;font-weight:700;color:${lc};letter-spacing:.5px;line-height:1;">${lbl}</span></span>`;
     };
@@ -9446,7 +9447,7 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
       <div class="comment-area" id="comment-area-${id}">
         <div class="comment-area-inner" id="comment-area-inner-${id}" style="position:relative;border:1px solid var(--accent);border-radius:9px;padding:18px 11px 10px;margin-top:6px;transition:border-color .2s;width:calc(min(430px,100vw) - 32px);max-width:398px;box-sizing:border-box;">
           <span class="comment-area-label" style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:var(--bg);padding:0 5px;font-size:12px;font-weight:700;color:var(--accent);letter-spacing:.3px;pointer-events:none;">Note</span>
-          <textarea class="comment-box" id="comment-${id}" autocomplete="off" spellcheck="false" placeholder="Tap for editing&" oninput="updateNoteBtn('${id}');saveSession();if(window._isNewWorkoutFlow)updateWflowCloseBtn('${id}');this.style.direction=/[\u0590-\u05FF]/.test(this.value)?'rtl':'ltr';this.style.textAlign=/[\u0590-\u05FF]/.test(this.value)?'right':'left';this.style.height='auto';this.style.height=this.scrollHeight+'px'" onfocus="showNoteToolbar('${id}');this.closest('.comment-area')?.classList.add('note-active')" onblur="hideNoteToolbar();if(!this.value.trim())this.closest('.comment-area')?.classList.remove('note-active')"></textarea>
+          <textarea class="comment-box" id="comment-${id}" autocomplete="off" spellcheck="false" placeholder="Tap to edit" oninput="updateNoteBtn('${id}');saveSession();if(window._isNewWorkoutFlow)updateWflowCloseBtn('${id}');this.style.direction=/[\u0590-\u05FF]/.test(this.value)?'rtl':'ltr';this.style.textAlign=/[\u0590-\u05FF]/.test(this.value)?'right':'left';this.style.height='auto';this.style.height=this.scrollHeight+'px'" onfocus="showNoteToolbar('${id}');this.closest('.comment-area')?.classList.add('note-active')" onblur="hideNoteToolbar();if(!this.value.trim())this.closest('.comment-area')?.classList.remove('note-active')"></textarea>
         </div>
       </div>
 
@@ -11869,10 +11870,36 @@ function _positionNoteKbdBar() {
     const id = window._noteEditingId;
     const area = id ? document.getElementById(`comment-area-${id}`) : null;
     if (area) {
-      area.style.scrollMarginBottom = (bar.offsetHeight + 12) + 'px';
-      area.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      // Whichever sticky header is on screen while a note is open (ex-detail's
+      // elapsed-timer bar, its no-photo header, or the Today page's own header).
+      const header = [document.getElementById('ex-detail-above-elapsed'), document.getElementById('ex-detail-no-photo-wrap'), document.getElementById('workout-sticky-header')]
+        .find(h => h && h.offsetParent !== null && getComputedStyle(h).display !== 'none');
+      const headerH = header ? header.offsetHeight : 0;
+      const kbdH = bar.offsetHeight + 12;
+      area.style.scrollMarginTop = headerH + 8 + 'px';
+      area.style.scrollMarginBottom = kbdH + 'px';
+      // Bottom-aligning (like before) reads best for a short note — it sits right
+      // above the keyboard, close to where you're typing. But for a note tall
+      // enough that its own top scrolls out from under the header when bottom-
+      // aligned, that hides the very lines you're trying to read, so fall back to
+      // top-aligning instead — guarantees at least the note's first ~3 lines
+      // (min-height 60px, 24px line-height) stay visible below the header.
+      const safeZoneH = window.innerHeight - gap - headerH - kbdH;
+      const fitsFully = area.offsetHeight <= safeZoneH;
+      area.scrollIntoView({ behavior: 'smooth', block: fitsFully ? 'end' : 'start' });
     }
   }
+}
+// Clears whichever field is currently focused (the bar is shared across the note
+// textarea, nwf-name-page fields, and the new-exercise fields — see the comment
+// on #note-kbd-done-bar), same as pressing backspace until empty, then leaves
+// the keyboard open so the user can keep typing.
+function _noteKbdBarDelete() {
+  const el = document.activeElement;
+  if (!el || (el.tagName !== 'TEXTAREA' && el.tagName !== 'INPUT')) return;
+  el.value = '';
+  el.dispatchEvent(new Event('input', { bubbles: true }));
+  el.focus();
 }
 function showNoteToolbar(id) {
   // Hide/shade the same page-level chrome (muscle chips, today-actions, add-ex
@@ -12886,7 +12913,7 @@ function _finalizeNewWorkoutArea() {
   const _editTitle = document.createElement('div');
   _editTitle.id = '_nwf-edit-title';
   _editTitle.style.cssText = 'position:absolute;top:calc(env(safe-area-inset-top) + 20px);left:0;right:0;text-align:center;pointer-events:none;';
-  _editTitle.innerHTML = '<div style="font-family:\'DM Sans\',sans-serif;font-size:20px;font-weight:700;color:#34d399;letter-spacing:0;line-height:1.2;">NEW WORKOUT</div><div style="font-family:\'DM Sans\',sans-serif;font-size:14px;font-weight:500;color:#aaa;letter-spacing:.2px;margin-top:2px;">Step 2 of 2</div>';
+  _editTitle.innerHTML = '<div style="font-family:\'DM Sans\',sans-serif;font-size:20px;font-weight:700;color:#fff;letter-spacing:0;line-height:1.2;">NEW WORKOUT</div><div style="font-family:\'DM Sans\',sans-serif;font-size:14px;font-weight:500;color:#aaa;letter-spacing:.2px;margin-top:2px;">Step 2 of 2</div>';
   _nwfWrap.appendChild(_editTitle);
   document.body.appendChild(_nwfWrap);
 }
@@ -17647,7 +17674,7 @@ window.addEventListener('load', function() {
 <!-- NEW WORKOUT FIRST PAGE — hero image + inline name edit -->
 <div id="nwf-name-page" style="display:none;position:fixed;inset:0;z-index:201;background:#0a0a0a;max-width:430px;margin:0 auto;flex-direction:column;">
   <div style="flex-shrink:0;padding-top:calc(env(safe-area-inset-top,0px) + 20px);padding-bottom:14px;text-align:center;background:#0a0a0a;">
-    <div id="nwf-page-title" style="font-family:'DM Sans',sans-serif;font-size:20px;font-weight:700;color:#34d399;letter-spacing:0;line-height:1.2;">NEW WORKOUT</div>
+    <div id="nwf-page-title" style="font-family:'DM Sans',sans-serif;font-size:20px;font-weight:700;color:#fff;letter-spacing:0;line-height:1.2;">NEW WORKOUT</div>
     <div style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;color:#aaa;letter-spacing:.2px;margin-top:2px;">Step 1 of 2</div>
   </div>
   <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 10px calc(env(safe-area-inset-bottom,0px) + 96px);">
@@ -18069,20 +18096,22 @@ document.getElementById("installBtn").addEventListener("click", async () => {
 </div>
 
 <!-- COACHES GALLERY (Home "GET A COACH" entry point) -->
-<div id="coachesOverlay" style="display:none;position:fixed;inset:0;z-index:9000;background:#0a0a0a;overflow-y:auto;">
+<div id="coachesOverlay" style="display:none;position:fixed;inset:0;z-index:9000;background:#0a0a0a;overflow-y:auto;animation:modalFadeIn .4s ease both;">
   <div style="max-width:430px;margin:0 auto;padding:16px;">
     <!-- Title row — same structure/style as the Workouts tab's own title -->
     <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0 6px;">
       <span style="font-family:'DM Sans';font-size:20px;font-weight:700;color:var(--text);">Our Coaches</span>
       <button onclick="closeCoachesGallery()" style="background:transparent;border:1px solid #2a2a2a;border-radius:8px;color:#888;font-size:16px;width:32px;height:32px;cursor:pointer;-webkit-tap-highlight-color:transparent;">✕</button>
     </div>
-    <!-- Male/Female segmented filter — same visual pattern as the Workouts tab's
-         ALL/CUSTOM segmented control, minus the "+" add button. -->
+    <!-- All/Male/Female segmented filter — same visual pattern as the Workouts tab's
+         ALL/CUSTOM segmented control, minus the "+" add button. ALL is the default
+         tab and interleaves one male, one female, one male, ... -->
     <div style="display:flex;gap:0;align-items:center;margin-top:4px;">
       <div id="coaches-seg-wrap" style="position:relative;display:flex;flex:1;">
-        <button onclick="switchCoachesFilter('male')" id="coaches-seg-male" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:var(--accent);transition:color .15s;">MALE</button>
+        <button onclick="switchCoachesFilter('all')" id="coaches-seg-all" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:var(--accent);transition:color .15s;">ALL</button>
+        <button onclick="switchCoachesFilter('male')" id="coaches-seg-male" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:#555;transition:color .15s;">MALE</button>
         <button onclick="switchCoachesFilter('female')" id="coaches-seg-female" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:#555;transition:color .15s;">FEMALE</button>
-        <div id="coaches-seg-indicator" style="position:absolute;bottom:0;height:2px;left:0;width:50%;background:var(--accent);transition:left .2s,background .2s;"></div>
+        <div id="coaches-seg-indicator" style="position:absolute;bottom:0;height:2px;left:0;width:33.333%;background:var(--accent);transition:left .2s,background .2s;"></div>
       </div>
     </div>
     <!-- Carousel — one full-width slide at a time, swipe left/right; each photo is a
@@ -20223,32 +20252,76 @@ async function _loadCoachGalleryData(gender) {
 }
 function openCoachesGallery() {
   document.getElementById('coachesOverlay').style.display = 'block';
-  switchCoachesFilter(window._coachesGalleryFilter || 'male');
+  switchCoachesFilter(window._coachesGalleryFilter || 'all');
 }
 function closeCoachesGallery() {
   document.getElementById('coachesOverlay').style.display = 'none';
 }
+// Pairs a gender's images up with its per-photo data (name/profession/etc.) by
+// index, since both come from parallel arrays (1.jpg <-> data.json[0], ...).
+function _zipCoachPairs(images, coachData) {
+  return images.map((src, i) => ({ src, info: coachData[i] || {} }));
+}
+// ALL tab: one female, one male, one female, ... — not gender-block-then-block.
+function _interleaveCoachPairs(a, b) {
+  const out = [];
+  const max = Math.max(a.length, b.length);
+  for (let i = 0; i < max; i++) {
+    if (a[i]) out.push(a[i]);
+    if (b[i]) out.push(b[i]);
+  }
+  return out;
+}
+// True only when a gender's images/data haven't been fetched yet — the ALL tab
+// (the default on open) always pulls both male and female up front, so by the
+// time the user can tap MALE/FEMALE those are already cached and this returns
+// false, skipping the FINDING... placeholder for plain tab switches.
+function _coachesNeedsFetch(gender) {
+  const genders = gender === 'all' ? ['male', 'female'] : [gender];
+  return genders.some(g => !_coachGalleryImageCache[g] || !_coachGalleryDataCache[g]);
+}
 async function switchCoachesFilter(gender) {
   window._coachesGalleryFilter = gender;
+  const allBtn = document.getElementById('coaches-seg-all');
   const maleBtn = document.getElementById('coaches-seg-male');
   const femaleBtn = document.getElementById('coaches-seg-female');
   const indicator = document.getElementById('coaches-seg-indicator');
+  if (allBtn) allBtn.style.color = gender === 'all' ? 'var(--accent)' : '#555';
   if (maleBtn) maleBtn.style.color = gender === 'male' ? 'var(--accent)' : '#555';
   if (femaleBtn) femaleBtn.style.color = gender === 'female' ? 'var(--accent)' : '#555';
-  if (indicator) indicator.style.left = gender === 'male' ? '0' : '50%';
+  if (indicator) indicator.style.left = gender === 'all' ? '0' : gender === 'male' ? '33.333%' : '66.667%';
   const track = document.getElementById('coaches-carousel-track');
   const dots = document.getElementById('coaches-carousel-dots');
-  if (track) track.innerHTML = `<div style="flex:0 0 100%;display:flex;align-items:center;justify-content:center;color:#555;font-family:'DM Sans';font-size:13px;">Loading...</div>`;
-  if (dots) dots.innerHTML = '';
-  const [images, coachData] = await Promise.all([_findCoachGalleryImages(gender), _loadCoachGalleryData(gender)]);
+  const needsFetch = _coachesNeedsFetch(gender);
+  if (needsFetch) {
+    if (track) track.innerHTML = `<div style="flex:0 0 100%;display:flex;align-items:center;justify-content:center;padding:144px 8px 20px;box-sizing:border-box;"><div style="font-family:'DM Sans';font-size:16px;font-weight:700;color:#fff;letter-spacing:.9px;animation:findingPulse 2s ease-in-out;">FINDING...</div></div>`;
+    if (dots) dots.innerHTML = '';
+  }
+  const _coachesLoadStart = Date.now();
+  let pairs;
+  if (gender === 'all') {
+    const [[maleImages, maleData], [femaleImages, femaleData]] = await Promise.all([
+      Promise.all([_findCoachGalleryImages('male'), _loadCoachGalleryData('male')]),
+      Promise.all([_findCoachGalleryImages('female'), _loadCoachGalleryData('female')])
+    ]);
+    pairs = _interleaveCoachPairs(_zipCoachPairs(femaleImages, femaleData), _zipCoachPairs(maleImages, maleData));
+  } else {
+    const [images, coachData] = await Promise.all([_findCoachGalleryImages(gender), _loadCoachGalleryData(gender)]);
+    pairs = _zipCoachPairs(images, coachData);
+  }
+  if (needsFetch) {
+    // Keep the placeholder up for at least 2s even when images load faster,
+    // so "Finding..." doesn't flash by too quickly to read.
+    const _coachesMinDelay = 2000 - (Date.now() - _coachesLoadStart);
+    if (_coachesMinDelay > 0) await new Promise(r => setTimeout(r, _coachesMinDelay));
+  }
   const _stillOnThisFilter = window._coachesGalleryFilter === gender;
   if (!track || !_stillOnThisFilter) return;
-  if (!images.length) {
+  if (!pairs.length) {
     track.innerHTML = `<div style="flex:0 0 100%;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 24px;color:#555;font-family:'DM Sans';font-size:13px;">No coaches to show here yet.</div>`;
     return;
   }
-  track.innerHTML = images.map((src, i) => {
-    const info = coachData[i] || {};
+  track.innerHTML = pairs.map(({ src, info }) => {
     // profession can be a single string or an array (profession1/2/3...) — each
     // entry renders on its own line either way.
     const professions = Array.isArray(info.profession) ? info.profession : (info.profession ? [info.profession] : []);
@@ -20256,8 +20329,8 @@ async function switchCoachesFilter(gender) {
       `<div style="font-family:'DM Sans';font-size:18px;font-weight:600;color:#888;margin-top:${pIdx === 0 ? 0 : 3}px;background:rgba(255,255,255,0.06);border-radius:10px;padding:4px 14px;display:inline-block;">${p}</div>`
     ).join('');
     return `<div style="flex:0 0 88%;scroll-snap-align:center;scroll-snap-stop:always;display:flex;align-items:center;justify-content:center;padding:64px 8px 20px;box-sizing:border-box;">
-      <div style="width:100%;display:flex;flex-direction:column;align-items:center;gap:12px;padding:8px 16px 24px;border:1px solid rgba(255,255,255,0.3);border-radius:20px;box-sizing:border-box;">
-        <img src="${src}" style="width:280px;height:280px;border-radius:50%;object-fit:cover;display:block;margin-top:-60px;">
+      <div style="width:100%;display:flex;flex-direction:column;align-items:center;gap:12px;padding:8px 16px 24px;border:1px solid rgba(255,255,255,0.3);border-radius:20px;box-sizing:border-box;background:linear-gradient(180deg,#1E2228,#121518);">
+        <img src="${src}" style="width:280px;height:280px;border-radius:50%;object-fit:cover;display:block;margin-top:-60px;border:1px solid var(--accent);">
         <div style="text-align:center;">
           <div style="font-family:'DM Sans';font-size:24px;font-weight:700;color:var(--text);margin-bottom:30px;">${info.name || ''}</div>
           ${professionsHtml}
@@ -20279,7 +20352,7 @@ async function switchCoachesFilter(gender) {
   // position (assignment, not addEventListener, so re-rendering the carousel on
   // filter switch cleanly replaces the previous handler instead of stacking).
   if (dots) {
-    dots.innerHTML = images.map((_, i) =>
+    dots.innerHTML = pairs.map((_, i) =>
       `<div class="coaches-dot" data-i="${i}" style="width:6px;height:6px;border-radius:50%;background:${i === 0 ? 'var(--accent)' : '#444'};transition:background .2s;flex-shrink:0;"></div>`
     ).join('');
   }
@@ -22825,7 +22898,7 @@ function deleteCoachWorkout(id) {
   <div id="ex-detail-overlay-body">
     <!-- Photo (21:9) + FINISH — scrollable, not sticky -->
     <div id="ex-detail-photo-wrap" style="display:none;">
-      <div id="ex-detail-photo-tap-wrap" onclick="if(document.getElementById('ex-detail-stats-section'))_toggleExDetailStats()" style="position:relative;margin:4px 2px 0;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;">
+      <div id="ex-detail-photo-tap-wrap" onclick="if(document.getElementById('ex-detail-muscles-section'))_toggleExDetailMuscles();else if(document.getElementById('ex-detail-stats-section'))_toggleExDetailStats()" style="position:relative;margin:4px 2px 0;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;">
         <img id="ex-detail-photo-img" src="" style="width:100%;height:100%;object-fit:cover;display:block;">
         <button onclick="event.stopPropagation();_toggleExDetailMuscles()" style="position:absolute;bottom:3px;right:3px;z-index:4;background:#000;border:none;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;"><svg id="ex-detail-photo-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;transition:transform .25s ease;"><polyline points="6 9 12 15 18 9"/></svg></button>
       </div>
@@ -22846,7 +22919,8 @@ function deleteCoachWorkout(id) {
      .comment-box (see showNoteToolbar/hideNoteToolbar) or an nwf-name-page field
      (see _nwfFieldFocus) is focused. All of these autosave live via their own
      oninput handlers, so Done only ever needs to close the keyboard. -->
-<div id="note-kbd-done-bar" style="display:none;position:fixed;left:0;right:0;bottom:0;max-width:430px;margin:0 auto;z-index:9500;background:#1a1a1a;border-top:1px solid #2a2a2a;box-sizing:border-box;justify-content:flex-end;align-items:center;padding:8px 12px;">
+<div id="note-kbd-done-bar" style="display:none;position:fixed;left:0;right:0;bottom:0;max-width:430px;margin:0 auto;z-index:9500;background:#1a1a1a;border-top:1px solid #2a2a2a;box-sizing:border-box;justify-content:flex-end;align-items:center;gap:8px;padding:8px 12px;">
+  <button onmousedown="event.preventDefault();" onclick="_noteKbdBarDelete();" style="background:transparent;border:1px solid #444;border-radius:20px;color:#ff4d4d;font-family:'DM Sans';font-size:15px;font-weight:900;padding:9px 20px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Delete</button>
   <button onclick="document.activeElement?.blur();" style="background:var(--accent);border:none;border-radius:20px;color:#000;font-family:'DM Sans';font-size:15px;font-weight:900;padding:9px 20px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Done</button>
 </div>
 
