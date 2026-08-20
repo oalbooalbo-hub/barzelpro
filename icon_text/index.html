@@ -122,7 +122,6 @@ body.desktop-mode .pages-wrap {
 .ex-editor-open #ex-detail-back-btn,.ex-editor-open #ex-detail-back-btn-nophoto,.ex-editor-open #ex-detail-menu-btn,.ex-editor-open #ex-detail-menu-btn-nophoto{display:none!important;}
 .ex-editor-open #ex-detail-photo-tap-wrap,.ex-note-editing #ex-detail-photo-tap-wrap{pointer-events:none!important;}
 .workouts-flow-card .btn-done,.workouts-flow-card .cancel-done-btn,.workouts-flow-card .btn-timer,.workouts-flow-card .timer-panel{display:none!important;}
-.workouts-flow-card .workouts-flow-only{display:inline-flex!important;}
 .empty-state .big{font-family:'Bebas Neue';font-size:48px;color:var(--surface2);display:block;}
 
 /* ── TODAY TAB ─────────────────────────────────── */
@@ -1979,7 +1978,6 @@ function hidAuthScreen() {
             <div style="font-family:'DM Sans';font-size:13px;font-weight:500;color:var(--muted);line-height:1.5;margin-top:2px;"><span style="color:#fff;">Total volume</span> — weight × reps summed across every completed set. Rewards the total work done in the exercise, not just one best set.</div>
           </div>
         </div>
-        <div style="font-family:'DM Sans';font-size:12px;font-weight:500;color:#555;line-height:1.5;border-top:1px solid var(--border);padding-top:14px;">The number on each star shows how many exercises set a new record in that category this workout.</div>
         <button onclick="closePRStarsInfo()" style="width:100%;padding:18px;background:transparent;color:var(--muted);border:1px solid #333;border-radius:100px;font-family:'DM Sans';font-size:16px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;">CLOSE</button>
       </div>
     </div>
@@ -2460,7 +2458,7 @@ function _checkFinishReadyImpl() {
     _prompt.style.display = _showPrompt ? 'block' : 'none';
     _addRow.style.flexDirection = _showPrompt ? 'column' : '';
     _addRow.style.alignItems = _showPrompt ? 'center' : '';
-    _addRow.style.background = _showPrompt ? '#1e1e1e' : '';
+    _addRow.style.background = _showPrompt ? 'linear-gradient(to bottom right, #303942, #12151A)' : '';
     _addRow.style.borderRadius = _showPrompt ? '24px' : '';
     _addRow.style.border = _showPrompt ? '1px solid #333' : '';
     _addRow.style.gap = _showPrompt ? '0' : '';
@@ -4590,7 +4588,7 @@ function _updateWorkoutProgress() {
   _renderProgressSegments(wrap, total, done);
   wrap.style.display = total > 0 ? 'flex' : 'none';
   const exWrap = document.getElementById('ex-detail-progress-wrap');
-  if (exWrap) { _renderProgressSegments(exWrap, total, done); exWrap.style.display = total > 0 ? 'flex' : 'none'; }
+  if (exWrap) { _renderProgressSegments(exWrap, total, done); exWrap.style.display = (total > 0 && !window._isNewWorkoutFlow) ? 'flex' : 'none'; }
   if (prStars) {
     let weightPRs = 0, volPRs = 0, volumePRs = 0;
     document.querySelectorAll('#exerciseList .exercise-card').forEach(c => {
@@ -4765,31 +4763,8 @@ function saveSession() {
       completed: card.classList.contains('completed'),
       open: card.dataset.open === 'true'
     });
-    if (window._isNewWorkoutFlow) updateWflowCloseBtn(card.id);
   });
   _LS.set('ironlog_session', JSON.stringify({name, cards}));
-}
-
-function updateWflowCloseBtn(id) {
-  const btn = document.getElementById(`wflow-close-btn-${id}`);
-  if (!btn) return;
-  if (window._editingWorkoutIdx != null) { btn.style.display = 'none'; return; }
-  const card = document.getElementById(id);
-  if (!card) return;
-  let hasData = false;
-  const rows = card.querySelectorAll('.set-row');
-  // More than 1 set = user added sets
-  if (rows.length > 1) hasData = true;
-  rows.forEach(row => {
-    const inp = row.querySelectorAll('.set-input');
-    const kg = parseFloat(inp[0]?.value) || 0;
-    const rs = row.querySelector('.reps-spin-val');
-    const reps = rs ? (parseInt(rs.dataset.reps) || 0) : (parseInt(inp[1]?.value) || 0);
-    if (kg > 0 || reps > 0 || row.dataset.ignored === '1') hasData = true;
-  });
-  const comment = card.querySelector('.comment-box');
-  if (comment && comment.value.trim()) hasData = true;
-  btn.textContent = hasData ? 'Save' : 'Close';
 }
 
 // Boot always lands on the Home/start screen; any in-progress workout
@@ -5625,7 +5600,7 @@ function _updatePickModeDoneBtn() {
   const n = _pickModeSelected.length;
   btnsWrap.style.display = _pickMode ? 'flex' : 'none';
   const countLabel = document.getElementById('pick-mode-count-label');
-  if (countLabel) countLabel.innerHTML = n > 0 ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:var(--accent);color:#000;font-size:16px;font-weight:800;">${n}</span>` : 'Pick exercises';
+  if (countLabel) countLabel.innerHTML = n > 0 ? `<span style="position:relative;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:var(--accent);color:#000;font-size:20px;font-weight:800;"><span style="position:absolute;right:100%;margin-right:10px;color:var(--accent);font-size:20px;font-weight:800;">+</span>${n}</span>` : 'Pick exercises';
   btn.textContent = 'Done';
   btn.style.opacity = '1';
   btn.style.background = n > 0 ? (window._coachMode ? '#7ec8e3' : 'var(--accent)') : '#444';
@@ -9506,7 +9481,6 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
     </table>
     <div class="ex-footer">
       <div class="ex-footer-row">
-        <button class="workouts-flow-only" id="wflow-close-btn-${id}" onclick="toggleCardCollapse('${id}')" style="background:transparent;border:1px solid rgba(232,255,71,.4);border-radius:8px;color:var(--accent);font-family:'DM Sans';font-size:12px;font-weight:700;padding:6px 12px;cursor:pointer;display:none;">Close</button>
         <button onclick="toggleMiniChart('${id}')" id="mini-chart-toggle-${id}" style="display:none;"></button>
         <button class="btn-note" id="note-btn-${id}" onclick="toggleComment('${id}')" style="display:none;"></button>
         <button class="btn-timer" id="timer-btn-${id}" onclick="toggleTimer('${id}')" style="display:none;"></button>
@@ -10343,7 +10317,53 @@ function _markExDetailModified() {
 }
 window._markExDetailModified = _markExDetailModified;
 
+// Shows/hides just the elapsed-timer's own pieces inside #ex-detail-above-elapsed
+// (clock icon, time value, dot) based on new-workout-flow state, leaving the rest
+// of that bar — notably #ex-detail-back-btn, the only close button for this view
+// while building/editing a workout — always visible. Called both when the detail
+// view opens (openExDetail) and on every tick of the running elapsed timer
+// (startFinishTimer), which used to hide the entire bar and needed the same fix.
+function _syncExDetailAboveElapsedVisibility() {
+  const hideTimer = window._isNewWorkoutFlow;
+  const _elapsedRow = document.getElementById('ex-detail-elapsed-row');
+  const _clockIcon = _elapsedRow?.querySelector(':scope > svg');
+  const _elapsedVal = document.getElementById('ex-detail-above-elapsed-val');
+  const _elapsedDot = document.getElementById('ex-detail-above-elapsed-dot');
+  // visibility (not display:none) — the row's menu/back buttons are both
+  // position:absolute with no explicit top, so their vertical position comes
+  // from the row's own flex align-items:center, which is itself governed by
+  // its tallest in-flow child. display:none on every visible child collapsed
+  // the row down to just its padding, shifting the back button's centered
+  // position up by several px versus the active-workout view. visibility
+  // keeps this content's box (and the row's height) exactly as it always is.
+  [_clockIcon, _elapsedVal, _elapsedDot].forEach(el => { if (el) el.style.visibility = hideTimer ? 'hidden' : ''; });
+  // Workout-creation/editing has no "done" exercises yet, so the segmented
+  // progress bar is meaningless there — hide it immediately (in addition to
+  // _updateWorkoutProgress's own gate, which may not have run yet on open)
+  // and pull in the row's bottom padding that was reserved for it, so the
+  // photo/content starts right after the back-arrow row instead of leaving
+  // an empty gap.
+  const _exProgWrap = document.getElementById('ex-detail-progress-wrap');
+  if (_exProgWrap && hideTimer) _exProgWrap.style.display = 'none';
+  // Set the full shorthand (not just .paddingBottom) — writing a single
+  // longhand sub-property splits the "padding" shorthand permanently, so a
+  // later '' reset would fall back to 0 instead of restoring the original
+  // 8px once this has run with hideTimer=true even once.
+  if (_elapsedRow) {
+    _elapsedRow.style.padding = hideTimer
+      ? 'calc(env(safe-area-inset-top) + 10px) 16px 0px'
+      : 'calc(env(safe-area-inset-top) + 10px) 16px 8px';
+  }
+}
+window._syncExDetailAboveElapsedVisibility = _syncExDetailAboveElapsedVisibility;
+
 function openExDetail(id) {
+  // Client-role users can't open an exercise's detail view from Step 2 of 2
+  // (creating/editing a workout) — only staff (coach/admin/etc.) build or
+  // modify workout templates; a client only ever runs one once assigned.
+  // Scoped to _isNewWorkoutFlow specifically, so opening an exercise from an
+  // active session (Today) is unaffected for every role, clients included.
+  if (window._isNewWorkoutFlow && (window._currentUserData?.role || 'client') === 'client') return;
   const card = document.getElementById(id);
   if (!card) return;
   unlockExerciseCard(id);
@@ -10408,15 +10428,23 @@ function openExDetail(id) {
   setTimeout(() => { if (window.showExFloatBar && window._exDetailCardId === id) showExFloatBar(id); }, 50);
 
   const _exFinBtn = document.getElementById('ex-detail-finish-btn');
-  if (_exFinBtn) _exFinBtn.style.display = window._isNewWorkoutFlow ? 'none' : 'flex';
+  if (_exFinBtn) _exFinBtn.style.display = 'flex';
   document.querySelectorAll('#ex-detail-overlay [onclick="openExDetailMenu()"]').forEach(btn => {
     btn.style.display = window._isNewWorkoutFlow ? 'none' : '';
   });
-  const _aboveElapsed = document.getElementById('ex-detail-above-elapsed');
-  if (_aboveElapsed && window._isNewWorkoutFlow) _aboveElapsed.style.display = 'none';
+  // Elapsed timer doesn't apply while building/editing a workout (not an
+  // active timed session) — hide just its own pieces (clock icon/value/dot),
+  // not the whole #ex-detail-above-elapsed bar, which also holds the back
+  // button: hiding the whole bar left this view with no way to close it (see
+  // the matching fix in startFinishTimer's tick, which re-applies this same
+  // toggle every second and would otherwise undo this).
+  _syncExDetailAboveElapsedVisibility();
   if (window._isNewWorkoutFlow) {
+    // Hidden outright (not overwritten to "EDIT EXERCISE") — the exercise's
+    // own name is already shown inside this overlay, so a page-level title
+    // here is redundant while it's open; closeExDetailOverlay restores it.
     const _nwfTitle = document.getElementById('_nwf-edit-title');
-    if (_nwfTitle) _nwfTitle.textContent = 'EDIT EXERCISE';
+    if (_nwfTitle) _nwfTitle.style.display = 'none';
     const _nwfCam = document.getElementById('_nwf-cam-btn');
     if (_nwfCam) _nwfCam.style.display = 'none';
   }
@@ -10424,6 +10452,31 @@ function openExDetail(id) {
   _exitExUpdateMode();
   if (!window._isNewWorkoutFlow && card.classList.contains('completed')) {
     setTimeout(() => _enterExUpdateMode(id), 0);
+  }
+  // Creating/editing a workout has nothing to "finish" — this same button/slot
+  // is repurposed into a CLOSE button (same size/position) instead of being
+  // hidden outright, so there's always a way to leave the exercise (see
+  // _maybeCloseExDetail). Runs after _exitExUpdateMode() above, which
+  // unconditionally resets this button's text to FINISH/EXERCISE — doing this
+  // any earlier in the function just gets overwritten by that call.
+  if (_exFinBtn) {
+    // The two original FINISH/EXERCISE spans are never touched — they stay
+    // in normal flow (just invisible) and keep governing this button's
+    // natural two-line height exactly as always. CLOSE is a separate,
+    // absolutely-positioned label overlaid on top and centered independently
+    // — no measured/cached height, no risk of it drifting from the button's
+    // real size on any given device.
+    const _finSpans = _exFinBtn.querySelectorAll(':scope > span:not(#ex-detail-finish-btn-close-label)');
+    const _closeLabel = document.getElementById('ex-detail-finish-btn-close-label');
+    if (window._isNewWorkoutFlow) {
+      _exFinBtn.onclick = () => _maybeCloseExDetail();
+      _finSpans.forEach(s => { s.style.visibility = 'hidden'; });
+      if (_closeLabel) _closeLabel.style.display = 'block';
+    } else {
+      _exFinBtn.onclick = () => markExDetailDone();
+      _finSpans.forEach(s => { s.style.visibility = ''; });
+      if (_closeLabel) _closeLabel.style.display = 'none';
+    }
   }
 }
 
@@ -10434,7 +10487,7 @@ function closeExDetailOverlay() {
 
   if (window._isNewWorkoutFlow) {
     const _nwfTitle = document.getElementById('_nwf-edit-title');
-    if (_nwfTitle) _nwfTitle.textContent = 'EDIT WORKOUT';
+    if (_nwfTitle) _nwfTitle.style.display = '';
     const _nwfCam = document.getElementById('_nwf-cam-btn');
     if (_nwfCam) _nwfCam.style.display = '';
     const _body = document.getElementById('ex-detail-overlay-body');
@@ -12571,6 +12624,12 @@ function saveWorkoutToList() {
   save();
   _LS.remove('ironlog_session');
   const _savedName = name;
+  // _nwfStartWorkout's "Start Workout" button (on the post-save screen) needs
+  // to know which workout this was — an edit updates workouts[] in place at
+  // its existing index rather than moving it to the front, so it can't just
+  // assume index 0 the way a newly-created workout (unshifted to the front)
+  // happens to allow.
+  window._nwfLastSavedWorkoutName = _savedName;
   window._isNewWorkoutFlow = false;
   window._activeTabHighlight = null;
   window._newFromToday = false;
@@ -12716,6 +12775,7 @@ function _initSwipeDownToClose(sheetOrOverlayId, closeFn, scrollElId) {
 }
 _initSwipeDownToClose('weekSummaryOverlay', closeWeekSummary);
 _initSwipeDownToClose('summaryOverlay', cancelFinish, 'summaryBody');
+_initSwipeDownToClose('prStarsInfoOverlay', closePRStarsInfo);
 // workoutPhotoModalOverlay and strength-target-sheet are defined further down
 // in the HTML than this script block — deferred to DOMContentLoaded so their
 // elements actually exist by the time getElementById looks for them (calling
@@ -13124,7 +13184,13 @@ function _nwfStartWorkout() {
   const _db = document.getElementById('dateBadge');
   if (_db) { _db.style.opacity = ''; _db.style.cursor = ''; }
   actionsRowRestore();
-  loadWorkout(0);
+  // Editing an existing workout updates it in place (its index doesn't
+  // change), so index 0 is only correct for a brand-new one (unshifted to
+  // the front) — look the just-saved workout up by name instead of assuming
+  // position. See saveWorkoutToList, which sets this right before landing here.
+  const _savedName = window._nwfLastSavedWorkoutName;
+  const _savedIdx = _savedName ? workouts.findIndex(w => w.name === _savedName) : -1;
+  loadWorkout(_savedIdx >= 0 ? _savedIdx : 0);
   switchTab('log');
   const _sb = document.getElementById('_saveBlackScreen');
   const _elems = [
@@ -14745,8 +14811,12 @@ function startFinishTimer() {
     }
     if (heroElapsed)  heroElapsed.style.display  = 'flex';
     if (exElapsed)    exElapsed.style.display    = 'flex';
-    const _aboveHide = window._isNewWorkoutFlow && document.body.classList.contains('ex-detail-open');
-    if (aboveElapsed) aboveElapsed.style.display = _aboveHide ? 'none' : 'flex';
+    // Bar itself always shows (it also holds the back button); only the
+    // timer's own pieces inside it toggle for new-workout-flow — see
+    // _syncExDetailAboveElapsedVisibility, which this used to duplicate by
+    // hiding the whole bar and losing that close button in the process.
+    if (aboveElapsed) aboveElapsed.style.display = 'flex';
+    if (document.body.classList.contains('ex-detail-open')) _syncExDetailAboveElapsedVisibility();
     if (wAboveElapsed) wAboveElapsed.style.display = 'flex';
   }
   tick();
@@ -23379,9 +23449,16 @@ function deleteCoachWorkout(id) {
       </div>
       <!-- FINISH + exercise name — below image -->
       <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 2px 4px;gap:8px;">
-        <button id="ex-detail-finish-btn" onclick="markExDetailDone()" style="background:var(--accent);border:none;border-radius:8px;padding:7px 0;width:76px;cursor:pointer;-webkit-tap-highlight-color:transparent;flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:2px;">
+        <button id="ex-detail-finish-btn" onclick="markExDetailDone()" style="position:relative;background:var(--accent);border:none;border-radius:8px;padding:7px 0;width:76px;cursor:pointer;-webkit-tap-highlight-color:transparent;flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:2px;">
           <span style="color:#000;font-family:'DM Sans';font-size:13px;font-weight:900;letter-spacing:.5px;">FINISH</span>
           <span style="color:#000;font-family:'DM Sans';font-size:10px;font-weight:700;letter-spacing:.3px;">EXERCISE</span>
+          <!-- Creating/editing a workout repurposes this button into CLOSE (see
+               openExDetail) — a separate overlaid label, absolutely centered,
+               rather than editing the two spans above in place: those stay
+               untouched (just invisible) so they keep governing this button's
+               natural two-line height exactly as always, with nothing to
+               measure/cache/get wrong. -->
+          <span id="ex-detail-finish-btn-close-label" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#000;font-family:'DM Sans';font-size:13px;font-weight:900;letter-spacing:.5px;white-space:nowrap;">CLOSE</span>
         </button>
         <div id="ex-detail-overlay-title" style="font-family:'DM Sans';font-size:24px;font-weight:900;color:var(--text);text-align:right;flex:1;min-width:0;word-break:break-word;"></div>
       </div>
@@ -26174,7 +26251,6 @@ function setSetType(type) {
     updateIgnoreButtons(exId);
     checkResetBtn(exId);
     _updateExSetCount(exId);
-    if (window._isNewWorkoutFlow) updateWflowCloseBtn(exId);
     return;
   }
 
