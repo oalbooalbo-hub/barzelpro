@@ -1491,7 +1491,7 @@ function hidAuthScreen() {
 <div class="page" id="page-exercises" style="padding-top:calc(60px + env(safe-area-inset-top));padding-bottom:calc(120px + env(safe-area-inset-bottom));padding-left:10px;padding-right:10px;">
   <div id="exercisesTabContent"></div>
   <div id="pick-mode-btns" style="display:none;flex-direction:column;gap:10px;position:fixed;bottom:0;left:0;right:0;z-index:60;padding:16px 16px calc(env(safe-area-inset-bottom,0px) + 16px);background:var(--bg);max-width:430px;margin:0 auto;border-top:1px solid #ccc;">
-    <div id="pick-mode-count-label" style="text-align:center;color:#888;font-family:'DM Sans',sans-serif;font-size:30px;font-weight:600;min-height:36px;"></div>
+    <div id="pick-mode-count-label" style="display:flex;align-items:center;justify-content:center;color:#888;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;min-height:36px;"></div>
     <div style="display:flex;flex-direction:row;gap:10px;">
       <button onclick="exitPickMode()" style="flex:1;background:transparent;border:1px solid rgba(255,255,255,0.18);border-radius:12px;color:rgba(255,255,255,0.65);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Back</button>
       <button id="pick-mode-done-btn" onclick="donePickMode()" style="flex:1;background:var(--accent);border:none;border-radius:12px;color:#000;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Done</button>
@@ -2032,6 +2032,7 @@ function hidAuthScreen() {
 //  GLOBAL DECLARATIONS (must be before all functions)
 // ══════════════════════════════════════════════════════
 let _defaultExercises = {}; // populated from brand_library.json
+let _defaultWorkouts = [];  // populated from brand_library.json's own "workouts" section
 var _libraryWorkouts = [];   // declared early — also assigned in the library script block
 var _libraryLoaded = false;  // declared early — same reason
 
@@ -4669,25 +4670,22 @@ function _syncExToggleBarHeight() {
   if (!bar || !pg) return;
   const h = bar.offsetHeight;
   if (h > 0) {
-    // bar is position:fixed (viewport-relative) but pg's own rect.top can land at a
-    // nonzero value of its own — measuring both directly (rather than assuming pg
-    // starts at the viewport top, which a flat "padding = bar.offsetHeight" implicitly
-    // did) is what keeps this correct regardless of where pg actually settles.
-    // +10 for a bit of breathing room below the pill-bar divider, same as the
-    // workout screen's spacer.
+    // bar is position:fixed, so its rect is viewport-anchored and never moves
+    // with scroll — safe to read directly.
     const barBottom = bar.getBoundingClientRect().bottom;
-    // pg.active gets a translateY(48px)->0 entrance slide (index.html ~110)
-    // whenever it's not the log page and not delayed-reveal, and this syncs
-    // repeatedly while that's still running (see the staggered re-sync calls
-    // at the call site) — getBoundingClientRect() bakes in the live transform
-    // offset, so reading it mid-slide fed a different padding into each
-    // re-sync and made the content visibly jump. offsetTop is unaffected by
-    // transforms, so combine it with the (non-animated) offsetParent's own
-    // viewport position for a number that stays stable through the animation
-    // (same fix as _syncW2TopPad above).
-    const offsetParent = pg.offsetParent || document.body;
-    const pgTop = offsetParent.getBoundingClientRect().top + pg.offsetTop;
-    pg.style.paddingTop = Math.max(0, barBottom - pgTop + 10) + 'px';
+    // pg's own layout position, relative to its offsetParent (<body>, which
+    // never itself scrolls or transforms) — offsetTop ignores CSS transforms
+    // entirely, so this stays exactly the same value throughout pg's own
+    // translateY(48px)->0 entrance slide (index.html ~110) instead of
+    // recalculating (and visibly jumping) at each of the staggered re-syncs
+    // that run while that slide is still in progress (see the call site).
+    // It's also unaffected by document scroll, unlike a previous version of
+    // this that measured pg's *live* viewport position via
+    // getBoundingClientRect() on its offsetParent — that let a resize-
+    // triggered re-sync mid-scroll (e.g. from a pick-mode re-render) inflate
+    // this padding by roughly however far the list had been scrolled, which
+    // is what made exercises appear to "jump to the top" after picking one.
+    pg.style.paddingTop = Math.max(0, barBottom - pg.offsetTop + 10) + 'px';
   } else {
     pg.style.paddingTop = '';
   }
@@ -5157,9 +5155,9 @@ function renderExercisesTab() {
     </div>` : '';
     const _mc = MUSCLE_COLORS[ex.muscle] || '#888';
 
-    listHtml += `<div data-exname="${ex.name.replace(/"/g,'&quot;')}" data-muscle="${ex.muscle||'Chest'}" style="--muscle-color:${_mc};">
+    listHtml += `<div data-exname="${ex.name.replace(/"/g,'&quot;')}" data-muscle="${ex.muscle||'Chest'}" style="--muscle-color:${_mc};background:${isPickSelected ? 'color-mix(in srgb, var(--accent) 15%, var(--surface))' : 'var(--surface)'};border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden;">
       <!-- Flat row -->
-      <div ${isExpandable && !_pickMode ? `onclick="openExtabExOverlay('${ex.name.replace(/'/g,"\\'")}')"` : ''} style="display:flex;align-items:stretch;border-bottom:1px solid var(--border);${isExpandable && !_pickMode ? 'cursor:pointer;' : ''}">
+      <div ${isExpandable && !_pickMode ? `onclick="openExtabExOverlay('${ex.name.replace(/'/g,"\\'")}')"` : ''} style="display:flex;align-items:stretch;${isExpandable && !_pickMode ? 'cursor:pointer;' : ''}">
         ${_makeExThumbHtml(ex.name, ex.muscle)}
         <!-- Name + stats -->
         <div ${_pickMode ? `onclick="pickExercise('${ex.name.replace(/'/g,"\\'")}') "` : ''} style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;align-items:flex-end;padding:8px 15px 8px 0;${_pickMode ? 'cursor:pointer;' : ''}">
@@ -5168,7 +5166,7 @@ function renderExercisesTab() {
         <!-- Stats + menu -->
         <div style="display:flex;align-items:center;gap:4px;padding-right:10px;">
         ${_pickMode
-          ? `<div onclick="pickExercise('${ex.name.replace(/'/g,"\\'")}' )" class="picker-check" style="width:22px;height:22px;border-radius:50%;border:2px solid ${isPickSelected ? pickColor : '#333'};background:${isPickSelected ? pickColor : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:all .15s;">${isPickSelected ? '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</div>`
+          ? `<div onclick="pickExercise('${ex.name.replace(/'/g,"\\'")}' )" class="picker-check" style="width:22px;height:22px;border-radius:50%;border:2px solid ${isPickSelected ? 'var(--accent)' : '#333'};background:${isPickSelected ? 'var(--accent)' : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:all .15s;">${isPickSelected ? '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</div>`
           : ``}
         </div>
       </div>
@@ -5204,20 +5202,20 @@ function renderExercisesTab() {
   const searchHtml = ``;
 
   // Build "Custom" view: only user-created exercises for selected muscle
-  const _customExes = (typeof customExercises !== 'undefined' ? customExercises : []).filter(ex => ex.muscle === selected);
+  const _customExes = (typeof customExercises !== 'undefined' ? customExercises : []).filter(ex => ex.muscle === selected && !hiddenEx.includes(ex.name));
   let _exCustomListHtml = _customExes.length
     ? _customExes.map(ex => {
         const _lcd = (window._exLastDateMap && window._exLastDateMap.get(ex.name)) || 0;
         const _isPickSel = _pickMode && _pickModeSelected.some(s => s.name === ex.name);
         const _pc = PICKER_COLORS[ex.muscle] || '#888';
-        return `<div data-exname="${ex.name.replace(/"/g,'&quot;')}" data-muscle="${ex.muscle}"${_pickMode ? ` onclick="pickExercise('${ex.name.replace(/'/g,"\\'")}') " style="cursor:pointer;"` : ''}>
-          <div onclick="${_pickMode ? '' : `openExtabExOverlay('${ex.name.replace(/'/g,"\\'")}') `}" style="display:flex;align-items:stretch;border-bottom:1px solid var(--border);${_pickMode ? '' : 'cursor:pointer;'}">
+        return `<div data-exname="${ex.name.replace(/"/g,'&quot;')}" data-muscle="${ex.muscle}"${_pickMode ? ` onclick="pickExercise('${ex.name.replace(/'/g,"\\'")}') "` : ''} style="background:${_isPickSel ? 'color-mix(in srgb, var(--accent) 15%, var(--surface))' : 'var(--surface)'};border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden;${_pickMode ? 'cursor:pointer;' : ''}">
+          <div onclick="${_pickMode ? '' : `openExtabExOverlay('${ex.name.replace(/'/g,"\\'")}') `}" style="display:flex;align-items:stretch;${_pickMode ? '' : 'cursor:pointer;'}">
             ${_makeExThumbHtml(ex.name, ex.muscle)}
             <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;align-items:flex-end;padding:8px 15px 8px 0;">
               <div dir="auto" style="font-family:'DM Sans';font-size:17px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;">${_tn(ex.name)}</div>
               ${_lcd ? `<div style="font-family:'DM Sans';font-size:11px;font-weight:600;color:var(--muted);margin-top:2px;text-align:right;">${fmtShort(_lcd)}</div>` : ''}
             </div>
-            ${_pickMode ? `<div style="display:flex;align-items:center;padding-right:10px;"><div class="picker-check" style="width:22px;height:22px;border-radius:50%;border:2px solid ${_isPickSel ? _pc : '#333'};background:${_isPickSel ? _pc : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;">${_isPickSel ? '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</div></div>` : ''}
+            ${_pickMode ? `<div style="display:flex;align-items:center;padding-right:10px;"><div class="picker-check" style="width:22px;height:22px;border-radius:50%;border:2px solid ${_isPickSel ? 'var(--accent)' : '#333'};background:${_isPickSel ? 'var(--accent)' : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;">${_isPickSel ? '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</div></div>` : ''}
           </div>
         </div>`;
       }).join('')
@@ -5234,13 +5232,13 @@ function renderExercisesTab() {
     ? _allExes.map(ex => {
       const _isPickSel = _pickMode && _pickModeSelected.some(s => s.name === ex.name);
       const _pc = PICKER_COLORS[ex.muscle] || '#888';
-      return `<div data-exname="${ex.name.replace(/"/g,'&quot;')}" data-muscle="${ex.muscle}"${_pickMode ? ` onclick="pickExercise('${ex.name.replace(/'/g,"\\'")}') " style="cursor:pointer;"` : ''}>
-      <div onclick="${_pickMode ? '' : `openExtabExOverlay('${ex.name.replace(/'/g,"\\'")}') `}" style="display:flex;align-items:stretch;border-bottom:1px solid var(--border);${_pickMode ? '' : 'cursor:pointer;'}">
+      return `<div data-exname="${ex.name.replace(/"/g,'&quot;')}" data-muscle="${ex.muscle}"${_pickMode ? ` onclick="pickExercise('${ex.name.replace(/'/g,"\\'")}') "` : ''} style="background:${_isPickSel ? 'color-mix(in srgb, var(--accent) 15%, var(--surface))' : 'var(--surface)'};border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden;${_pickMode ? 'cursor:pointer;' : ''}">
+      <div onclick="${_pickMode ? '' : `openExtabExOverlay('${ex.name.replace(/'/g,"\\'")}') `}" style="display:flex;align-items:stretch;${_pickMode ? '' : 'cursor:pointer;'}">
         ${_makeExThumbHtml(ex.name, ex.muscle)}
         <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;align-items:flex-end;padding:8px 15px 8px 0;">
           <div dir="auto" style="font-family:'DM Sans';font-size:17px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;">${_tn(ex.name)}</div>
         </div>
-        ${_pickMode ? `<div style="display:flex;align-items:center;padding-right:10px;"><div class="picker-check" style="width:22px;height:22px;border-radius:50%;border:2px solid ${_isPickSel ? _pc : '#333'};background:${_isPickSel ? _pc : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;">${_isPickSel ? '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</div></div>` : ''}
+        ${_pickMode ? `<div style="display:flex;align-items:center;padding-right:10px;"><div class="picker-check" style="width:22px;height:22px;border-radius:50%;border:2px solid ${_isPickSel ? 'var(--accent)' : '#333'};background:${_isPickSel ? 'var(--accent)' : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;">${_isPickSel ? '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</div></div>` : ''}
       </div>
     </div>`;
     }).join('')
@@ -5323,10 +5321,10 @@ function renderExercisesTab() {
       const pickColor = PICKER_COLORS[selected] || '#7ec8e3';
       _coachMyDataListHtml = coachExes.map(ex => {
         const isSelected = _pickModeSelected.some(s => s.name === ex.name);
-        return `<div data-exname="${ex.name}" onclick="pickExercise('${ex.name.replace(/'/g,"\\'")}'); " style="margin-bottom:6px;background:var(--surface);border:1px solid ${isSelected ? pickColor : 'var(--border)'};border-radius:10px;overflow:hidden;cursor:pointer;transition:border-color .15s;">
+        return `<div data-exname="${ex.name}" onclick="pickExercise('${ex.name.replace(/'/g,"\\'")}'); " style="margin-bottom:6px;background:${isSelected ? 'color-mix(in srgb, var(--accent) 15%, var(--surface))' : 'var(--surface)'};border:1px solid ${isSelected ? pickColor : 'var(--border)'};border-radius:10px;overflow:hidden;cursor:pointer;transition:border-color .15s;">
           <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;">
             <div dir="auto" style="font-family:'DM Sans';font-size:17px;font-weight:400;color:var(--text);flex:1;">${_tn(ex.name)}</div>
-            <div class="picker-check" style="width:22px;height:22px;border-radius:50%;border:2px solid ${isSelected ? pickColor : '#333'};background:${isSelected ? pickColor : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;">${isSelected ? '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</div>
+            <div class="picker-check" style="width:22px;height:22px;border-radius:50%;border:2px solid ${isSelected ? 'var(--accent)' : '#333'};background:${isSelected ? 'var(--accent)' : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;">${isSelected ? '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</div>
           </div>
         </div>`;
       }).join('');
@@ -5627,7 +5625,7 @@ function _updatePickModeDoneBtn() {
   const n = _pickModeSelected.length;
   btnsWrap.style.display = _pickMode ? 'flex' : 'none';
   const countLabel = document.getElementById('pick-mode-count-label');
-  if (countLabel) countLabel.innerHTML = n > 0 ? `<span style="color:var(--accent);">+${n}</span>` : 'Pick exercises';
+  if (countLabel) countLabel.innerHTML = n > 0 ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:var(--accent);color:#000;font-size:16px;font-weight:800;">${n}</span>` : 'Pick exercises';
   btn.textContent = 'Done';
   btn.style.opacity = '1';
   btn.style.background = n > 0 ? (window._coachMode ? '#7ec8e3' : 'var(--accent)') : '#444';
@@ -8510,7 +8508,10 @@ function renderWorkoutsTab2() {
     if (_tpIdx > 0) sorted.unshift(sorted.splice(_tpIdx, 1)[0]);
   }
 
-  if (!sorted.length) {
+  // ALL still has library/brand-default workouts to show even with zero of
+  // the user's own (built further down) — only bail out here for CUSTOM,
+  // which never has another source to fall back on.
+  if (!sorted.length && _wTabView !== 'all') {
     el.innerHTML = `<div class="empty-state" style="margin-top:24px;"><span style="color:#fff;">No workouts yet.</span></div>
       <button onclick="startNewWorkout(true);" style="width:100%;margin-top:12px;background:transparent;border:1px dashed var(--border);border-radius:12px;color:var(--muted);font-family:'DM Sans';font-size:15px;font-weight:700;padding:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
         <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -8657,16 +8658,22 @@ function renderWorkoutsTab2() {
     Create New Workout
   </button>`);
 
-  // ALL view: append library workouts below user workouts
+  // ALL view: append library + brand-default workouts below user workouts —
+  // same 3-source, dedup-by-name merge Exercises tab's ALL uses (_allExMap):
+  // your own, Firestore's shared library, and brand_library.json's own
+  // "workouts" section (_defaultWorkouts, see loadDefaultExercises).
   let _libRowsHtml = '';
   if (_wTabView === 'all') {
     const _userNames = new Set(sorted.map(w => (w.name||'').trim().toLowerCase()));
     const _libWs = (_libraryWorkouts||[]).filter(w => !_userNames.has((w.name||'').trim().toLowerCase()));
+    const _libNames = new Set(_libWs.map(w => (w.name||'').trim().toLowerCase()));
+    const _defWs = (_defaultWorkouts||[]).filter(w => !_userNames.has((w.name||'').trim().toLowerCase()) && !_libNames.has((w.name||'').trim().toLowerCase()));
+    const _allLibWs = [..._libWs, ..._defWs];
     if (!_libraryLoaded) {
       _libRowsHtml = '<div style="text-align:center;padding:16px;color:#555;font-size:13px;">Loading library&</div>';
       loadLibrary().then(() => { if (_wTabView === 'all') renderWorkoutsTab2(); });
-    } else if (_libWs.length) {
-      _libRowsHtml = _libWs.map(w => {
+    } else if (_allLibWs.length) {
+      _libRowsHtml = _allLibWs.map(w => {
         return `<div data-wlibname="${(w.name||'').replace(/"/g,'&quot;')}" style="border-bottom:1px solid var(--border);">
           <div style="position:relative;display:flex;align-items:center;gap:12px;padding:14px;">
             <button onclick="loadLibraryWorkout('${w.id}')" style="background:var(--accent);border:none;border-radius:8px;color:#000;font-family:'DM Sans';font-size:13px;font-weight:700;padding:8px 14px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Load</button>
@@ -8679,11 +8686,19 @@ function renderWorkoutsTab2() {
     }
   }
 
+  // ALL with nothing at all (no own workouts, and library+brand-defaults came
+  // back empty too, as opposed to still loading) — the per-row "No workouts
+  // yet" case above only covers CUSTOM now, so this is ALL's equivalent.
+  const _wtabTrulyEmpty = _wTabView === 'all' && !sorted.length && !_libRowsHtml && _libraryLoaded;
+  const _wtabEmptyMsg = _wtabTrulyEmpty
+    ? `<div class="empty-state" style="margin-top:24px;"><span style="color:#fff;">No workouts yet.</span></div>`
+    : '';
+
   // Render all at once — no async, no reflow
   // margin-top:5px here + the first row's own padding:5px 2px (index.html
   // ~8073) = 10px from divider to first card, matching the 5px+5px=10px
   // gap between every other pair of card rows.
-  el.innerHTML = `<div style="margin-top:5px;">${rowsHtml}${_libRowsHtml}</div>${_bottomBtns}`;
+  el.innerHTML = `<div style="margin-top:5px;">${_wtabEmptyMsg}${rowsHtml}${_libRowsHtml}</div>${_bottomBtns}`;
 
 
 }
@@ -20965,9 +20980,19 @@ function loadDefaultExercises() {
         normalized[m] = src[m].map(e => typeof e === 'string' ? { name: e, label: e, muscle: m } : { name: e.name, label: e.name, muscle: m });
       });
       _defaultExercises = normalized;
-      console.log('brand_library.json loaded:', Object.keys(normalized));
+      // Same file's own "workouts" section — merged into Workouts tab's ALL
+      // view the same way _defaultExercises is merged into Exercises tab's
+      // ALL (see _allExMap / renderWorkoutsTab2's ALL-view block).
+      _defaultWorkouts = Array.isArray(data.workouts) ? data.workouts.map(w => ({
+        id: w.id || ('default_' + (w.name || 'workout').replace(/[^a-zA-Z0-9]/g, '_')),
+        name: w.name || 'Workout',
+        description: w.description || '',
+        exercises: Array.isArray(w.exercises) ? w.exercises : [],
+        _isDefault: true,
+      })) : [];
+      console.log('brand_library.json loaded:', Object.keys(normalized), '+', _defaultWorkouts.length, 'default workouts');
     })
-    .catch(e => { console.warn('brand_library.json not loaded:', e.message); _defaultExercises = {}; });
+    .catch(e => { console.warn('brand_library.json not loaded:', e.message); _defaultExercises = {}; _defaultWorkouts = []; });
 }
 
 function loadLibrary() {
@@ -21023,10 +21048,10 @@ function buildExerciseLibraryHtml(selectedMuscle) {
       <div style="width:100%;height:100%;border:1px solid #1e1e1e;border-radius:8px;overflow:hidden;background:#0d0d0d;">${_thumbInner}</div>
     </div>`;
     const pickerCheck = _pickMode
-      ? `<div style="display:flex;align-items:center;padding-right:12px;"><div class="picker-check" style="width:22px;height:22px;border-radius:50%;border:2px solid ${isPickSelected ? pColor : '#333'};background:${isPickSelected ? pColor : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:all .15s;">${isPickSelected ? '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</div></div>`
+      ? `<div style="display:flex;align-items:center;padding-right:12px;"><div class="picker-check" style="width:22px;height:22px;border-radius:50%;border:2px solid ${isPickSelected ? 'var(--accent)' : '#333'};background:${isPickSelected ? 'var(--accent)' : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:all .15s;">${isPickSelected ? '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</div></div>`
       : (extraRight ? `<div style="display:flex;align-items:center;padding-right:8px;">${extraRight}</div>` : '');
     const _exld = (window._exLastDateMap && window._exLastDateMap.get(exName)) || 0;
-    return `<div style="display:flex;align-items:stretch;border-bottom:1px solid var(--border);">
+    return `<div style="display:flex;align-items:stretch;background:${isPickSelected ? 'color-mix(in srgb, var(--accent) 15%, var(--surface))' : 'var(--surface)'};border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden;">
       ${thumbHtml}
       <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;padding:8px 0;">
         <div style="font-family:'DM Sans';font-size:15px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${exName}</div>
@@ -21241,7 +21266,7 @@ function libCycleFilter(idx, dir) {
 }
 
 function loadLibraryWorkout(id) {
-  const w = _libraryWorkouts.find(x=>x.id===id);
+  const w = _libraryWorkouts.find(x=>x.id===id) || (_defaultWorkouts||[]).find(x=>x.id===id);
   if (!w) return;
   switchTab('log');
   setTimeout(() => {
