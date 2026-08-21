@@ -144,6 +144,7 @@ body.desktop-mode .pages-wrap {
 
 /* ── EXERCISE CARDS ────────────────────────────── */
 .exercise-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:visible;scroll-margin-top:70px;}
+#exerciseList.nwf-cards .exercise-card{border-color:#999;}
 @keyframes pickNoticeBgFade{0%{background:rgba(255,140,66,.08);border-color:rgba(255,140,66,.2);}50%{background:rgba(255,140,66,.08);border-color:rgba(255,140,66,.2);}100%{background:rgba(255,140,66,0);border-color:rgba(255,140,66,0);}}
 .exercise-card.completed{border-color:rgba(var(--accent-rgb),.15);border-color:color-mix(in srgb, var(--accent) 15%, transparent);}
 .exercise-card.completed .ex-header{background:color-mix(in srgb, var(--accent) 6%, transparent);}
@@ -2390,6 +2391,7 @@ function checkFinishReady() {
   }, 80);
 }
 function _checkFinishReadyImpl() {
+  document.getElementById('exerciseList')?.classList.toggle('nwf-cards', !!window._isNewWorkoutFlow);
   const anyDone = document.querySelector('#exerciseList .exercise-card.completed') !== null;
   const anySetDone = !!document.querySelector('#exerciseList .set-done-btn.done');
   const hasExercises = document.querySelector('#exerciseList .exercise-card') !== null;
@@ -2434,6 +2436,10 @@ function _checkFinishReadyImpl() {
   if (_prompt && _addRow) {
     const _showPrompt = window._isNewWorkoutFlow && !hasExercises;
     if (_heroPhoto && window._isNewWorkoutFlow) _heroPhoto.style.display = 'none';
+    if (window._isNewWorkoutFlow) {
+      const _stickyHdr = document.getElementById('workout-sticky-header');
+      if (_stickyHdr) _stickyHdr.style.background = _showPrompt ? '' : 'radial-gradient(ellipse at top, #1F2428, #000000)';
+    }
     const _countDisplay = document.getElementById('nwf-ex-count-display');
     if (_countDisplay) {
       if (window._isNewWorkoutFlow && !_showPrompt) {
@@ -5600,7 +5606,7 @@ function _updatePickModeDoneBtn() {
   const n = _pickModeSelected.length;
   btnsWrap.style.display = _pickMode ? 'flex' : 'none';
   const countLabel = document.getElementById('pick-mode-count-label');
-  if (countLabel) countLabel.innerHTML = n > 0 ? `<span style="position:relative;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:var(--accent);color:#000;font-size:20px;font-weight:800;"><span style="position:absolute;right:100%;margin-right:10px;color:var(--accent);font-size:20px;font-weight:800;">+</span>${n}</span>` : 'Pick exercises';
+  if (countLabel) countLabel.innerHTML = n > 0 ? `<span style="position:relative;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:var(--accent);color:#000;font-size:20px;font-weight:800;"><span style="position:absolute;right:100%;margin-right:5px;color:var(--accent);font-size:32px;font-weight:800;">+</span>${n}</span>` : 'Pick exercises';
   btn.textContent = 'Done';
   btn.style.opacity = '1';
   btn.style.background = n > 0 ? (window._coachMode ? '#7ec8e3' : 'var(--accent)') : '#444';
@@ -12638,7 +12644,7 @@ function saveWorkoutToList() {
   if (_wasNewFlow) {
     const _saveBlack = document.createElement('div');
     _saveBlack.id = '_saveBlackScreen';
-    _saveBlack.style.cssText = 'position:fixed;inset:0;background:#0a0a0a;z-index:200;opacity:1;pointer-events:all;';
+    _saveBlack.style.cssText = 'position:fixed;inset:0;background:radial-gradient(ellipse at top, #263437, #15161B);z-index:200;opacity:1;pointer-events:all;';
     document.body.appendChild(_saveBlack);
     switchTab('log');
     document.getElementById('workoutNameBar')?.classList.remove('visible');
@@ -12665,8 +12671,8 @@ function saveWorkoutToList() {
               </div>
               <div style="font-family:'DM Sans',sans-serif;font-size:32px;font-weight:900;color:#fff;line-height:1.15;letter-spacing:-0.5px;margin-bottom:16px;">${_wasEditingWorkout ? 'Workout updated !' : 'Workout created !'}</div>
             </div>
-            <button onclick="_nwfStartWorkout();" style="width:100%;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:20px;font-weight:600;-webkit-text-stroke:0.4px currentColor;padding:16px;cursor:pointer;text-align:center;">Start Workout</button>
-            <button onclick="${exitOnclick}" style="width:100%;background:transparent;border:1px solid var(--border);border-radius:10px;color:#888;font-family:'DM Sans';font-size:20px;font-weight:600;padding:16px;cursor:pointer;text-align:center;">Back to Workouts</button>
+            <button onclick="_nwfStartWorkout();" style="width:80%;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:20px;font-weight:600;-webkit-text-stroke:0.4px currentColor;padding:16px;cursor:pointer;text-align:center;">Start Workout</button>
+            <button onclick="${exitOnclick}" style="width:80%;background:#464E57;border:none;border-radius:10px;color:#fff;font-family:'DM Sans';font-size:20px;font-weight:600;padding:16px;cursor:pointer;text-align:center;">Back to Workouts</button>
           `;
         if (actionsRow.parentNode) actionsRow.parentNode.insertBefore(optDiv, actionsRow);
         else document.getElementById('today-workout-area')?.prepend(optDiv);
@@ -13174,7 +13180,7 @@ function _nwfResetHeaderPadding() {
   // cleared to '' — the header has no CSS-class z-index fallback, so clearing it left it
   // at 'auto' permanently after the first reset, causing later-scrolled exercise cards to
   // paint over the fixed header instead of staying hidden behind it.
-  if (h) { h.style.paddingTop = ''; h.style.zIndex = '25'; }
+  if (h) { h.style.paddingTop = ''; h.style.zIndex = '25'; h.style.background = ''; }
 }
 function _nwfStartWorkout() {
   document.getElementById('postSaveOptions')?.remove();
@@ -20787,7 +20793,7 @@ async function _loadCoachGalleryData(gender) {
 }
 function openCoachesGallery() {
   document.getElementById('coachesOverlay').style.display = 'block';
-  switchCoachesFilter(window._coachesGalleryFilter || 'all');
+  switchCoachesFilter('all');
 }
 function closeCoachesGallery() {
   document.getElementById('coachesOverlay').style.display = 'none';
