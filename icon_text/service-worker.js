@@ -2,7 +2,7 @@
  * service-worker.js — BARZELPRO PWA Service Worker v2.5.0
  */
 
-const APP_VERSION   = 'v2.5.10';
+const APP_VERSION   = 'v2.5.1';
 const STATIC_CACHE  = `barzelpro-static-${APP_VERSION}`;
 const RUNTIME_CACHE = `barzelpro-runtime-${APP_VERSION}`;
 
@@ -36,6 +36,23 @@ const FIREBASE_SDK_ASSETS = [
   'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js',
 ];
 
+// index.html also has blocking classic <script src> tags in <head> —
+// localforage and Chart.js — that run before the rest of the app's inline
+// script block. If they fail to load (offline + nothing cached yet), that
+// whole inline block throws partway through and everything defined later in
+// it (including window._onAuthReady, near the very end) never gets assigned,
+// which hangs the app behind the loading overlay just as hard as the Firebase
+// SDK imports failing does. These were previously left to the generic SWR
+// rule below, which only ever caches them "incidentally" after a prior
+// successful online load — precache them explicitly so a fresh
+// install/cleared cache still has them the first time the app is opened
+// offline.
+const CDN_LIB_ASSETS = [
+  'https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js',
+];
+
 const NETWORK_ONLY_PATTERNS = [
   /firestore\.googleapis\.com/,
   /identitytoolkit\.googleapis\.com/,
@@ -55,7 +72,7 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then(cache => Promise.allSettled(
-        [...STATIC_ASSETS, ...FIREBASE_SDK_ASSETS].map(asset =>
+        [...STATIC_ASSETS, ...FIREBASE_SDK_ASSETS, ...CDN_LIB_ASSETS].map(asset =>
           cache.add(asset).catch(e => console.warn('[SW] Pre-cache failed:', asset, e))
         )
       ))
@@ -200,14 +217,19 @@ async function cacheFirst(request) {
 
 /**
  * Stale-while-revalidate — serve cached, update in background.
+ * Note: on a cache miss (e.g. first-ever offline load), this must not resolve
+ * to `null` — respondWith() only accepts an actual Response, and handing it
+ * null fails the request outright instead of a clean offline error.
  */
 async function staleWhileRevalidate(request) {
   const cache = await caches.open(RUNTIME_CACHE);
   const cached = await cache.match(request);
-  const fresh = fetch(request)
+  const freshPromise = fetch(request)
     .then(r => { if (r.ok) cache.put(request, r.clone()); return r; })
     .catch(() => null);
-  return cached || fresh;
+  if (cached) return cached;
+  const fresh = await freshPromise;
+  return fresh || Response.error();
 }
 
 // ── MESSAGES & SYNC ──────────────────────────────────────────────────────────
