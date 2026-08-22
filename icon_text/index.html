@@ -1139,6 +1139,13 @@ function hidAuthScreen() {
   document.getElementById('auth-screen')?.style && (document.getElementById('auth-screen').style.display = 'none');
   document.getElementById('app-root')?.style && (document.getElementById('app-root').style.display = '');
 }
+// Reached only if every top-level statement above (including the static
+// Firebase SDK imports at the top of this module) actually ran — if those
+// imports fail to load (offline + nothing cached), the whole module throws
+// instead and this line never executes. The loading-overlay safety net below
+// checks this flag so it can tell "still loading" apart from "never loaded at
+// all" instead of just hiding to reveal a blank black screen either way.
+window._fbModuleReady = true;
 </script>
 
 <style>
@@ -27735,7 +27742,26 @@ function _hideAppLoadingOverlay() {
 window._hideAppLoadingOverlay = _hideAppLoadingOverlay;
 // Safety net — never leave the user stuck behind the loading screen if some
 // step in the auth/data chain throws or hangs unexpectedly.
-setTimeout(_hideAppLoadingOverlay, 6000);
+setTimeout(() => {
+  // window._fbModuleReady is set at the very end of the Firebase module
+  // script (index.html ~1142) — if it's still missing here, that whole
+  // module (auth, Firestore, showAuthScreen/hidAuthScreen, everything) never
+  // ran at all, most likely because its static gstatic.com SDK imports
+  // couldn't load (offline + nothing cached yet). Just hiding the overlay in
+  // that case reveals a permanently blank #0a0a0a app-root — show an actual
+  // message instead of a silent black screen.
+  if (window._fbModuleReady) { _hideAppLoadingOverlay(); return; }
+  console.warn('[App] Firebase module never initialized (likely offline with nothing cached yet) — showing offline fallback instead of a blank screen.');
+  const el = document.getElementById('app-loading-overlay');
+  if (el) {
+    el.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;gap:16px;padding:0 32px;text-align:center;">
+        <div style="font-family:'DM Sans';font-size:16px;font-weight:700;color:#fff;letter-spacing:.5px;">Can't load app</div>
+        <div style="font-family:'DM Sans';font-size:14px;color:#888;line-height:1.5;">Connect to the internet at least once to finish setting up offline access, then try again.</div>
+        <button onclick="window.location.reload()" style="margin-top:8px;background:var(--accent,#e8ff47);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:14px;font-weight:700;padding:12px 24px;cursor:pointer;">Retry</button>
+      </div>`;
+  }
+}, 6000);
 
 // Fades the overlay fully in first, then calls onFadedIn — so building the
 // exercise list/images (potentially a visible hitch) only ever happens once

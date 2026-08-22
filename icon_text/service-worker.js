@@ -2,7 +2,7 @@
  * service-worker.js — BARZELPRO PWA Service Worker v2.5.0
  */
 
-const APP_VERSION   = 'v2.5.20';
+const APP_VERSION   = 'v2.5.0';
 const STATIC_CACHE  = `barzelpro-static-${APP_VERSION}`;
 const RUNTIME_CACHE = `barzelpro-runtime-${APP_VERSION}`;
 
@@ -18,6 +18,22 @@ const STATIC_ASSETS = [
   './icons/icon-192.png',
   './icons/icon-192-maskable.png',
   './icons/icon-512.png',
+];
+
+// index.html's top module block does static `import`s of these straight from
+// gstatic — if that import fails (nothing cached + no network), the whole
+// module throws and never runs, which means auth/Firestore/showAuthScreen
+// never initialize and the app hangs on a black screen after the loading
+// overlay's safety-net timer hides it. Without this, they only ever got
+// cached "incidentally" via the generic cacheFirst rule below, which only
+// works once the SW is already active and controlling a prior successful
+// online load — precache them explicitly instead so a fresh install/cleared
+// cache still has them the first time the app is opened offline.
+const FIREBASE_SDK_ASSETS = [
+  'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js',
+  'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js',
+  'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js',
+  'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js',
 ];
 
 const NETWORK_ONLY_PATTERNS = [
@@ -39,7 +55,7 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then(cache => Promise.allSettled(
-        STATIC_ASSETS.map(asset =>
+        [...STATIC_ASSETS, ...FIREBASE_SDK_ASSETS].map(asset =>
           cache.add(asset).catch(e => console.warn('[SW] Pre-cache failed:', asset, e))
         )
       ))
