@@ -1755,7 +1755,7 @@ function hidAuthScreen() {
 </div>
 <!-- NEW EXERCISE MODAL -->
 <div class="modal-overlay" id="newExModalOverlay" style="align-items:stretch;padding:8px;" onclick="if(event.target===this){window._exploreExerciseMode=false;closeNewExModal()}">
-  <div class="modal-sheet" style="padding:0;border-radius:16px;border:1px solid var(--border);width:100%;max-width:calc(100vw - 16px);box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column;max-height:calc(100vh - 16px);">
+  <div class="modal-sheet" style="background:transparent;padding:0;border-radius:16px;border:1px solid var(--border);width:100%;max-width:calc(100vw - 16px);box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column;max-height:calc(100vh - 16px);">
     <!-- Header -->
     <div style="display:flex;align-items:center;justify-content:center;padding:18px 16px 14px;position:relative;">
       <span id="newExModalTitle" style="font-family:'DM Sans';font-size:20px;font-weight:700;color:#fff;">New Exercise</span>
@@ -23807,6 +23807,12 @@ function deleteCoachWorkout(id) {
 </div>
 
 <script>
+    // Offline-mode verification — logs connectivity transitions to the console so
+    // DevTools (Network > Offline, or actually losing signal) shows what the app sees.
+    console.log('[App] Initial network state:', navigator.onLine ? 'online' : 'offline');
+    window.addEventListener('online', () => console.log('[App] Back online — Firestore mutations queued while offline will now sync automatically.'));
+    window.addEventListener('offline', () => console.log('[App] Offline — serving from the Service Worker cache; Firestore reads/writes will queue locally.'));
+
     if ('serviceWorker' in navigator && location.hostname !== '127.0.0.1' && location.hostname !== 'localhost') {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('./service-worker.js').then(reg => {

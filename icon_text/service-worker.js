@@ -2,7 +2,7 @@
  * service-worker.js — BARZELPRO PWA Service Worker v2.5.0
  */
 
-const APP_VERSION   = 'v2.5.228';
+const APP_VERSION   = 'v2.5.0';
 const STATIC_CACHE  = `barzelpro-static-${APP_VERSION}`;
 const RUNTIME_CACHE = `barzelpro-runtime-${APP_VERSION}`;
 
@@ -15,6 +15,9 @@ const STATIC_ASSETS = [
   './manifest.json',
   './brand_library.json',
   './logo.svg',
+  './icons/icon-192.png',
+  './icons/icon-192-maskable.png',
+  './icons/icon-512.png',
 ];
 
 const NETWORK_ONLY_PATTERNS = [
@@ -142,16 +145,20 @@ async function networkFirst(request) {
       cache.put(request, res.clone());
       return res;
     }
+    console.log('[SW] Offline (network failed/timed out) — serving from cache:', request.url);
     const cached = await cache.match(request);
     if (cached) return cached;
     if (request.headers.get('accept')?.includes('text/html')) {
+      console.log('[SW] No cached copy either — falling back to offline.html:', request.url);
       return caches.match('./offline.html');
     }
     return Response.error();
   } catch {
+    console.log('[SW] Offline (fetch threw) — serving from cache:', request.url);
     const cached = await cache.match(request);
     if (cached) return cached;
     if (request.headers.get('accept')?.includes('text/html')) {
+      console.log('[SW] No cached copy either — falling back to offline.html:', request.url);
       return caches.match('./offline.html');
     }
     return Response.error();
@@ -170,6 +177,7 @@ async function cacheFirst(request) {
     if (res.ok) cache.put(request, res.clone());
     return res;
   } catch {
+    console.log('[SW] Offline with no cached copy — request failed:', request.url);
     return Response.error();
   }
 }
