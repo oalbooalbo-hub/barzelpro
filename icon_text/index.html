@@ -3952,6 +3952,11 @@ function _nwfFieldFocus(titleId, boxId, on) {
     _positionNoteKbdBar();
     window.visualViewport?.addEventListener('resize', _positionNoteKbdBar);
     window.visualViewport?.addEventListener('scroll', _positionNoteKbdBar);
+    // visualViewport resize is unreliable on Android (see _positionNoteKbdBar) —
+    // this call can silently never come, leaving the field stuck behind the
+    // keyboard/Done bar. A fixed retry after the keyboard's usual show-animation
+    // window doesn't depend on that event firing at all.
+    setTimeout(_positionNoteKbdBar, 350);
   }
 
   if (on) {
@@ -4002,6 +4007,11 @@ function _newExFieldFocus(titleId, boxId, on) {
     _positionNoteKbdBar();
     window.visualViewport?.addEventListener('resize', _positionNoteKbdBar);
     window.visualViewport?.addEventListener('scroll', _positionNoteKbdBar);
+    // visualViewport resize is unreliable on Android (see _positionNoteKbdBar) —
+    // this call can silently never come, leaving the field stuck behind the
+    // keyboard/Done bar. A fixed retry after the keyboard's usual show-animation
+    // window doesn't depend on that event firing at all.
+    setTimeout(_positionNoteKbdBar, 350);
   }
   if (on) {
     if (bar) bar.style.display = 'none';
@@ -12126,17 +12136,27 @@ function _positionNoteKbdBar() {
         scroller.style.paddingBottom = `calc(${scroller.dataset.noteKbdPadOrig || '0px'} + ${deficit}px)`;
         window._noteKbdPaddedScroller = scroller;
       }
-      area.style.scrollMarginTop = headerH + 8 + 'px';
-      area.style.scrollMarginBottom = kbdH + 'px';
       // Bottom-aligning (like before) reads best for a short note — it sits right
       // above the keyboard, close to where you're typing. But for a note tall
       // enough that its own top scrolls out from under the header when bottom-
       // aligned, that hides the very lines you're trying to read, so fall back to
       // top-aligning instead — guarantees at least the note's first ~3 lines
       // (min-height 60px, 24px line-height) stay visible below the header.
-      const safeZoneH = window.innerHeight - gap - headerH - kbdH;
-      const fitsFully = area.offsetHeight <= safeZoneH;
-      area.scrollIntoView({ behavior: 'smooth', block: fitsFully ? 'end' : 'start' });
+      const safeTop = headerH + 8;
+      const safeBottom = window.innerHeight - gap - kbdH;
+      const areaRect = area.getBoundingClientRect();
+      const fitsFully = (areaRect.bottom - areaRect.top) <= (safeBottom - safeTop);
+      // Explicit scrollTop math instead of scrollIntoView — scrollIntoView judges
+      // "visible" against the scrolling container's own clientHeight, which on
+      // Android doesn't shrink when the keyboard opens (unlike iOS/Safari), so it
+      // was scrolling as if the keyboard-covered region were still on-screen and
+      // the note ended up landing right back behind the keyboard/Done bar. `gap`
+      // (from visualViewport) is the one number that's actually reliable here.
+      const delta = fitsFully ? (areaRect.bottom - safeBottom) : (areaRect.top - safeTop);
+      if (Math.abs(delta) > 1) {
+        if (typeof scroller.scrollBy === 'function') scroller.scrollBy({ top: delta, behavior: 'smooth' });
+        else scroller.scrollTop += delta;
+      }
     }
   }
 }
@@ -12206,6 +12226,11 @@ function showNoteToolbar(id) {
     _positionNoteKbdBar();
     window.visualViewport?.addEventListener('resize', _positionNoteKbdBar);
     window.visualViewport?.addEventListener('scroll', _positionNoteKbdBar);
+    // visualViewport resize is unreliable on Android (see _positionNoteKbdBar) —
+    // this call can silently never come, leaving the note stuck behind the
+    // keyboard/Done bar. A fixed retry after the keyboard's usual show-animation
+    // window doesn't depend on that event firing at all.
+    setTimeout(_positionNoteKbdBar, 350);
   }
 }
 function hideNoteToolbar() {
