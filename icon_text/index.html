@@ -379,12 +379,12 @@ body.desktop-mode .pages-wrap {
   animation:exFadeScaleOut .22s cubic-bezier(.4,0,.2,1) forwards;
 }
 @keyframes exFadeScaleIn{
-  from{opacity:0;transform:translateY(48px);}
-  to{opacity:1;transform:translateY(0);}
+  from{transform:translateY(48px);}
+  to{transform:translateY(0);}
 }
 @keyframes exFadeScaleOut{
-  from{opacity:1;transform:translateY(0);}
-  to{opacity:0;transform:translateY(48px);}
+  from{transform:translateY(0);}
+  to{transform:translateY(48px);}
 }
 #ex-detail-no-photo-wrap{
   position:absolute;top:0;left:0;right:0;z-index:3;
@@ -1437,8 +1437,6 @@ function hidAuthScreen() {
       <button class="modal-close" onclick="closeDataModal()">✕</button>
     </div>
     <div class="modal-body" style="padding-bottom:24px;">
-      <div style="font-size:12px;color:var(--muted);margin-bottom:18px;line-height:1.6;">Export your workouts, cardio sessions, and custom exercises as a JSON file you can save or import later.</div>
-
       <!-- Stats row -->
       <div id="dataModalStats" style="display:flex;gap:8px;margin-bottom:20px;"></div>
 
@@ -1460,13 +1458,6 @@ function hidAuthScreen() {
         </label>
         <input type="file" id="importFileInput" accept=".json" style="display:none;" onchange="importData(this)">
         <div style="font-size:11px;color:#555;margin-top:8px;text-align:center;">⚠️ This will merge imported data with your existing data</div>
-      </div>
-
-      <!-- Account -->
-      <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px;">
-        <div style="font-family:'Bebas Neue';font-size:14px;letter-spacing:1px;color:var(--muted);margin-bottom:8px;">ACCOUNT</div>
-        <button id="auth-signout-btn" onclick="window._fbSignOut && window._fbSignOut()" style="width:100%;background:transparent;border:1px solid #333;border-radius:10px;color:#888;font-family:'DM Sans';font-size:14px;font-weight:600;padding:13px;cursor:pointer;transition:all .2s;">Sign Out</button>
-        <button id="admin-panel-btn" onclick="closeDataModal();openAdminPanel()" style="display:none;width:100%;margin-top:8px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.35);border-radius:10px;color:#a78bfa;font-family:'DM Sans';font-size:14px;font-weight:600;padding:13px;cursor:pointer;transition:all .2s;">⚙️ Admin Panel</button>
       </div>
     </div>
   </div>
@@ -3974,6 +3965,7 @@ function _nwfFieldFocus(titleId, boxId, on) {
       if (stillEditing) return;
       if (kbdBar) {
         kbdBar.style.display = 'none';
+        delete kbdBar.dataset.scrolledForNote;
         window.visualViewport?.removeEventListener('resize', _positionNoteKbdBar);
         window.visualViewport?.removeEventListener('scroll', _positionNoteKbdBar);
       }
@@ -4021,6 +4013,7 @@ function _newExFieldFocus(titleId, boxId, on) {
       if (stillEditing) return;
       if (kbdBar) {
         kbdBar.style.display = 'none';
+        delete kbdBar.dataset.scrolledForNote;
         window.visualViewport?.removeEventListener('resize', _positionNoteKbdBar);
         window.visualViewport?.removeEventListener('scroll', _positionNoteKbdBar);
       }
@@ -5869,6 +5862,11 @@ const _COMP_SUBS = [
   {n:'Abs',bp:'Core'},{n:'Obliques',bp:'Core'},
 ];
 const _COMP_COLORS = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171' };
+// Canonical body-part order for any "MUSCLES" list spanning multiple body
+// parts (e.g. a Mix exercise, or a workout's combined muscle list) — items
+// are otherwise left in whatever order they were selected/stored in.
+const _BP_ORDER = ['Chest','Back','Legs','Shoulders','Arms','Core'];
+function _bpRank(bp) { const i = _BP_ORDER.indexOf(bp); return i === -1 ? 999 : i; }
 
 function _nExHighlightMuscle(bodyPart, preserveSubMuscles) {
   W2_ALL_MUSCLE_IDS.forEach(id => {
@@ -6661,13 +6659,22 @@ function _buildMuscleDiagramWrap(exDef, alignLeft) {
   // "MUSCLES only" mode left-aligns the list (to match the left-aligned title above it)
   // instead of centering the list+diagram pair, so the list's position is fixed at
   // 32px regardless of the diagram's width or the list's text content.
-  diagWrap.style.cssText = `padding:10px 0 10px;margin-top:10px;display:flex;justify-content:${alignLeft ? 'flex-start' : 'center'};position:relative;background:#161616;border-radius:14px;margin-left:16px;margin-right:16px;`;
+  diagWrap.style.cssText = `padding:10px 0 10px;margin-top:10px;display:flex;justify-content:${alignLeft ? 'flex-start' : 'center'};position:relative;margin-left:16px;margin-right:16px;`;
   const scaleWrap = document.createElement('div');
   const _backOnly = !hasFront && hasBack;
   const _frontOnly = hasFront && !hasBack;
   const _oneSideShift = _backOnly ? 'translateX(23px) ' : _frontOnly ? 'translateX(-26px) ' : '';
   const _oneSideScale = 0.8;
-  scaleWrap.style.cssText = `width:${_oneSide ? '50%' : '100%'};transform:${_oneSide ? _oneSideShift + `scale(${_oneSideScale})` : 'translateX(30px) scale(0.94)'} translateZ(0);transform-origin:top center;backface-visibility:hidden;position:relative;`;
+  // flex:1 (not a width tied to the diagram's own content) so this always claims
+  // whatever's left over from the muscle list's own fixed-width column below —
+  // the same size on every exercise, instead of shrinking for exercises whose
+  // muscle list happens to render wider.
+  // No more artificial shrink (was scale(0.94)) — the box itself is already
+  // exactly "whatever's left after the muscle list's fixed column" (flex:1
+  // above), so painting at full size can't collide with the list; translateX
+  // trimmed 30px→24px to keep the same rightmost reach as before instead of
+  // pushing further past the card's edge now that it's no longer shrunk down.
+  scaleWrap.style.cssText = `flex:${_oneSide ? '0 0 50%' : '1 1 0'};min-width:0;transform:${_oneSide ? _oneSideShift + `scale(${_oneSideScale})` : 'translateX(24px)'} translateZ(0);transform-origin:top center;backface-visibility:hidden;position:relative;`;
   scaleWrap.appendChild(bc);
   if (_oneSide) {
     // transform:scale() only shrinks what's painted, not the box's reserved layout
@@ -6683,9 +6690,14 @@ function _buildMuscleDiagramWrap(exDef, alignLeft) {
 
   // Muscle list — flex sibling so it drives the card height
   const muscleList = document.createElement('div');
-  muscleList.style.cssText = 'display:flex;flex-direction:column;gap:5px;align-items:flex-start;z-index:1;pointer-events:none;padding:10px 0 10px 16px;justify-content:center;';
+  // Fixed-width column (not sized by its own longest label) — otherwise a wider
+  // muscle name eats into the diagram's share of the row's width, making the
+  // body image render smaller for that exercise than for others.
+  muscleList.style.cssText = 'display:flex;flex-direction:column;gap:5px;align-items:flex-start;z-index:1;pointer-events:none;padding:10px 0 10px 16px;justify-content:center;flex:0 0 96px;width:96px;';
   const listItems = muscle === 'Mix'
-    ? (subs.length > 0 ? subs : _COMP_SUBS.map(s => s.n))
+    ? (subs.length > 0
+        ? [...subs].sort((a, b) => _bpRank(_COMP_SUBS.find(x => x.n === a)?.bp) - _bpRank(_COMP_SUBS.find(x => x.n === b)?.bp))
+        : _COMP_SUBS.map(s => s.n))
     : (subs.length > 0 ? subs : (NEX_BODY_SUBMUSCLES[muscle] || []));
   listItems.forEach(sm => {
     let smColor;
@@ -6697,7 +6709,7 @@ function _buildMuscleDiagramWrap(exDef, alignLeft) {
       smColor = isBodyPart ? (W2_MUSCLE_COLORS[sm] || mainColor || '#aaa') : (mainColor || '#aaa');
     }
     const item = document.createElement('div');
-    item.style.cssText = `font-family:'DM Sans';font-size:12px;font-weight:700;color:${smColor};letter-spacing:.2px;text-shadow:0 1px 4px #000;white-space:nowrap;`;
+    item.style.cssText = `font-family:'DM Sans';font-size:12px;font-weight:700;color:${smColor};letter-spacing:.2px;text-shadow:0 1px 4px #000;`;
     item.textContent = sm;
     muscleList.appendChild(item);
   });
@@ -7005,8 +7017,11 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
   };
   _rangeKeys.forEach((r, i) => {
     const item = document.createElement('button');
-    item.style.cssText = `width:100%;background:transparent;border:none;${i<_rangeKeys.length-1?'border-bottom:1px solid #222;':''}color:${r===_progRange?'var(--accent)':'#aaa'};font-family:'DM Sans';font-size:13px;font-weight:${r===_progRange?'700':'400'};padding:9px 14px;cursor:pointer;text-align:left;display:block;transition:color .15s ease,background .15s ease;`;
-    item.textContent = _rangeNames[r];
+    item.style.cssText = `width:100%;background:transparent;border:none;${i<_rangeKeys.length-1?'border-bottom:1px solid #222;':''}color:${r===_progRange?'var(--accent)':'#aaa'};font-family:'DM Sans';font-size:13px;font-weight:${r===_progRange?'700':'400'};padding:9px 14px;cursor:pointer;text-align:left;display:flex;align-items:baseline;transition:color .15s ease,background .15s ease;`;
+    // Fixed-width number column so every row's digit and unit word line up,
+    // instead of the unit shifting left/right with the digit's own width.
+    const [_rNum, _rUnit] = _rangeNames[r].split(' ');
+    item.innerHTML = `<span style="display:inline-block;width:16px;text-align:center;">${_rNum}</span><span>${_rUnit}</span>`;
     item.onclick = (e) => {
       e.stopPropagation();
       _progRange = r;
@@ -7672,8 +7687,11 @@ function openExtabExOverlay(exName, musclesOnly) {
     periodDropdown.style.cssText = 'display:none;position:absolute;right:0;bottom:calc(100% + 4px);background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;overflow:hidden;z-index:20;min-width:110px;box-shadow:0 8px 24px rgba(0,0,0,.5);';
     _rangeKeys.forEach((r, i) => {
       const item = document.createElement('button');
-      item.style.cssText = `width:100%;background:transparent;border:none;${i<_rangeKeys.length-1?'border-bottom:1px solid #222;':''}color:${r===_progRange?'var(--accent)':'#aaa'};font-family:'DM Sans';font-size:13px;font-weight:${r===_progRange?'700':'400'};padding:9px 14px;cursor:pointer;text-align:left;display:block;`;
-      item.textContent = _rangeNames[r];
+      item.style.cssText = `width:100%;background:transparent;border:none;${i<_rangeKeys.length-1?'border-bottom:1px solid #222;':''}color:${r===_progRange?'var(--accent)':'#aaa'};font-family:'DM Sans';font-size:13px;font-weight:${r===_progRange?'700':'400'};padding:9px 14px;cursor:pointer;text-align:left;display:flex;align-items:baseline;`;
+      // Fixed-width number column so every row's digit and unit word line up,
+      // instead of the unit shifting left/right with the digit's own width.
+      const [_rNum, _rUnit] = _rangeNames[r].split(' ');
+      item.innerHTML = `<span style="display:inline-block;width:16px;text-align:center;">${_rNum}</span><span>${_rUnit}</span>`;
       item.onclick = (e) => {
         e.stopPropagation();
         _progRange = r;
@@ -12066,14 +12084,20 @@ function _positionNoteKbdBar() {
   const vv = window.visualViewport;
   const gap = vv ? Math.max(0, window.innerHeight - (vv.height + vv.offsetTop)) : 0;
   bar.style.bottom = gap + 'px';
-  // Once the keyboard has actually opened (gap > 0), scroll the note box so its
+  // Once the keyboard has actually opened (gap > 0), scroll the edited box so its
   // bottom edge clears the Done bar instead of sitting hidden behind it. Only do
-  // this once per focus session — bar.dataset flag reset in hideNoteToolbar —
-  // so it doesn't keep yanking the scroll position on every viewport tick.
+  // this once per focus session — bar.dataset flag reset in hideNoteToolbar (and
+  // the _nwfFieldFocus/_newExFieldFocus blur handlers, which share this same bar)
+  // — so it doesn't keep yanking the scroll position on every viewport tick.
   if (gap > 0 && !bar.dataset.scrolledForNote) {
     bar.dataset.scrolledForNote = '1';
     const id = window._noteEditingId;
-    const area = id ? document.getElementById(`comment-area-${id}`) : null;
+    // The note textarea is the only field with its own dedicated wrapper id — every
+    // other field sharing this bar (nwf name/description/video, new-exercise name/
+    // video) is just whatever's currently focused, so fall back to that.
+    const _active = document.activeElement;
+    const area = id ? document.getElementById(`comment-area-${id}`)
+      : (_active && (_active.tagName === 'TEXTAREA' || _active.tagName === 'INPUT') ? _active : null);
     if (area) {
       // Whichever sticky header is on screen while a note is open (ex-detail's
       // elapsed-timer bar, its no-photo header, or the Today page's own header).
@@ -13176,53 +13200,40 @@ function _confirmWorkoutPhotoStep() {
 }
 function _nwfResetHeaderPadding() {
   const h = document.getElementById('workout-sticky-header');
-  // z-index must be restored to its baseline (25, matching the static inline style), not
-  // cleared to '' — the header has no CSS-class z-index fallback, so clearing it left it
-  // at 'auto' permanently after the first reset, causing later-scrolled exercise cards to
-  // paint over the fixed header instead of staying hidden behind it.
-  if (h) { h.style.paddingTop = ''; h.style.zIndex = '25'; h.style.background = ''; }
+  // z-index and background must be restored to their baseline (25 / #0a0a0a, matching
+  // the static inline style), not cleared to '' — the header has no CSS-class fallback
+  // for either, so clearing them left z-index at 'auto' (later-scrolled exercise cards
+  // painted over the fixed header) and background transparent (cards showed through the
+  // fixed header once scrolled underneath it) permanently after the first reset.
+  if (h) { h.style.paddingTop = ''; h.style.zIndex = '25'; h.style.background = '#0a0a0a'; }
 }
 function _nwfStartWorkout() {
-  document.getElementById('postSaveOptions')?.remove();
-  document.getElementById('_nwf-back-wrapper')?.remove();
-  _nwfResetHeaderPadding();
-  document.querySelectorAll('.tab').forEach(t => { t.style.opacity = ''; t.style.pointerEvents = ''; });
-  const _db = document.getElementById('dateBadge');
-  if (_db) { _db.style.opacity = ''; _db.style.cursor = ''; }
-  actionsRowRestore();
-  // Editing an existing workout updates it in place (its index doesn't
-  // change), so index 0 is only correct for a brand-new one (unshifted to
-  // the front) — look the just-saved workout up by name instead of assuming
-  // position. See saveWorkoutToList, which sets this right before landing here.
-  const _savedName = window._nwfLastSavedWorkoutName;
-  const _savedIdx = _savedName ? workouts.findIndex(w => w.name === _savedName) : -1;
-  loadWorkout(_savedIdx >= 0 ? _savedIdx : 0);
-  switchTab('log');
-  const _sb = document.getElementById('_saveBlackScreen');
-  const _elems = [
-    document.getElementById('workout-hero-photo'),
-    document.getElementById('exerciseList'),
-    document.querySelector('.add-ex-row'),
-    document.querySelector('.today-actions')
-  ];
-  _elems.forEach((el, i) => { if (el) { el.style.transform = `translateY(${48 + i * 6}px)`; el.style.opacity = '0'; } });
-  if (_sb) {
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      _sb.style.transition = 'opacity 0.38s ease';
-      _sb.style.opacity = '0';
-      _elems.forEach((el, i) => {
-        if (el) {
-          el.style.transition = `transform 0.45s cubic-bezier(0.2,0.8,0.3,1) ${i * 0.03}s, opacity 0.38s ease ${i * 0.03}s`;
-          el.style.transform = '';
-          el.style.opacity = '';
-        }
-      });
-      _sb.addEventListener('transitionend', () => {
-        _sb.remove();
-        _elems.forEach(el => { if (el) { el.style.transition = ''; } });
-      }, { once: true });
-    }));
-  }
+  // Same "LOADING WORKOUT" overlay flow as _wtabLoadWorkout/w2SheetStart (the
+  // Workouts-tab play button) — fade the overlay in over the still-visible
+  // "Workout created!" screen first, and only tear it down once fully hidden
+  // behind the overlay, so nothing flashes before the fade-out completes.
+  _runWorkoutLoadingAnim(() => {
+    document.getElementById('postSaveOptions')?.remove();
+    document.getElementById('_nwf-back-wrapper')?.remove();
+    document.getElementById('_saveBlackScreen')?.remove();
+    _nwfResetHeaderPadding();
+    document.querySelectorAll('.tab').forEach(t => { t.style.opacity = ''; t.style.pointerEvents = ''; });
+    const _db = document.getElementById('dateBadge');
+    if (_db) { _db.style.opacity = ''; _db.style.cursor = ''; }
+    actionsRowRestore();
+
+    const _loadStart = performance.now();
+    // Editing an existing workout updates it in place (its index doesn't
+    // change), so index 0 is only correct for a brand-new one (unshifted to
+    // the front) — look the just-saved workout up by name instead of assuming
+    // position. See saveWorkoutToList, which sets this right before landing here.
+    const _savedName = window._nwfLastSavedWorkoutName;
+    const _savedIdx = _savedName ? workouts.findIndex(w => w.name === _savedName) : -1;
+    window._exPhotoLookupPromises = [];
+    loadWorkout(_savedIdx >= 0 ? _savedIdx : 0);
+    switchTab('log');
+    _finishWorkoutLoading(_loadStart);
+  });
 }
 function _finalizeNewWorkoutArea() {
   document.getElementById('today-start-screen').style.display = 'none';
@@ -14204,9 +14215,9 @@ function openDataModal() {
   const stats = document.getElementById('dataModalStats');
   if (stats) {
     const items = [
-      { val: workouts.filter(w=>!w._draft&&!w._template).length, label: 'Workouts', color: 'var(--accent)' },
-      { val: cardioLog.length, label: 'Cardio', color: '#7ec8e3' },
-      { val: customExercises.length, label: 'Custom Ex.', color: '#a78bfa' },
+      { val: workouts.filter(w=>!w._draft&&!w._template).length, label: 'Completed Workouts', color: 'var(--accent)' },
+      { val: workouts.filter(w=>w._template).length, label: 'Custom Workouts', color: '#7ec8e3' },
+      { val: customExercises.length, label: 'Custom Exercises', color: '#a78bfa' },
     ];
     stats.innerHTML = items.map(it => `
       <div style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 8px;text-align:center;">
@@ -23380,7 +23391,7 @@ function deleteCoachWorkout(id) {
 
 <!-- Workout loading overlay — must be outside w2-sheet (which has will-change:transform) -->
 <div id="workout-loading-overlay" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,1);align-items:center;justify-content:center;flex-direction:column;opacity:0;transition:opacity .8s ease;">
-  <div style="font-family:'DM Sans';font-size:16px;font-weight:700;color:#fff;letter-spacing:.9px;">LOADING WORKOUT</div>
+  <div id="workout-loading-overlay-text" style="font-family:'DM Sans';font-size:16px;font-weight:700;color:#fff;letter-spacing:.9px;opacity:0;transition:opacity .4s ease;">LOADING WORKOUT</div>
 </div>
 
 <!-- Exercises-tab exercise detail (separate clean overlay) -->
@@ -23430,7 +23441,7 @@ function deleteCoachWorkout(id) {
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><line x1="5" y1="12" x2="19" y2="12" stroke="#888" stroke-width="2.5" stroke-linecap="round"/><polyline points="13,6 19,12 13,18" stroke="#888" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
     </div>
-    <div id="ex-detail-progress-wrap" style="display:none;height:6px;background:transparent;gap:3px;width:80%;margin:-2px auto;"></div>
+    <div id="ex-detail-progress-wrap" style="display:none;height:6px;background:transparent;gap:3px;width:80%;margin:-2px auto 3px;"></div>
   </div>
   <!-- No photo: simple sticky header -->
   <div id="ex-detail-no-photo-wrap" style="display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top)+12px) 16px 10px;flex-shrink:0;">
@@ -26485,8 +26496,18 @@ function confirmDeleteExercise() {
       saveSession();
       // Removing a card can eliminate the last exercise of a body part — refresh the
       // muscle filter chips so a now-empty body part's chip disappears/un-highlights.
+      const _hadFilter = _todayMuscleFilter;
       updateTodayMuscleChips();
-      if (_todayMuscleFilter) _updateAllExCircleColors();
+      if (_hadFilter && !_todayMuscleFilter) {
+        // That was the last exercise in the active filter — updateTodayMuscleChips
+        // already reset the filter itself, but the other (still-hidden) cards need
+        // their own refresh to reappear, same as if no body part were selected.
+        applyTodayFilters();
+      }
+      // Always refresh circle colors, not just while a filter is still active — the
+      // reset-to-null case above needs its stale filter-colored circles reset back
+      // to grey too, same as _updateAllExCircleColors already does when called.
+      _updateAllExCircleColors();
       checkFinishReady();
     }
   }, 300);
@@ -27385,6 +27406,7 @@ function _renderW2MusclesInto(w) {
     // own -25px margin-top already pulls it up under the title by that much).
     _mlDiv.style.cssText = 'position:absolute;left:20px;top:45px;display:flex;flex-direction:column;gap:5px;align-items:flex-start;z-index:1;pointer-events:none;';
     const _seenSms = new Set();
+    const _mlItems = [];
     (w.exercises || []).forEach(e => {
       const _em = e.muscle || getAllExercises().find(x=>x.name===e.name||x.label===e.name)?.muscle || 'Other';
       const _ec = W2_MUSCLE_COLORS[_em];
@@ -27392,15 +27414,21 @@ function _renderW2MusclesInto(w) {
       const _exDef = getAllExercises().find(x=>x.name===e.name||x.label===e.name) || e;
       const _subs = _exDef.subMuscles || e.subMuscles || [];
       const _resolvedSubs = _subs.length > 0 ? _subs : (_em === 'Mix' ? _COMP_SUBS.map(c => c.n) : (NEX_BODY_SUBMUSCLES[_em] || []));
-      const _items = _resolvedSubs.length > 0 ? _resolvedSubs.map(s => { const _sbp = _COMP_SUBS.find(c => c.n === s)?.bp; return { name: s, color: _sbp ? (W2_MUSCLE_COLORS[_sbp] || _ec) : (W2_MUSCLE_COLORS[s] || _ec) }; }) : [{ name: _em, color: _ec }];
-      _items.forEach(({ name, color }) => {
-        if (_seenSms.has(name)) return;
-        _seenSms.add(name);
-        const _item = document.createElement('div');
-        _item.style.cssText = `font-family:'DM Sans';font-size:12px;font-weight:700;color:${color};letter-spacing:.2px;text-shadow:0 1px 4px #000;`;
-        _item.textContent = name;
-        _mlDiv.appendChild(_item);
+      const _items = _resolvedSubs.length > 0 ? _resolvedSubs.map(s => { const _sbp = _COMP_SUBS.find(c => c.n === s)?.bp; return { name: s, color: _sbp ? (W2_MUSCLE_COLORS[_sbp] || _ec) : (W2_MUSCLE_COLORS[s] || _ec), bp: _sbp || s }; }) : [{ name: _em, color: _ec, bp: _em }];
+      _items.forEach(item => {
+        if (_seenSms.has(item.name)) return;
+        _seenSms.add(item.name);
+        _mlItems.push(item);
       });
+    });
+    // Combined list spans every body part touched by the workout — always show
+    // it in chest/back/legs/shoulders/arms/core order, not exercise order.
+    _mlItems.sort((a, b) => _bpRank(a.bp) - _bpRank(b.bp));
+    _mlItems.forEach(({ name, color }) => {
+      const _item = document.createElement('div');
+      _item.style.cssText = `font-family:'DM Sans';font-size:12px;font-weight:700;color:${color};letter-spacing:.2px;text-shadow:0 1px 4px #000;`;
+      _item.textContent = name;
+      _mlDiv.appendChild(_item);
     });
     _mlDiv.addEventListener('touchstart', e => e.stopPropagation(), { passive: true });
     _mlDiv.addEventListener('touchmove',  e => e.stopPropagation(), { passive: true });
@@ -27673,18 +27701,22 @@ setTimeout(_hideAppLoadingOverlay, 6000);
 // the fade-in transition itself.
 function _runWorkoutLoadingAnim(onFadedIn) {
   const _ov = document.getElementById('workout-loading-overlay');
+  const _txt = document.getElementById('workout-loading-overlay-text');
   if (!_ov) { if (onFadedIn) onFadedIn(); return; }
   _ov.style.background = 'rgba(0,0,0,1)';
   _ov.style.transition = 'opacity .8s ease';
   _ov.style.opacity = '0';
   _ov.style.display = 'flex';
+  if (_txt) _txt.style.opacity = '0';
   requestAnimationFrame(() => requestAnimationFrame(() => {
     _ov.style.opacity = '1';
-    if (!onFadedIn) return;
     const _onEnd = (e) => {
       if (e.target !== _ov || e.propertyName !== 'opacity') return;
       _ov.removeEventListener('transitionend', _onEnd);
-      onFadedIn();
+      if (onFadedIn) onFadedIn();
+      // Hold on a totally black screen for a beat before the "LOADING
+      // WORKOUT" label appears, instead of it popping in with the fade.
+      setTimeout(() => { if (_txt) _txt.style.opacity = '1'; }, 300);
     };
     _ov.addEventListener('transitionend', _onEnd);
   }));
@@ -27758,7 +27790,7 @@ function _waitForExerciseImagesLoaded(callback, maxWait = 3000) {
 // Keeps the "LOADING WORKOUT" overlay up for at least MIN_MS total, using that
 // time to load the exercises/images — only fading out early once images are
 // both ready AND the minimum has elapsed, whichever comes later.
-function _finishWorkoutLoading(startTs, MIN_MS = 800) {
+function _finishWorkoutLoading(startTs, MIN_MS = 1200) {
   _waitForExerciseImagesLoaded(() => {
     const remain = Math.max(0, MIN_MS - (performance.now() - startTs));
     setTimeout(_hideWorkoutLoadingAnim, remain);
