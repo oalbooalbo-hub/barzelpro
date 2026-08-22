@@ -3956,7 +3956,7 @@ function _nwfFieldFocus(titleId, boxId, on) {
     // this call can silently never come, leaving the field stuck behind the
     // keyboard/Done bar. A fixed retry after the keyboard's usual show-animation
     // window doesn't depend on that event firing at all.
-    setTimeout(_positionNoteKbdBar, 350);
+    setTimeout(() => _positionNoteKbdBar(true), 350);
   }
 
   if (on) {
@@ -4011,7 +4011,7 @@ function _newExFieldFocus(titleId, boxId, on) {
     // this call can silently never come, leaving the field stuck behind the
     // keyboard/Done bar. A fixed retry after the keyboard's usual show-animation
     // window doesn't depend on that event firing at all.
-    setTimeout(_positionNoteKbdBar, 350);
+    setTimeout(() => _positionNoteKbdBar(true), 350);
   }
   if (on) {
     if (bar) bar.style.display = 'none';
@@ -12088,18 +12088,29 @@ function updateNoteBtn(id) {
 // resize is unreliable for *detecting* keyboard open/closed state on Android (see
 // showNoteToolbar), but once we already know the keyboard is up (textarea focus),
 // it's the only real signal for *where* its top edge currently is.
-function _positionNoteKbdBar() {
+function _positionNoteKbdBar(force) {
   const bar = document.getElementById('note-kbd-done-bar');
   if (!bar || bar.style.display === 'none') return;
   const vv = window.visualViewport;
   const gap = vv ? Math.max(0, window.innerHeight - (vv.height + vv.offsetTop)) : 0;
   bar.style.bottom = gap + 'px';
-  // Once the keyboard has actually opened (gap > 0), scroll the edited box so its
-  // bottom edge clears the Done bar instead of sitting hidden behind it. Only do
-  // this once per focus session — bar.dataset flag reset in hideNoteToolbar (and
-  // the _nwfFieldFocus/_newExFieldFocus blur handlers, which share this same bar)
-  // — so it doesn't keep yanking the scroll position on every viewport tick.
-  if (gap > 0 && !bar.dataset.scrolledForNote) {
+  // gap > 0 signals "keyboard open" on platforms (iOS/Safari) where the layout
+  // viewport (window.innerHeight) stays fixed while only visualViewport shrinks.
+  // On Android, window.innerHeight typically shrinks together with the keyboard,
+  // so gap stays ~0 even with the keyboard fully open and the bar correctly
+  // pinned at its (already-shrunk) bottom:0 — gap alone would never fire the
+  // scroll-to-clear-the-bar check below on those devices, force (from the fixed
+  // settle-timeout fallback in showNoteToolbar/_nwfFieldFocus/_newExFieldFocus)
+  // is what covers that case instead.
+  // Only run once per focus session either way — bar.dataset flag reset in
+  // hideNoteToolbar (and the _nwfFieldFocus/_newExFieldFocus blur handlers, which
+  // share this same bar) — so it doesn't keep yanking the scroll position on
+  // every viewport tick.
+  // Strict === true (not just truthy) — this also runs as a raw visualViewport
+  // 'resize'/'scroll' event listener, which would otherwise pass its Event object
+  // through as `force` on every tick and defeat the "only once, once settled"
+  // guarding this is here for.
+  if ((gap > 0 || force === true) && !bar.dataset.scrolledForNote) {
     bar.dataset.scrolledForNote = '1';
     const id = window._noteEditingId;
     // The note textarea is the only field with its own dedicated wrapper id — every
@@ -12230,7 +12241,7 @@ function showNoteToolbar(id) {
     // this call can silently never come, leaving the note stuck behind the
     // keyboard/Done bar. A fixed retry after the keyboard's usual show-animation
     // window doesn't depend on that event firing at all.
-    setTimeout(_positionNoteKbdBar, 350);
+    setTimeout(() => _positionNoteKbdBar(true), 350);
   }
 }
 function hideNoteToolbar() {
