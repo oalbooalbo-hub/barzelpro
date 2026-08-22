@@ -1013,6 +1013,24 @@ async function createUserDoc(user) {
   return data;
 }
 
+// Firestore trusts navigator.onLine to decide whether to keep retrying a live
+// connection before falling back to its local cache — but navigator.onLine
+// can be true with no real route to the internet (flaky WiFi, captive
+// portal, or a DevTools "Offline" throttle applied over a remote-debug
+// session that itself needs the network interface up). When that happens,
+// getDoc()/setDoc() below can retry against the dead connection indefinitely
+// instead of resolving from cache, which hangs this whole callback forever
+// and leaves both #app-root and #auth-screen at their default hidden state —
+// a black screen even after the loading-overlay safety net below gives up
+// waiting and hides itself. Cap it so a hung Firestore call degrades into the
+// existing "continue with basic auth" fallback instead of hanging forever.
+function _withTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('timed out')), ms)),
+  ]);
+}
+
 let _authNullGraceTimer = null;
 onAuthStateChanged(auth, async (user) => {
   if (user) {
@@ -1020,30 +1038,34 @@ onAuthStateChanged(auth, async (user) => {
     // timer scheduled below for an earlier, transient null callback.
     clearTimeout(_authNullGraceTimer);
     try {
-      await loadBrandConfig();
-      const userData = await createUserDoc(user);
-      window._currentUser = { ...user, role: userData.role };
-      window._currentUserData = userData;
-      loadUserBW();
+      const _expired = await _withTimeout((async () => {
+        await loadBrandConfig();
+        const userData = await createUserDoc(user);
+        window._currentUser = { ...user, role: userData.role };
+        window._currentUserData = userData;
+        loadUserBW();
 
-      // ── Cache JWT for offline access ──────────────────
-      if (window.BarzelpNet) {
-        window.BarzelpNet.cacheToken(user).catch(() => {});
-      }
-      // ─────────────────────────────────────────────────
-
-      // ── ACCOUNT EXPIRY CHECK ──────────────────────────
-      if (userData.accountExpires) {
-        const expDate = new Date(userData.accountExpires);
-        const now = new Date();
-        if (expDate < now) {
-          await signOut(auth);
-          showExpiredScreen(userData.accountExpires, 'account');
-          if (window._hideAppLoadingOverlay) window._hideAppLoadingOverlay();
-          return;
+        // ── Cache JWT for offline access ──────────────────
+        if (window.BarzelpNet) {
+          window.BarzelpNet.cacheToken(user).catch(() => {});
         }
-      }
-      // ─────────────────────────────────────────────────
+        // ─────────────────────────────────────────────────
+
+        // ── ACCOUNT EXPIRY CHECK ──────────────────────────
+        if (userData.accountExpires) {
+          const expDate = new Date(userData.accountExpires);
+          const now = new Date();
+          if (expDate < now) {
+            await signOut(auth);
+            showExpiredScreen(userData.accountExpires, 'account');
+            if (window._hideAppLoadingOverlay) window._hideAppLoadingOverlay();
+            return true;
+          }
+        }
+        // ─────────────────────────────────────────────────
+        return false;
+      })(), 4000);
+      if (_expired) return;
     } catch(e) {
       console.warn('[Auth] Firestore error — continuing with basic auth:', e.message);
       // Fall back to basic user object so app still loads
@@ -27750,7 +27772,24 @@ setTimeout(() => {
   // couldn't load (offline + nothing cached yet). Just hiding the overlay in
   // that case reveals a permanently blank #0a0a0a app-root — show an actual
   // message instead of a silent black screen.
-  if (window._fbModuleReady) { _hideAppLoadingOverlay(); return; }
+  if (window._fbModuleReady) {
+    _hideAppLoadingOverlay();
+    // The module loading isn't the only thing that can hang — the auth/
+    // Firestore chain in onAuthStateChanged above has its own timeout, but
+    // give it a moment to land, then confirm something actually became
+    // visible instead of trusting that it did.
+    setTimeout(() => {
+      const appRoot = document.getElementById('app-root');
+      const authScr = document.getElementById('auth-screen');
+      const appVisible  = appRoot && appRoot.style.display !== 'none';
+      const authVisible = authScr && authScr.style.display !== 'none';
+      if (!appVisible && !authVisible && typeof showAuthScreen === 'function') {
+        console.warn('[App] Neither app nor auth screen visible after load — forcing auth screen.');
+        showAuthScreen();
+      }
+    }, 500);
+    return;
+  }
   console.warn('[App] Firebase module never initialized (likely offline with nothing cached yet) — showing offline fallback instead of a blank screen.');
   const el = document.getElementById('app-loading-overlay');
   if (el) {
