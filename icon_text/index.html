@@ -586,7 +586,7 @@ body.ex-tab-detail-open #ex-float-bar{display:none !important;}
 @keyframes findingPulse{0%{opacity:0}50%{opacity:1}100%{opacity:0}}
 @keyframes calSlideInRight{from{opacity:0;transform:translateX(32px)}to{opacity:1;transform:translateX(0)}}
 @keyframes calSlideInLeft{from{opacity:0;transform:translateX(-32px)}to{opacity:1;transform:translateX(0)}}
-.modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:12px auto 0;flex-shrink:0;}
+.modal-handle{width:36px;height:4px;background:#666;border-radius:2px;margin:12px auto 0;flex-shrink:0;}
 .modal-header{padding:12px 18px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);flex-shrink:0;}
 .modal-title{font-family:'DM Sans';font-size:20px;font-weight:700;letter-spacing:0;}
 .modal-close{background:var(--surface2);border:1px solid var(--border);border-radius:50%;width:30px;height:30px;color:var(--muted);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
@@ -1511,10 +1511,9 @@ window._fbModuleReady = true;
 <div class="page" id="page-exercises" style="padding-top:calc(60px + env(safe-area-inset-top));padding-bottom:calc(120px + env(safe-area-inset-bottom));padding-left:10px;padding-right:10px;">
   <div id="exercisesTabContent"></div>
   <div id="pick-mode-btns" style="display:none;flex-direction:column;gap:10px;position:fixed;bottom:0;left:0;right:0;z-index:60;padding:16px 16px calc(env(safe-area-inset-bottom,0px) + 16px);background:var(--bg);max-width:430px;margin:0 auto;border-top:1px solid #ccc;">
-    <div id="pick-mode-count-label" style="display:flex;align-items:center;justify-content:center;color:#888;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;min-height:36px;"></div>
+    <div id="pick-mode-warn-toast" style="position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%) translateY(8px);opacity:0;pointer-events:none;background:#ff4747;color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;padding:11px 22px;border-radius:28px;white-space:nowrap;transition:opacity .25s ease, transform .25s ease;">Select at least 1 exercise</div>
     <div style="display:flex;flex-direction:row;gap:10px;">
-      <button onclick="exitPickMode()" style="flex:1;background:transparent;border:1px solid rgba(255,255,255,0.18);border-radius:12px;color:rgba(255,255,255,0.65);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Back</button>
-      <button id="pick-mode-done-btn" onclick="donePickMode()" style="flex:1;background:var(--accent);border:none;border-radius:12px;color:#000;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Done</button>
+      <button id="pick-mode-done-btn" onclick="donePickMode()" style="flex:1;padding:18px;background:var(--accent);color:#000;border:none;border-radius:100px;font-family:'DM Sans',sans-serif;font-size:18px;font-weight:900;cursor:pointer;letter-spacing:.3px;-webkit-tap-highlight-color:transparent;transition:transform .15s;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">ADD EXERCISES</button>
     </div>
   </div>
 </div>
@@ -1917,9 +1916,9 @@ window._fbModuleReady = true;
 
 <!-- WEEK SUMMARY MODAL -->
 <div class="modal-overlay" id="weekSummaryOverlay" style="align-items:flex-end;padding:0;" onclick="if(event.target===this)closeWeekSummary()">
-  <div class="modal-sheet" style="padding:24px 20px 36px;border-radius:20px 20px 0 0;border:1px solid var(--border);width:100%;box-sizing:border-box;">
-    <div id="weekSummaryContent"></div>
-    <button onclick="closeWeekSummary()" style="width:100%;margin-top:16px;background:transparent;border:1px solid #333;border-radius:100px;color:var(--muted);font-family:'DM Sans';font-size:16px;font-weight:700;padding:18px;cursor:pointer;-webkit-tap-highlight-color:transparent;">CLOSE</button>
+  <div class="modal-sheet" style="padding:0 20px 36px;border-radius:20px 20px 0 0;border:1px solid var(--border);width:100%;box-sizing:border-box;">
+    <div class="modal-handle"></div>
+    <div id="weekSummaryContent" style="margin-top:16px;"></div>
   </div>
 </div>
 
@@ -1974,7 +1973,9 @@ window._fbModuleReady = true;
     <div class="modal-handle"></div>
     <div class="modal-header">
       <div class="modal-title">PERSONAL RECORDS</div>
-      <button class="modal-close" onclick="closePRStarsInfo()">✕</button>
+      <button onclick="closePRStarsInfo()" style="background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
     </div>
     <div class="modal-body">
       <div style="display:flex;flex-direction:column;gap:18px;padding:4px 0 8px;">
@@ -1982,24 +1983,23 @@ window._fbModuleReady = true;
           <svg width="28" height="28" viewBox="0 0 24 24" fill="#e8ff47" style="flex-shrink:0;"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
           <div>
             <div style="font-family:'DM Sans';font-size:14px;font-weight:800;color:#e8ff47;letter-spacing:.5px;">MAX</div>
-            <div style="font-family:'DM Sans';font-size:13px;font-weight:500;color:var(--muted);line-height:1.5;margin-top:2px;"><span style="color:#fff;">Heaviest weight</span> you've ever lifted for a single set of this exercise. This star lights up when today's session beats that all-time best weight.</div>
+            <div style="font-family:'DM Sans';font-size:13px;font-weight:500;color:var(--muted);line-height:1.5;margin-top:2px;"><span style="color:#fff;">Heaviest weight</span> you've ever lifted in a single set.</div>
           </div>
         </div>
         <div style="display:flex;gap:12px;align-items:flex-start;">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="#ff8c42" style="flex-shrink:0;"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
           <div>
             <div style="font-family:'DM Sans';font-size:14px;font-weight:800;color:#ff8c42;letter-spacing:.5px;">B.SET</div>
-            <div style="font-family:'DM Sans';font-size:13px;font-weight:500;color:var(--muted);line-height:1.5;margin-top:2px;"><span style="color:#fff;">Your best set</span> — the weight × reps combination with the highest estimated one-rep max (weight × (1 + reps ÷ 30)). This can hit a new high even without adding weight — e.g. squeezing out extra reps at the same load.</div>
+            <div style="font-family:'DM Sans';font-size:13px;font-weight:500;color:var(--muted);line-height:1.5;margin-top:2px;"><span style="color:#fff;">Your best set</span> for strength calculation.<br>Formula: max(weight × (1+reps/30))</div>
           </div>
         </div>
         <div style="display:flex;gap:12px;align-items:flex-start;">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="#a78bfa" style="flex-shrink:0;"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
           <div>
             <div style="font-family:'DM Sans';font-size:14px;font-weight:800;color:#a78bfa;letter-spacing:.5px;">VOL</div>
-            <div style="font-family:'DM Sans';font-size:13px;font-weight:500;color:var(--muted);line-height:1.5;margin-top:2px;"><span style="color:#fff;">Total volume</span> — weight × reps summed across every completed set. Rewards the total work done in the exercise, not just one best set.</div>
+            <div style="font-family:'DM Sans';font-size:13px;font-weight:500;color:var(--muted);line-height:1.5;margin-top:2px;"><span style="color:#fff;">Total volume</span> lifted across all sets combined.</div>
           </div>
         </div>
-        <button onclick="closePRStarsInfo()" style="width:100%;padding:18px;background:transparent;color:var(--muted);border:1px solid #333;border-radius:100px;font-family:'DM Sans';font-size:16px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;">CLOSE</button>
       </div>
     </div>
   </div>
@@ -2037,11 +2037,12 @@ window._fbModuleReady = true;
       <button class="cal-nav-btn" onclick="calNavClick(this,-1)">‹</button>
       <div class="modal-title" id="calTitle" style="flex:1;text-align:center;font-family:'DM Sans';font-size:20px;font-weight:900;letter-spacing:.5px;"></div>
       <button class="cal-nav-btn" onclick="calNavClick(this,1)">›</button>
-      <button class="modal-close" onclick="closeCalendar()" style="flex-shrink:0;background:#2a2a2a;border:1px solid #333;">✕</button>
+      <button onclick="closeCalendar()" style="flex-shrink:0;background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
     </div>
     <div class="modal-body" id="calBody" style="padding-bottom:calc(90px + env(safe-area-inset-bottom));"></div>
   </div>
-  <button onclick="closeCalendar()" style="position:fixed;bottom:calc(16px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:calc(min(430px,100%) - 32px);padding:18px;background:#000;color:var(--muted);border:1px solid var(--muted);border-radius:100px;font-family:'DM Sans';font-size:16px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;z-index:210;">CLOSE</button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -3866,11 +3867,9 @@ function _finishHeroNameEdit(el) {
 }
 function _nwfUpdateNextBtn() {
   const btn  = document.getElementById('nwf-name-next-btn');
-  const btn2 = document.getElementById('nwf-bottom-next-btn');
   const isDup = document.getElementById('nwf-name-dup-msg')?.style.display === 'inline';
   const hasName = !isDup && !!(document.getElementById('nwf-name-input')?.value.trim() || document.getElementById('workoutName')?.value.trim());
   if (btn)  btn.style.opacity = hasName ? '1' : '0.35';
-  if (btn2) { btn2.style.background = hasName ? 'var(--accent)' : '#444'; btn2.style.color = hasName ? '#000' : '#fff'; }
 }
 function _nwfSetNameDupState(isDup) {
   const inp = document.getElementById('nwf-name-input');
@@ -5289,7 +5288,7 @@ function renderExercisesTab() {
   const _segViews = _hasCoach ? ['all','custom','coach'] : ['all','custom'];
   const _segIdx = Math.max(0, _segViews.indexOf(_exTabView));
   const _segIndicatorColor = _exTabView === 'coach' ? '#7ec8e3' : 'var(--accent)';
-  const toggleHtml = `<div style="font-family:'DM Sans';font-size:20px;font-weight:700;color:var(--text);padding:10px 0 6px;">Exercises</div><div style="display:flex;gap:0;margin-bottom:0;align-items:center;">
+  const toggleHtml = `<div style="font-family:'DM Sans';font-size:20px;font-weight:700;color:var(--text);padding:10px 0 6px;text-align:center;">Exercises</div><div style="display:flex;gap:0;margin-bottom:0;align-items:center;">
     <div id="exTab-seg-wrap" data-views="${_segViews.join(',')}" style="position:relative;display:flex;flex:1;">
       <button onclick="switchExTabView('all')" id="exTab-seg-all" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_exTabView==='all'?'var(--accent)':'#555'};transition:color .15s;">ALL</button>
       <button onclick="switchExTabView('custom')" id="exTab-seg-custom" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_exTabView==='custom'?'var(--accent)':'#555'};transition:color .15s;">CUSTOM</button>
@@ -5637,17 +5636,27 @@ function _updatePickModeDoneBtn() {
   if (!btn || !btnsWrap) return;
   const n = _pickModeSelected.length;
   btnsWrap.style.display = _pickMode ? 'flex' : 'none';
-  const countLabel = document.getElementById('pick-mode-count-label');
-  if (countLabel) countLabel.innerHTML = n > 0 ? `<span style="position:relative;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:var(--accent);color:#000;font-size:20px;font-weight:800;"><span style="position:absolute;right:100%;margin-right:5px;color:var(--accent);font-size:32px;font-weight:800;">+</span>${n}</span>` : 'Pick exercises';
-  btn.textContent = 'Done';
+  btn.textContent = n > 0 ? `ADD ${n} EXERCISES` : 'ADD EXERCISES';
   btn.style.opacity = '1';
-  btn.style.background = n > 0 ? (window._coachMode ? '#7ec8e3' : 'var(--accent)') : '#444';
-  btn.style.color = n > 0 ? '#000' : '#fff';
-  btn.style.cursor = n > 0 ? 'pointer' : 'not-allowed';
+  btn.style.background = 'var(--accent)';
+  btn.style.color = '#000';
+  btn.style.cursor = 'pointer';
 }
 
 function donePickMode() {
-  if (!_pickModeSelected.length) { exitPickMode(); return; }
+  if (!_pickModeSelected.length) {
+    const warn = document.getElementById('pick-mode-warn-toast');
+    if (warn) {
+      warn.style.opacity = '1';
+      warn.style.transform = 'translateX(-50%) translateY(0)';
+      clearTimeout(warn._hideTimer);
+      warn._hideTimer = setTimeout(() => {
+        warn.style.opacity = '0';
+        warn.style.transform = 'translateX(-50%) translateY(8px)';
+      }, 1800);
+    }
+    return;
+  }
   if (window._editHistPickerMode) {
     window._editHistPickerMode = false;
     _pickMode = false;
@@ -9260,9 +9269,9 @@ function updateTodayMuscleChips() {
     // Cancel / Save fixed at bottom
     const _nwfBar = document.getElementById('nwf-bottom-bar');
     if (_nwfBar) {
-      const _saveBtn = _hasEx ? `<button onclick="finishWorkout()" style="flex:1;background:var(--accent);border:none;border-radius:12px;color:#000;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Save</button>` : '';
-      _nwfBar.innerHTML = `<button onclick="document.getElementById('_nwf-back-wrapper')?.remove();_nwfResetHeaderPadding();_openNwfNamePage();" style="flex:1;background:transparent;border:1px solid rgba(255,255,255,0.18);border-radius:12px;color:rgba(255,255,255,0.65);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Back</button>${_saveBtn}`;
-      _nwfBar.style.display = 'flex';
+      const _saveBtn = _hasEx ? `<button onclick="finishWorkout()" style="flex:1;padding:18px;background:var(--accent);color:#000;border:none;border-radius:100px;font-family:'DM Sans',sans-serif;font-size:18px;font-weight:900;cursor:pointer;letter-spacing:.3px;-webkit-tap-highlight-color:transparent;transition:transform .15s;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">SAVE</button>` : '';
+      _nwfBar.innerHTML = _saveBtn;
+      _nwfBar.style.display = _hasEx ? 'flex' : 'none';
     }
     // Ensure the ADD EXERCISE button scrolls clear of the bottom bar
     const _nl = document.getElementById('ex-nav-list');
@@ -9338,7 +9347,7 @@ function updateTodayMuscleChips() {
     const countHtml = done > 0
       ? `<span style="font-size:18px;font-weight:300;opacity:0.6;color:#fff;line-height:1;white-space:nowrap;">${total}</span>`
       : `<span style="font-size:18px;font-weight:700;color:${active ? color : '#888'};line-height:1;">${total}</span>`;
-    return `<button onclick="filterTodayByMuscle('${m}')" style="${_btnBase}position:relative;background:${active ? color+'33' : 'rgba(255,255,255,.05)'};border:1px solid ${active ? color : '#333'};">${countHtml}<span style="font-size:14px;font-weight:600;color:${active ? color : '#888'};letter-spacing:.2px;line-height:1;white-space:nowrap;">${_muscleAbbr}</span></button>`;
+    return `<button onclick="filterTodayByMuscle('${m}')" style="${_btnBase}position:relative;background:${active ? color+'33' : 'rgba(255,255,255,.12)'};border:1px solid ${active ? color : '#333'};">${countHtml}<span style="font-size:14px;font-weight:600;color:${active ? color : '#888'};letter-spacing:.2px;line-height:1;white-space:nowrap;">${_muscleAbbr}</span></button>`;
   }).join('');
   if (entries.length <= 4) {
     scrollEl.style.justifyContent = 'center';
@@ -13328,6 +13337,19 @@ function _finalizeNewWorkoutArea() {
   _editTitle.style.cssText = 'position:absolute;top:calc(env(safe-area-inset-top) + 20px);left:0;right:0;text-align:center;pointer-events:none;';
   _editTitle.innerHTML = '<div style="font-family:\'DM Sans\',sans-serif;font-size:20px;font-weight:700;color:#fff;letter-spacing:0;line-height:1.2;">NEW WORKOUT</div><div style="font-family:\'DM Sans\',sans-serif;font-size:14px;font-weight:500;color:#aaa;letter-spacing:.2px;margin-top:2px;">Step 2 of 2</div>';
   _nwfWrap.appendChild(_editTitle);
+  const _nwfBackBtn = document.createElement('button');
+  _nwfBackBtn.id = '_nwf-back-btn';
+  _nwfBackBtn.style.cssText = 'position:absolute;top:calc(env(safe-area-inset-top,0px) + 16px);left:16px;background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;pointer-events:auto;-webkit-tap-highlight-color:transparent;';
+  _nwfBackBtn.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><line x1="19" y1="12" x2="5" y2="12" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><polyline points="11,6 5,12 11,18" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  // This button stays in the DOM (and on top, z-index 500) even after "+ ADD
+  // EXERCISE" switches to the Exercises tab in pick mode — without this check
+  // it would still jump back to Step 1 instead of matching what the pick-mode
+  // screen's own bottom "Back" button does (exitPickMode()).
+  _nwfBackBtn.onclick = () => {
+    if (typeof _pickMode !== 'undefined' && _pickMode) { exitPickMode(); return; }
+    document.getElementById('_nwf-back-wrapper')?.remove(); _nwfResetHeaderPadding(); _openNwfNamePage();
+  };
+  _nwfWrap.appendChild(_nwfBackBtn);
   document.body.appendChild(_nwfWrap);
 }
 function cancelWorkoutNameModal() {
@@ -18146,7 +18168,10 @@ window.addEventListener('load', function() {
 
 <!-- NEW WORKOUT FIRST PAGE — hero image + inline name edit -->
 <div id="nwf-name-page" style="display:none;position:fixed;inset:0;z-index:201;background:#0a0a0a;max-width:430px;margin:0 auto;flex-direction:column;">
-  <div style="flex-shrink:0;padding-top:calc(env(safe-area-inset-top,0px) + 20px);padding-bottom:14px;text-align:center;background:#0a0a0a;">
+  <div style="flex-shrink:0;position:relative;padding-top:calc(env(safe-area-inset-top,0px) + 20px);padding-bottom:14px;text-align:center;background:#0a0a0a;">
+    <button onclick="_cancelNwfNamePage()" style="position:absolute;top:calc(env(safe-area-inset-top,0px) + 16px);right:16px;background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
     <div id="nwf-page-title" style="font-family:'DM Sans',sans-serif;font-size:20px;font-weight:700;color:#fff;letter-spacing:0;line-height:1.2;">NEW WORKOUT</div>
     <div style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;color:#aaa;letter-spacing:.2px;margin-top:2px;">Step 1 of 2</div>
   </div>
@@ -18199,8 +18224,7 @@ window.addEventListener('load', function() {
     </div>
   </div>
   <div id="nwf-bottom-btns" style="flex-shrink:0;padding:16px 16px calc(env(safe-area-inset-bottom,0px) + 16px);display:flex;gap:10px;background:#0a0a0a;">
-    <button onclick="_cancelNwfNamePage()" style="flex:1;background:transparent;border:1px solid rgba(255,255,255,0.18);border-radius:12px;color:rgba(255,255,255,0.65);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Cancel</button>
-    <button id="nwf-bottom-next-btn" onclick="_proceedFromNwfNamePage()" style="flex:1;background:#444;border:none;border-radius:12px;color:#fff;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .2s,color .2s;">Next</button>
+    <button id="nwf-bottom-next-btn" onclick="_proceedFromNwfNamePage()" style="flex:1;padding:18px;background:var(--accent);color:#000;border:none;border-radius:100px;font-family:'DM Sans',sans-serif;font-size:18px;font-weight:900;cursor:pointer;letter-spacing:.3px;-webkit-tap-highlight-color:transparent;transition:transform .15s;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">NEXT</button>
   </div>
 </div>
 
@@ -18574,7 +18598,9 @@ document.getElementById("installBtn").addEventListener("click", async () => {
     <!-- Title row — same structure/style as the Workouts tab's own title -->
     <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0 6px;">
       <span style="font-family:'DM Sans';font-size:20px;font-weight:700;color:var(--text);">Our Coaches</span>
-      <button onclick="closeCoachesGallery()" style="background:transparent;border:1px solid #2a2a2a;border-radius:8px;color:#888;font-size:16px;width:32px;height:32px;cursor:pointer;-webkit-tap-highlight-color:transparent;">✕</button>
+      <button onclick="closeCoachesGallery()" style="background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
     </div>
     <!-- All/Male/Female segmented filter — same visual pattern as the Workouts tab's
          ALL/CUSTOM segmented control, minus the "+" add button. ALL is the default
@@ -23226,7 +23252,7 @@ function deleteCoachWorkout(id) {
 <div id="w2-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:#111;border-radius:25px 25px 0 0;z-index:151;will-change:transform;overflow:hidden;flex-direction:column;">
   <!-- Drag handle -->
   <div style="display:flex;justify-content:center;padding:12px 0 0;flex-shrink:0;">
-    <div style="width:36px;height:4px;background:#333;border-radius:2px;"></div>
+    <div style="width:36px;height:4px;background:#666;border-radius:2px;"></div>
   </div>
   <!-- "..." menu row — always above the photo -->
   <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 10px 0;position:relative;z-index:1;flex-shrink:0;">
@@ -23234,7 +23260,7 @@ function deleteCoachWorkout(id) {
       <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
     </button>
     <button onclick="if(window._w2FromSession){window._w2FromSession=false;closeW2Sheet();}else{closeW2Sheet();switchTab('workouts2');}" style="background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><line x1="5" y1="12" x2="19" y2="12" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><polyline points="13,6 19,12 13,18" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
   </div>
   <!-- Workout photo + name overlay -->
@@ -23446,7 +23472,6 @@ function deleteCoachWorkout(id) {
   <!-- Bottom START button — hidden when collapsed, shown when expanded -->
   <div id="w2-start-bottom-wrap" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;padding:12px 20px calc(20px + env(safe-area-inset-bottom));background:#111;border-top:1px solid #1e1e1e;z-index:152;box-sizing:border-box;">
     <div style="display:flex;gap:10px;">
-      <button onclick="closeW2Sheet()" style="flex:0 0 auto;padding:18px 22px;background:transparent;color:var(--muted);border:1px solid #333;border-radius:100px;font-family:'DM Sans';font-size:16px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;">CLOSE</button>
       <button id="w2-sheet-start-btn" onclick="w2SheetStart()" style="flex:1;padding:18px;background:var(--accent);color:#000;border:none;border-radius:100px;font-family:'DM Sans';font-size:18px;font-weight:900;cursor:pointer;letter-spacing:.3px;-webkit-tap-highlight-color:transparent;transition:transform .15s;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">
         START WORKOUT
       </button>
@@ -27584,8 +27609,6 @@ function openW2Sheet(idx) {
   if (bottomWrap) bottomWrap.style.display = 'block';
   const _startBtn = document.getElementById('w2-sheet-start-btn');
   if (_startBtn) _startBtn.style.display = window._w2FromSession ? 'none' : '';
-  const _w2CloseBtn = bottomWrap ? bottomWrap.querySelector('button') : null;
-  if (_w2CloseBtn) { _w2CloseBtn.style.flex = window._w2FromSession ? '1' : '0 0 auto'; }
   const _w2MenuBtn = document.getElementById('w2-sheet-menu-btn');
   if (_w2MenuBtn) _w2MenuBtn.style.visibility = window._w2FromSession ? 'hidden' : '';
   const exSection = document.getElementById('w2-exercises-section');
@@ -27737,8 +27760,6 @@ function closeW2Sheet() {
   window._w2FromSession = false;
   const _startBtnClose = document.getElementById('w2-sheet-start-btn');
   if (_startBtnClose) _startBtnClose.style.display = '';
-  const _w2CloseBtnReset = document.querySelector('#w2-start-bottom-wrap button');
-  if (_w2CloseBtnReset) _w2CloseBtnReset.style.flex = '0 0 auto';
   const _w2MenuBtnReset = document.getElementById('w2-sheet-menu-btn');
   if (_w2MenuBtnReset) _w2MenuBtnReset.style.visibility = '';
   const _exSec = document.getElementById('w2-exercises-section');
