@@ -818,7 +818,7 @@ body.ex-tab-detail-open #ex-float-bar{display:none !important;}
 /* ── NEW WORKOUT — floating field labels (title sits inside the box until
    the box is focused or filled, then animates up above it) ─────────────── */
 .nwf-field{position:relative;margin-top:14px;padding-top:20.2px;}
-.nwf-field-label{position:absolute;left:14px;top:30.2px;font-family:'DM Sans',sans-serif;font-size:18px;font-weight:600;color:#666;line-height:1.3;letter-spacing:0;pointer-events:none;transform-origin:left top;transition:transform .22s cubic-bezier(.4,0,.2,1),color .2s ease;z-index:2;white-space:nowrap;display:flex;align-items:center;gap:8px;}
+.nwf-field-label{position:absolute;left:14px;top:30.2px;font-family:'DM Sans',sans-serif;font-size:18px;font-weight:600;color:#888;line-height:1.3;letter-spacing:0;pointer-events:none;transform-origin:left top;transition:transform .22s cubic-bezier(.4,0,.2,1),color .2s ease;z-index:2;white-space:nowrap;display:flex;align-items:center;gap:8px;}
 .nwf-field.is-float .nwf-field-label{transform:translate(-12px,-30.2px) scale(.7778);color:#aaa;}
 .nwf-field.is-float.is-active .nwf-field-label{color:var(--accent);}
 .nwf-field.is-float .nwf-field-label .nwf-optional{display:none;}
@@ -1835,7 +1835,7 @@ window._fbModuleReady = true;
         </div>
         <!-- Video URL -->
         <div class="nwf-field" id="newEx-video-field">
-          <div id="newEx-video-title" class="nwf-field-label">Video Link <span class="nwf-optional" style="color:#888;font-weight:500;">(optional)</span><span id="newExVideoNote" style="display:none;font-family:'DM Sans';font-size:13px;font-weight:600;transform:translateY(2px);"></span></div>
+          <div id="newEx-video-title" class="nwf-field-label">Video Link <span class="nwf-optional" style="color:#666;font-weight:500;font-size:14px;">(optional)</span><span id="newExVideoNote" style="display:none;font-family:'DM Sans';font-size:13px;font-weight:600;transform:translateY(2px);"></span></div>
           <div id="newEx-video-box" class="nwf-field-box" style="display:flex;align-items:center;gap:8px;">
             <input id="newExVideoUrl" type="url" inputmode="url" spellcheck="false" autocomplete="off" style="flex:1;background:transparent;border:none;outline:none;color:#fff;font-family:'DM Sans',sans-serif;font-size:18px;font-weight:400;caret-color:#34d399;-webkit-text-fill-color:#fff;box-sizing:border-box;min-width:0;" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" oninput="_nwfSyncFieldFloatByEl(this)" onfocus="_newExFieldFocus('newEx-video-title','newEx-video-box',true);const _vb=document.getElementById('newExVideoIconBtn');if(_vb)_vb.innerHTML=_NWF_VIDEO_ICON_SVG;const _vn=document.getElementById('newExVideoNote');if(_vn)_vn.style.display='none'" onblur="_newExFieldFocus('newEx-video-title','newEx-video-box',false);_newExVerifyVideoLink(this.value.trim())"/>
             <button id="newExVideoIconBtn" onclick="const i=document.getElementById('newExVideoUrl');navigator.clipboard.readText().then(t=>{if(i){i.value=t;_nwfSyncFieldFloatByEl(i);_newExVerifyVideoLink(t.trim());}}).catch(()=>{})" style="background:transparent;border:none;padding:2px;cursor:pointer;flex-shrink:0;-webkit-tap-highlight-color:transparent;display:flex;align-items:center;">
@@ -2036,7 +2036,7 @@ window._fbModuleReady = true;
     <div class="modal-handle"></div>
     <div class="modal-header" style="justify-content:flex-start;gap:8px;">
       <button onclick="closeCalendar()" style="flex-shrink:0;background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       <button class="cal-nav-btn" onclick="calNavClick(this,-1)">‹</button>
       <div class="modal-title" id="calTitle" style="flex:1;text-align:center;font-family:'DM Sans';font-size:20px;font-weight:900;letter-spacing:.5px;"></div>
@@ -12749,6 +12749,7 @@ function saveWorkoutToList() {
   setAddExerciseBtnStyle(false);
 
   if (_wasNewFlow) {
+    document.getElementById('_nwf-back-wrapper')?.remove();
     const _saveBlack = document.createElement('div');
     _saveBlack.id = '_saveBlackScreen';
     _saveBlack.style.cssText = 'position:fixed;inset:0;background:radial-gradient(ellipse at top, #263437, #15161B);z-index:200;opacity:1;pointer-events:all;';
@@ -12855,7 +12856,7 @@ function _initSwipeDownToClose(sheetOrOverlayId, closeFn, scrollElId) {
     // what reads as the sheet glitching/yanking up right before it closes.
     e.preventDefault();
     sheet.style.transition = 'none';
-    sheet.style.transform = `translateY(${dy * 0.6}px)`;
+    sheet.style.transform = `translateY(${dy}px)`;
   }, { passive: false });
   const _end = () => {
     if (!dragging) return;
@@ -12864,8 +12865,10 @@ function _initSwipeDownToClose(sheetOrOverlayId, closeFn, scrollElId) {
       // Past the threshold — keep sliding down and off-screen in the same
       // direction the finger was already dragging, THEN close. Snapping back
       // to translateY(0) first (like the cancel case below) would visibly
-      // yank the sheet back up right before it disappears.
-      sheet.style.transition = 'transform .2s ease-in';
+      // yank the sheet back up right before it disappears. ease-out (fast
+      // start, slow end) so the close reads as immediate instead of ease-in's
+      // slow-start ramp.
+      sheet.style.transition = 'transform .2s ease-out';
       sheet.style.transform = 'translateY(100%)';
       // Lets a close function that plays its own exit animation (e.g.
       // closeStrengthTargetSheet's sheetSlideDown) know the sheet is already
@@ -13183,11 +13186,11 @@ function _openWorkoutPhotoStepSheet() {
       <div style="width:36px;height:3px;background:#555;border-radius:2px;margin:12px auto 4px;"></div>
       <div style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#888;letter-spacing:.8px;text-align:center;padding:6px 0 12px;">WORKOUT PHOTO</div>
       <button onclick="document.getElementById('workout-photo-step-sheet').remove();_triggerWorkoutPhotoStep('camera')" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
         Take Photo
       </button>
       <button onclick="document.getElementById('workout-photo-step-sheet').remove();_triggerWorkoutPhotoStep('gallery')" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
         Choose from Gallery
       </button>
       ${hasPhoto ? `<button onclick="document.getElementById('workout-photo-step-sheet').remove();_removeWorkoutPhotoStep()" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#ff4747;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
@@ -18210,7 +18213,7 @@ window.addEventListener('load', function() {
       </div>
     </div>
     <div class="nwf-field" id="nwf-desc-field">
-      <div id="nwf-desc-title" class="nwf-field-label">Description <span class="nwf-optional" style="color:#888;font-weight:500;">(optional)</span></div>
+      <div id="nwf-desc-title" class="nwf-field-label">Description <span class="nwf-optional" style="color:#666;font-weight:500;font-size:14px;">(optional)</span></div>
       <div id="nwf-desc-box" class="nwf-field-box" style="padding-bottom:12px;">
         <textarea id="nwf-description" placeholder="" rows="2" spellcheck="false"
                   style="width:100%;background:transparent;border:none;outline:none;color:#fff;font-family:'DM Sans',sans-serif;font-size:18px;font-weight:400;line-height:1.5;resize:none;overflow:hidden;caret-color:#34d399;-webkit-text-fill-color:#fff;box-sizing:border-box;"
@@ -18220,7 +18223,7 @@ window.addEventListener('load', function() {
       </div>
     </div>
     <div class="nwf-field" id="nwf-video-field">
-      <div id="nwf-video-title" class="nwf-field-label">Video link <span class="nwf-optional" style="color:#888;font-weight:500;">(optional)</span><span id="nwf-video-note" style="display:none;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;transform:translateY(2px);"></span></div>
+      <div id="nwf-video-title" class="nwf-field-label">Video link <span class="nwf-optional" style="color:#666;font-weight:500;font-size:14px;">(optional)</span><span id="nwf-video-note" style="display:none;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;transform:translateY(2px);"></span></div>
       <div id="nwf-video-box" class="nwf-field-box" style="display:flex;align-items:center;gap:8px;">
         <input id="nwf-video-link" type="url" inputmode="url" placeholder="" spellcheck="false" autocomplete="off"
                style="flex:1;background:transparent;border:none;outline:none;color:#fff;font-family:'DM Sans',sans-serif;font-size:18px;font-weight:400;caret-color:#34d399;-webkit-text-fill-color:#fff;box-sizing:border-box;min-width:0;"
@@ -23269,7 +23272,7 @@ function deleteCoachWorkout(id) {
   <!-- "..." menu row — always above the photo -->
   <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 10px 0;position:relative;z-index:1;flex-shrink:0;">
     <button onclick="if(window._w2FromSession){window._w2FromSession=false;closeW2Sheet();}else{closeW2Sheet();switchTab('workouts2');}" style="background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
     </button>
     <button id="w2-sheet-menu-btn" onclick="event.stopPropagation();toggleWtabCardMenu(window._w2SheetIdx)" style="background:transparent;border:none;color:#A0A0A0;cursor:pointer;padding:4px 6px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
@@ -23605,7 +23608,7 @@ function deleteCoachWorkout(id) {
 <div id="strength-target-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;z-index:9000;background:#1a1a1a;border-top:1px solid #2a2a2a;border-radius:20px 20px 0 0;padding:12px 20px calc(28px + env(safe-area-inset-bottom,0px));box-sizing:border-box;">
   <div style="width:36px;height:4px;border-radius:2px;background:#444;margin:0 auto 18px;"></div>
   <button onclick="closeStrengthTargetSheet()" style="position:absolute;top:16px;left:16px;background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
   </button>
   <div id="week-status-day-label" style="text-align:center;font-family:'DM Sans';font-size:12px;font-weight:700;color:#ccc;letter-spacing:.8px;min-height:14px;margin-bottom:4px;"></div>
   <div id="week-status-detail" style="text-align:center;font-family:'DM Sans';font-size:20px;font-weight:600;color:var(--muted);min-height:18px;margin-bottom:10px;"></div>
@@ -23630,9 +23633,6 @@ function deleteCoachWorkout(id) {
 <div id="workout-menu-overlay" onclick="closeWorkoutMenu()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:300;"></div>
 <div id="workout-menu-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:#1a1a1a;border-radius:20px 20px 0 0;z-index:301;padding:0 16px calc(16px + env(safe-area-inset-bottom));">
   <div style="width:36px;height:3px;background:#555;border-radius:2px;margin:12px auto 4px;"></div>
-  <button onclick="closeWorkoutMenu()" style="position:absolute;top:16px;left:16px;background:transparent;border:none;cursor:pointer;padding:4px 4px 4px 8px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
-    <span style="width:24px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>
-  </button>
   <div style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#888;letter-spacing:.8px;text-align:center;padding:6px 0 12px;">WORKOUT OPTIONS</div>
   <button id="workout-menu-share-btn" onclick="closeWorkoutMenu();openWorkoutShareQR()" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
     <span style="width:24px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></span>
@@ -23665,9 +23665,6 @@ function deleteCoachWorkout(id) {
 <div id="ex-detail-menu-overlay" onclick="closeExDetailMenu()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:300;"></div>
 <div id="ex-detail-menu-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:#1a1a1a;border-radius:20px 20px 0 0;z-index:301;padding:0 16px calc(16px + env(safe-area-inset-bottom));">
   <div style="width:36px;height:3px;background:#555;border-radius:2px;margin:12px auto 4px;"></div>
-  <button onclick="closeExDetailMenu()" style="position:absolute;top:16px;left:16px;background:transparent;border:none;cursor:pointer;padding:4px 4px 4px 8px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-  </button>
   <div style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#888;letter-spacing:.8px;text-align:center;padding:6px 0 12px;">EXERCISE OPTIONS</div>
   <button onclick="closeExDetailMenu();editExerciseDetail()" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -23743,19 +23740,17 @@ function deleteCoachWorkout(id) {
   <div style="width:36px;height:3px;background:#555;border-radius:2px;margin:12px auto 4px;"></div>
   <div id="ex-photo-sheet-title" style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#888;letter-spacing:.8px;text-align:center;padding:8px 0 12px;">EXERCISE PHOTO</div>
   <button onclick="closeExPhotoSheet();triggerExPhoto('camera')" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#fff;font-family:'DM Sans';font-size:16px;font-weight:600;padding:18px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
     Take Photo
   </button>
   <button onclick="closeExPhotoSheet();triggerExPhoto('gallery')" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#fff;font-family:'DM Sans';font-size:16px;font-weight:600;padding:18px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
     Choose from Gallery
   </button>
   <button id="ex-photo-remove-btn" onclick="closeExPhotoSheet();_removeCurrentPhoto()" style="display:none;width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#ff4747;font-family:'DM Sans';font-size:16px;font-weight:600;padding:18px 8px;cursor:pointer;text-align:left;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff4747" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
     Remove Photo
   </button>
-  <div style="height:10px;"></div>
-  <button onclick="closeExPhotoSheet()" style="width:100%;background:#111;border:1px solid #444;border-radius:12px;color:#fff;font-family:'DM Sans';font-size:16px;font-weight:600;padding:16px;cursor:pointer;text-align:center;-webkit-tap-highlight-color:transparent;">Cancel</button>
 </div>
 <input type="file" id="ex-photo-input-camera" accept="image/*" capture="environment" style="display:none;" onchange="handleExPhotoRaw(this)">
 <input type="file" id="ex-photo-input-gallery" accept="image/*" style="display:none;" onchange="handleExPhotoRaw(this)">
@@ -23821,9 +23816,6 @@ function deleteCoachWorkout(id) {
 <div id="set-options-overlay-bottom" onclick="closeSetOptions()" style="display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,0.85);z-index:300;"></div>
 <div id="set-options-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:#1a1a1a;border-radius:20px 20px 0 0;z-index:301;padding:0 16px calc(16px + env(safe-area-inset-bottom));">
   <div style="width:36px;height:3px;background:#555;border-radius:2px;margin:12px auto 4px;"></div>
-  <button onclick="closeSetOptions()" style="position:absolute;top:16px;left:16px;background:transparent;border:none;cursor:pointer;padding:4px 4px 4px 8px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
-    <span style="width:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>
-  </button>
   <div style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#888;letter-spacing:.8px;text-align:center;padding:6px 0 12px;">SET OPTIONS</div>
   <button onclick="setSetType('regular')" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:16px;-webkit-tap-highlight-color:transparent;">
     <span style="width:20px;text-align:center;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>Regular set<span id="set-opt-check-regular" style="display:none;margin-left:auto;flex-shrink:0;line-height:1;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
@@ -24143,9 +24135,6 @@ function toggleWtabCardMenu(idx) {
   const hasPhoto = w ? !!localStorage.getItem(`ironlog_workout_photo_${w.name}`) : false;
   sheet.innerHTML = `
     <div style="width:36px;height:3px;background:#555;border-radius:2px;margin:12px auto 4px;"></div>
-    <button onclick="closeWtabMenu()" style="position:absolute;top:16px;left:16px;background:transparent;border:none;cursor:pointer;padding:4px 4px 4px 8px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
-      <span style="width:24px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>
-    </button>
     <div style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#888;letter-spacing:.8px;text-align:center;padding:6px 0 12px;">WORKOUT OPTIONS</div>
     <button onclick="closeWtabMenu();closeW2Sheet();editWorkoutFromTab(${idx})" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -27701,12 +27690,7 @@ function openW2Sheet(idx) {
     const _actualY = parseFloat(sheet.style.transform?.match(/translateY\((.+)px\)/)?.[1] || 0);
     if (window._w2SheetExpanded) {
       if ((_curY > 100 || _vel > 0.8) && (!scrollArea || scrollArea.scrollTop === 0)) {
-        // Collapse back to half
-        sheet.style.height = halfH + 'px';
-        window._w2SheetExpanded = false;
-        _springAnimate(sheet, _actualY, 0, 300, 30);
-        const grad = document.getElementById('w2-list-gradient');
-        if (grad) grad.style.display = 'block';
+        closeW2Sheet();
       } else {
         _springAnimate(sheet, _actualY, 0, 300, 30);
       }
