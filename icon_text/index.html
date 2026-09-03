@@ -144,7 +144,7 @@ body.desktop-mode .pages-wrap {
 
 /* ── EXERCISE CARDS ────────────────────────────── */
 .exercise-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:visible;scroll-margin-top:70px;}
-#exerciseList.nwf-cards .exercise-card{border-color:#999;}
+#exerciseList.nwf-cards .exercise-card{border-color:#555;}
 @keyframes pickNoticeBgFade{0%{background:rgba(255,140,66,.08);border-color:rgba(255,140,66,.2);}50%{background:rgba(255,140,66,.08);border-color:rgba(255,140,66,.2);}100%{background:rgba(255,140,66,0);border-color:rgba(255,140,66,0);}}
 .exercise-card.completed{border-color:rgba(var(--accent-rgb),.15);border-color:color-mix(in srgb, var(--accent) 15%, transparent);}
 .exercise-card.completed .ex-header{background:color-mix(in srgb, var(--accent) 6%, transparent);}
@@ -203,7 +203,7 @@ body.desktop-mode .pages-wrap {
 .delete-confirm-title{font-family:'DM Sans';font-size:20px;font-weight:700;letter-spacing:0;margin-bottom:6px;color:var(--accent2);text-transform:uppercase;}
 .delete-confirm-sub{font-size:13px;color:#fff;margin-bottom:22px;}
 .delete-confirm-btns{display:flex;gap:10px;}
-.btn-del-yes{flex:1;background:rgba(255,71,71,.15);border:1px solid var(--accent2);border-radius:10px;color:var(--accent2);font-family:'DM Sans';font-size:16px;font-weight:700;letter-spacing:0;padding:13px;cursor:pointer;transition:all .2s;}
+.btn-del-yes{flex:1;background:rgba(255,71,71,.15);border:1px solid var(--accent2);border-radius:10px;color:var(--accent2);font-family:'DM Sans';font-size:16px;font-weight:700;letter-spacing:0;padding:13px;cursor:pointer;transition:all .2s;text-transform:uppercase;}
 .clr-checkbox{position:relative;display:inline-flex;align-items:center;cursor:pointer;flex-shrink:0;}
 .clr-checkbox input{position:absolute;opacity:0;width:0;height:0;pointer-events:none;}
 .clr-cb-box{width:20px;height:20px;border:2px solid #555;border-radius:4px;background:#1e1e1e;display:flex;align-items:center;justify-content:center;transition:all .15s;box-sizing:border-box;flex-shrink:0;}
@@ -211,7 +211,9 @@ body.desktop-mode .pages-wrap {
 .clr-cb-box svg{display:none;}
 .clr-checkbox input:checked ~ .clr-cb-box svg{display:block;}
 .btn-del-yes:hover{background:rgba(255,71,71,.28);}
-.btn-del-cancel{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:16px;font-weight:700;letter-spacing:0;padding:13px;cursor:pointer;transition:all .2s;}
+.btn-del-yes-solid{flex:1;background:#ff4747;border:none;border-radius:10px;color:#fff;font-family:'DM Sans';font-size:16px;font-weight:700;letter-spacing:0;padding:13px;cursor:pointer;transition:all .2s;text-transform:uppercase;}
+.btn-del-yes-solid:hover{background:#ff6060;}
+.btn-del-cancel{flex:1;background:transparent;border:1px solid #555;border-radius:10px;color:#fff;font-family:'DM Sans';font-size:16px;font-weight:700;letter-spacing:0;padding:13px;cursor:pointer;transition:all .2s;text-transform:uppercase;}
 .btn-del-cancel:hover{border-color:var(--muted);color:var(--text);}
 .btn-swap{background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--accent);font-size:22px;font-weight:700;cursor:pointer;width:36px;height:36px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;line-height:1;}
 .btn-swap:hover{border-color:var(--accent);background:rgba(232,255,71,.1);}
@@ -1252,8 +1254,12 @@ window._fbModuleReady = true;
 </div>
 
 <div class="header">
-  <div class="logo" onclick="openAboutModal()" style="cursor:pointer;">
-    <img id="brand-logo-img" src="logo.svg" alt="Brand Logo" style="height:36px;width:auto;display:block;" onerror="this.style.display='none'"/>
+  <div id="share-app-wrap" class="date-badge" onclick="openShareQR()" style="display:none;cursor:pointer;user-select:none;flex-direction:column;align-items:center;gap:2px;">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+    <span>SHARE</span>
+  </div>
+  <div class="logo" onclick="openAboutModal()" style="cursor:pointer;position:absolute;left:50%;top:23px;transform:translateX(-50%);">
+    <img id="brand-logo-img" src="logo.svg" alt="Brand Logo" style="height:38px;width:auto;display:block;" onerror="this.style.display='none'"/>
   </div>
   <div style="display:flex;align-items:center;gap:8px;">
     <!-- Debug role badge — visible only when super_admin is viewing as another role -->
@@ -1337,16 +1343,12 @@ window._fbModuleReady = true;
     </div>
   </div>
 
-  <!-- Share App — fixed just above the tab bar, only visible on this page -->
-  <div id="share-app-wrap" style="position:fixed;bottom:calc(76px + env(safe-area-inset-bottom));left:0;right:0;max-width:430px;margin:0 auto;display:flex;justify-content:center;pointer-events:none;z-index:28;">
-    <button onclick="openShareQR()" style="pointer-events:auto;padding:10px 20px;background:transparent;color:var(--muted);border:none;font-family:'DM Sans';font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;-webkit-tap-highlight-color:transparent;">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-      SHARE APP
-    </button>
-  </div>
-
   <!-- QR Share Full Screen -->
   <div id="share-qr-modal" style="display:none;position:fixed;inset:0;background:#0a0a0a;z-index:200;flex-direction:column;align-items:center;justify-content:space-between;padding:max(env(safe-area-inset-top),48px) 28px max(env(safe-area-inset-bottom),32px);">
+    <div style="position:absolute;top:calc(env(safe-area-inset-top,0px) + 8px);left:50%;transform:translateX(-50%);width:36px;height:4px;border-radius:2px;background:#444;"></div>
+    <button onclick="closeShareQR()" style="position:absolute;top:calc(env(safe-area-inset-top,0px) + 16px);left:16px;background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
     <!-- Top: logo + title -->
     <div style="display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;">
       <img src="./logo.svg" alt="logo" style="width:clamp(120px,40vw,180px);height:auto;object-fit:contain;" onerror="this.style.display='none'">
@@ -1365,8 +1367,6 @@ window._fbModuleReady = true;
         SHARE LINK
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
       </button>
-
-      <button onclick="closeShareQR()" style="width:100%;padding:18px;background:transparent;color:var(--muted);border:1px solid #333;border-radius:100px;font-family:'DM Sans';font-size:16px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;">CLOSE</button>
     </div>
   </div>
 
@@ -1403,6 +1403,7 @@ window._fbModuleReady = true;
         <div id="exerciseList"></div>
         <div class="add-ex-row">
           <div id="nwf-build-prompt" style="display:none;width:100%;text-align:center;padding:28px 20px 20px;box-sizing:border-box;">
+            <div id="nwf-empty-body-slot" style="display:none;justify-content:center;margin-bottom:16px;"></div>
             <div style="font-family:'DM Sans',sans-serif;font-size:24px;font-weight:800;color:#fff;line-height:1.2;">Let's Build Your Workout</div>
             <div style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;color:#888;margin-top:8px;margin-bottom:16px;">Start adding exercises from library</div>
           </div>
@@ -1782,10 +1783,10 @@ window._fbModuleReady = true;
   </div><!-- /progress-graphs-content -->
 </div>
 <!-- NEW EXERCISE MODAL -->
-<div class="modal-overlay" id="newExModalOverlay" style="align-items:stretch;padding:8px;" onclick="if(event.target===this){window._exploreExerciseMode=false;closeNewExModal()}">
-  <div class="modal-sheet" style="background:transparent;padding:0;border-radius:16px;border:1px solid var(--border);width:100%;max-width:calc(100vw - 16px);box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column;max-height:calc(100vh - 16px);">
+<div class="modal-overlay" id="newExModalOverlay" style="align-items:stretch;padding:0;background:#0a0a0a;backdrop-filter:none;-webkit-backdrop-filter:none;">
+  <div class="modal-sheet" style="background:#0a0a0a;padding:0;border-radius:0;border:none;width:100%;max-width:100%;height:100%;box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column;max-height:100%;">
     <!-- Header -->
-    <div style="display:flex;align-items:center;justify-content:center;padding:18px 16px 14px;position:relative;">
+    <div style="display:flex;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top,0px) + 20px) 16px 14px;position:relative;flex-shrink:0;">
       <span id="newExModalTitle" style="font-family:'DM Sans';font-size:20px;font-weight:700;color:#fff;text-transform:uppercase;">New Exercise</span>
       <button onclick="window._exploreExerciseMode=false;if(window._editExName){window._editExName=null;const t=document.getElementById('newExModalTitle');const s=document.getElementById('newExSaveBtn');if(t)t.textContent='New Exercise';if(s)s.textContent='SAVE';document.getElementById('newExModalOverlay').classList.remove('open');}else{closeNewExModal();}" style="position:absolute;left:16px;background:transparent;border:none;cursor:pointer;display:flex;align-items:center;padding:0;flex-shrink:0;-webkit-tap-highlight-color:transparent;">
         <span id="newExHeaderIcon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><line x1="19" y1="12" x2="5" y2="12" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round"/><polyline points="11,6 5,12 11,18" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
@@ -2458,6 +2459,22 @@ function _checkFinishReadyImpl() {
   const _heroPhoto = document.getElementById('workout-hero-photo');
   if (_prompt && _addRow) {
     const _showPrompt = window._isNewWorkoutFlow && !hasExercises;
+    const _emptyBodySlot = document.getElementById('nwf-empty-body-slot');
+    if (_emptyBodySlot) {
+      if (_showPrompt && typeof _nwfGetBodyMini === 'function') {
+        const _mini = _nwfGetBodyMini();
+        if (_mini) {
+          if (_mini.parentElement !== _emptyBodySlot) _emptyBodySlot.appendChild(_mini);
+          W2_ALL_MUSCLE_IDS.forEach(id => {
+            const el = document.getElementById('mini-' + id);
+            if (el) { el.setAttribute('fill', '#2a2a2a'); el.setAttribute('opacity', '1'); }
+          });
+          _emptyBodySlot.style.display = 'flex';
+        }
+      } else {
+        _emptyBodySlot.style.display = 'none';
+      }
+    }
     if (_heroPhoto && window._isNewWorkoutFlow) _heroPhoto.style.display = 'none';
     if (window._isNewWorkoutFlow) {
       const _stickyHdr = document.getElementById('workout-sticky-header');
@@ -2487,7 +2504,7 @@ function _checkFinishReadyImpl() {
     _prompt.style.display = _showPrompt ? 'block' : 'none';
     _addRow.style.flexDirection = _showPrompt ? 'column' : '';
     _addRow.style.alignItems = _showPrompt ? 'center' : '';
-    _addRow.style.background = _showPrompt ? 'linear-gradient(to bottom right, #303942, #12151A)' : '';
+    _addRow.style.background = _showPrompt ? 'radial-gradient(ellipse at top, #1F2428, #000000)' : '';
     _addRow.style.borderRadius = _showPrompt ? '24px' : '';
     _addRow.style.border = _showPrompt ? '1px solid #333' : '';
     _addRow.style.gap = _showPrompt ? '0' : '';
@@ -4107,6 +4124,12 @@ function _openNwfNamePage() {
   _nwfPage.style.opacity = '0';
   _nwfPage.style.transition = 'none';
   _nwfPage.style.display = 'flex';
+  // Grow the description box to fit an existing multi-line value right away —
+  // its own oninput auto-resize (see the textarea below) never fires when the
+  // value is set programmatically by the edit-workout flow, so without this
+  // it stays clipped at rows="2" until the user types something.
+  const _nwfDescResize = document.getElementById('nwf-description');
+  if (_nwfDescResize) { _nwfDescResize.style.height = 'auto'; _nwfDescResize.style.height = _nwfDescResize.scrollHeight + 'px'; }
   requestAnimationFrame(() => requestAnimationFrame(() => {
     _nwfPage.style.transition = 'transform 0.45s cubic-bezier(0.2,0.8,0.3,1), opacity 0.35s ease';
     _nwfPage.style.transform = '';
@@ -4162,8 +4185,8 @@ function _cancelNwfNamePage() {
         <div class="delete-confirm-title">Discard Workout?</div>
         <div class="delete-confirm-sub">All added exercises will be lost.</div>
         <div class="delete-confirm-btns">
-          <button class="btn-del-cancel" id="_nwfDiscardKeep">Keep</button>
-          <button class="btn-del-yes" id="_nwfDiscardConfirm">Discard</button>
+          <button class="btn-del-cancel" id="_nwfDiscardKeep">KEEP</button>
+          <button class="btn-del-yes-solid" id="_nwfDiscardConfirm">DISCARD</button>
         </div>
       </div>`;
     document.body.appendChild(_discardOvl);
@@ -4521,7 +4544,7 @@ function _setWorkoutHeroPhoto(name) {
     if (ps && !window._isNewWorkoutFlow) { ps.style.display = 'block'; _updateWorkoutProgress(); }
     el.innerHTML = `${!window._isNewWorkoutFlow ? `<div id="workout-above-elapsed" style="display:none;align-items:center;gap:5px;padding:0 16px 8px;justify-content:center;position:relative;">
       <button id="workout-hero-close-btn" onclick="if(typeof clearSession==='function')clearSession()" style="position:absolute;left:16px;background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><line x1="19" y1="12" x2="5" y2="12" stroke="#888" stroke-width="2.5" stroke-linecap="round"/><polyline points="11,6 5,12 11,18" stroke="#888" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
       <span id="workout-above-elapsed-val" style="font-family:'DM Sans';font-size:13px;font-weight:700;color:#888;letter-spacing:.3px;">0:00</span>
@@ -4884,7 +4907,7 @@ function clearSession() {
         <div class="delete-confirm-sub">All unsaved exercises and sets will be removed.</div>
         <div class="delete-confirm-btns">
           <button class="btn-del-cancel" id="_clearCancel">Cancel</button>
-          <button class="btn-del-yes" id="_clearConfirm">Delete</button>
+          <button class="btn-del-yes-solid" id="_clearConfirm">Delete</button>
         </div>
       </div>`;
     document.body.appendChild(overlay);
@@ -4901,7 +4924,7 @@ function clearSession() {
       <div class="delete-confirm-sub">All unsaved exercises and sets will be removed.</div>
       <div class="delete-confirm-btns">
         <button class="btn-del-cancel" id="_clearCancel">Cancel</button>
-        <button class="btn-del-yes" id="_clearConfirm">Delete</button>
+        <button class="btn-del-yes-solid" id="_clearConfirm">Delete</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
@@ -5557,7 +5580,7 @@ function deleteExTabExercise(name) {
       <div class="delete-confirm-sub">"${name}" will be removed from your list. Past workouts are unaffected.</div>
       <div class="delete-confirm-btns">
         <button class="btn-del-cancel" id="_delExCancel">Cancel</button>
-        <button class="btn-del-yes" id="_delExConfirm">Delete</button>
+        <button class="btn-del-yes-solid" id="_delExConfirm">Delete</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
@@ -9465,7 +9488,7 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
 
   // 3. Right content: name + sets
   const contentArea = document.createElement('div');
-  contentArea.style.cssText = 'flex:1;display:flex;flex-direction:column;justify-content:center;padding:10px 12px;gap:6px;cursor:pointer;min-width:0;';
+  contentArea.style.cssText = `flex:1;display:flex;flex-direction:column;justify-content:center;padding:${window._isNewWorkoutFlow ? '12px' : '10px'} 12px;gap:6px;cursor:pointer;min-width:0;`;
   contentArea.onclick = () => openExDetail(id);
 
   const exNameEl = document.createElement('div');
@@ -9529,7 +9552,7 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
     trashWrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;margin-right:10px;margin-left:10px;';
     const trashBtn = document.createElement('button');
     trashBtn.className = 'nw-trash-btn';
-    trashBtn.style.cssText = 'background:transparent;border:none;color:#555;cursor:pointer;padding:2px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;';
+    trashBtn.style.cssText = 'background:rgba(255,71,71,0.15);border:none;border-radius:50%;width:32px;height:32px;color:#ff4747;cursor:pointer;padding:2px;display:flex;align-items:center;justify-content:center;flex-shrink:0;-webkit-tap-highlight-color:transparent;';
     trashBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
     trashBtn.onclick = (e) => {
       e.stopPropagation();
@@ -12910,6 +12933,8 @@ document.addEventListener('DOMContentLoaded', () => {
   _initSwipeDownToClose('adminColorPickerSheet', closeAdminColorPicker);
   // Active workout → active exercise → set options (chevron menu).
   _initSwipeDownToClose('set-options-sheet', closeSetOptions);
+  // Home page → Share App QR page.
+  _initSwipeDownToClose('share-qr-modal', closeShareQR);
 });
 
 function openPRStarsInfo() {
@@ -14199,7 +14224,7 @@ function clearAllHistory() {
       </div>
       <div class="delete-confirm-btns">
         <button class="btn-del-cancel" id="_clrCancel">Cancel</button>
-        <button class="btn-del-yes" id="_clrConfirm">Delete</button>
+        <button class="btn-del-yes-solid" id="_clrConfirm">Delete</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
@@ -14297,7 +14322,7 @@ function clearAllTrash() {
     <div class="delete-confirm-sub">All ${deletedWorkouts.length} workout${deletedWorkouts.length!==1?'s':''} will be permanently deleted. This cannot be undone.</div>
     <div class="delete-confirm-btns">
       <button class="btn-del-cancel" id="_clrTrCancel">Cancel</button>
-      <button class="btn-del-yes" id="_clrTrConfirm">Delete Forever</button>
+      <button class="btn-del-yes-solid" id="_clrTrConfirm">Delete Forever</button>
     </div></div>`;
   document.body.appendChild(overlay);
   overlay.querySelector('#_clrTrCancel').onclick = () => overlay.remove();
@@ -14616,7 +14641,7 @@ function bulkTrashAction(action) {
       <div class="delete-confirm-sub">These workouts will be gone forever.</div>
       <div class="delete-confirm-btns">
         <button class="btn-del-cancel" id="_bDelCancel">Cancel</button>
-        <button class="btn-del-yes" id="_bDelConfirm">Delete Forever</button>
+        <button class="btn-del-yes-solid" id="_bDelConfirm">Delete Forever</button>
       </div></div>`;
     document.body.appendChild(overlay);
     overlay.querySelector('#_bDelCancel').onclick = () => overlay.remove();
@@ -14657,7 +14682,7 @@ function deleteWorkout(wi) {
       <div class="delete-confirm-sub">${w._draft ? 'Draft ' : ''}"${w.name}" will be moved to recycle bin.</div>
       <div class="delete-confirm-btns">
         <button class="btn-del-cancel" id="_delWCancel">Cancel</button>
-        <button class="btn-del-yes" id="_delWConfirm">Delete</button>
+        <button class="btn-del-yes-solid" id="_delWConfirm">Delete</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
@@ -17142,7 +17167,7 @@ function confirmDeleteCardio(idx) {
       <div class="delete-confirm-sub">"${c.type} — ${c.mins} min" will be removed.</div>
       <div class="delete-confirm-btns">
         <button class="btn-del-cancel" id="_cardioDelCancel">Cancel</button>
-        <button class="btn-del-yes" id="_cardioDelConfirm">Delete</button>
+        <button class="btn-del-yes-solid" id="_cardioDelConfirm">Delete</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
@@ -17428,7 +17453,7 @@ function calDeleteWorkout(wi, btn) {
       <div class="delete-confirm-sub">"${w.name}" will be moved to trash.</div>
       <div class="delete-confirm-btns">
         <button class="btn-del-cancel" id="_calDelCancel">Cancel</button>
-        <button class="btn-del-yes" id="_calDelConfirm">Delete</button>
+        <button class="btn-del-yes-solid" id="_calDelConfirm">Delete</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
@@ -17504,7 +17529,7 @@ function deletePlannedWorkout(planId) {
     <div class="delete-confirm-sub">"${p.name||p.activity||'Planned workout'}" will be removed.</div>
     <div class="delete-confirm-btns">
       <button class="btn-del-cancel" onclick="this.closest('.delete-confirm-overlay').remove()">Cancel</button>
-      <button class="btn-del-yes" id="_dpConfirm">Delete</button>
+      <button class="btn-del-yes-solid" id="_dpConfirm">Delete</button>
     </div></div>`;
   document.body.appendChild(overlay);
   overlay.querySelector('#_dpConfirm').onclick = () => {
@@ -17828,7 +17853,7 @@ function deleteWorkoutFromTab(idx) {
     <div class="delete-confirm-sub">"${w.name}" will be permanently removed from your workout list.</div>
     <div class="delete-confirm-btns">
       <button class="btn-del-cancel" id="_dwtCancel">Cancel</button>
-      <button class="btn-del-yes" id="_dwtConfirm">Delete</button>
+      <button class="btn-del-yes-solid" id="_dwtConfirm">Delete</button>
     </div></div>`;
   document.body.appendChild(overlay);
   overlay.querySelector('#_dwtCancel').onclick = () => overlay.remove();
@@ -23485,7 +23510,7 @@ function deleteCoachWorkout(id) {
     <div id="w2-list-gradient" style="position:sticky;bottom:0;left:0;right:0;height:60px;background:linear-gradient(to bottom,transparent,#111);pointer-events:none;"></div>
   </div>
   <!-- Bottom START button — hidden when collapsed, shown when expanded -->
-  <div id="w2-start-bottom-wrap" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;padding:12px 20px calc(20px + env(safe-area-inset-bottom));background:#111;border-top:1px solid #1e1e1e;z-index:152;box-sizing:border-box;">
+  <div id="w2-start-bottom-wrap" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;padding:46px 20px calc(20px + env(safe-area-inset-bottom));background:linear-gradient(to bottom,transparent,#111 40%);z-index:152;box-sizing:border-box;">
     <div style="display:flex;gap:10px;">
       <button id="w2-sheet-start-btn" onclick="w2SheetStart()" style="flex:1;padding:18px;background:var(--accent);color:#000;border:none;border-radius:100px;font-family:'DM Sans';font-size:18px;font-weight:900;cursor:pointer;letter-spacing:.3px;-webkit-tap-highlight-color:transparent;transition:transform .15s;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">
         START WORKOUT
@@ -23690,8 +23715,8 @@ function deleteCoachWorkout(id) {
   </div>
   <div style="font-family:'DM Sans';font-size:14px;color:#aaa;line-height:1.6;margin-bottom:24px;">All recorded sets for <span id="change-ex-confirm-name" style="color:#fff;font-weight:600;"></span> will be removed. This cannot be undone.</div>
   <div style="display:flex;gap:10px;">
-    <button onclick="cancelChangeExercise()" style="flex:1;padding:14px;background:transparent;border:1px solid #444;border-radius:12px;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;">Cancel</button>
-    <button onclick="confirmChangeExercise()" style="flex:1;padding:14px;background:var(--accent);border:none;border-radius:12px;color:#000;font-family:'DM Sans';font-size:15px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;">Change</button>
+    <button onclick="cancelChangeExercise()" style="flex:1;padding:14px;background:transparent;border:1px solid #555;border-radius:12px;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;">CANCEL</button>
+    <button onclick="confirmChangeExercise()" style="flex:1;padding:14px;background:var(--accent);border:none;border-radius:12px;color:#000;font-family:'DM Sans';font-size:15px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;">CHANGE</button>
   </div>
 </div>
 
@@ -23705,8 +23730,8 @@ function deleteCoachWorkout(id) {
   </div>
   <div style="font-family:'DM Sans';font-size:14px;color:#aaa;line-height:1.6;margin-bottom:24px;">All recorded sets for <span id="delete-ex-confirm-name" style="color:#fff;font-weight:600;"></span> will be removed. This cannot be undone.</div>
   <div style="display:flex;gap:10px;">
-    <button onclick="cancelDeleteExercise()" style="flex:1;padding:14px;background:transparent;border:1px solid #444;border-radius:12px;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;">Cancel</button>
-    <button onclick="confirmDeleteExercise()" style="flex:1;padding:14px;background:#ff4747;border:none;border-radius:12px;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;">Delete</button>
+    <button onclick="cancelDeleteExercise()" style="flex:1;padding:14px;background:transparent;border:1px solid #555;border-radius:12px;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;">CANCEL</button>
+    <button onclick="confirmDeleteExercise()" style="flex:1;padding:14px;background:#ff4747;border:none;border-radius:12px;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;">DELETE</button>
   </div>
 </div>
 
@@ -23801,7 +23826,7 @@ function deleteCoachWorkout(id) {
   </div>
   <div id="ex-photo-slide-hint" style="text-align:center;padding:10px 0 4px;font-family:'DM Sans';font-size:15px;color:rgba(255,255,255,0.3);white-space:nowrap;flex-shrink:0;">Slide to position</div>
   <!-- Cancel / Save -->
-  <div id="ex-photo-crop-actions" style="display:flex;gap:8px;padding:46px 16px calc(12px + env(safe-area-inset-bottom));flex-shrink:0;margin-top:auto;background:linear-gradient(to bottom,transparent,#000 40%);border-top:1px solid #1a1a1a;">
+  <div id="ex-photo-crop-actions" style="flex-shrink:0;padding:16px 16px calc(env(safe-area-inset-bottom,0px) + 16px);display:flex;gap:10px;background:#0a0a0a;margin-top:auto;">
     <button onclick="saveExPhotoCrop()" style="flex:1;padding:18px;background:var(--accent);color:#000;border:none;border-radius:100px;font-family:'DM Sans';font-size:18px;font-weight:900;cursor:pointer;letter-spacing:.3px;-webkit-tap-highlight-color:transparent;transition:transform .15s;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">SAVE</button>
   </div>
 </div>
@@ -23833,8 +23858,11 @@ function deleteCoachWorkout(id) {
 
 <!-- Workout photo cropper overlay (16:9) -->
 <div id="workout-photo-cropper-overlay" style="display:none;position:fixed;inset:0;background:#000;z-index:600;flex-direction:column;">
-  <div style="text-align:left;padding:calc(env(safe-area-inset-top, 0px) + 20px) 20px 8px;flex-shrink:0;">
-    <span style="font-family:'DM Sans';font-size:20px;font-weight:700;color:#34d399;">Edit Photo</span>
+  <button onclick="closeWorkoutPhotoCropper()" style="position:absolute;top:calc(env(safe-area-inset-top,0px) + 16px);left:16px;background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;z-index:1;">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  </button>
+  <div style="text-align:center;padding:calc(env(safe-area-inset-top, 0px) + 20px) 20px 8px;flex-shrink:0;">
+    <span style="font-family:'DM Sans';font-size:20px;font-weight:700;color:#fff;text-transform:uppercase;">Edit Photo</span>
   </div>
   <div style="padding:8px 20px 9px;flex-shrink:0;">
     <div style="position:relative;border-radius:6px;border:1px solid #2a2a2a;overflow:hidden;">
@@ -23855,9 +23883,8 @@ function deleteCoachWorkout(id) {
       style="flex:1;accent-color:var(--accent);cursor:pointer;direction:rtl;">
     <span id="wGradVal" style="font-family:'DM Sans';font-size:10px;color:rgba(255,255,255,0.3);width:28px;text-align:right;">0.35</span>
   </div>
-  <div style="display:flex;gap:8px;padding:8px 16px calc(16px + env(safe-area-inset-bottom));flex-shrink:0;margin-top:auto;">
-    <button onclick="closeWorkoutPhotoCropper()" style="flex:1;background:transparent;border:1px solid #333;border-radius:10px;color:#555;font-family:'DM Sans';font-size:18px;font-weight:700;padding:12px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Cancel</button>
-    <button onclick="saveWorkoutRectCrop()" style="flex:2;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:18px;font-weight:900;padding:12px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Save</button>
+  <div style="flex-shrink:0;padding:16px 16px calc(env(safe-area-inset-bottom,0px) + 16px);display:flex;gap:10px;background:#0a0a0a;margin-top:auto;">
+    <button onclick="saveWorkoutRectCrop()" style="flex:1;padding:18px;background:var(--accent);color:#000;border:none;border-radius:100px;font-family:'DM Sans',sans-serif;font-size:18px;font-weight:900;cursor:pointer;letter-spacing:.3px;-webkit-tap-highlight-color:transparent;transition:transform .15s;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">SAVE PHOTO</button>
   </div>
 </div>
 
@@ -26556,7 +26583,7 @@ function deleteExerciseDetail() {
         <div class="delete-confirm-sub">"${name}" will be permanently removed from your exercise list.</div>
         <div class="delete-confirm-btns">
           <button class="btn-del-cancel" id="_delExCancel">Cancel</button>
-          <button class="btn-del-yes" id="_delExConfirm">Delete</button>
+          <button class="btn-del-yes-solid" id="_delExConfirm">Delete</button>
         </div>
       </div>`;
     document.body.appendChild(overlay);
@@ -26804,9 +26831,19 @@ function _removeCurrentPhoto() {
 
 function _removeWorkoutPhoto() {
   const w = workouts[_workoutPhotoIdx];
-  if (!w) return;
-  localStorage.removeItem(`ironlog_workout_photo_${w.name}`);
+  const _wName = w ? w.name : (document.getElementById('workoutName')?.value || '').trim();
+  if (!_wName) return;
+  localStorage.removeItem(`ironlog_workout_photo_${_wName}`);
   renderWorkoutsTab2();
+  // Refresh whichever preview is currently on screen so it doesn't keep
+  // showing the just-deleted photo — new/edit workout's hero (step 1 of 2)...
+  const nwfBg = document.getElementById('nwf-hero-bg');
+  if (nwfBg) nwfBg.src = _workoutDefaultPhoto || 'images/workout_background.webp';
+  // ...and the Workout Info sheet's photo, if that's what's open.
+  if (window._w2SheetIdx === _workoutPhotoIdx) {
+    const _photoWrap = document.getElementById('w2-sheet-photo-wrap');
+    if (_photoWrap) _photoWrap.style.display = 'none';
+  }
 }
 
 // ── WORKOUT PHOTO CROPPER (16:9) ──────────────────────────
