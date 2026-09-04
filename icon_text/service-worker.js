@@ -2,7 +2,7 @@
  * service-worker.js — BARZELPRO PWA Service Worker v2.5.0
  */
 
-const APP_VERSION   = 'v2.5.13';
+const APP_VERSION   = 'v2.5.13c';
 const STATIC_CACHE  = `barzelpro-static-${APP_VERSION}`;
 const RUNTIME_CACHE = `barzelpro-runtime-${APP_VERSION}`;
 
