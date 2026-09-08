@@ -143,8 +143,7 @@ body.desktop-mode .pages-wrap {
 .btn-clear-workout:hover{border-color:var(--accent2);color:var(--accent2);}
 
 /* ── EXERCISE CARDS ────────────────────────────── */
-.exercise-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:visible;scroll-margin-top:70px;}
-#exerciseList.nwf-cards .exercise-card{border-color:#555;}
+.exercise-card{background:var(--surface);border:1px solid #555;border-radius:var(--radius);margin-bottom:8px;overflow:visible;scroll-margin-top:70px;}
 @keyframes pickNoticeBgFade{0%{background:rgba(255,140,66,.08);border-color:rgba(255,140,66,.2);}50%{background:rgba(255,140,66,.08);border-color:rgba(255,140,66,.2);}100%{background:rgba(255,140,66,0);border-color:rgba(255,140,66,0);}}
 .exercise-card.completed{border-color:rgba(var(--accent-rgb),.15);border-color:color-mix(in srgb, var(--accent) 15%, transparent);}
 .exercise-card.completed .ex-header{background:color-mix(in srgb, var(--accent) 6%, transparent);}
@@ -467,7 +466,7 @@ body.ex-tab-detail-open #ex-float-bar{display:none !important;}
 
 /* ── ADD EXERCISE BUTTONS ──────────────────────── */
 .add-ex-row{display:flex;gap:8px;margin-bottom:10px;}
-.btn-add-exercise{flex:1;background:var(--surface);border:1px dashed var(--border);border-radius:var(--radius);color:var(--muted);font-family:'DM Sans';font-size:14px;font-weight:600;padding:19px 14px;cursor:pointer;transition:color .2s,border-color .2s;text-align:center;}
+.btn-add-exercise{flex:1;background:var(--surface);border:1px dashed #555;border-radius:var(--radius);color:var(--muted);font-family:'DM Sans';font-size:14px;font-weight:600;padding:19px 14px;cursor:pointer;transition:color .2s,border-color .2s;text-align:center;}
 .btn-add-exercise:hover{border-color:var(--accent);color:var(--accent);}
 .btn-add-exercise.new-workout{color:#ff9500;}
 #exerciseList:empty + .add-ex-row{position:fixed;top:calc(50% - 30px);left:50%;transform:translate(-50%,-50%);width:calc(min(430px,100vw) - 32px);margin-bottom:0;z-index:10;}
@@ -580,6 +579,19 @@ body.ex-tab-detail-open #ex-float-bar{display:none !important;}
 /* ── MODALS ────────────────────────────────────── */
 .modal-overlay{position:fixed;top:0;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:rgba(0,0,0,.88);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);z-index:250;display:none;align-items:flex-end;justify-content:center;}
 .modal-overlay.open{display:flex;}
+/* PR stars info sheet: darken everything except the 3 stars themselves, which
+   stay lit in their real MAX/BEST SET/VOL colors — the overlay itself is left
+   transparent and #prStarsSpotlight (a box-shadow "hole" sized to the stars'
+   own rect) supplies the actual darkening, so nothing ever paints over them. */
+#prStarsInfoOverlay{background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none;}
+#prStarsSpotlight{position:fixed;z-index:245;display:none;border-radius:10px;box-shadow:0 0 0 9999px rgba(0,0,0,.85);pointer-events:none;}
+#prStarsSpotlight.open{display:block;}
+#workout-pr-stars.pr-stars-lit span[data-pr="0"] svg{fill:#e8ff47 !important;}
+#workout-pr-stars.pr-stars-lit span[data-pr="0"] > span:last-child{color:#e8ff47 !important;}
+#workout-pr-stars.pr-stars-lit span[data-pr="1"] svg{fill:#ff8c42 !important;}
+#workout-pr-stars.pr-stars-lit span[data-pr="1"] > span:last-child{color:#ff8c42 !important;}
+#workout-pr-stars.pr-stars-lit span[data-pr="2"] svg{fill:#a78bfa !important;}
+#workout-pr-stars.pr-stars-lit span[data-pr="2"] > span:last-child{color:#a78bfa !important;}
 .modal-sheet{width:100%;max-width:430px;background:var(--surface);border-radius:20px 20px 0 0;border:1px solid var(--border);border-bottom:none;max-height:88vh;max-height:88dvh;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom);}
 #calendarOverlay{background:rgba(0,0,0,.5)!important;top:0!important;align-items:flex-start!important;}#calendarOverlay .modal-sheet{border-radius:20px;border-top:none;border-bottom:1px solid var(--border);animation:sheetDown .3s cubic-bezier(.34,1.56,.64,1);margin-top:0;max-height:100dvh;max-height:100vh;overflow:hidden;}@keyframes sheetDown{from{transform:translateY(-60px);opacity:0}to{transform:translateY(0);opacity:1}}
 @keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
@@ -933,6 +945,21 @@ async function _loadExPhotoFromCloud(name, isThumb) {
 }
 window._uploadExPhoto = _uploadExPhoto;
 window._loadExPhotoFromCloud = _loadExPhotoFromCloud;
+
+// ── Shared library workout photo: upload to Storage, return its download URL ──
+// Stored under the brand (not per-user) since library workouts are shared —
+// the Firestore library doc keeps only this URL, never the raw data URL, to
+// stay well under Firestore's per-document size limit.
+async function _uploadLibraryWorkoutPhoto(workoutId, dataUrl) {
+  if (!dataUrl || !storage) return null;
+  const brandId = window.BRAND_ID || 'default';
+  const path = `library/${brandId}/workout_photos/${workoutId}/photo`;
+  try {
+    await uploadString(storageRef(storage, path), dataUrl, 'data_url');
+    return await getDownloadURL(storageRef(storage, path));
+  } catch(e) { console.warn('[LibraryWorkoutPhoto] Upload failed:', e.message); return null; }
+}
+window._uploadLibraryWorkoutPhoto = _uploadLibraryWorkoutPhoto;
 
 // Load brand config from Firestore and apply to UI
 async function loadBrandConfig() {
@@ -1294,7 +1321,7 @@ window._fbModuleReady = true;
 <div id="exercisesToggleBar" style="display:none;position:fixed;top:env(safe-area-inset-top,0px);left:0;right:0;z-index:28;background:var(--bg);padding:8px 16px;border-bottom:1px solid var(--border);max-width:430px;margin:0 auto;box-sizing:border-box;"></div>
 <div id="w2ToggleBar" style="display:none;position:fixed;top:env(safe-area-inset-top,0px);left:0;right:0;z-index:28;background:var(--bg);padding:8px 16px;border-bottom:1px solid var(--border);max-width:430px;margin:0 auto;box-sizing:border-box;"></div>
 <div id="profileToggleBar" style="display:none;position:fixed;top:env(safe-area-inset-top,0px);left:0;right:0;z-index:28;background:var(--bg);padding:8px 16px;border-bottom:1px solid var(--border);max-width:430px;margin:0 auto;box-sizing:border-box;">
-  <div style="font-family:'DM Sans';font-size:20px;font-weight:700;color:var(--text);padding:10px 0 6px;">Profile</div>
+  <div style="display:flex;justify-content:center;font-family:'DM Sans';font-size:20px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.5px;padding:10px 0 6px;">Profile</div>
 </div>
 <div id="progressToggleBar" style="display:none;position:sticky;top:0;z-index:20;background:var(--bg);padding:8px 16px 0;">
   <div style="display:flex;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
@@ -1546,7 +1573,7 @@ window._fbModuleReady = true;
   <div style="height:1px;background:#2a2a2a;margin:10px 0;"></div>
 
   <button onclick="openBWModal()" style="width:100%;background:transparent;border:none;border-radius:10px;color:#fff;font-family:'DM Sans';font-size:16px;font-weight:600;padding:14px 12px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>
+    <img src="./ui_icons/weight_scale.svg" width="18" height="18" style="filter:invert(67%);flex-shrink:0;" alt="">
     <span style="flex:1;">Body Weight</span> <span id="userMenuBWVal" style="color:#aaa;font-size:16px;min-width:44px;text-align:center;flex-shrink:0;"></span>
   </button>
   <button onclick="toggleAppSound()" style="width:100%;background:transparent;border:none;border-radius:10px;color:#fff;font-family:'DM Sans';font-size:16px;font-weight:600;padding:14px 12px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;">
@@ -1557,11 +1584,11 @@ window._fbModuleReady = true;
     </span>
   </button>
   <button onclick="switchTab('exercises')" style="width:100%;background:transparent;border:none;border-radius:10px;color:#fff;font-family:'DM Sans';font-size:16px;font-weight:600;padding:14px 12px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="7" x2="6" y2="17"/><line x1="9" y1="7" x2="9" y2="17"/><line x1="15" y1="7" x2="15" y2="17"/><line x1="18" y1="7" x2="18" y2="17"/><line x1="9" y1="12" x2="15" y2="12"/></svg>
+    <img src="./ui_icons/dumbbell_icon.svg" width="18" height="18" style="filter:invert(67%);flex-shrink:0;" alt="">
     Exercises
   </button>
   <button onclick="switchTab('progress')" style="width:100%;background:transparent;border:none;border-radius:10px;color:#fff;font-family:'DM Sans';font-size:16px;font-weight:600;padding:14px 12px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="13" width="4" height="9"/><rect x="9" y="8" width="4" height="14"/><rect x="16" y="3" width="4" height="19"/></svg>
     Progress
   </button>
   <button onclick="closeDataModal();openDataModal()" style="width:100%;background:transparent;border:none;border-radius:10px;color:#fff;font-family:'DM Sans';font-size:16px;font-weight:600;padding:14px 12px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;">
@@ -1817,7 +1844,7 @@ window._fbModuleReady = true;
         <span id="newExHeaderIcon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><line x1="19" y1="12" x2="5" y2="12" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round"/><polyline points="11,6 5,12 11,18" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
       </button>
     </div>
-    <div style="padding:0 16px calc(80px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:16px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;">
+    <div id="newExScrollArea" style="padding:0 16px calc(80px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:16px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;">
       <!-- Photo box -->
       <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
         <div id="newExPhotoBox" onclick="openNewExPhotoSheet()" style="width:80px;height:80px;border-radius:8px;border:1px solid #555;background:#0d0d0d;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;flex-shrink:0;">
@@ -1864,7 +1891,7 @@ window._fbModuleReady = true;
           <div id="newEx-video-title" class="nwf-field-label">Video Link <span class="nwf-optional" style="color:#666;font-weight:500;font-size:14px;">(optional)</span><span id="newExVideoNote" style="display:none;font-family:'DM Sans';font-size:13px;font-weight:600;transform:translateY(2px);"></span></div>
           <div id="newEx-video-box" class="nwf-field-box" style="display:flex;align-items:center;gap:8px;">
             <input id="newExVideoUrl" type="url" inputmode="url" spellcheck="false" autocomplete="off" style="flex:1;background:transparent;border:none;outline:none;color:#fff;font-family:'DM Sans',sans-serif;font-size:18px;font-weight:400;caret-color:#34d399;-webkit-text-fill-color:#fff;box-sizing:border-box;min-width:0;" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" oninput="_nwfSyncFieldFloatByEl(this)" onfocus="_newExFieldFocus('newEx-video-title','newEx-video-box',true);const _vb=document.getElementById('newExVideoIconBtn');if(_vb)_vb.innerHTML=_NWF_VIDEO_ICON_SVG;const _vn=document.getElementById('newExVideoNote');if(_vn)_vn.style.display='none'" onblur="_newExFieldFocus('newEx-video-title','newEx-video-box',false);_newExVerifyVideoLink(this.value.trim())"/>
-            <button id="newExVideoIconBtn" onclick="const i=document.getElementById('newExVideoUrl');navigator.clipboard.readText().then(t=>{if(i){i.value=t;_nwfSyncFieldFloatByEl(i);_newExVerifyVideoLink(t.trim());}}).catch(()=>{})" style="background:transparent;border:none;padding:2px;cursor:pointer;flex-shrink:0;-webkit-tap-highlight-color:transparent;display:flex;align-items:center;">
+            <button id="newExVideoIconBtn" onclick="_nwfVideoIconClick('newExVideoUrl','newExVideoIconBtn','newExVideoNote',_newExVerifyVideoLink)" style="background:transparent;border:none;padding:2px;cursor:pointer;flex-shrink:0;-webkit-tap-highlight-color:transparent;display:flex;align-items:center;">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
               </svg>
@@ -1952,7 +1979,7 @@ window._fbModuleReady = true;
   <div class="modal-sheet" style="padding:24px 20px 32px;border-radius:20px;border:1px solid var(--border);margin-bottom:30vh;">
     <div class="modal-handle"></div>
     <div class="modal-title" style="margin-bottom:18px;">RENAME EXERCISE</div>
-    <input id="renameExInput" type="text" style="width:100%;background:#1a1a1a;border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans';font-size:15px;font-weight:600;padding:12px 14px;box-sizing:border-box;outline:none;margin-bottom:16px;" placeholder="Exercise name" onkeydown="if(event.key==='Enter')confirmRenameEx()" oninput="this.style.direction=/[\u0590-\u05FF]/.test(this.value)?'rtl':'ltr'"/>
+    <input id="renameExInput" type="text" style="width:100%;background:#1a1a1a;border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans';font-size:15px;font-weight:600;padding:12px 14px;box-sizing:border-box;outline:none;margin-bottom:16px;" placeholder="Exercise name" onkeydown="if(event.key==='Enter')confirmRenameEx()" oninput="this.style.direction=/[\u0590-\u05FF]/.test(this.value)?'rtl':'ltr'" onfocus="_simpleFieldKbdFocus('renameExInput',true)" onblur="_simpleFieldKbdFocus('renameExInput',false)"/>
     <div style="display:flex;gap:10px;">
       <button onclick="closeRenameEx()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:700;padding:12px;cursor:pointer;">Cancel</button>
       <button onclick="confirmRenameEx()" style="flex:1;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:13px;font-weight:700;padding:12px;cursor:pointer;">Rename</button>
@@ -1993,6 +2020,7 @@ window._fbModuleReady = true;
 </div>
 
 <!-- PR STARS INFO MODAL -->
+<div id="prStarsSpotlight"></div>
 <div class="modal-overlay" id="prStarsInfoOverlay" onclick="if(event.target===this)closePRStarsInfo()">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
@@ -2011,7 +2039,7 @@ window._fbModuleReady = true;
         <div style="display:flex;gap:12px;align-items:flex-start;">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="#ff8c42" style="flex-shrink:0;"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
           <div>
-            <div style="font-family:'DM Sans';font-size:14px;font-weight:800;color:#ff8c42;letter-spacing:.5px;">B.SET</div>
+            <div style="font-family:'DM Sans';font-size:14px;font-weight:800;color:#ff8c42;letter-spacing:.5px;">BEST SET</div>
             <div style="font-family:'DM Sans';font-size:13px;font-weight:500;color:var(--muted);line-height:1.5;margin-top:2px;"><span style="color:#fff;">Your best set</span> for strength calculation.<br>Formula: max(weight × (1+reps/30))</div>
           </div>
         </div>
@@ -3938,6 +3966,32 @@ const _NWF_VIDEO_ICON_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fil
 const _NWF_VIDEO_SPINNER_SVG = `<svg class="nwf-video-spinner" width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="42" stroke-dashoffset="14"/></svg>`;
 const _NWF_VIDEO_CHECK_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 9 18 20 6"/></svg>`;
 const _NWF_VIDEO_X_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff4747" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>`;
+// Shared handler for the video-link field's icon button (new-workout-flow and
+// New/Edit Exercise both use it). While it's showing the red X (link failed to
+// verify), tapping it reads as "clear this" rather than "paste" — clear the
+// field instead of overwriting it with clipboard contents.
+function _nwfVideoIconClick(inputId, btnId, noteId, verifyFn) {
+  const input = document.getElementById(inputId);
+  const btn = document.getElementById(btnId);
+  // Substring check, not exact-string equality — innerHTML can be re-serialized
+  // slightly differently than the literal template on some engines (iOS Safari
+  // included), so match on the X icon's distinctive red stroke color instead.
+  if (btn && btn.innerHTML.includes('#ff4747')) {
+    if (input) { input.value = ''; input.focus(); }
+    // Goes through the same verify path as any other clear (rather than just
+    // resetting the icon/note by hand) so a persisted "broken" flag — e.g.
+    // _nwfVerifyVideoLink's ironlog_workout_video_broken_* — clears too.
+    if (typeof verifyFn === 'function') verifyFn('');
+    return;
+  }
+  navigator.clipboard.readText().then(t => {
+    if (!input) return;
+    input.value = t;
+    _nwfSyncFieldFloatByEl(input);
+    if (typeof verifyFn === 'function') verifyFn(t.trim());
+  }).catch(() => {});
+}
+window._nwfVideoIconClick = _nwfVideoIconClick;
 // Verifies a pasted/typed video link once the user is done editing it (on
 // blur, or right after a paste) — swaps the field's copy/paste icon for a
 // spinner while a HEAD request is in flight, and leaves a short status note
@@ -3948,6 +4002,23 @@ const _NWF_VIDEO_X_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="
 // Exercise one (each passes its own icon-button/note element ids and keeps
 // its own verify token, so the two fields' in-flight checks never race).
 const _videoVerifyTokens = {};
+// Raw reachability check, no UI side effects — shared by _verifyVideoLinkField
+// (which drives the edit-form icon/note) and any read-only context (e.g. a
+// PLAY badge) that just needs a yes/no without a form to update.
+async function _checkVideoLinkReachable(url) {
+  if (!url) return true;
+  try {
+    if (!/^https?:\/\//i.test(url)) throw new Error('bad url');
+    await Promise.race([
+      fetch(url, { method: 'HEAD', mode: 'no-cors' }),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 6000))
+    ]);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+window._checkVideoLinkReachable = _checkVideoLinkReachable;
 async function _verifyVideoLinkField(url, btnId, noteId) {
   const btn = document.getElementById(btnId);
   const note = document.getElementById(noteId);
@@ -3955,32 +4026,47 @@ async function _verifyVideoLinkField(url, btnId, noteId) {
   if (!url) {
     if (btn) btn.innerHTML = _NWF_VIDEO_ICON_SVG;
     if (note) note.style.display = 'none';
-    return;
+    return true; // nothing to be "broken" — an empty link is not a failed one
   }
   if (btn) btn.innerHTML = _NWF_VIDEO_SPINNER_SVG;
   if (note) { note.textContent = 'Verifying link…'; note.style.color = '#888'; note.style.display = 'inline'; }
-  let ok = false;
-  try {
-    if (!/^https?:\/\//i.test(url)) throw new Error('bad url');
-    await Promise.race([
-      fetch(url, { method: 'HEAD', mode: 'no-cors' }),
-      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 6000))
-    ]);
-    ok = true;
-  } catch (_) {
-    ok = false;
-  }
+  const ok = await _checkVideoLinkReachable(url);
   // A newer verification (new value, or the field going empty) started after
   // this one — don't let a slow/late response stomp on the current state.
-  if (myToken !== _videoVerifyTokens[btnId]) return;
+  if (myToken !== _videoVerifyTokens[btnId]) return undefined; // superseded — caller should not act on this
   if (btn) btn.innerHTML = ok ? _NWF_VIDEO_CHECK_SVG : _NWF_VIDEO_X_SVG;
   if (note) {
     note.textContent = ok ? 'Link verified' : 'Could not reach this link';
     note.style.color = ok ? 'var(--accent)' : '#ff4747';
   }
+  return ok;
 }
-function _nwfVerifyVideoLink(url) { return _verifyVideoLinkField(url, 'nwf-video-icon-btn', 'nwf-video-note'); }
-function _newExVerifyVideoLink(url) { return _verifyVideoLinkField(url, 'newExVideoIconBtn', 'newExVideoNote'); }
+// Persists whether the workout's video link last verified as broken, keyed by
+// workout name, so the hero photo's PLAY button (built independently, often
+// long after this check ran) can hide itself for a known-broken link instead
+// of showing it for any non-empty URL regardless of reachability.
+function _nwfVerifyVideoLink(url) {
+  return _verifyVideoLinkField(url, 'nwf-video-icon-btn', 'nwf-video-note').then(ok => {
+    if (ok === undefined) return ok; // superseded by a newer check — leave stored state alone
+    const name = (document.getElementById('workoutName')?.value || '').trim();
+    if (!name) return ok;
+    if (ok) localStorage.removeItem(`ironlog_workout_video_broken_${name}`);
+    else localStorage.setItem(`ironlog_workout_video_broken_${name}`, '1');
+    return ok;
+  });
+}
+// Same broken-link persistence as _nwfVerifyVideoLink above, keyed by exercise
+// name instead, so the exercise-detail PLAY badge can hide for a known-broken link.
+function _newExVerifyVideoLink(url) {
+  return _verifyVideoLinkField(url, 'newExVideoIconBtn', 'newExVideoNote').then(ok => {
+    if (ok === undefined) return ok; // superseded by a newer check — leave stored state alone
+    const name = (document.getElementById('newExInput')?.value || '').trim();
+    if (!name) return ok;
+    if (ok) localStorage.removeItem(`ironlog_ex_video_broken_${name}`);
+    else localStorage.setItem(`ironlog_ex_video_broken_${name}`, '1');
+    return ok;
+  });
+}
 window._nwfVerifyVideoLink = _nwfVerifyVideoLink;
 window._newExVerifyVideoLink = _newExVerifyVideoLink;
 const _NWF_FIELD_IDS = ['nwf-name-input', 'nwf-description', 'nwf-video-link'];
@@ -3993,7 +4079,10 @@ function _nwfFieldHasValue(wrap) {
 }
 function _nwfSyncFieldFloatByEl(el) {
   const wrap = el && el.closest('.nwf-field');
-  if (wrap) wrap.classList.toggle('is-float', _nwfFieldHasValue(wrap));
+  // Keep the label floated while the field is still focused even if its value
+  // just became empty (e.g. the keyboard toolbar's Delete button clearing it
+  // via oninput) — only an actually-empty, unfocused field collapses back in.
+  if (wrap) wrap.classList.toggle('is-float', document.activeElement === el || _nwfFieldHasValue(wrap));
 }
 function _nwfInitFieldFloats() {
   ['nwf-name-field', 'nwf-desc-field', 'nwf-video-field'].forEach(id => {
@@ -4023,9 +4112,9 @@ function _nwfFieldFocus(titleId, boxId, on) {
     window.visualViewport?.addEventListener('scroll', _positionNoteKbdBar);
     // visualViewport resize is unreliable on Android (see _positionNoteKbdBar) —
     // this call can silently never come, leaving the field stuck behind the
-    // keyboard/Done bar. A fixed retry after the keyboard's usual show-animation
-    // window doesn't depend on that event firing at all.
-    setTimeout(() => _positionNoteKbdBar(true), 350);
+    // keyboard/Done bar. A burst of retries after the keyboard's usual show-
+    // animation window doesn't depend on that event firing at all.
+    _scheduleNoteKbdBarRetries();
   }
 
   if (on) {
@@ -4085,9 +4174,9 @@ function _newExFieldFocus(titleId, boxId, on) {
     window.visualViewport?.addEventListener('scroll', _positionNoteKbdBar);
     // visualViewport resize is unreliable on Android (see _positionNoteKbdBar) —
     // this call can silently never come, leaving the field stuck behind the
-    // keyboard/Done bar. A fixed retry after the keyboard's usual show-animation
-    // window doesn't depend on that event firing at all.
-    setTimeout(() => _positionNoteKbdBar(true), 350);
+    // keyboard/Done bar. A burst of retries after the keyboard's usual show-
+    // animation window doesn't depend on that event firing at all.
+    _scheduleNoteKbdBarRetries();
   }
   if (on) {
     if (bar) bar.style.display = 'none';
@@ -4108,6 +4197,32 @@ function _newExFieldFocus(titleId, boxId, on) {
   }
 }
 window._newExFieldFocus = _newExFieldFocus;
+// Generic version of _newExFieldFocus for any plain input/textarea with no
+// .nwf-field floating-label wrapper of its own — just shows/positions the
+// same "Done"/"Delete" bar directly. fieldId is the element's own id, used to
+// tell "still editing this same field" apart from "actually done" on blur.
+function _simpleFieldKbdFocus(fieldId, on) {
+  const kbdBar = document.getElementById('note-kbd-done-bar');
+  if (!kbdBar) return;
+  if (on) {
+    kbdBar.style.display = 'flex';
+    _positionNoteKbdBar();
+    window.visualViewport?.addEventListener('resize', _positionNoteKbdBar);
+    window.visualViewport?.addEventListener('scroll', _positionNoteKbdBar);
+    _scheduleNoteKbdBarRetries();
+  } else {
+    // Deferred so a blur immediately followed by this same field regaining
+    // focus doesn't flash the bar closed and back open.
+    setTimeout(() => {
+      if (document.activeElement?.id === fieldId) return;
+      kbdBar.style.display = 'none';
+      delete kbdBar.dataset.scrolledForNote;
+      window.visualViewport?.removeEventListener('resize', _positionNoteKbdBar);
+      window.visualViewport?.removeEventListener('scroll', _positionNoteKbdBar);
+    }, 0);
+  }
+}
+window._simpleFieldKbdFocus = _simpleFieldKbdFocus;
 function _openNwfNamePage() {
   if (typeof _nwfSetNameDupState === 'function') _nwfSetNameDupState(false);
   const nameEl = document.getElementById('nwf-hero-name');
@@ -4128,14 +4243,21 @@ function _openNwfNamePage() {
   }
   const nwfNameInput = document.getElementById('nwf-name-input');
   if (nwfNameInput) { nwfNameInput.value = cur; const _ni_rtl = /[֐-׿]/.test(cur); nwfNameInput.style.direction = _ni_rtl ? 'rtl' : 'ltr'; nwfNameInput.style.textAlign = _ni_rtl ? 'right' : 'left'; nwfNameInput.style.color = ''; }
-  // Video-link verification (icon/note) is a result from whatever link was
-  // checked last session — never still true for a different (or now-empty)
-  // link, so reset to neutral every time this page opens rather than leaving
-  // a stale "Link verified" showing against an unrelated/blank field.
+  // Video-link verification (icon/note) reflects whatever link is still
+  // sitting in the field — re-verify it so a link that was already found
+  // broken still shows its error note when the user comes back to this page,
+  // instead of silently resetting to neutral and hiding that it's broken.
+  // Truly stale results (a since-cleared/changed field) never apply here since
+  // this re-checks the field's *current* value, not a cached prior one.
   const _nwfVideoBtn = document.getElementById('nwf-video-icon-btn');
-  if (_nwfVideoBtn) _nwfVideoBtn.innerHTML = _NWF_VIDEO_ICON_SVG;
   const _nwfVideoNote = document.getElementById('nwf-video-note');
-  if (_nwfVideoNote) _nwfVideoNote.style.display = 'none';
+  const _nwfVideoVal = (document.getElementById('nwf-video-link')?.value || '').trim();
+  if (_nwfVideoVal) {
+    _nwfVerifyVideoLink(_nwfVideoVal);
+  } else {
+    if (_nwfVideoBtn) _nwfVideoBtn.innerHTML = _NWF_VIDEO_ICON_SVG;
+    if (_nwfVideoNote) _nwfVideoNote.style.display = 'none';
+  }
   _nwfUpdateNextBtn();
   if (typeof _nwfInitFieldFloats === 'function') _nwfInitFieldFloats();
   const _nwfPageTitle = document.getElementById('nwf-page-title');
@@ -4584,7 +4706,7 @@ function _setWorkoutHeroPhoto(name) {
     <div ${window._isNewWorkoutFlow ? '' : `onclick="if(window._todayInfoPanelOpen)_closeTodayInfoPanel()"`} style="position:relative;margin:${window._isNewWorkoutFlow ? '0' : '4px'} 10px 0;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;">
       <img src="${photo}" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;filter:brightness(0.85);">
       ${window._isNewWorkoutFlow ? `<button onclick="event.stopPropagation();_openPhotoModalFromHero()" style="position:absolute;top:8px;right:8px;z-index:4;background:rgba(0,0,0,0.55);border:none;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>` : ''}
-      ${localStorage.getItem(`ironlog_workout_video_${name}`) ? `<button onclick="event.stopPropagation();const _v=localStorage.getItem('ironlog_workout_video_${name}');if(_v)window.open(_v,'_blank');" style="position:absolute;top:8px;left:10px;z-index:4;display:flex;align-items:center;gap:5px;background:transparent;border:none;padding:4px 6px;border-radius:4px;cursor:pointer;-webkit-tap-highlight-color:transparent;"><svg width="13" height="13" viewBox="0 0 24 24" fill="var(--accent)" stroke="none"><polygon points="5,3 19,12 5,21"/></svg><span style="color:var(--accent);font-family:'DM Sans';font-size:11px;font-weight:700;letter-spacing:.5px;">PLAY</span></button>` : ''}
+      ${(localStorage.getItem(`ironlog_workout_video_${name}`) && localStorage.getItem(`ironlog_workout_video_broken_${name}`) !== '1') ? `<button onclick="event.stopPropagation();const _v=localStorage.getItem('ironlog_workout_video_${name}');if(_v)window.open(_v,'_blank');" style="position:absolute;top:8px;left:10px;z-index:4;display:flex;align-items:center;gap:5px;background:transparent;border:none;padding:4px 6px;border-radius:4px;cursor:pointer;-webkit-tap-highlight-color:transparent;"><svg width="13" height="13" viewBox="0 0 24 24" fill="var(--accent)" stroke="none"><polygon points="5,3 19,12 5,21"/></svg><span style="color:var(--accent);font-family:'DM Sans';font-size:11px;font-weight:700;letter-spacing:.5px;">PLAY</span></button>` : ''}
       ${window._isNewWorkoutFlow ? '' : `<button onclick="event.stopPropagation();_openWorkoutHeroMenu()" style="position:absolute;bottom:8px;right:1px;z-index:4;background:#000;border:none;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;"><svg id="workout-hero-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;transition:transform .25s ease;transform:rotate(${window._todayInfoPanelOpen ? '180deg' : '0deg'});"><polyline points="6 9 12 15 18 9"/></svg></button>`}
       <div style="position:absolute;bottom:0;left:0;right:0;padding:10px ${window._isNewWorkoutFlow ? '14px' : '34px'} 12px 14px;pointer-events:none;text-align:right;">
         <div id="workout-hero-name" data-name="${name||''}" onclick="${window._isNewWorkoutFlow ? '_startHeroNameEdit(this)' : 'event.stopPropagation();_openWorkoutHeroMenu()'}" style="font-family:'DM Sans';font-size:20px;font-weight:900;color:#fff;max-width:60%;margin-left:auto;line-height:1.2;pointer-events:auto;cursor:pointer;-webkit-tap-highlight-color:transparent;${_heroNameDir(name)}">${_heroNameHtml(name)}</div>
@@ -4705,7 +4827,7 @@ function _updateWorkoutProgress() {
       const f   = n > 0 ? color : '#333';
       const lc  = n > 0 ? color : '#444';
       const num = n > 0 ? `<span style="position:absolute;font-size:14px;font-weight:500;color:#000;line-height:1;transform:translateY(1px);">${n}</span>` : '';
-      const lbl = ['MAX','B.SET','VOL'][idx] || '';
+      const lbl = ['MAX','BEST SET','VOL'][idx] || '';
       return `<span data-pr="${idx}" data-count="${n}" style="display:inline-flex;flex-direction:column;align-items:center;gap:2px;"><span style="position:relative;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;"><svg width="32" height="32" viewBox="0 0 24 24" fill="${f}"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>${num}</span><span style="font-size:8px;font-weight:700;color:${lc};letter-spacing:.5px;line-height:11px;transform:translateY(1px);display:inline-block;">${lbl}</span></span>`;
     };
     prStars.innerHTML = star('#e8ff47', weightPRs, 0) + star('#ff8c42', volPRs, 1) + star('#a78bfa', volumePRs, 2);
@@ -4789,6 +4911,25 @@ window._syncExToggleBarHeight = _syncExToggleBarHeight;
   const bar = document.getElementById('exercisesToggleBar');
   if (bar && typeof ResizeObserver !== 'undefined') {
     new ResizeObserver(_syncExToggleBarHeight).observe(bar);
+  }
+})();
+
+// New/Edit Exercise modal — #newExBottomBar (SAVE button) is position:fixed over
+// #newExScrollArea's own scrolled content, so its actual (measured, not guessed —
+// its height varies with safe-area-inset-bottom) height must set the scroll area's
+// bottom padding, or the last field (Video Link) can end up scrolled only as far as
+// a fixed guess allows, staying hidden behind the bar with no way to reveal it.
+function _syncNewExBottomPad() {
+  const bar = document.getElementById('newExBottomBar');
+  const area = document.getElementById('newExScrollArea');
+  if (!bar || !area) return;
+  area.style.paddingBottom = (bar.offsetHeight + 16) + 'px';
+}
+window._syncNewExBottomPad = _syncNewExBottomPad;
+(function() {
+  const bar = document.getElementById('newExBottomBar');
+  if (bar && typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(_syncNewExBottomPad).observe(bar);
   }
 })();
 
@@ -5228,7 +5369,7 @@ function renderExercisesTab() {
     </div>` : '';
     const _mc = MUSCLE_COLORS[ex.muscle] || '#888';
 
-    listHtml += `<div data-exname="${ex.name.replace(/"/g,'&quot;')}" data-muscle="${ex.muscle||'Chest'}" style="--muscle-color:${_mc};background:${isPickSelected ? 'color-mix(in srgb, var(--accent) 15%, var(--surface))' : 'var(--surface)'};border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden;">
+    listHtml += `<div data-exname="${ex.name.replace(/"/g,'&quot;')}" data-muscle="${ex.muscle||'Chest'}" style="--muscle-color:${_mc};background:${isPickSelected ? 'color-mix(in srgb, var(--accent) 15%, var(--surface))' : 'var(--surface)'};border:1px solid #555;border-radius:var(--radius);margin-bottom:8px;overflow:hidden;">
       <!-- Flat row -->
       <div ${isExpandable && !_pickMode ? `onclick="openExtabExOverlay('${ex.name.replace(/'/g,"\\'")}')"` : ''} style="display:flex;align-items:stretch;${isExpandable && !_pickMode ? 'cursor:pointer;' : ''}">
         ${_makeExThumbHtml(ex.name, ex.muscle)}
@@ -5281,7 +5422,7 @@ function renderExercisesTab() {
         const _lcd = (window._exLastDateMap && window._exLastDateMap.get(ex.name)) || 0;
         const _isPickSel = _pickMode && _pickModeSelected.some(s => s.name === ex.name);
         const _pc = PICKER_COLORS[ex.muscle] || '#888';
-        return `<div data-exname="${ex.name.replace(/"/g,'&quot;')}" data-muscle="${ex.muscle}"${_pickMode ? ` onclick="pickExercise('${ex.name.replace(/'/g,"\\'")}') "` : ''} style="background:${_isPickSel ? 'color-mix(in srgb, var(--accent) 15%, var(--surface))' : 'var(--surface)'};border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden;${_pickMode ? 'cursor:pointer;' : ''}">
+        return `<div data-exname="${ex.name.replace(/"/g,'&quot;')}" data-muscle="${ex.muscle}"${_pickMode ? ` onclick="pickExercise('${ex.name.replace(/'/g,"\\'")}') "` : ''} style="background:${_isPickSel ? 'color-mix(in srgb, var(--accent) 15%, var(--surface))' : 'var(--surface)'};border:1px solid #555;border-radius:var(--radius);margin-bottom:8px;overflow:hidden;${_pickMode ? 'cursor:pointer;' : ''}">
           <div onclick="${_pickMode ? '' : `openExtabExOverlay('${ex.name.replace(/'/g,"\\'")}') `}" style="display:flex;align-items:stretch;${_pickMode ? '' : 'cursor:pointer;'}">
             ${_makeExThumbHtml(ex.name, ex.muscle)}
             <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;align-items:flex-end;padding:8px 15px 8px 0;">
@@ -5305,7 +5446,7 @@ function renderExercisesTab() {
     ? _allExes.map(ex => {
       const _isPickSel = _pickMode && _pickModeSelected.some(s => s.name === ex.name);
       const _pc = PICKER_COLORS[ex.muscle] || '#888';
-      return `<div data-exname="${ex.name.replace(/"/g,'&quot;')}" data-muscle="${ex.muscle}"${_pickMode ? ` onclick="pickExercise('${ex.name.replace(/'/g,"\\'")}') "` : ''} style="background:${_isPickSel ? 'color-mix(in srgb, var(--accent) 15%, var(--surface))' : 'var(--surface)'};border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden;${_pickMode ? 'cursor:pointer;' : ''}">
+      return `<div data-exname="${ex.name.replace(/"/g,'&quot;')}" data-muscle="${ex.muscle}"${_pickMode ? ` onclick="pickExercise('${ex.name.replace(/'/g,"\\'")}') "` : ''} style="background:${_isPickSel ? 'color-mix(in srgb, var(--accent) 15%, var(--surface))' : 'var(--surface)'};border:1px solid #555;border-radius:var(--radius);margin-bottom:8px;overflow:hidden;${_pickMode ? 'cursor:pointer;' : ''}">
       <div onclick="${_pickMode ? '' : `openExtabExOverlay('${ex.name.replace(/'/g,"\\'")}') `}" style="display:flex;align-items:stretch;${_pickMode ? '' : 'cursor:pointer;'}">
         ${_makeExThumbHtml(ex.name, ex.muscle)}
         <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;align-items:flex-end;padding:8px 15px 8px 0;">
@@ -5750,7 +5891,12 @@ function donePickMode() {
       if (tbody) {
         setCounters[cardId] = 0;
         tbody.querySelectorAll('.set-row, .kg-inline-editor-row').forEach(r => r.remove());
-        addSet(cardId);
+        // Same fallback as a freshly-added exercise (addExerciseCard): prefill from
+        // this exercise's last logged sets, or default to 8kg x 10 reps instead of
+        // leaving the row blank when it has no history.
+        const lastSets = getLastSets(ex.label || ex.name);
+        if (lastSets.length) lastSets.forEach(s => addSet(cardId, s.kg, s.reps));
+        else addSet(cardId, 8, 10);
       }
       saveSession();
       // Open via the same path as a normal card tap — full-screen detail overlay
@@ -5887,6 +6033,14 @@ function openNewExModal(muscle) {
   if (_nxOvl) { _nxOvl.style.opacity = '0'; _nxOvl.style.transition = 'none'; }
   if (_nxSheet) { _nxSheet.style.animation = 'none'; _nxSheet.style.transform = 'translateY(48px)'; _nxSheet.style.opacity = '0'; _nxSheet.style.transition = 'none'; }
   _nxOvl.classList.add('open');
+  // Scroll position is left over from whatever was scrolled last time this same
+  // overlay was open. Setting scrollTop while the overlay is still display:none
+  // (i.e. before the 'open' class above) silently doesn't stick on iOS Safari —
+  // it has to happen after the element is actually laid out and visible.
+  requestAnimationFrame(() => {
+    const _nxScroll = document.getElementById('newExScrollArea');
+    if (_nxScroll) _nxScroll.scrollTop = 0;
+  });
   requestAnimationFrame(() => requestAnimationFrame(() => {
     if (_nxOvl) { _nxOvl.style.transition = 'opacity 0.35s ease'; _nxOvl.style.opacity = ''; }
     if (_nxSheet) {
@@ -6268,11 +6422,18 @@ function confirmNewEx() {
   if (window._editExName) {
     const oldName = window._editExName;
     window._editExName = null;
-    // Save 21:9 to IndexedDB; tiny thumb to localStorage for instant card display
+    // Save 21:9 to IndexedDB; tiny thumb to localStorage for instant card display —
+    // or, if the form's photo state is empty (user tapped Remove Photo), clear
+    // whatever's stored instead. A never-had-a-photo exercise just harmlessly
+    // removes a key that was never set.
     const _editPhotoToSave = window._newExPhoto32 || window._newExPhoto;
-    if (_editPhotoToSave && window.localforage)
-      window.localforage.setItem(`ironlog_ex_photo_${name}`, _editPhotoToSave).catch(e => showToast('Photo save failed'));
-    if (window._newExPhotoThumb) try { localStorage.setItem(`ironlog_ex_photo_thumb_${name}`, window._newExPhotoThumb); } catch(_) {}
+    if (_editPhotoToSave) {
+      if (window.localforage) window.localforage.setItem(`ironlog_ex_photo_${name}`, _editPhotoToSave).catch(e => showToast('Photo save failed'));
+      if (window._newExPhotoThumb) try { localStorage.setItem(`ironlog_ex_photo_thumb_${name}`, window._newExPhotoThumb); } catch(_) {}
+    } else {
+      if (window.localforage) window.localforage.removeItem(`ironlog_ex_photo_${name}`).catch(() => {});
+      try { localStorage.removeItem(`ironlog_ex_photo_thumb_${name}`); } catch(_) {}
+    }
     // Update customExercises
     const idx = customExercises.findIndex(e => e.name === oldName);
     if (idx > -1) {
@@ -6300,10 +6461,18 @@ function confirmNewEx() {
     // it the other way round leaves a gap where neither covers the screen.
     if (window._editExReturnToExtab) {
       window._editExReturnToExtab = null;
-      openExtabExOverlay(name, undefined, true);
+      // Hand over the photo we just saved/removed directly (see knownPhoto in
+      // openExtabExOverlay) instead of letting it re-read storage, which could
+      // race the localforage write a couple lines up and still show the old photo.
+      openExtabExOverlay(name, undefined, true, _editPhotoToSave || null);
     }
     closeNewExModal();
     showToast('Exercise updated');
+    // Keep the mem-cached full-photo lookup (_makeExThumbHtml's last-resort
+    // fallback, used only once both localStorage thumb/full checks come up
+    // empty) in sync too — otherwise a just-removed photo could still render
+    // from a stale earlier-this-session cache entry even after re-rendering below.
+    if (window._exPhotoMemCache) window._exPhotoMemCache[`ironlog_ex_photo_${name}`] = _editPhotoToSave || null;
     // Update all cards with the old name in the DOM
     document.querySelectorAll('.exercise-card').forEach(card => {
       if (card.dataset.exname === oldName) {
@@ -6311,12 +6480,16 @@ function confirmNewEx() {
         // Update name display
         const nameEl = card.querySelector('.ex-name');
         if (nameEl) nameEl.textContent = name;
-        // Update photo
+        // Update photo — same thumb-then-full priority _makeExThumbHtml uses;
+        // this used to only ever check the (never-written-to) non-thumb key.
         const photoImg = card.querySelector('.ex-photo-box img');
-        const newPhoto = localStorage.getItem(`ironlog_ex_photo_${name}`);
+        const newPhoto = localStorage.getItem(`ironlog_ex_photo_thumb_${name}`) || localStorage.getItem(`ironlog_ex_photo_${name}`);
         if (photoImg && newPhoto) photoImg.src = newPhoto;
       }
     });
+    // Exercises tab list — its row was rendered before this edit and has no
+    // other way to learn the photo (or name) changed underneath it.
+    if (typeof renderExercisesTab === 'function') renderExercisesTab();
     // Update exercise detail overlay title and photo using the proper loader
     if (typeof _loadExDetailPhoto === 'function') {
       _loadExDetailPhoto(name);
@@ -7014,7 +7187,7 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
   let _maxKgDate = null, _best1RMDate = null, _maxVolDate = null;
   let _maxKgBwExtra = null;
   const _chartWtMap = new Map(), _chartRmMap = new Map(), _chartVolMap = new Map(), _chartWtBwMap = new Map();
-  // Per-day best set (kg/reps) behind that day's _chartRmMap number — the B.SET
+  // Per-day best set (kg/reps) behind that day's _chartRmMap number — the BEST SET
   // tab plots the same 1RM-estimate values on its Y axis, but the big scrub
   // value shows the actual set (e.g. "12.5kg × 13") instead of the estimate.
   const _chartRmSetMap = new Map();
@@ -7067,7 +7240,7 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
   // ── Progress chart pane (adapted verbatim from openExtabExOverlay's stats mode) ──
   let _progMetric = 'wt', _progRange = '1Y';
   const _PC = { wt:{line:'#e8ff47',fill:'rgba(232,255,71,.08)'}, rm:{line:'#ff8c42',fill:'rgba(255,140,66,.08)'}, vol:{line:'#a78bfa',fill:'rgba(167,139,250,.08)'} };
-  const _mKeys = ['wt','rm','vol'], _mLabels = ['MAX','B.SET','VOL'], _mColors = ['#e8ff47','#ff8c42','#a78bfa'];
+  const _mKeys = ['wt','rm','vol'], _mLabels = ['MAX','BEST SET','VOL'], _mColors = ['#e8ff47','#ff8c42','#a78bfa'];
   const progPane = document.createElement('div');
   progPane.id = 'ex-detail-stats-prog-pane';
   progPane.style.cssText = 'display:none;padding:2px 16px 0;';
@@ -7224,7 +7397,7 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
     progPane.appendChild(chartCard);
   }
 
-  // ── Stats table pane — big number + MAX/B.SET/VOL tab bar (mirrors the
+  // ── Stats table pane — big number + MAX/BEST SET/VOL tab bar (mirrors the
   // Progress pane's own metric bar/indicator pattern below) ─────────────────
   const tablePane = document.createElement('div');
   tablePane.id = 'ex-detail-stats-table-pane';
@@ -7241,7 +7414,7 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
   bestBigVal.id = 'ex-detail-stats-bestval';
   bestBigVal.style.cssText = "font-family:'Bebas Neue';font-size:80px;line-height:1;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;white-space:nowrap;";
 
-  let _bestMetric = 'rm'; // default tab: B.SET
+  let _bestMetric = 'rm'; // default tab: BEST SET
   function _renderBestVal() {
     const i = _mKeys.indexOf(_bestMetric);
     bestBigVal.style.color = _mColors[i];
@@ -7439,7 +7612,7 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
   // Clips the sliding pane transitions — kept off the outer "Stats" box itself, since
   // that box's label straddles its top border (top:-9px) and would get clipped too.
   // flex:1 lets it fill the remaining height between the title and the bottom-pinned
-  // dots, so tablePane's own bottom-anchored content (the MAX/B.SET/VOL bar) can sit
+  // dots, so tablePane's own bottom-anchored content (the MAX/BEST SET/VOL bar) can sit
   // close to the box's bottom edge instead of directly under the big number.
   panesContainer.style.cssText = 'overflow:hidden;flex:1;';
   panesContainer.appendChild(progPane);
@@ -7604,7 +7777,7 @@ function _toggleExDetailStats() {
 }
 window._toggleExDetailStats = _toggleExDetailStats;
 
-function openExtabExOverlay(exName, musclesOnly, instant) {
+function openExtabExOverlay(exName, musclesOnly, instant, knownPhoto) {
   const overlay = document.getElementById('extab-ex-overlay');
   const body = document.getElementById('extab-ex-overlay-body');
   if (!overlay || !body) return;
@@ -7641,7 +7814,8 @@ function openExtabExOverlay(exName, musclesOnly, instant) {
       if (photoImg) photoImg.src = _defaultSrc;
     }
     // Play badge — show whenever photoWrap is visible and a video URL exists
-    if (_exVideoUrl) {
+    // (and it isn't flagged as having failed its last reachability check).
+    if (_exVideoUrl && localStorage.getItem(`ironlog_ex_video_broken_${exName}`) !== '1') {
       const _anchorEl = photoImg?.parentElement;
       if (_anchorEl) {
         const _pb = document.createElement('div');
@@ -7650,14 +7824,34 @@ function openExtabExOverlay(exName, musclesOnly, instant) {
         _pb.onclick = () => window.open(_exVideoUrl, '_blank');
         _pb.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="var(--accent)" stroke="none"><polygon points="5,3 19,12 5,21"/></svg><span style="font-family:\'DM Sans\';font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.5px;">PLAY</span>';
         _anchorEl.appendChild(_pb);
+        // The stored broken-flag only exists if this link was verified through
+        // the New/Edit Exercise form — an exercise whose link never went through
+        // that (imported data, coach-added, etc.) has no flag yet, so it'd show
+        // PLAY regardless of reachability. Re-check live and self-correct.
+        if (window._checkVideoLinkReachable) {
+          window._checkVideoLinkReachable(_exVideoUrl).then(ok => {
+            if (ok) { localStorage.removeItem(`ironlog_ex_video_broken_${exName}`); return; }
+            localStorage.setItem(`ironlog_ex_video_broken_${exName}`, '1');
+            if (document.body.contains(_pb)) _pb.remove();
+          });
+        }
       }
     }
   };
-  const _lsPhoto = localStorage.getItem(`ironlog_ex_photo_${exName}`);
-  if (_lsPhoto) { _applyExtabPhoto(_lsPhoto); }
-  else if (window.localforage) {
-    window.localforage.getItem(`ironlog_ex_photo_${exName}`).then(_applyExtabPhoto).catch(() => _applyExtabPhoto(null));
-  } else { _applyExtabPhoto(null); }
+  // knownPhoto lets a caller that just wrote/removed the stored photo itself
+  // (confirmNewEx, right after saving an edit) hand it over directly — the
+  // localforage write and this overlay's own lookup are two independent async
+  // calls with no ordering guarantee between them, so re-reading storage right
+  // after writing it here could still race and show what was there before.
+  if (knownPhoto !== undefined) {
+    _applyExtabPhoto(knownPhoto);
+  } else {
+    const _lsPhoto = localStorage.getItem(`ironlog_ex_photo_${exName}`);
+    if (_lsPhoto) { _applyExtabPhoto(_lsPhoto); }
+    else if (window.localforage) {
+      window.localforage.getItem(`ironlog_ex_photo_${exName}`).then(_applyExtabPhoto).catch(() => _applyExtabPhoto(null));
+    } else { _applyExtabPhoto(null); }
+  }
   // Set names and muscle labels
   const nameEl = document.getElementById('extab-ex-overlay-name');
   const nameNoPhotoEl = document.getElementById('extab-ex-overlay-name-nophoto');
@@ -7680,7 +7874,7 @@ function openExtabExOverlay(exName, musclesOnly, instant) {
   let _maxKg = 0, _max1RM = 0, _best1RMSet = null, _maxVol = 0;
   let _maxKgDate = null, _best1RMDate = null, _maxVolDate = null;
   const _chartWtMap = new Map(), _chartRmMap = new Map(), _chartVolMap = new Map();
-  // Per-day best set (kg/reps) behind that day's _chartRmMap number — the B.SET
+  // Per-day best set (kg/reps) behind that day's _chartRmMap number — the BEST SET
   // tab plots the same 1RM-estimate values on its Y axis, but the big scrub
   // value shows the actual set (e.g. "12.5kg × 13") instead of the estimate.
   const _chartRmSetMap = new Map();
@@ -7774,7 +7968,7 @@ function openExtabExOverlay(exName, musclesOnly, instant) {
     // ── Progress chart pane ──────────────────────────────────────────────────
     let _progMetric = 'wt', _progRange = '1Y';
     const _PC = { wt:{line:'#e8ff47',fill:'rgba(232,255,71,.08)'}, rm:{line:'#ff8c42',fill:'rgba(255,140,66,.08)'}, vol:{line:'#a78bfa',fill:'rgba(167,139,250,.08)'} };
-    const _mKeys = ['wt','rm','vol'], _mLabels = ['MAX','B.SET','VOL'], _mColors = ['#e8ff47','#ff8c42','#a78bfa'];
+    const _mKeys = ['wt','rm','vol'], _mLabels = ['MAX','BEST SET','VOL'], _mColors = ['#e8ff47','#ff8c42','#a78bfa'];
     const progPane = document.createElement('div');
     progPane.id = 'extab-prog-pane';
     progPane.style.cssText = `display:${musclesOnly === 'stats' ? 'block' : 'none'};padding:8px 16px 0;`;
@@ -7906,7 +8100,7 @@ function openExtabExOverlay(exName, musclesOnly, instant) {
       progPane.appendChild(chartCard);
     }
 
-    // ── Stats table pane — big number + MAX/B.SET/VOL tab bar (mirrors the
+    // ── Stats table pane — big number + MAX/BEST SET/VOL tab bar (mirrors the
     // Progress pane's own metric bar/indicator pattern below) ────────────────
     const tablePane = document.createElement('div');
     tablePane.id = 'extab-table-pane';
@@ -8586,7 +8780,7 @@ function renderWorkoutsTab2() {
   const _wSegViews = _wHasCoach ? ['all','custom','coach'] : ['all','custom'];
   const _wSegIdx = Math.max(0, _wSegViews.indexOf(_wTabView));
   const _wSegIndicatorColor = _wTabView === 'coach' ? '#7ec8e3' : 'var(--accent)';
-  const _wToggleHtml = `<div style="display:flex;align-items:center;padding:10px 0 6px;"><span style="font-family:'DM Sans';font-size:20px;font-weight:700;color:var(--text);">Workouts</span></div><div style="display:flex;gap:0;align-items:center;">
+  const _wToggleHtml = `<div style="display:flex;align-items:center;justify-content:center;padding:10px 0 6px;"><span style="font-family:'DM Sans';font-size:20px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.5px;">Workouts</span></div><div style="display:flex;gap:0;align-items:center;">
     <div id="wTab-seg-wrap" data-views="${_wSegViews.join(',')}" style="position:relative;display:flex;flex:1;">
       <button onclick="switchWTabView('all')" id="wTab-seg-all" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_wTabView==='all'?'var(--accent)':'#555'};transition:color .15s;">ALL</button>
       <button onclick="switchWTabView('custom')" id="wTab-seg-custom" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_wTabView==='custom'?'var(--accent)':'#555'};transition:color .15s;">CUSTOM</button>
@@ -8795,7 +8989,6 @@ function renderWorkoutsTab2() {
   });
 
   // Bottom buttons
-  const _wtabProActive = !!window._wtabProMode;
   const _selActionBtns = (_noSpecialMode && _selIdx !== undefined && _selIdx !== null && workouts[_selIdx]) ? `
     <div style="display:flex;gap:8px;margin-top:12px;">
       <button onclick="window._wtabSelectedIdx=null;openWtabCalendarPlan(${_selIdx});" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans';font-size:14px;font-weight:700;padding:12px;cursor:pointer;">📅 Plan</button>
@@ -8812,10 +9005,7 @@ function renderWorkoutsTab2() {
   // to body (same pattern _renderWtabPlanBar already uses) sidesteps that entirely.
   const _bottomBtns = _isPlanStrengthMode
     ? ''
-    : (_selActionBtns || `<button onclick="startNewWorkout(true);" style="width:100%;margin-top:12px;background:transparent;border:1px dashed var(--border);border-radius:12px;color:var(--muted);font-family:'DM Sans';font-size:15px;font-weight:700;padding:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
-    <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-    Create New Workout
-  </button>`);
+    : (_selActionBtns || '');
 
   // ALL view: append library + brand-default workouts below user workouts —
   // same 3-source, dedup-by-name merge Exercises tab's ALL uses (_allExMap):
@@ -9048,9 +9238,9 @@ function renderWorkoutsTab() {
   if (window._wtabProMode === undefined) window._wtabProMode = localStorage.getItem('wtab_pro_mode') === '1';
   const _wtabProActive = !!window._wtabProMode;
   const _proRowHtml = !_selActionBtns && _wTabView === 'created' ? `<div style="display:flex;gap:8px;margin-top:8px;align-items:stretch;">
-    <button onclick="startNewWorkout(true);" style="flex:1;background:transparent;border:1px dashed var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Create New Workout</button>
+    <div style="flex:1;border:1px dashed transparent;border-radius:10px;padding:13px;min-height:50px;"></div>
     <button onclick="toggleWtabPro()" style="background:transparent;border:1px solid ${_wtabProActive ? '#34d399' : 'var(--border)'};border-radius:10px;color:${_wtabProActive ? '#34d399' : 'var(--muted)'};font-family:'DM Sans';font-size:12px;font-weight:700;padding:0 14px;min-height:50px;cursor:pointer;transition:all .2s;white-space:nowrap;letter-spacing:.5px;">PRO</button>
-  </div>` : `<button onclick="startNewWorkout(true);" style="width:100%;margin-top:8px;background:transparent;border:1px dashed var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Create New Workout</button>`;
+  </div>` : '';
   const createNewBtn = `<div id="wtab-bottom-btns" style="opacity:1;transition:opacity .25s ease;">${_selActionBtns ? _selActionBtns : _proRowHtml}${_cancelAction ? `<button onclick="${_cancelAction}" style="width:100%;margin-top:8px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;">Cancel</button>` : ''}</div>`;
   if (_wTabView === 'library') {
     const _addLibBtn = canEditLibrary() ? `<div style="display:flex;gap:8px;margin-top:8px;">
@@ -10989,6 +11179,8 @@ function toggleCardCollapse(id) {
       // Never auto-open even if there's content — user must tap Note button
       if (noteOpen === 'true') {
         noteArea.classList.add('open');
+        // Same programmatic-value-never-fires-oninput fix as toggleComment().
+        if (noteBox) { noteBox.style.height = 'auto'; noteBox.style.height = noteBox.scrollHeight + 'px'; }
       } else {
         noteArea.classList.remove('open');
       }
@@ -12273,16 +12465,29 @@ function _positionNoteKbdBar(force) {
   // scroll-to-clear-the-bar check below on those devices, force (from the fixed
   // settle-timeout fallback in showNoteToolbar/_nwfFieldFocus/_newExFieldFocus)
   // is what covers that case instead.
-  // Only run once per focus session either way — bar.dataset flag reset in
-  // hideNoteToolbar (and the _nwfFieldFocus/_newExFieldFocus blur handlers, which
+  // The raw event-driven path (gap>0, no explicit force) only runs once per
+  // focus session — bar.dataset flag reset in hideNoteToolbar (and the
+  // _nwfFieldFocus/_newExFieldFocus/_simpleFieldKbdFocus blur handlers, which
   // share this same bar) — so it doesn't keep yanking the scroll position on
-  // every viewport tick.
-  // Strict === true (not just truthy) — this also runs as a raw visualViewport
-  // 'resize'/'scroll' event listener, which would otherwise pass its Event object
-  // through as `force` on every tick and defeat the "only once, once settled"
-  // guarding this is here for.
-  if ((gap > 0 || force === true) && !bar.dataset.scrolledForNote) {
-    bar.dataset.scrolledForNote = '1';
+  // every viewport tick once things have settled. Strict === true (not just
+  // truthy) matters here since this also runs as a raw visualViewport
+  // 'resize'/'scroll' event listener, which would otherwise pass its Event
+  // object through as `force` and defeat that guard.
+  //
+  // force===true, by contrast, always re-measures and repositions — callers
+  // only ever pass it from a short burst of settle-timeout retries right after
+  // focus (see _nwfFieldFocus etc.), never from the raw event listener, so
+  // this can't turn into the "keeps yanking scroll" problem the guard above
+  // exists for. It's what makes those retries actually self-correct: the
+  // keyboard's real settle time varies enough between devices/invocations
+  // that a single fixed-delay check can fire while the keyboard is still
+  // mid-animation, under-measure the gap, and leave the field scrolled only
+  // partway out from under the Done/Delete bar — the bug this fixes. Each
+  // later retry re-measures against the (by-then hopefully accurate) layout
+  // and corrects it.
+  if (!(gap > 0 && !bar.dataset.scrolledForNote) && force !== true) return;
+  bar.dataset.scrolledForNote = '1';
+  {
     const id = window._noteEditingId;
     // The note textarea is the only field with its own dedicated wrapper id — every
     // other field sharing this bar (nwf name/description/video, new-exercise name/
@@ -12341,6 +12546,16 @@ function _positionNoteKbdBar(force) {
       }
     }
   }
+}
+// A single fixed-delay retry isn't enough — the keyboard's real show-animation
+// settle time varies across devices/invocations, so one fixed guess sometimes
+// fires while it's still mid-animation, under-measuring the gap and leaving
+// the field partly hidden behind the Done/Delete bar (intermittent, not every
+// time — exactly that race). Firing a short burst of forced retries instead
+// means whichever one lands after the keyboard has actually finished corrects
+// it, even if the earlier ones didn't.
+function _scheduleNoteKbdBarRetries() {
+  [150, 350, 550, 800].forEach(ms => setTimeout(() => _positionNoteKbdBar(true), ms));
 }
 // Clears whichever field is currently focused (the bar is shared across the note
 // textarea, nwf-name-page fields, and the new-exercise fields — see the comment
@@ -12410,9 +12625,9 @@ function showNoteToolbar(id) {
     window.visualViewport?.addEventListener('scroll', _positionNoteKbdBar);
     // visualViewport resize is unreliable on Android (see _positionNoteKbdBar) —
     // this call can silently never come, leaving the note stuck behind the
-    // keyboard/Done bar. A fixed retry after the keyboard's usual show-animation
-    // window doesn't depend on that event firing at all.
-    setTimeout(() => _positionNoteKbdBar(true), 350);
+    // keyboard/Done bar. A burst of retries after the keyboard's usual show-
+    // animation window doesn't depend on that event firing at all.
+    _scheduleNoteKbdBarRetries();
   }
 }
 function hideNoteToolbar() {
@@ -12491,6 +12706,10 @@ function toggleComment(id) {
     const _noteBox = document.getElementById(`comment-${id}`);
     // Don't auto-focus — user must tap textarea to start editing
     _noteBox?.blur();
+    // Textarea height only auto-grows on user input (see oninput handler) — a value
+    // set programmatically (loading a saved workout) never fires that, so it's still
+    // sized to its CSS default and clips multi-line notes until this recalculates it.
+    if (_noteBox) { _noteBox.style.height = 'auto'; _noteBox.style.height = _noteBox.scrollHeight + 'px'; }
   } else {
     const txt = document.getElementById(`comment-${id}`)?.value?.trim();
     if (!txt && btn) btn.classList.remove('has-note');
@@ -12693,7 +12912,7 @@ function finishWorkoutFull() {
     const volPR = !!e.hasPRvol;
     const volumePR = !!e.hasPRvolume;
     if (weightPR) window._pendingPRs.push({ label: 'MAX' });
-    if (volPR) window._pendingPRs.push({ label: 'B.SET' });
+    if (volPR) window._pendingPRs.push({ label: 'BEST SET' });
     if (volumePR) window._pendingPRs.push({ label: 'VOL' });
     const totalSetsEx = allSetsRaw.length;
     const undoneSets = totalSetsEx - done;
@@ -12766,17 +12985,20 @@ function saveWorkoutToList() {
     const _lbRestore = document.getElementById('saveToLibraryBtn');
     if (_lbRestore && canEditLibrary()) _lbRestore.style.display = '';
 
+    // Data URL, if a hero photo was set during this creation/edit — uploaded to
+    // Storage (not embedded in the Firestore doc) by syncExploreToFirestore.
+    const _explorePhoto = localStorage.getItem(`ironlog_workout_photo_${name}`) || null;
     if (editId) {
       const existing = _libraryWorkouts.find(x => x.id === editId);
       if (existing) { existing.name = name; existing.exercises = exercises; existing._local = true; }
       window._exploreLocalWorkouts = window._exploreLocalWorkouts || [];
       // Update or add the entry with full data
       const localIdx = window._exploreLocalWorkouts.findIndex(x => x.id === editId);
-      const fullEntry = { id: editId, name, exercises, description: existing?.description || '', _local: true };
+      const fullEntry = { id: editId, name, exercises, description: existing?.description || '', photo: _explorePhoto || existing?.photo || null, _local: true };
       if (localIdx >= 0) window._exploreLocalWorkouts[localIdx] = fullEntry;
       else window._exploreLocalWorkouts.push(fullEntry);
     } else {
-      const newWkt = { id: 'local_' + Date.now(), name, exercises, description: '', _local: true };
+      const newWkt = { id: 'local_' + Date.now(), name, exercises, description: '', photo: _explorePhoto, _local: true };
       window._exploreLocalWorkouts = window._exploreLocalWorkouts || [];
       window._exploreLocalWorkouts.push(newWkt);
       _libraryWorkouts = _libraryWorkouts || [];
@@ -13042,6 +13264,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function openPRStarsInfo() {
   if (window._historyPush) window._historyPush('prStarsInfo');
+  const starsEl = document.getElementById('workout-pr-stars');
+  const spot = document.getElementById('prStarsSpotlight');
+  const spans = starsEl ? [...starsEl.querySelectorAll('span[data-pr]')] : [];
+  if (spot && spans.length) {
+    const rects = spans.map(s => s.getBoundingClientRect());
+    const pad = 6;
+    const left   = Math.min(...rects.map(r => r.left))   - pad;
+    const top    = Math.min(...rects.map(r => r.top))    - pad;
+    const right  = Math.max(...rects.map(r => r.right))  + pad;
+    const bottom = Math.max(...rects.map(r => r.bottom)) + pad;
+    spot.style.left   = left + 'px';
+    spot.style.top    = top + 'px';
+    spot.style.width  = (right - left) + 'px';
+    spot.style.height = (bottom - top) + 'px';
+    spot.classList.add('open');
+  }
+  if (starsEl) starsEl.classList.add('pr-stars-lit');
   document.getElementById('prStarsInfoOverlay').classList.add('open');
   const _sheet = document.querySelector('#prStarsInfoOverlay .modal-sheet');
   if (_sheet) _sheet.style.animation = 'sheetUp .25s ease';
@@ -13049,6 +13288,8 @@ function openPRStarsInfo() {
 window.openPRStarsInfo = openPRStarsInfo;
 function closePRStarsInfo() {
   document.getElementById('prStarsInfoOverlay').classList.remove('open');
+  document.getElementById('prStarsSpotlight')?.classList.remove('open');
+  document.getElementById('workout-pr-stars')?.classList.remove('pr-stars-lit');
 }
 window.closePRStarsInfo = closePRStarsInfo;
 
@@ -13114,10 +13355,16 @@ function confirmSave() {
   const svgStar = (color, size) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="${color}" xmlns="http://www.w3.org/2000/svg"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>`;
   const cel = document.createElement('div');
   cel.id = 'celebrationOverlay';
-  cel.style.cssText = 'position:fixed;inset:0;z-index:999;background:#0a0a0a;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:env(safe-area-inset-top,24px) 24px env(safe-area-inset-bottom,24px);animation:celFadeIn .4s ease;';
+  cel.style.cssText = 'position:fixed;inset:0;z-index:999;background:linear-gradient(135deg,#303A42,#050607);display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:env(safe-area-inset-top,24px) 24px env(safe-area-inset-bottom,24px);animation:celFadeIn .4s ease;';
   window._workoutSaved = false;
   const closeAndSave = () => {
     doSaveWorkout();
+    // Same path every other "go to Home" action in the app uses (tab bar
+    // active state, header collapse state, toggle bars, etc.) — not just
+    // doSaveWorkout's own showTodayStartScreen — so landing on Home here looks
+    // identical to switching there from another tab (e.g. Profile), not just
+    // reusing whatever state happened to be left over underneath this overlay.
+    switchTab('log');
     const el = document.getElementById('celebrationOverlay');
     if (el) el.remove();
     // Only export to a local file after "GREAT JOB" (PR stars earned) — plain
@@ -13125,72 +13372,19 @@ function confirmSave() {
     if (hasStars) setTimeout(() => exportData(), 300);
   };
   if (hasStars) {
-    const starTypes = [{ label: 'MAX', color: '#e8ff47' },{ label: 'B.SET', color: '#ff8c42' },{ label: 'VOL', color: '#a78bfa' }];
+    const starTypes = [{ label: 'MAX', color: '#e8ff47' },{ label: 'BEST SET', color: '#ff8c42' },{ label: 'VOL', color: '#a78bfa' }];
     const starsRow = starTypes.map((t, ti) => { const count = allStars.filter(s => s.label === t.label).length; if (!count) return ''; return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;animation:starPop .8s cubic-bezier(.175,.885,.32,1.275) both;animation-delay:${ti * 0.25}s;"><div style="position:relative;width:72px;height:72px;display:flex;align-items:center;justify-content:center;">${svgStar(t.color, 72)}<span style="position:absolute;font-family:'Bebas Neue';font-size:26px;color:#000;line-height:1;margin-top:5px;">${count}</span></div><span style="font-size:12px;font-weight:700;color:${t.color};letter-spacing:.5px;text-transform:uppercase;">${t.label}</span></div>`; }).join('');
-    cel.innerHTML = `<style>@keyframes celFadeIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}@keyframes starPop{0%{opacity:0;transform:scale(0) rotate(-20deg)}60%{transform:scale(1.2) rotate(5deg)}100%{opacity:1;transform:scale(1) rotate(0deg)}}</style><div style="display:flex;flex-direction:column;align-items:center;padding-top:56px;">${_brandLogoHtml(36)}</div><div style="display:flex;flex-direction:column;align-items:center;gap:24px;"><div style="font-family:'Bebas Neue';font-size:48px;letter-spacing:3px;color:#fff;text-align:center;line-height:1;">GREAT JOB</div><div style="display:flex;gap:32px;justify-content:center;align-items:flex-end;">${starsRow}</div><div style="font-size:16px;color:#7ec8e3;font-weight:600;"><span style="display:inline-flex;align-items:center;gap:6px;vertical-align:middle;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7ec8e3" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="7" x2="12" y2="12"/><line x1="12" y1="12" x2="15" y2="14"/></svg> ${_durStr}</span></div></div><div style="display:flex;gap:10px;width:100%;max-width:320px;margin-bottom:40px;"><button id="celCloseBtn" style="flex:1;padding:15px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;cursor:pointer;">CLOSE</button><button id="celDetailsBtn" style="flex:1;padding:15px;background:rgba(232,255,71,.12);border:1px solid rgba(232,255,71,.4);border-radius:12px;color:var(--accent);font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;cursor:pointer;">DETAILS</button></div>`;
+    cel.innerHTML = `<style>@keyframes celFadeIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}@keyframes starPop{0%{opacity:0;transform:scale(0) rotate(-20deg)}60%{transform:scale(1.2) rotate(5deg)}100%{opacity:1;transform:scale(1) rotate(0deg)}}</style><div style="display:flex;flex-direction:column;align-items:center;padding-top:23px;">${_brandLogoHtml(38)}</div><div style="display:flex;flex-direction:column;align-items:center;gap:24px;"><div style="font-family:'Bebas Neue';font-size:48px;letter-spacing:3px;color:#fff;text-align:center;line-height:1;">GREAT JOB</div><div style="display:flex;gap:32px;justify-content:center;align-items:flex-end;">${starsRow}</div><div style="font-size:16px;color:#7ec8e3;font-weight:600;"><span style="display:inline-flex;align-items:center;gap:6px;vertical-align:middle;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7ec8e3" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="7" x2="12" y2="12"/><line x1="12" y1="12" x2="15" y2="14"/></svg> ${_durStr}</span></div></div><button id="celCloseBtn" style="width:100%;max-width:320px;padding:18px;background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:100px;font-family:'DM Sans';font-size:16px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;margin-bottom:40px;">CLOSE</button>`;
   } else {
     cel.innerHTML = `<style>@keyframes celFadeIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
 #coachProfileName::placeholder, #coachProfilePhone::placeholder,
 #coachProfileBio::placeholder, #coachProfileSpecialties::placeholder,
 #coachProfileCerts::placeholder, #coachProfileAvailability::placeholder,
 #coachPhotoUrl::placeholder { color: #666; font-style: italic; }
-</style><div style="display:flex;flex-direction:column;align-items:center;padding-top:56px;">${_brandLogoHtml(36)}</div><div style="display:flex;flex-direction:column;align-items:center;gap:16px;"><div style="font-family:'Bebas Neue';font-size:64px;letter-spacing:3px;color:#fff;text-align:center;line-height:1;">GOOD JOB</div><div style="font-size:16px;color:#7ec8e3;font-weight:600;"><span style="display:inline-flex;align-items:center;gap:6px;vertical-align:middle;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7ec8e3" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="7" x2="12" y2="12"/><line x1="12" y1="12" x2="15" y2="14"/></svg> ${_durStr}</span></div></div><button id="celCloseBtn" style="width:100%;max-width:320px;padding:15px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;cursor:pointer;margin-bottom:40px;">CLOSE</button>`;
+</style><div style="display:flex;flex-direction:column;align-items:center;padding-top:23px;">${_brandLogoHtml(38)}</div><div style="display:flex;flex-direction:column;align-items:center;gap:16px;"><div style="font-family:'Bebas Neue';font-size:64px;letter-spacing:3px;color:#fff;text-align:center;line-height:1;">GOOD JOB</div><div style="font-size:16px;color:#7ec8e3;font-weight:600;"><span style="display:inline-flex;align-items:center;gap:6px;vertical-align:middle;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7ec8e3" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="7" x2="12" y2="12"/><line x1="12" y1="12" x2="15" y2="14"/></svg> ${_durStr}</span></div></div><button id="celCloseBtn" style="width:100%;max-width:320px;padding:18px;background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:100px;font-family:'DM Sans';font-size:16px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;margin-bottom:40px;">CLOSE</button>`;
   }
   document.body.appendChild(cel);
   cel.querySelector('#celCloseBtn').addEventListener('click', closeAndSave);
-  const detailsBtn = cel.querySelector('#celDetailsBtn');
-  if (detailsBtn) {
-    detailsBtn.addEventListener('click', () => {
-      const el = document.getElementById('celebrationOverlay');
-      // Fade out the celebration overlay
-      if (el) {
-        el.style.transition = 'opacity .35s ease';
-        el.style.opacity = '0';
-      }
-      // While fading — prepare Progress tab behind the scenes
-      switchTab('progress');
-      switchProgressView('graphs');
-      const dayBtn = document.querySelector('#globalTimePills [data-range="day"]');
-      if (dayBtn) setGlobalRange(dayBtn);
-      // Open Personal Records instantly (no animation) while overlay is still covering
-      const cards = ['acc-best','acc-exercise','acc-volume','acc-workouts','acc-capacity','acc-history'];
-      const activeSlot = document.getElementById('acc-active-slot');
-      const card = document.getElementById('acc-best');
-      if (card && !card.classList.contains('open')) {
-        const body = card.querySelector('.prog-acc-body');
-        const placeholder = document.createElement('div');
-        placeholder.id = 'acc-best-placeholder';
-        placeholder.className = 'prog-acc-placeholder';
-        card.parentNode.insertBefore(placeholder, card);
-        cards.forEach(c => { if (c !== 'acc-best') { const ce = document.getElementById(c); if (ce) ce.style.display = 'none'; } });
-        if (activeSlot) activeSlot.appendChild(card);
-        card.classList.add('open');
-        card.style.animation = 'none';
-        body.style.display = '';
-        body.style.opacity = '1';
-        body.style.transform = 'none';
-        setTimeout(() => { card.style.animation = ''; }, 0);
-        renderBestBodyPartChart();
-      }
-      // Save in background, then re-render chart with new data
-      setTimeout(() => {
-        doSaveWorkout();
-        setTimeout(() => renderBestBodyPartChart(), 100);
-      }, 50);
-      // After fade out completes, remove overlay and fade in the page
-      setTimeout(() => {
-        if (el) el.remove();
-        // Fade in the progress page
-        const page = document.getElementById('page-progress');
-        if (page) {
-          page.style.opacity = '0';
-          page.style.transition = 'opacity .3s ease';
-          requestAnimationFrame(() => { page.style.opacity = '1'; });
-          setTimeout(() => { page.style.transition = ''; page.style.opacity = ''; }, 350);
-        }
-      }, 350);
-    });
-  }
 }
 
 // ══════════════════════════════════════════════════════
@@ -17774,6 +17968,8 @@ function _wtabSaveStrengthPlan() {
   // since that bar sat above #calendarOverlay's own z-index:160 and stayed visible on top
   // of it otherwise.
   renderWorkoutsTab2();
+  switchTab(window._planStrengthReturnTab || 'log');
+  window._planStrengthReturnTab = null;
   calYear = _sy; calMonth = _sm; selectedCalDay = psk;
   openCalendar();
   setTimeout(() => selectCalDay(psk), 100);
@@ -17788,6 +17984,8 @@ function _wtabCancelStrengthPlan() {
   renderWorkoutsTab2();
   if (psk) {
     const [_sy,_sm,_sd] = psk.split('-').map(Number);
+    switchTab(window._planStrengthReturnTab || 'log');
+    window._planStrengthReturnTab = null;
     calYear = _sy; calMonth = _sm; selectedCalDay = psk;
     openCalendar();
     setTimeout(() => selectCalDay(psk), 100);
@@ -17829,7 +18027,7 @@ function _wtabCancelSelection() {
   setTimeout(() => {
     const _proA = !!window._wtabProMode;
     box.innerHTML = `<div style="display:flex;gap:8px;align-items:stretch;margin-top:8px;">
-      <button onclick="startNewWorkout(true);" style="flex:1;background:transparent;border:1px dashed var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:600;padding:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Create New Workout</button>
+      <div style="flex:1;border:1px dashed transparent;border-radius:10px;padding:13px;min-height:50px;"></div>
       <button onclick="toggleWtabPro()" style="background:transparent;border:1px solid ${_proA ? '#34d399' : 'var(--border)'};border-radius:10px;color:${_proA ? '#34d399' : 'var(--muted)'};font-family:'DM Sans';font-size:12px;font-weight:700;padding:0 14px;min-height:50px;cursor:pointer;transition:all .2s;white-space:nowrap;letter-spacing:.5px;">PRO</button>
     </div>`;
     box.style.opacity = '1';
@@ -18238,6 +18436,10 @@ function calPlanCycleFilter(detId, dir) {
 function planStrengthFromCal(key) {
   window._planStrengthKey = key;
   window._inPlanStrengthMode = true;
+  // Remember the tab open behind the calendar (e.g. Home) so Save/Cancel can
+  // restore it instead of leaving Workouts as the tab revealed once the
+  // calendar this flow reopens is eventually closed.
+  window._planStrengthReturnTab = window._activeTab || 'log';
   closeCalendar();
   window._keepWorkoutsTabState = false;
   switchTab('workouts2');
@@ -18298,7 +18500,8 @@ window.addEventListener('load', function() {
       <input id="workoutNameModalInput" type="text" autocomplete="off" enterkeyhint="done" placeholder="Name..."
         style="width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);border-radius:0;color:#fff;font-family:'DM Sans';font-size:20px;font-weight:700;letter-spacing:0;padding:12px 14px;box-sizing:border-box;outline:none;margin-top:40px;margin-bottom:20px;-webkit-text-fill-color:#fff;caret-color:#fff;text-align:right;"
         oninput="document.getElementById('workoutNameDuplicateMsg').style.display='none';const _hb=/[֐-׿]/.test(this.value);this.style.direction=_hb?'rtl':'ltr';const _sb=document.getElementById('workoutNameSaveBtn');if(_sb){const _v=this.value.trim();const _changed=window._isNewWorkoutFlow?!!_v:(_v&&_v!==(window._workoutNameOriginal||'').trim());_sb.disabled=!_changed;_sb.style.opacity=_changed?'1':'0.4';_sb.style.cursor=_changed?'pointer':'not-allowed';}"
-        onkeydown="if(event.key==='Enter'&&this.value.trim())confirmWorkoutNameModal()"/>
+        onkeydown="if(event.key==='Enter'&&this.value.trim())confirmWorkoutNameModal()"
+        onfocus="_simpleFieldKbdFocus('workoutNameModalInput',true)" onblur="_simpleFieldKbdFocus('workoutNameModalInput',false)"/>
       <div style="display:flex;gap:10px;margin-top:auto;">
         <button id="workoutNameCancelBtn" onclick="cancelWorkoutNameModal()" style="flex:1;background:transparent;border:1px solid #555;border-radius:10px;color:#fff;font-family:'DM Sans';font-size:16px;font-weight:700;padding:14px;cursor:pointer;">CANCEL</button>
         <button id="workoutNameSaveBtn" onclick="confirmWorkoutNameModal()" disabled style="flex:1;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:16px;font-weight:700;padding:14px;cursor:not-allowed;opacity:0.4;">NEXT</button>
@@ -18356,7 +18559,7 @@ window.addEventListener('load', function() {
                onfocus="_nwfFieldFocus('nwf-video-title','nwf-video-box',true);const _vb=document.getElementById('nwf-video-icon-btn');if(_vb)_vb.innerHTML=_NWF_VIDEO_ICON_SVG;const _vn=document.getElementById('nwf-video-note');if(_vn)_vn.style.display='none'"
                oninput="_nwfSyncFieldFloatByEl(this)"
                onblur="_nwfFieldFocus('nwf-video-title','nwf-video-box',false);_nwfVerifyVideoLink(this.value.trim())">
-        <button id="nwf-video-icon-btn" onclick="const i=document.getElementById('nwf-video-link');navigator.clipboard.readText().then(t=>{if(i){i.value=t;_nwfSyncFieldFloatByEl(i);_nwfVerifyVideoLink(t.trim());}}).catch(()=>{})" style="background:transparent;border:none;padding:2px;cursor:pointer;flex-shrink:0;-webkit-tap-highlight-color:transparent;display:flex;align-items:center;">
+        <button id="nwf-video-icon-btn" onclick="_nwfVideoIconClick('nwf-video-link','nwf-video-icon-btn','nwf-video-note',_nwfVerifyVideoLink)" style="background:transparent;border:none;padding:2px;cursor:pointer;flex-shrink:0;-webkit-tap-highlight-color:transparent;display:flex;align-items:center;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
           </svg>
@@ -21370,7 +21573,7 @@ function buildExerciseLibraryHtml(selectedMuscle) {
       ? `<div style="display:flex;align-items:center;padding-right:12px;"><div class="picker-check" style="width:22px;height:22px;border-radius:50%;border:2px solid ${isPickSelected ? 'var(--accent)' : '#333'};background:${isPickSelected ? 'var(--accent)' : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:all .15s;">${isPickSelected ? '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</div></div>`
       : (extraRight ? `<div style="display:flex;align-items:center;padding-right:8px;">${extraRight}</div>` : '');
     const _exld = (window._exLastDateMap && window._exLastDateMap.get(exName)) || 0;
-    return `<div style="display:flex;align-items:stretch;background:${isPickSelected ? 'color-mix(in srgb, var(--accent) 15%, var(--surface))' : 'var(--surface)'};border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden;">
+    return `<div style="display:flex;align-items:stretch;background:${isPickSelected ? 'color-mix(in srgb, var(--accent) 15%, var(--surface))' : 'var(--surface)'};border:1px solid #555;border-radius:var(--radius);margin-bottom:8px;overflow:hidden;">
       ${thumbHtml}
       <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;padding:8px 0;">
         <div style="font-family:'DM Sans';font-size:15px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${exName}</div>
@@ -21592,6 +21795,10 @@ function loadLibraryWorkout(id) {
     resetWorkoutState();
     showTodayWorkoutArea();
     document.getElementById('workoutName').value = w.name;
+    if (w.photo) {
+      try { localStorage.setItem(`ironlog_workout_photo_${w.name}`, w.photo); } catch(e) {}
+      _setWorkoutHeroPhoto(w.name);
+    }
     (w.exercises||[]).forEach(exData => {
       const ex = getAllExercises().find(e=>e.label===exData.name||e.name===exData.name) || {name:exData.name,label:exData.name,muscle:exData.muscle||'Chest',custom:false};
       addExerciseCard(ex);
@@ -21624,6 +21831,7 @@ function exportLibToFile() {
     id: w.id,
     name: w.name,
     description: w.description || '',
+    photo: w.photo || null,
     exercises: (w.exercises || []).map(e => ({ name: e.name, muscle: e.muscle || 'Chest', sets: e.sets || [] }))
   }));
 
@@ -21814,9 +22022,12 @@ function syncExploreToFirestore() {
 
   const syncStart = Date.now();
 
-  Promise.all(toSync.map(w => {
+  Promise.all(toSync.map(async w => {
     const id = Date.now().toString() + '_' + Math.random().toString(36).slice(2,6);
-    const data = { name: w.name, description: w.description || '', exercises: w.exercises || [], createdBy: window._currentUser?.uid, createdAt: new Date().toISOString() };
+    // w.photo is a raw data URL (still local) — upload it once here and store only
+    // the resulting download URL in Firestore, same split exercise photos already use.
+    const photoUrl = w.photo && window._uploadLibraryWorkoutPhoto ? await window._uploadLibraryWorkoutPhoto(id, w.photo) : null;
+    const data = { name: w.name, description: w.description || '', exercises: w.exercises || [], photo: photoUrl, createdBy: window._currentUser?.uid, createdAt: new Date().toISOString() };
     return window._fbSetDoc(window._fbDoc(window._fbDb, 'library', brandId, 'workouts', id), data).then(() => {
       const idx = _libraryWorkouts.findIndex(x => x.id === w.id);
       if (idx !== -1) _libraryWorkouts[idx] = { ...data, id };
@@ -25889,8 +26100,13 @@ let _exPhotoCropState = { x: 0, y: 0, size: 0, dragging: false, startX: 0, start
 
 function openExPhotoSheet() {
   window._workoutPhotoMode = false;
-  const exName = document.getElementById('ex-detail-overlay-title')?.textContent || '';
-  const hasPhoto = !!localStorage.getItem(`ironlog_ex_photo_${exName}`);
+  // New/Edit Exercise form has its own in-progress photo state (window._newExPhoto)
+  // — a freshly-picked-but-not-yet-saved photo, or one already loaded from a saved
+  // exercise being edited — which ex-detail-overlay-title (a different, unrelated
+  // overlay's title) knows nothing about and is often empty/stale in this context.
+  const hasPhoto = window._newExPhotoMode
+    ? !!window._newExPhoto
+    : !!localStorage.getItem(`ironlog_ex_photo_${document.getElementById('ex-detail-overlay-title')?.textContent || ''}`);
   const titleEl = document.getElementById('ex-photo-sheet-title');
   if (titleEl) titleEl.textContent = 'EXERCISE PHOTO';
   const removeBtn = document.getElementById('ex-photo-remove-btn');
@@ -26360,6 +26576,24 @@ function _loadExDetailPhoto(exName) {
 }
 
 function removeExPhoto() {
+  // New/Edit Exercise form — only clear its own in-progress photo state and
+  // preview, same as the rest of the form's fields (name, muscle, ...):
+  // nothing actually leaves storage until Save (confirmNewEx) commits it, so
+  // backing out of the form afterward via Cancel still leaves the original
+  // saved photo untouched.
+  if (window._newExPhotoMode) {
+    window._newExPhotoMode = false;
+    window._newExPhoto = null;
+    window._newExPhoto32 = null;
+    window._newExPhotoThumb = null;
+    const photoImg = document.getElementById('newExPhotoImg');
+    const defImg = document.getElementById('newExPhotoDefaultImg');
+    const label = document.getElementById('newExPhotoLabel');
+    if (photoImg) { photoImg.src = ''; photoImg.style.display = 'none'; }
+    if (defImg) { defImg.src = _EX_DEFAULT_PHOTOS[window._newExMuscle] || ''; defImg.style.display = 'block'; }
+    if (label) { label.innerHTML = 'Change Image <span style="color:#888;font-weight:500;">(optional)</span>'; label.style.color = '#fff'; }
+    return;
+  }
   const exName = document.getElementById('ex-detail-overlay-title')?.textContent || '';
   if (exName) localStorage.removeItem(`ironlog_ex_photo_${exName}`);
   _loadExDetailPhoto(exName);
@@ -26581,10 +26815,17 @@ function editExerciseDetail() {
   const videoInput = document.getElementById('newExVideoUrl');
   if (videoInput) videoInput.value = exData.videoUrl || '';
   _nwfSyncFieldFloatByEl(videoInput);
-  const _edVideoBtn = document.getElementById('newExVideoIconBtn');
-  if (_edVideoBtn) _edVideoBtn.innerHTML = _NWF_VIDEO_ICON_SVG;
-  const _edVideoNote = document.getElementById('newExVideoNote');
-  if (_edVideoNote) _edVideoNote.style.display = 'none';
+  // Re-verify whatever link this exercise actually has, rather than resetting
+  // to neutral — a link already known broken should still show its error note
+  // when reopening this exercise's edit modal, not silently look fine again.
+  if (exData.videoUrl) {
+    _newExVerifyVideoLink(exData.videoUrl.trim());
+  } else {
+    const _edVideoBtn = document.getElementById('newExVideoIconBtn');
+    if (_edVideoBtn) _edVideoBtn.innerHTML = _NWF_VIDEO_ICON_SVG;
+    const _edVideoNote = document.getElementById('newExVideoNote');
+    if (_edVideoNote) _edVideoNote.style.display = 'none';
+  }
   // Update title and button
   const title = document.getElementById('newExModalTitle');
   const saveBtn = document.getElementById('newExSaveBtn');
@@ -26608,6 +26849,14 @@ function editExerciseDetail() {
   }
   // Open modal
   document.getElementById('newExModalOverlay').classList.add('open');
+  // Scroll position is left over from whatever was scrolled last time this same
+  // overlay was open. Setting scrollTop while the overlay is still display:none
+  // (i.e. before the 'open' class above) silently doesn't stick on iOS Safari —
+  // it has to happen after the element is actually laid out and visible.
+  requestAnimationFrame(() => {
+    const _edScroll = document.getElementById('newExScrollArea');
+    if (_edScroll) _edScroll.scrollTop = 0;
+  });
   if (window._historyPush) window._historyPush('new-ex');
   // Load photo — check localForage (primary) then localStorage (fallback)
   const photoImg = document.getElementById('newExPhotoImg');
@@ -27714,7 +27963,8 @@ function openW2Sheet(idx) {
   const _playBtn = document.getElementById('w2-sheet-play-btn');
   if (_playBtn) {
     const _videoUrl = localStorage.getItem(`ironlog_workout_video_${w.name}`);
-    if (_videoUrl) {
+    const _videoBroken = localStorage.getItem(`ironlog_workout_video_broken_${w.name}`) === '1';
+    if (_videoUrl && !_videoBroken) {
       _playBtn.style.display = 'flex';
       _playBtn.onclick = (e) => { e.stopPropagation(); window.open(_videoUrl, '_blank'); };
     } else {
