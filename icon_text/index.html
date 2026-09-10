@@ -684,9 +684,9 @@ body.ex-tab-detail-open #ex-float-bar{display:none !important;}
 .btn-summary-yes:hover{opacity:.88;}
 .btn-summary-no{flex:1;background:transparent;border:1px solid var(--accent2);border-radius:10px;color:var(--accent2);font-family:'Bebas Neue';font-size:20px;letter-spacing:2px;padding:13px;cursor:pointer;transition:all .2s;}
 .btn-summary-no:hover{background:rgba(255,71,71,.1);}
-.btn-summary-cancel{width:100%;background:transparent;border:1px solid #333;border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:600;padding:11px;cursor:pointer;transition:all .2s;}
+.btn-summary-cancel{flex:1;background:transparent;border:1px solid #555;border-radius:10px;color:#fff;font-family:'DM Sans';font-size:17px;font-weight:600;padding:11px;cursor:pointer;transition:all .2s;}
 .btn-summary-cancel:hover{border-color:var(--muted);color:var(--text);}
-.btn-save-workout-summary{width:100%;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:17px;font-weight:700;letter-spacing:0;padding:14px;cursor:pointer;margin-bottom:6px;}
+.btn-save-workout-summary{flex:1;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:17px;font-weight:700;letter-spacing:0;padding:14px;cursor:pointer;}
 .btn-discard{width:100%;background:transparent;border:1px solid #333;border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:600;padding:11px;cursor:pointer;}
 
 /* ── LOAD HISTORY MODAL ────────────────────────── */
@@ -2006,14 +2006,14 @@ window._fbModuleReady = true;
 <div class="modal-overlay" id="summaryOverlay">
   <div class="modal-sheet" style="max-height:92dvh;max-height:92vh;">
     <div class="modal-handle"></div>
-    <div class="modal-header">
+    <div class="modal-header" style="justify-content:center;">
       <div class="modal-title">WORKOUT SUMMARY</div>
     </div>
     <div class="modal-body" id="summaryBody" style="overflow-y:auto;-webkit-overflow-scrolling:touch;">
       <div id="summaryContent"></div>
-      <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px;">
-        <button class="btn-save-workout-summary" onclick="confirmSave()">SAVE WORKOUT</button>
-        <button class="btn-summary-cancel" onclick="cancelFinish()">Back</button>
+      <div style="margin-top:16px;display:flex;gap:8px;">
+        <button class="btn-summary-cancel" onclick="cancelFinish()">BACK</button>
+        <button class="btn-save-workout-summary" onclick="confirmSave()">SAVE</button>
       </div>
     </div>
   </div>
@@ -3952,7 +3952,11 @@ function _nwfHandleNameBlur(inp) {
   const v = inp.value.trim();
   if (!v) { _nwfSetNameDupState(false); return; }
   const nl = v.toLowerCase();
-  const isDup = (workouts||[]).some((w,i) => !w._draft && (window._editingWorkoutIdx!=null && i===window._editingWorkoutIdx ? false : (w.name||'').trim().toLowerCase()===nl));
+  // The name this page opened with (snapshotted once in _openNwfNamePage) is
+  // never a duplicate of itself — checked directly against that snapshot
+  // rather than re-deriving it via workouts[window._editingWorkoutIdx], which
+  // this same "unchanged name" case was still reading as a dup off of.
+  const isDup = (window._nwfOriginalName != null && nl === window._nwfOriginalName) ? false : (workouts||[]).some((w,i) => !w._draft && (window._editingWorkoutIdx!=null && i===window._editingWorkoutIdx ? false : (w.name||'').trim().toLowerCase()===nl));
   _nwfSetNameDupState(isDup);
   if (isDup) {
     const wn = document.getElementById('workoutName');
@@ -4227,6 +4231,11 @@ function _openNwfNamePage() {
   if (typeof _nwfSetNameDupState === 'function') _nwfSetNameDupState(false);
   const nameEl = document.getElementById('nwf-hero-name');
   const cur = (document.getElementById('workoutName')?.value || '').trim();
+  // Snapshot the name this page opened with, independent of window._editingWorkoutIdx
+  // — _nwfHandleNameBlur compares against this directly so "didn't change the name"
+  // can never read as a duplicate of itself, regardless of whether that index is
+  // still valid/accurate by the time the field is blurred.
+  window._nwfOriginalName = cur.toLowerCase();
   if (nameEl) {
     nameEl.dataset.name = cur;
     nameEl.innerHTML = cur ? _heroNameHtml(cur) : '';
@@ -4354,10 +4363,11 @@ function _proceedFromNwfNamePage() {
     return;
   }
   const nameLower = raw.toLowerCase();
-  // When editing, the original name is always valid — skip all dup checks for it.
-  const _origName = (window._editingWorkoutIdx != null && workouts[window._editingWorkoutIdx])
-    ? (workouts[window._editingWorkoutIdx].name || '').trim().toLowerCase() : null;
-  const isDup = (nameLower === _origName) ? false : (
+  // When editing, the original name (snapshotted in _openNwfNamePage) is always
+  // valid — skip all dup checks for it. Compared against that snapshot directly,
+  // same as _nwfHandleNameBlur, rather than re-deriving via
+  // workouts[window._editingWorkoutIdx].
+  const isDup = (window._nwfOriginalName != null && nameLower === window._nwfOriginalName) ? false : (
     (workouts||[]).some((w,i) => {
       if (w._draft) return false;
       if (window._editingWorkoutIdx !== undefined && i === window._editingWorkoutIdx) return false;
@@ -5451,6 +5461,7 @@ function renderExercisesTab() {
         ${_makeExThumbHtml(ex.name, ex.muscle)}
         <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;align-items:flex-end;padding:8px 15px 8px 0;">
           <div dir="auto" style="font-family:'DM Sans';font-size:17px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;">${_tn(ex.name)}</div>
+          ${ex.lastDate ? `<div style="font-family:'DM Sans';font-size:11px;font-weight:600;color:var(--muted);margin-top:2px;text-align:right;">${fmtShort(ex.lastDate)}</div>` : ''}
         </div>
         ${_pickMode ? `<div style="display:flex;align-items:center;padding-right:10px;"><div class="picker-check" style="width:22px;height:22px;border-radius:50%;border:2px solid ${_isPickSel ? 'var(--accent)' : '#333'};background:${_isPickSel ? 'var(--accent)' : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;">${_isPickSel ? '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</div></div>` : ''}
       </div>
@@ -6872,7 +6883,11 @@ window.closeExTabDetail = closeExTabDetail;
 // DOM) or null if the source body-map template isn't present. Shared by
 // openExtabExOverlay (Exercises-tab detail) and _toggleExDetailMuscles (in-workout
 // exercise detail) so the diagram-building logic isn't duplicated between them.
-function _buildMuscleDiagramWrap(exDef, alignLeft) {
+// Clones the hidden #w2-body-container template and colors in whichever
+// muscle IDs this exercise targets — the shared piece of _buildMuscleDiagramWrap
+// (list + diagram) and _buildBigMuscleDiagram (image-only carousel page) both
+// need, so the highlighting logic itself isn't duplicated between them.
+function _buildHighlightedBodyClone(exDef) {
   const muscle = exDef?.muscle || 'Other';
   const subs = exDef?.subMuscles || [];
   const mainColor = W2_MUSCLE_COLORS[muscle];
@@ -6880,8 +6895,6 @@ function _buildMuscleDiagramWrap(exDef, alignLeft) {
   const w2Src = document.getElementById('w2-body-container');
   if (!w2Src) return null;
 
-  const diagWrap = document.createElement('div');
-  diagWrap.style.cssText = 'padding:10px 16px 0;';
   const bc = w2Src.cloneNode(true);
   bc.removeAttribute('id');
   bc.style.width = ''; bc.style.transform = ''; bc.style.transformOrigin = '';
@@ -6939,6 +6952,38 @@ function _buildMuscleDiagramWrap(exDef, alignLeft) {
     const el = bc.querySelector('#etdov-' + id);
     if (el) { el.setAttribute('fill', color); el.setAttribute('opacity','0.9'); }
   });
+  return { bc, muscleColor };
+}
+window._buildHighlightedBodyClone = _buildHighlightedBodyClone;
+
+// Big, centered, label-free version — just the two body images at a larger
+// size, no muscle-name list — used as the carousel's second MUSCLES page.
+function _buildBigMuscleDiagram(exDef) {
+  const built = _buildHighlightedBodyClone(exDef);
+  if (!built) return null;
+  const { bc, muscleColor } = built;
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'display:flex;justify-content:center;padding:10px 16px 0;';
+  const scaleWrap = document.createElement('div');
+  scaleWrap.style.cssText = 'width:100%;max-width:340px;';
+  scaleWrap.appendChild(bc);
+  wrap.appendChild(scaleWrap);
+  return { wrap, muscleColor };
+}
+window._buildBigMuscleDiagram = _buildBigMuscleDiagram;
+
+function _buildMuscleDiagramWrap(exDef, alignLeft) {
+  const built0 = _buildHighlightedBodyClone(exDef);
+  if (!built0) return null;
+  const { bc, muscleColor } = built0;
+  // Re-derived here (cheap) rather than returned from the helper above — only
+  // this function's own muscle-name list still needs them.
+  const muscle = exDef?.muscle || 'Other';
+  const subs = exDef?.subMuscles || [];
+  const mainColor = W2_MUSCLE_COLORS[muscle];
+
+  const diagWrap = document.createElement('div');
+  diagWrap.style.cssText = 'padding:10px 16px 0;';
 
   // Always show both front and back body images, regardless of which side the
   // exercise's highlighted muscles fall on — previously hid whichever side had no
@@ -7116,9 +7161,85 @@ function _toggleExDetailMuscles() {
   title.textContent = 'MUSCLES';
   title.style.cssText = "font-family:'Bebas Neue';font-size:26px;letter-spacing:1px;text-align:center;padding:4px 10px 6px;";
   section.appendChild(title);
+
   const built = _buildMuscleDiagramWrap(exDef, true);
-  if (built) {
-    title.style.color = built.muscleColor;
+  const bigBuilt = _buildBigMuscleDiagram(exDef);
+  if (built) title.style.color = built.muscleColor;
+
+  if (built && bigBuilt) {
+    // Two-page carousel: page 1 is the existing list+diagram, page 2 is just the
+    // two body images, bigger and centered, with no muscle-name labels.
+    const carousel = document.createElement('div');
+    carousel.id = 'ex-detail-muscles-carousel';
+    carousel.style.cssText = 'overflow:hidden;';
+    const track = document.createElement('div');
+    track.id = 'ex-detail-muscles-track';
+    track.style.cssText = 'display:flex;transition:transform .3s cubic-bezier(.4,0,.2,1);';
+    const slide1 = document.createElement('div');
+    slide1.style.cssText = 'flex:0 0 100%;min-width:0;';
+    slide1.appendChild(built.diagWrap);
+    const slide2 = document.createElement('div');
+    slide2.style.cssText = 'flex:0 0 100%;min-width:0;display:flex;align-items:center;';
+    slide2.appendChild(bigBuilt.wrap);
+    track.appendChild(slide1);
+    track.appendChild(slide2);
+    carousel.appendChild(track);
+    section.appendChild(carousel);
+
+    const dots = document.createElement('div');
+    dots.id = 'ex-detail-muscles-dots';
+    dots.style.cssText = 'display:flex;gap:6px;justify-content:center;padding:8px 0 2px;';
+    // Opens on the big-images page (slide 1), not the list+diagram one — set
+    // directly with no transition so it doesn't visibly slide over on open.
+    let _mCur = 1;
+    track.style.transition = 'none';
+    track.style.transform = `translateX(-${_mCur * 100}%)`;
+    requestAnimationFrame(() => { track.style.transition = 'transform .3s cubic-bezier(.4,0,.2,1)'; });
+    const dotEls = [0, 1].map(i => {
+      const d = document.createElement('div');
+      d.style.cssText = `width:6px;height:6px;border-radius:50%;background:${i===_mCur ? 'var(--accent)' : 'rgba(255,255,255,0.25)'};transition:background .2s;cursor:pointer;`;
+      d.onclick = () => goToMSlide(i);
+      dots.appendChild(d);
+      return d;
+    });
+    section.appendChild(dots);
+
+    function goToMSlide(i) {
+      _mCur = Math.max(0, Math.min(1, i));
+      track.style.transform = `translateX(-${_mCur * 100}%)`;
+      dotEls.forEach((d, di) => { d.style.background = di === _mCur ? 'var(--accent)' : 'rgba(255,255,255,0.25)'; });
+    }
+
+    // Horizontal swipe — axis decided on first significant move so a mostly-
+    // vertical drag still scrolls the overlay normally instead of being eaten.
+    let _sx = 0, _sy = 0, _axis = null, _dx = 0;
+    carousel.addEventListener('touchstart', e => {
+      _sx = e.touches[0].clientX; _sy = e.touches[0].clientY; _axis = null; _dx = 0;
+      track.style.transition = 'none';
+    }, { passive: true });
+    carousel.addEventListener('touchmove', e => {
+      const dx = e.touches[0].clientX - _sx, dy = e.touches[0].clientY - _sy;
+      if (!_axis) {
+        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+        _axis = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
+      }
+      if (_axis !== 'h') return;
+      e.preventDefault();
+      _dx = dx;
+      track.style.transform = `translateX(calc(-${_mCur * 100}% + ${dx}px))`;
+    }, { passive: false });
+    const _mSwipeEnd = () => {
+      track.style.transition = 'transform .3s cubic-bezier(.4,0,.2,1)';
+      if (_axis === 'h' && Math.abs(_dx) > 50) {
+        goToMSlide(_mCur + (_dx < 0 ? 1 : -1));
+      } else {
+        goToMSlide(_mCur);
+      }
+      _axis = null; _dx = 0;
+    };
+    carousel.addEventListener('touchend', _mSwipeEnd, { passive: true });
+    carousel.addEventListener('touchcancel', _mSwipeEnd, { passive: true });
+  } else if (built) {
     section.appendChild(built.diagWrap);
   }
 
@@ -12509,10 +12630,18 @@ function _positionNoteKbdBar(force) {
       // is actually scrolling (the ex-detail overlay body, or the page/body
       // itself) by the missing amount so there's always at least enough room —
       // restored again in hideNoteToolbar once the keyboard closes.
+      // Match on overflow-y:auto/scroll alone, not on whether the container
+      // happens to be overflowing *right now* — a short form (e.g. New/Edit
+      // Exercise with just a couple of fields) has no natural overflow yet at
+      // focus time, so requiring pre-existing overflow skipped straight past
+      // its real, deliberately-scrollable container (#newExScrollArea) and
+      // fell through to padding the document body instead, which sits behind
+      // the full-screen modal and does nothing visible — leaving no way to
+      // scroll the video-link field clear of the keyboard bar at all.
       let scroller = area.parentElement;
       while (scroller && scroller !== document.body) {
         const oy = getComputedStyle(scroller).overflowY;
-        if ((oy === 'auto' || oy === 'scroll') && scroller.scrollHeight > scroller.clientHeight + 1) break;
+        if (oy === 'auto' || oy === 'scroll') break;
         scroller = scroller.parentElement;
       }
       if (!scroller || scroller === document.body) scroller = document.scrollingElement || document.documentElement;
@@ -12898,7 +13027,6 @@ function finishWorkoutFull() {
   });
 
   const totalSets = exercises.reduce((a,e)=>a+e.sets.filter(s=>!s.ignored).length,0);
-  const doneSetsCount = exercises.reduce((a,e)=>a+e.sets.filter(s=>s.done&&!s.ignored).length,0);
   const totalVol = exercises.length ? parseFloat(Math.max(...exercises.map(e=>{const d=e.sets.filter(s=>s.done&&!s.ignored);return d.length?Math.max(...d.map(s=>s.kg*(1+s.reps/30))):0;})).toFixed(2)) : 0;
 
   const exRows = exercises.map((e,i)=>{
@@ -12921,14 +13049,22 @@ function finishWorkoutFull() {
     return `<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-top:1px solid var(--border);"><span style="color:var(--text);font-weight:600;font-size:14px;">${e.name}</span>${setsLabel}</div>`;
   }).join('');
 
-  const allComplete = exRows.trim() === '';
+  const completedExCount = cards ? [...cards].filter(c => c.classList.contains('completed')).length : 0;
   const summaryEl = document.getElementById('summaryContent');
   if (summaryEl) summaryEl.innerHTML = `
     <div style="text-align:center;padding:8px 0 16px;">
       <div style="font-family:'Bebas Neue';font-size:26px;color:var(--accent);letter-spacing:1px;">${name}</div>
-      <div style="font-size:12px;color:#7ec8e3;margin-top:4px;font-weight:600;">${exercises.length} exercise${exercises.length!==1?'s':''} · ${doneSetsCount} set${doneSetsCount!==1?'s':''} done</div>
     </div>
-    ${allComplete ? `<div style="text-align:center;padding:8px 0 12px;font-size:28px;font-weight:900;color:#4caf50;font-family:'DM Sans';">All sets completed</div>` : exRows}`;
+    <div style="display:flex;gap:12px;padding:0 0 16px;">
+      <div style="flex:1;text-align:center;">
+        <div style="font-family:'Bebas Neue';font-size:44px;color:#ff4444;line-height:1;">${exercises.length - completedExCount}</div>
+        <div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.5px;margin-top:4px;">NOT COMPLETED</div>
+      </div>
+      <div style="flex:1;text-align:center;">
+        <div style="font-family:'Bebas Neue';font-size:44px;color:#34d399;line-height:1;">${completedExCount}</div>
+        <div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.5px;margin-top:4px;">COMPLETED</div>
+      </div>
+    </div>`;
 
   const _desc = (document.getElementById('nwf-description')?.value || '').trim();
   window._pendingWorkout = {name, date:Date.now(), exercises, description: _desc};
@@ -13367,9 +13503,6 @@ function confirmSave() {
     switchTab('log');
     const el = document.getElementById('celebrationOverlay');
     if (el) el.remove();
-    // Only export to a local file after "GREAT JOB" (PR stars earned) — plain
-    // "GOOD JOB" finishes (no new records) don't trigger a local file save.
-    if (hasStars) setTimeout(() => exportData(), 300);
   };
   if (hasStars) {
     const starTypes = [{ label: 'MAX', color: '#e8ff47' },{ label: 'BEST SET', color: '#ff8c42' },{ label: 'VOL', color: '#a78bfa' }];
@@ -17595,9 +17728,8 @@ function renderCalDayWorkouts(ws) {
         })()}
         ${exRows}
         <div class="hcard-actions">
-          <button class="btn-delete-workout" onclick="calDeleteWorkout(${wi}, this)">Delete</button>
-          <button class="btn-edit-workout" onclick="openEditHistory(${wi})">Edit</button>
-          <button class="btn-restore" style="background:var(--accent);border-color:var(--accent);color:#000;" onclick="calLoadWorkout(${wi})">Load Workout</button>
+          <button class="btn-delete-workout" style="flex:1;background:transparent;border:1px solid #555;color:#fff;font-size:16px;font-weight:700;padding:13px;text-transform:uppercase;" onclick="calDeleteWorkout(${wi}, this)">Delete</button>
+          <button class="btn-restore" style="flex:1;background:transparent;border:1px solid var(--accent);color:var(--accent);font-size:16px;font-weight:700;padding:13px;text-transform:uppercase;" onclick="toggleCalHistCard('cal-hbody-${wi}','cal-hchev-${wi}',${wi})">Close</button>
         </div>
       </div>
     </div>`;
