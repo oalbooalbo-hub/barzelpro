@@ -15935,6 +15935,65 @@ function setBestBodyPartMetric(metric) {
   renderBestBodyPartChart();
 }
 
+// Builds the per-exercise PR list (exPRs) for the "Personal Records" body-part
+// list — used both by renderBestBodyPartChart (initial render / metric pill
+// taps) and setBestBodyPartMuscle (selecting a body part). Both used to run
+// their own copy of this, and for every workout×exercise instance re-filtered
+// and re-scanned every *earlier* workout×exercise instance to find its
+// previous best — O(n²) in total workout-exercise count. A single
+// chronological pass with a running per-exercise best (updated as we walk
+// forward through time once) gives the exact same "best strictly before this
+// workout" value in O(n) overall, and sharing it means fixing it once instead
+// of in three near-identical copies.
+function _computeBodyPartExPRs(allW, base, metric) {
+  const BODY_ORDER = ['Chest','Back','Legs','Shoulders','Arms','Core','Mix'];
+  const baseSet = new Set(base);
+  const _eff = (sets) => { const ds = sets.filter(s => s.done && !s.ignored); return ds.length ? ds : sets.filter(s => !s.ignored); };
+  const exPRs = {};
+  const _runningBest = new Map(); // name -> {maxKg, vol, rawVol}
+  allW.forEach(w => {
+    const inRange = baseSet.has(w);
+    w.exercises.forEach(e => {
+      const prev = _runningBest.get(e.name) || { maxKg: 0, vol: 0, rawVol: 0 };
+      const eSets = _eff(e.sets);
+      if (eSets.length && inRange) {
+        const m = e.muscle || 'Chest';
+        if (BODY_ORDER.includes(m)) {
+          const hasPrev = !(prev.maxKg === 0 && prev.vol === 0 && prev.rawVol === 0);
+          if (hasPrev) {
+            const maxKg = Math.max(0, ...eSets.map(s => s.kg));
+            const vol = Math.max(...eSets.map(s => s.kg * (1 + s.reps / 30)));
+            const rawVol = eSets.reduce((a, s) => a + s.kg * s.reps, 0);
+            const isPR = (metric === 'max' && maxKg > prev.maxKg) || (metric === '1rm' && vol > prev.vol) || (metric === 'vol' && rawVol > prev.rawVol);
+            if (isPR) {
+              if (!exPRs[e.name]) exPRs[e.name] = { muscle: m, count: 0, bestVal: 0, date: 0, sessions: [] };
+              exPRs[e.name].count++;
+              const val = metric === 'max' ? maxKg : metric === '1rm' ? parseFloat(vol.toFixed(2)) : Math.round(rawVol);
+              exPRs[e.name].sessions.push({ date: w.date, val, setParam: metric === '1rm' ? (() => { const best = eSets.reduce((a, s) => s.kg * (1 + s.reps / 30) > a.kg * (1 + a.reps / 30) ? s : a, eSets[0]); return best ? `${best.kg}×${best.reps}` : ''; })() : '' });
+              if (w.date > exPRs[e.name].date) { exPRs[e.name].bestVal = val; exPRs[e.name].date = w.date; }
+            }
+          }
+        }
+      }
+      // Same as renderBestBodyPartChart's star-count pass: update the running
+      // best with this workout's numbers regardless of range/muscle filtering
+      // above, since later workouts (even outside the selected range) still
+      // need it to reflect "all workouts before them".
+      if (eSets.length) {
+        const mx = Math.max(0, ...eSets.map(s => s.kg));
+        const v = Math.max(...eSets.map(s => s.kg * (1 + s.reps / 30)));
+        const rv = eSets.reduce((a, s) => a + s.kg * s.reps, 0);
+        _runningBest.set(e.name, {
+          maxKg: Math.max(prev.maxKg, mx),
+          vol: Math.max(prev.vol, v),
+          rawVol: Math.max(prev.rawVol, rv),
+        });
+      }
+    });
+  });
+  return exPRs;
+}
+
 function renderBestBodyPartChart() {
   const BODY_ORDER = ['Chest','Back','Legs','Shoulders','Arms','Core','Mix'];
   const colors = ['#e8ff47','#7ec8e3','#ff8c42','#a78bfa','#34d399','#f87171','#20d4c8'];
@@ -15963,46 +16022,57 @@ function renderBestBodyPartChart() {
   // Count PR stars per body part within the selected period
   const allW = workouts.filter(w => !w._draft && !w._template).slice().sort((a,b) => a.date - b.date);
   const base = filterByRange(allW, globalRange);
+  const baseSet = new Set(base);
   const starsPerMuscle = {};
 
-  base.forEach(w => {
+  // Single chronological pass instead of, for every workout×exercise instance,
+  // re-filtering and re-scanning every *earlier* workout×exercise instance to
+  // find its previous best (that was O(n²) in total workout-exercise count —
+  // fine for a handful of workouts, but noticeably slow to recompute on every
+  // MAX/1RM/VOL pill tap or body-part select once history grows). A running
+  // per-exercise best, updated as we walk forward through time once, gives the
+  // exact same "best strictly before this workout" value in O(n) overall.
+  const _runningBest = new Map(); // name -> {maxKg, vol, rawVol}
+  allW.forEach(w => {
+    const inRange = baseSet.has(w);
     w.exercises.forEach(e => {
-      const m = e.muscle || 'Chest';
-      if (!BODY_ORDER.includes(m)) return;
+      const prev = _runningBest.get(e.name) || { maxKg: 0, vol: 0, rawVol: 0 };
       const done = e.sets.filter(s => s.done && !s.ignored);
-      if (!done.length) return;
+      if (done.length && inRange) {
+        const m = e.muscle || 'Chest';
+        if (BODY_ORDER.includes(m)) {
+          const isFirstTime = prev.maxKg === 0 && prev.vol === 0;
+          if (!isFirstTime) {
+            const maxKg  = Math.max(0, ...done.map(s => s.kg));
+            const vol    = Math.max(...done.map(s => s.kg * (1 + s.reps / 30)));
+            const rawVol = done.reduce((a, s) => a + s.kg * s.reps, 0);
 
-      // Compute previous bests for this exercise (all workouts before this one)
-      let prevMaxKg = 0, prevVol = 0, prevRawVol = 0;
-      allW.filter(pw => pw.date < w.date).forEach(pw => {
-        pw.exercises.filter(pe => pe.name === e.name).forEach(pe => {
-          const dSets = pe.sets.filter(s => s.done && !s.ignored);
-          const mx = dSets.length ? Math.max(0, ...dSets.map(s => s.kg)) : 0;
-          const v  = dSets.length ? Math.max(...dSets.map(s => s.kg * (1 + s.reps / 30))) : 0;
-          const rv = dSets.reduce((a, s) => a + s.kg * s.reps, 0);
-          if (mx > prevMaxKg) prevMaxKg = mx;
-          if (v  > prevVol)   prevVol   = v;
-          if (rv > prevRawVol) prevRawVol = rv;
+            const weightPR = maxKg  > 0 && maxKg  > prev.maxKg;
+            const volPR    = vol    > 0 && vol    > prev.vol;
+            const volumePR = rawVol > 0 && rawVol > prev.rawVol;
+
+            let stars = 0;
+            if (bestBodyPartMetric === 'max'  && weightPR) stars = 1;
+            if (bestBodyPartMetric === '1rm'  && volPR)    stars = 1;
+            if (bestBodyPartMetric === 'vol'  && volumePR) stars = 1;
+
+            if (stars > 0) starsPerMuscle[m] = (starsPerMuscle[m] || 0) + stars;
+          }
+        }
+      }
+      // Update the running best with this workout's numbers regardless of range/
+      // muscle filtering above — later workouts (even outside the selected range)
+      // still need it to reflect "all workouts before them", same as before.
+      if (done.length) {
+        const mx = Math.max(0, ...done.map(s => s.kg));
+        const v  = Math.max(...done.map(s => s.kg * (1 + s.reps / 30)));
+        const rv = done.reduce((a, s) => a + s.kg * s.reps, 0);
+        _runningBest.set(e.name, {
+          maxKg: Math.max(prev.maxKg, mx),
+          vol: Math.max(prev.vol, v),
+          rawVol: Math.max(prev.rawVol, rv),
         });
-      });
-
-      const isFirstTime = prevMaxKg === 0 && prevVol === 0;
-      if (isFirstTime) return; // first-time entries don't count as PRs
-
-      const maxKg  = Math.max(0, ...done.map(s => s.kg));
-      const vol    = Math.max(...done.map(s => s.kg * (1 + s.reps / 30)));
-      const rawVol = done.reduce((a, s) => a + s.kg * s.reps, 0);
-
-      const weightPR = maxKg  > 0 && maxKg  > prevMaxKg;
-      const volPR    = vol    > 0 && vol    > prevVol;
-      const volumePR = rawVol > 0 && rawVol > prevRawVol;
-
-      let stars = 0;
-      if (bestBodyPartMetric === 'max'  && weightPR) stars = 1;
-      if (bestBodyPartMetric === '1rm'  && volPR)    stars = 1;
-      if (bestBodyPartMetric === 'vol'  && volumePR) stars = 1;
-
-      if (stars > 0) starsPerMuscle[m] = (starsPerMuscle[m] || 0) + stars;
+      }
     });
   });
 
@@ -16019,7 +16089,16 @@ function renderBestBodyPartChart() {
   const _vAnimate = (ts) => {
     if (!_vStart) _vStart = ts;
     _vOpacity = 0.5 + 0.5 * Math.sin(((ts - _vStart) / 1500) * Math.PI * 2 - Math.PI / 2);
-    bestBodyPartChartInst?.update('none');
+    // .draw() (not .update()) — only the plugin's alpha value actually changed,
+    // not the chart's data/scales, so a full update() (which re-parses data and
+    // recalculates every scale/element before drawing) on every single frame at
+    // 60fps was doing a huge amount of pointless repeated work just to fade a
+    // small chevron. draw() repaints from the already-current state directly,
+    // which is what made the whole page feel sluggish while this card was open
+    // (any other tap, like the PR list's ×N badges, was competing with this for
+    // main-thread time) — not just the "runs forever in the background" issue
+    // fixed separately in toggleProgressCard's closeCard().
+    bestBodyPartChartInst?.draw();
     window._vRafId = requestAnimationFrame(_vAnimate);
   };
   window._vRafId = requestAnimationFrame(_vAnimate);
@@ -16122,38 +16201,9 @@ function renderBestBodyPartChart() {
     }]
   });
 
-  // Build per-exercise PR data for the list
-  const exPRs = {};
-  const _eff2 = (sets) => { const ds=sets.filter(s=>s.done&&!s.ignored); return ds.length ? ds : sets.filter(s=>!s.ignored); };
-  base.forEach(w => {
-    w.exercises.forEach(e => {
-      const m = e.muscle || 'Chest';
-      if (!BODY_ORDER.includes(m)) return;
-      const eSets = _eff2(e.sets);
-      if (!eSets.length) return;
-      let prevMaxKg=0, prevVol=0, prevRawVol=0;
-      allW.filter(pw=>pw.date<w.date).forEach(pw=>{
-        pw.exercises.filter(pe=>pe.name===e.name).forEach(pe=>{
-          const pSets=_eff2(pe.sets);
-          const mx=pSets.length?Math.max(0,...pSets.map(s=>s.kg)):0;
-          const v=pSets.length?Math.max(...pSets.map(s=>s.kg*(1+s.reps/30))):0;
-          const rv=pSets.reduce((a,s)=>a+s.kg*s.reps,0);
-          if(mx>prevMaxKg) prevMaxKg=mx; if(v>prevVol) prevVol=v; if(rv>prevRawVol) prevRawVol=rv;
-        });
-      });
-      if (prevMaxKg===0 && prevVol===0 && prevRawVol===0) return;
-      const maxKg=Math.max(0,...eSets.map(s=>s.kg));
-      const vol=Math.max(...eSets.map(s=>s.kg*(1+s.reps/30)));
-      const rawVol=eSets.reduce((a,s)=>a+s.kg*s.reps,0);
-      const isPR=(bestBodyPartMetric==='max'&&maxKg>prevMaxKg)||(bestBodyPartMetric==='1rm'&&vol>prevVol)||(bestBodyPartMetric==='vol'&&rawVol>prevRawVol);
-      if (!isPR) return;
-      if (!exPRs[e.name]) exPRs[e.name]={muscle:m,count:0,bestVal:0,date:0,sessions:[]};
-      exPRs[e.name].count++;
-      const val=bestBodyPartMetric==='max'?maxKg:bestBodyPartMetric==='1rm'?parseFloat(vol.toFixed(2)):Math.round(rawVol);
-      exPRs[e.name].sessions.push({date:w.date, val, setParam: bestBodyPartMetric==='1rm' ? (()=>{ const best=eSets.reduce((a,s)=>s.kg*(1+s.reps/30)>a.kg*(1+a.reps/30)?s:a,eSets[0]); return best?`${best.kg}×${best.reps}`:''; })() : ''});
-      if(w.date>exPRs[e.name].date){exPRs[e.name].bestVal=val;exPRs[e.name].date=w.date;}
-    });
-  });
+  // Build per-exercise PR data for the list (shared O(n) helper — see its own
+  // comment for why this used to be an O(n²) recompute here).
+  const exPRs = _computeBodyPartExPRs(allW, base, bestBodyPartMetric);
 
   // Render body part scrollbar
   const muscleColors2 = {Chest:'#e8ff47',Back:'#7ec8e3',Legs:'#ff8c42',Shoulders:'#a78bfa',Arms:'#34d399',Core:'#f87171',Mix:'#20d4c8'};
@@ -16166,30 +16216,13 @@ function renderBestBodyPartChart() {
 function setBestBodyPartMuscle(muscle) {
   bestBodyPartMuscle = muscle;
   if (bestBodyPartChartInst) bestBodyPartChartInst.update('none');
-  // Rebuild exPRs
-  const BODY_ORDER2 = ['Chest','Back','Legs','Shoulders','Arms','Core','Mix'];
+  // Rebuild exPRs — same shared O(n) helper renderBestBodyPartChart uses. This
+  // used to be its own third copy of the O(n²) recompute (for every workout×
+  // exercise instance, re-scanning every earlier one), which is exactly what
+  // made tapping a body part in Personal Records slow to respond.
   const allW2 = workouts.filter(w=>!w._draft&&!w._template).slice().sort((a,b)=>a.date-b.date);
   const base2 = filterByRange(allW2, globalRange);
-  const exPRs2 = {};
-  const _eff3 = (sets) => sets.filter(s => s.done && !s.ignored);
-  base2.forEach(w => {
-    w.exercises.forEach(e => {
-      const m = e.muscle||'Chest';
-      if (!BODY_ORDER2.includes(m)) return;
-      const eSets=_eff3(e.sets); if (!eSets.length) return;
-      let prevMaxKg=0,prevVol=0,prevRawVol=0;
-      allW2.filter(pw=>pw.date<w.date).forEach(pw=>{ pw.exercises.filter(pe=>pe.name===e.name).forEach(pe=>{ const pSets=_eff3(pe.sets); const mx=pSets.length?Math.max(0,...pSets.map(s=>s.kg)):0; const v=pSets.length?Math.max(...pSets.map(s=>s.kg*(1+s.reps/30))):0; const rv=pSets.reduce((a,s)=>a+s.kg*s.reps,0); if(mx>prevMaxKg)prevMaxKg=mx; if(v>prevVol)prevVol=v; if(rv>prevRawVol)prevRawVol=rv; }); });
-      if(prevMaxKg===0&&prevVol===0&&prevRawVol===0) return;
-      const maxKg=Math.max(0,...eSets.map(s=>s.kg)); const vol=Math.max(...eSets.map(s=>s.kg*(1+s.reps/30))); const rawVol=eSets.reduce((a,s)=>a+s.kg*s.reps,0);
-      const isPR=(bestBodyPartMetric==='max'&&maxKg>prevMaxKg)||(bestBodyPartMetric==='1rm'&&vol>prevVol)||(bestBodyPartMetric==='vol'&&rawVol>prevRawVol);
-      if (!isPR) return;
-      if (!exPRs2[e.name]) exPRs2[e.name]={muscle:m,count:0,bestVal:0,date:0,sessions:[]};
-      exPRs2[e.name].count++;
-      const val=bestBodyPartMetric==='max'?maxKg:bestBodyPartMetric==='1rm'?parseFloat(vol.toFixed(2)):Math.round(rawVol);
-      exPRs2[e.name].sessions.push({date:w.date, val, setParam: bestBodyPartMetric==='1rm' ? (()=>{ const best=eSets.reduce((a,s)=>s.kg*(1+s.reps/30)>a.kg*(1+a.reps/30)?s:a,eSets[0]); return best?`${best.kg}×${best.reps}`:''; })() : ''});
-      if(w.date>exPRs2[e.name].date){exPRs2[e.name].bestVal=val;exPRs2[e.name].date=w.date;}
-    });
-  });
+  const exPRs2 = _computeBodyPartExPRs(allW2, base2, bestBodyPartMetric);
   renderBestBodyPartExList(exPRs2, document.getElementById('bestBodyPartExList'));
 }
 
