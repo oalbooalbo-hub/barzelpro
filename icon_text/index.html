@@ -12645,8 +12645,17 @@ function _positionNoteKbdBar(force) {
         scroller = scroller.parentElement;
       }
       if (!scroller || scroller === document.body) scroller = document.scrollingElement || document.documentElement;
+      // `gap` (from visualViewport) is ~0 on Android — window.innerHeight already
+      // shrinks with the keyboard there, unlike iOS/Safari where it stays fixed —
+      // so a deficit computed as gap-minus-existing-scroll-room came out negative
+      // and never padded anything on Android at all, regardless of whether the
+      // scroller actually had enough natural room to clear the fixed bar. The bar
+      // itself reserves no document-flow space (it's position:fixed), so the real
+      // requirement is simpler and doesn't need `gap` at all: always guarantee at
+      // least kbdH-plus-a-buffer of scrollable room past the content's natural
+      // end, on every platform, so the delta scroll below always has room to land.
       const maxScroll = scroller.scrollHeight - scroller.clientHeight;
-      const deficit = gap - maxScroll;
+      const deficit = (kbdH + 24) - maxScroll;
       if (deficit > 0) {
         if (scroller.dataset.noteKbdPadOrig === undefined) scroller.dataset.noteKbdPadOrig = scroller.style.paddingBottom || '';
         scroller.style.paddingBottom = `calc(${scroller.dataset.noteKbdPadOrig || '0px'} + ${deficit}px)`;
@@ -15459,6 +15468,18 @@ function toggleProgressCard(id) {
   function closeCard(cid, onDone, preserveInfo) {
     const card = document.getElementById(cid);
     if (!card || !card.classList.contains('open')) { if(onDone) onDone(); return; }
+    // PERSONAL RECORDS' chevron pulse (renderBestBodyPartChart) drives itself
+    // with its own requestAnimationFrame loop that calls chartInst.update()
+    // every frame — it only ever cancels itself at the top of the *next*
+    // render, so closing this card (or switching to another one) without
+    // stopping it left it running forever in the background, continuously
+    // re-rendering a chart nobody could even see anymore. That's exactly the
+    // kind of always-on main-thread work that makes the whole app feel slow
+    // afterward, not just this card.
+    if (cid === 'acc-best' && window._vRafId) {
+      cancelAnimationFrame(window._vRafId);
+      window._vRafId = null;
+    }
     const body = card.querySelector('.prog-acc-body');
     const placeholder = document.getElementById(cid + '-placeholder');
     // Only snapshot info panel if closing to make room for another card
