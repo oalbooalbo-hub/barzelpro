@@ -15966,10 +15966,9 @@ function _computeBodyPartExPRs(allW, base, metric) {
             const rawVol = eSets.reduce((a, s) => a + s.kg * s.reps, 0);
             const isPR = (metric === 'max' && maxKg > prev.maxKg) || (metric === '1rm' && vol > prev.vol) || (metric === 'vol' && rawVol > prev.rawVol);
             if (isPR) {
-              if (!exPRs[e.name]) exPRs[e.name] = { muscle: m, count: 0, bestVal: 0, date: 0, sessions: [] };
+              if (!exPRs[e.name]) exPRs[e.name] = { muscle: m, count: 0, bestVal: 0, date: 0 };
               exPRs[e.name].count++;
               const val = metric === 'max' ? maxKg : metric === '1rm' ? parseFloat(vol.toFixed(2)) : Math.round(rawVol);
-              exPRs[e.name].sessions.push({ date: w.date, val, setParam: metric === '1rm' ? (() => { const best = eSets.reduce((a, s) => s.kg * (1 + s.reps / 30) > a.kg * (1 + a.reps / 30) ? s : a, eSets[0]); return best ? `${best.kg}×${best.reps}` : ''; })() : '' });
               if (w.date > exPRs[e.name].date) { exPRs[e.name].bestVal = val; exPRs[e.name].date = w.date; }
             }
           }
@@ -16238,39 +16237,18 @@ function renderBestBodyPartExList(exPRs, listEl) {
     listEl.innerHTML = header + `<div style="padding:12px 4px;text-align:center;color:var(--muted);font-size:12px;">No records for this period</div>`;
     return;
   }
-  const unitLabel = bestBodyPartMetric==='vol' ? 'kg·rep' : 'kg';
-  listEl.innerHTML = header + filtered.map(([name, d], idx) => {
-    const safeId = `prex-${idx}-${name.replace(/[^a-z0-9]/gi,'_').substring(0,12)}`;
-    const sessions = (d.sessions||[]).slice().sort((a,b)=>b.date-a.date);
-    const sessionsHtml = sessions.map(s=>`
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px;font-size:11px;">
-        <span style="color:var(--text);font-weight:600;flex-shrink:0;">${fmtShort(s.date)}</span>
-        <span style="display:flex;align-items:center;gap:8px;">
-          ${s.setParam ? `<span style="color:var(--text);font-size:10px;font-weight:600;">${s.setParam}</span>` : ''}
-          <span style="color:${col};font-weight:700;font-variant-numeric:tabular-nums;display:inline-flex;align-items:baseline;min-width:72px;"><span style="display:inline-block;width:54px;text-align:left;">${s.val}</span><span style="font-size:9px;opacity:.8;">${unitLabel}</span></span>
-        </span>
-      </div>`).join('');
+  listEl.innerHTML = header + filtered.map(([name, d]) => {
     return `<div style="border-bottom:1px solid var(--border);">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 4px;">
         <span style="font-family:'DM Sans';font-size:13px;font-weight:600;color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${name}">${name}</span>
         <span style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:8px;">
-          <span onclick="togglePRExDetail('${safeId}')" style="font-family:'DM Sans';font-size:12px;font-weight:700;color:${col};background:${col}22;border:1px solid ${col}55;border-radius:5px;padding:1px 8px;cursor:pointer;">
+          <span style="font-family:'DM Sans';font-size:12px;font-weight:700;color:${col};background:${col}22;border:1px solid ${col}55;border-radius:5px;padding:1px 8px;">
             ×${d.count}
           </span>
         </span>
       </div>
-      <div id="${safeId}" style="display:none;background:var(--surface2);border-radius:6px;margin:0 4px 6px;overflow:hidden;">${sessionsHtml}</div>
     </div>`;
   }).join('');
-}
-
-function togglePRExDetail(id) {
-  const el = document.getElementById(id);
-  const chev = document.getElementById(id + '-chev');
-  if (!el) return;
-  const open = el.style.display !== 'none';
-  el.style.display = open ? 'none' : 'block';
-  if (chev) chev.style.transform = open ? '' : 'rotate(180deg)';
 }
 
 function onStrengthScrub(idx) {
@@ -28218,7 +28196,17 @@ function openW2Sheet(idx) {
 
   if (window._historyPush) window._historyPush('w2-sheet');
 
-  // Swipe gesture — swipe up to expand, down to close/collapse
+  // Swipe gesture — swipe up to expand, down to close/collapse. Set up once
+  // and reused on every open (guarded below), not re-declared-and-reattached
+  // each time — sheet/overlay are the same persistent, body-level elements
+  // across opens, so every previous open's listeners were piling up on top of
+  // each other, never removed, each full set doing its own work on every touch
+  // from then on. That's what made the sheet's own drag/spring animation (and
+  // anything else touching it) get progressively slower the more times it had
+  // been opened that session — not anything about whatever screen was visited
+  // beforehand.
+  if (sheet._w2DragInit) return;
+  sheet._w2DragInit = true;
   let _startY = 0, _curY = 0, _dragging = false, _vel = 0, _lastY = 0, _lastT = 0;
   function _onStart(e) {
     _startY = (e.touches||[e])[0].clientY;
