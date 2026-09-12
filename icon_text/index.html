@@ -380,15 +380,15 @@ body.desktop-mode .pages-wrap {
 #ex-detail-overlay.ex-overlay-open{display:block !important;}
 #ex-detail-overlay.ex-overlay-out{
   display:block !important;
-  animation:exFadeScaleOut .22s cubic-bezier(.4,0,.2,1) forwards;
+  animation:exFadeScaleOut .28s cubic-bezier(.4,0,.2,1) forwards;
 }
 @keyframes exFadeScaleIn{
   from{transform:translateY(48px);}
   to{transform:translateY(0);}
 }
 @keyframes exFadeScaleOut{
-  from{transform:translateY(0);}
-  to{transform:translateY(48px);}
+  from{transform:translateX(0);}
+  to{transform:translateX(-100%);}
 }
 #ex-detail-no-photo-wrap{
   position:absolute;top:0;left:0;right:0;z-index:3;
@@ -24168,9 +24168,13 @@ function deleteCoachWorkout(id) {
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
     Change exercise
   </button>
+  <button id="ex-detail-menu-delete-history-btn" onclick="closeExDetailMenu();deleteExerciseHistory()" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:none;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>
+    Delete history
+  </button>
   <button onclick="closeExDetailMenu();deleteExerciseDetail()" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#ff4747;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff4747" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-    Delete
+    Delete exercise
   </button>
 </div>
 
@@ -26925,6 +26929,8 @@ function openExDetailMenu() {
   window._exMenuFromExtab = false;
   const changeBtn = document.getElementById('ex-detail-menu-change-btn');
   if (changeBtn) changeBtn.style.display = 'flex';
+  const delHistBtn = document.getElementById('ex-detail-menu-delete-history-btn');
+  if (delHistBtn) delHistBtn.style.display = 'none';
   if (window._historyPush) window._historyPush('ex-detail-menu');
   document.getElementById('ex-detail-menu-overlay').style.display = 'block';
   const _edmSht = document.getElementById('ex-detail-menu-sheet');
@@ -26944,6 +26950,8 @@ function openExtabExMenu() {
   window._exMenuFromExtab = true;
   const changeBtn = document.getElementById('ex-detail-menu-change-btn');
   if (changeBtn) changeBtn.style.display = 'none';
+  const delHistBtn = document.getElementById('ex-detail-menu-delete-history-btn');
+  if (delHistBtn) delHistBtn.style.display = 'flex';
   if (window._historyPush) window._historyPush('ex-detail-menu');
   document.getElementById('ex-detail-menu-overlay').style.display = 'block';
   const _etmSht = document.getElementById('ex-detail-menu-sheet');
@@ -27123,6 +27131,38 @@ function deleteExerciseDetail() {
     document.getElementById('delete-ex-confirm-sheet').style.display  = 'block';
   }
 }
+function deleteExerciseHistory() {
+  const name = (document.getElementById('ex-detail-overlay-title')?.textContent ||
+                document.getElementById('ex-detail-overlay-title-nophoto')?.textContent || '').trim();
+  if (!name) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'delete-confirm-overlay';
+  overlay.style.zIndex = '260';
+  overlay.innerHTML = `
+    <div class="delete-confirm-sheet">
+      <div class="delete-confirm-title">Delete History ?</div>
+      <div class="delete-confirm-sub">All recorded sets for "${name}" will be permanently removed from past workouts. The exercise itself will stay in your list.</div>
+      <div class="delete-confirm-btns">
+        <button class="btn-del-cancel" id="_delExHistCancel">Cancel</button>
+        <button class="btn-del-yes-solid" id="_delExHistConfirm">Delete</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#_delExHistCancel').onclick = () => overlay.remove();
+  overlay.querySelector('#_delExHistConfirm').onclick = () => {
+    overlay.remove();
+    workouts.forEach(w => {
+      if (w._draft || w._template || !w.exercises) return;
+      if (w.exercises.some(e => e.name === name)) {
+        w.exercises = w.exercises.filter(e => e.name !== name);
+      }
+    });
+    save();
+    closeExtabExOverlay();
+    renderExercisesTab();
+  };
+}
+window.deleteExerciseHistory = deleteExerciseHistory;
 function cancelDeleteExercise() {
   document.getElementById('delete-ex-confirm-overlay').style.display = 'none';
   document.getElementById('delete-ex-confirm-sheet').style.display   = 'none';
