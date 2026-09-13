@@ -1632,10 +1632,10 @@ window._fbModuleReady = true;
   <!-- Single shared time range selector -->
   <div id="progress-workout-count" style="font-size:16px;color:var(--muted);font-weight:600;margin-bottom:8px;padding:0 2px;"></div>
   <div class="time-pills" id="globalTimePills" style="margin-bottom:8px;display:flex;gap:5px;">
-    <button class="time-pill" data-range="day" onclick="setGlobalRange(this)">1D</button>
     <button class="time-pill active" data-range="week" onclick="setGlobalRange(this)">1W</button>
     <button class="time-pill" data-range="month" onclick="setGlobalRange(this)">1M</button>
     <button class="time-pill" data-range="3month" onclick="setGlobalRange(this)">3M</button>
+    <button class="time-pill" data-range="6month" onclick="setGlobalRange(this)">6M</button>
     <button class="time-pill" data-range="year" onclick="setGlobalRange(this)">1Y</button>
     <button class="time-pill" data-range="custom" onclick="setGlobalRange(this)">Custom</button>
   </div>
@@ -1810,6 +1810,28 @@ window._fbModuleReady = true;
           <span style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.8px;">SELECT DAY</span>
         </div>
         <input type="range" id="capScrubber" min="0" value="0" step="1" style="width:100%;accent-color:#555;cursor:pointer;height:3px;" oninput="onCapScrub(this.value)">
+      </div>
+    </div>
+  </div>
+  <!-- MUSCLE HEATMAP -->
+  <div class="chart-card prog-accordion" id="acc-heatmap">
+    <div class="prog-acc-header" onclick="toggleProgressCard('acc-heatmap')">
+      <span class="chart-title" style="margin-bottom:0;">MUSCLE HEATMAP</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="prog-acc-info-btn" onclick="event.stopPropagation();toggleProgInfo('heatmap-info','acc-heatmap',this)" style="align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid #34d399;color:#34d399;font-family:'DM Sans';font-size:10px;font-weight:700;cursor:pointer;flex-shrink:0;">i</span>
+        <span class="prog-acc-chev"><svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" width="12" height="12"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      </div>
+    </div>
+    <div class="prog-acc-body" style="display:none;">
+      <div id="heatmap-info" style="display:none;margin-bottom:8px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;font-family:'DM Sans';font-size:12px;color:var(--muted);line-height:1.8;font-weight:500;">
+        <div style="color:var(--text);font-size:12px;">Colors each muscle by how many sets you've logged for it in the selected time range — brighter red means more sets.</div>
+      </div>
+      <div id="heatmap-diagram-mount"></div>
+      <div id="heatmap-empty" style="display:none;text-align:center;padding:24px 0;font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.5px;">No data for this range</div>
+      <div style="display:flex;align-items:center;gap:8px;padding:10px 16px 4px;justify-content:center;">
+        <span style="font-family:'DM Sans';font-size:10px;font-weight:700;color:var(--muted);">LESS</span>
+        <div style="flex:1;max-width:140px;height:6px;border-radius:3px;background:linear-gradient(to right, #383838, #ff1e1e);"></div>
+        <span style="font-family:'DM Sans';font-size:10px;font-weight:700;color:var(--muted);">MORE</span>
       </div>
     </div>
   </div>
@@ -6413,6 +6435,36 @@ function _newExCheckDuplicate() {
   }
   return isDup;
 }
+// One-time "NEW" flash on a just-created exercise's card, so the user can spot
+// where it landed in the list — shown once per exercise (tracked by name), never
+// again for that same exercise after.
+function _flashNewExBadgeOnce(cardEl, exName) {
+  if (!cardEl || !exName) return;
+  let shown = [];
+  try { const _p = JSON.parse(_LS.get('ironlog_new_ex_badge_shown') || '[]'); if (Array.isArray(_p)) shown = _p; } catch(_) {}
+  if (shown.includes(exName)) return;
+  shown.push(exName);
+  _LS.set('ironlog_new_ex_badge_shown', JSON.stringify(shown));
+  // Delayed past the smooth scrollIntoView's own duration so the badge only
+  // appears once the card has actually stopped moving.
+  setTimeout(() => {
+    if (!cardEl.isConnected) return;
+    if (!cardEl.style.position) cardEl.style.position = 'relative';
+    const badge = document.createElement('div');
+    badge.textContent = 'NEW';
+    badge.style.cssText = "position:absolute;top:8px;right:8px;font-family:'DM Sans';font-size:12px;font-weight:900;letter-spacing:.5px;color:var(--accent);opacity:0;transform:translateY(-4px) scale(.85);transition:opacity .25s ease,transform .25s cubic-bezier(.2,.8,.3,1);pointer-events:none;z-index:5;";
+    cardEl.appendChild(badge);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      badge.style.opacity = '1';
+      badge.style.transform = 'translateY(0) scale(1)';
+    }));
+    setTimeout(() => {
+      badge.style.opacity = '0';
+      badge.style.transform = 'translateY(-4px) scale(.85)';
+      setTimeout(() => badge.remove(), 260);
+    }, 1000);
+  }, 450);
+}
 function confirmNewEx() {
   const name = document.getElementById('newExInput').value.trim();
   if (!name) {
@@ -6618,7 +6670,7 @@ function confirmNewEx() {
     setTimeout(() => {
       const rows = document.querySelectorAll('#exercisesTabContent [data-exname]');
       const last = rows[rows.length - 1];
-      if (last) last.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (last) { last.scrollIntoView({ behavior: 'smooth', block: 'center' }); _flashNewExBadgeOnce(last, name); }
     }, 100);
     if (addBtn) { addBtn.disabled = false; addBtn.textContent = 'Add'; addBtn.style.opacity = ''; }
   }, 300);
@@ -6633,7 +6685,7 @@ function confirmNewEx() {
     setTimeout(() => {
       const rows = document.querySelectorAll('#exercisesTabContent [data-exname]');
       const last = rows[rows.length - 1];
-      if (last) last.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (last) { last.scrollIntoView({ behavior: 'smooth', block: 'center' }); _flashNewExBadgeOnce(last, name); }
     }, 100);
   }, 300);
 }
@@ -7163,85 +7215,12 @@ function _toggleExDetailMuscles() {
   title.style.cssText = "font-family:'Bebas Neue';font-size:26px;letter-spacing:1px;text-align:center;padding:4px 10px 6px;";
   section.appendChild(title);
 
-  const built = _buildMuscleDiagramWrap(exDef, true);
+  // Just the big, label-free body-images page — no list+diagram slide, no
+  // carousel/dots/swipe.
   const bigBuilt = _buildBigMuscleDiagram(exDef);
-  if (built) title.style.color = built.muscleColor;
-
-  if (built && bigBuilt) {
-    // Two-page carousel: page 1 is the existing list+diagram, page 2 is just the
-    // two body images, bigger and centered, with no muscle-name labels.
-    const carousel = document.createElement('div');
-    carousel.id = 'ex-detail-muscles-carousel';
-    carousel.style.cssText = 'overflow:hidden;';
-    const track = document.createElement('div');
-    track.id = 'ex-detail-muscles-track';
-    track.style.cssText = 'display:flex;transition:transform .3s cubic-bezier(.4,0,.2,1);';
-    const slide1 = document.createElement('div');
-    slide1.style.cssText = 'flex:0 0 100%;min-width:0;';
-    slide1.appendChild(built.diagWrap);
-    const slide2 = document.createElement('div');
-    slide2.style.cssText = 'flex:0 0 100%;min-width:0;display:flex;align-items:center;';
-    slide2.appendChild(bigBuilt.wrap);
-    track.appendChild(slide1);
-    track.appendChild(slide2);
-    carousel.appendChild(track);
-    section.appendChild(carousel);
-
-    const dots = document.createElement('div');
-    dots.id = 'ex-detail-muscles-dots';
-    dots.style.cssText = 'display:flex;gap:6px;justify-content:center;padding:8px 0 2px;';
-    // Opens on the big-images page (slide 1), not the list+diagram one — set
-    // directly with no transition so it doesn't visibly slide over on open.
-    let _mCur = 1;
-    track.style.transition = 'none';
-    track.style.transform = `translateX(-${_mCur * 100}%)`;
-    requestAnimationFrame(() => { track.style.transition = 'transform .3s cubic-bezier(.4,0,.2,1)'; });
-    const dotEls = [0, 1].map(i => {
-      const d = document.createElement('div');
-      d.style.cssText = `width:6px;height:6px;border-radius:50%;background:${i===_mCur ? 'var(--accent)' : 'rgba(255,255,255,0.25)'};transition:background .2s;cursor:pointer;`;
-      d.onclick = () => goToMSlide(i);
-      dots.appendChild(d);
-      return d;
-    });
-    section.appendChild(dots);
-
-    function goToMSlide(i) {
-      _mCur = Math.max(0, Math.min(1, i));
-      track.style.transform = `translateX(-${_mCur * 100}%)`;
-      dotEls.forEach((d, di) => { d.style.background = di === _mCur ? 'var(--accent)' : 'rgba(255,255,255,0.25)'; });
-    }
-
-    // Horizontal swipe — axis decided on first significant move so a mostly-
-    // vertical drag still scrolls the overlay normally instead of being eaten.
-    let _sx = 0, _sy = 0, _axis = null, _dx = 0;
-    carousel.addEventListener('touchstart', e => {
-      _sx = e.touches[0].clientX; _sy = e.touches[0].clientY; _axis = null; _dx = 0;
-      track.style.transition = 'none';
-    }, { passive: true });
-    carousel.addEventListener('touchmove', e => {
-      const dx = e.touches[0].clientX - _sx, dy = e.touches[0].clientY - _sy;
-      if (!_axis) {
-        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
-        _axis = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
-      }
-      if (_axis !== 'h') return;
-      e.preventDefault();
-      _dx = dx;
-      track.style.transform = `translateX(calc(-${_mCur * 100}% + ${dx}px))`;
-    }, { passive: false });
-    const _mSwipeEnd = () => {
-      track.style.transition = 'transform .3s cubic-bezier(.4,0,.2,1)';
-      if (_axis === 'h' && Math.abs(_dx) > 50) {
-        goToMSlide(_mCur + (_dx < 0 ? 1 : -1));
-      } else {
-        goToMSlide(_mCur);
-      }
-      _axis = null; _dx = 0;
-    };
-    carousel.addEventListener('touchend', _mSwipeEnd, { passive: true });
-    carousel.addEventListener('touchcancel', _mSwipeEnd, { passive: true });
-  } else if (built) {
-    section.appendChild(built.diagWrap);
+  if (bigBuilt) {
+    title.style.color = bigBuilt.muscleColor;
+    section.appendChild(bigBuilt.wrap);
   }
 
   const closeBar = document.createElement('div');
@@ -7982,8 +7961,11 @@ function openExtabExOverlay(exName, musclesOnly, instant, knownPhoto) {
   const badgeNoPhotoEl = document.getElementById('extab-ex-muscle-badge-nophoto');
   if (nameEl) nameEl.textContent = exName;
   if (nameNoPhotoEl) nameNoPhotoEl.textContent = exName;
-  if (badgeEl) { badgeEl.textContent = muscleLabel; badgeEl.style.color = muscleColor; }
-  if (badgeNoPhotoEl) { badgeNoPhotoEl.textContent = muscleLabel; badgeNoPhotoEl.style.color = muscleColor; }
+  // Muscle-group label no longer shown in the top bar when expanded — badgeEl is
+  // left in place (empty) since its flex:1 still centers the "..." menu button
+  // against the back arrow.
+  if (badgeEl) badgeEl.textContent = '';
+  if (badgeNoPhotoEl) badgeNoPhotoEl.textContent = '';
   const _extabMenuBtn = document.getElementById('extab-ex-menu-btn');
   if (_extabMenuBtn) _extabMenuBtn.style.visibility = musclesOnly ? 'hidden' : '';
 
@@ -8001,6 +7983,7 @@ function openExtabExOverlay(exName, musclesOnly, instant, knownPhoto) {
   // tab plots the same 1RM-estimate values on its Y axis, but the big scrub
   // value shows the actual set (e.g. "12.5kg × 13") instead of the estimate.
   const _chartRmSetMap = new Map();
+  const _allSessions = [];
   workouts.filter(w => !w._draft).forEach(w => {
     w.exercises.filter(e => e.name === exName).forEach(e => {
       const ds = doneSets(e.sets);
@@ -8021,8 +8004,10 @@ function openExtabExOverlay(exName, musclesOnly, instant, knownPhoto) {
         _chartRmSetMap.set(dayKey, { kg: _bestSet.kg, reps: _bestSet.reps });
       }
       if (sessionVol > (_chartVolMap.get(dayKey) || 0)) _chartVolMap.set(dayKey, sessionVol);
+      _allSessions.push({ date: w.date, name: w.name, sets: e.sets.filter(s => !s.ignored) });
     });
   });
+  _allSessions.sort((a, b) => b.date - a.date);
   {
     const _volStr = _maxVol >= 1000 ? (_maxVol / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : String(Math.round(_maxVol));
     const slides = musclesOnly === true
@@ -8030,13 +8015,15 @@ function openExtabExOverlay(exName, musclesOnly, instant, knownPhoto) {
       : musclesOnly === 'stats'
         ? [{ val: 'PROGRESS', unit: '', prefix: '', label: '' }, { val: 'YOUR BEST', unit: '', prefix: '', label: '' }]
         : [
-            { val: 'PROGRESS', unit: '', prefix: '', label: '' },
             { val: 'MUSCLES', unit: '', prefix: '', label: '' },
             { val: 'YOUR BEST', unit: '', prefix: '', label: '' },
+            { val: 'PROGRESS', unit: '', prefix: '', label: '' },
+            { val: 'ALL SESSIONS', unit: '', prefix: '', label: '' },
           ];
-    const PROG_IDX  = (musclesOnly === true) ? -1 : 0;
-    const TABLE_IDX = (musclesOnly === true) ? -1 : (musclesOnly === 'stats') ? 1 : 2;
-    const _startIdx = (musclesOnly === true) ? 0 : (musclesOnly === 'stats') ? 0 : 1; // default: open on MUSCLES
+    const PROG_IDX  = (musclesOnly === true) ? -1 : (musclesOnly === 'stats') ? 0 : 2;
+    const TABLE_IDX = (musclesOnly === true) ? -1 : (musclesOnly === 'stats') ? 1 : 1;
+    const ALL_IDX   = (musclesOnly === true || musclesOnly === 'stats') ? -1 : 3;
+    const _startIdx = (musclesOnly === true) ? 0 : (musclesOnly === 'stats') ? 0 : 0; // default: open on MUSCLES
     let _cur = _startIdx;
     const carousel = document.createElement('div');
     carousel.id = 'extab-carousel';
@@ -8274,6 +8261,22 @@ function openExtabExOverlay(exName, musclesOnly, instant, knownPhoto) {
 
     tablePane.append(bestBigVal, bestBar);
 
+    // ── All Sessions pane — every past session of this exercise, most recent first ──
+    const sessionsPane = document.createElement('div');
+    sessionsPane.id = 'extab-sessions-pane';
+    sessionsPane.style.cssText = 'display:none;padding:14px 16px 0;text-align:left;';
+    if (_allSessions.length) {
+      sessionsPane.innerHTML = _allSessions.map(s => {
+        const chips = s.sets.map(st => `<span class="hcard-set-chip${st.done ? ' done' : ''}">${st.kg}×${st.reps}</span>`).join('<span style="color:#333;margin:0 4px;">·</span>');
+        return `<div style="background:#161616;border-radius:10px;padding:10px 12px;margin-bottom:8px;">
+          <div style="font-family:'DM Sans';font-size:12px;font-weight:700;color:#888;margin-bottom:6px;">${fmt(s.date)} · ${s.name}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;">${chips}</div>
+        </div>`;
+      }).join('');
+    } else {
+      sessionsPane.innerHTML = '<div style="text-align:center;padding:30px 0;font-family:\'DM Sans\';font-size:16px;font-weight:600;color:#fff;">No sessions yet</div>';
+    }
+
     function _onProgScrub(idx) {
       const canvas = document.getElementById('extab-prog-canvas');
       if (!canvas?._chartInst?._pts) return;
@@ -8417,8 +8420,8 @@ function openExtabExOverlay(exName, musclesOnly, instant, knownPhoto) {
       }
 
       // ── Diagram & pane state machine ───────────────────────────────────────
-      const _wasSpec = _prevIdx === PROG_IDX || _prevIdx === TABLE_IDX;
-      const _nowSpec  = idx     === PROG_IDX || idx     === TABLE_IDX;
+      const _wasSpec = _prevIdx === PROG_IDX || _prevIdx === TABLE_IDX || _prevIdx === ALL_IDX;
+      const _nowSpec  = idx     === PROG_IDX || idx     === TABLE_IDX || idx     === ALL_IDX;
       const _diagEl = document.getElementById('extab-diag-wrap');
       if (_nowSpec && !_wasSpec && _diagEl && _diagEl.style.display !== 'none') {
         _progPreDiag = _diagEl.style.display;
@@ -8444,6 +8447,13 @@ function openExtabExOverlay(exName, musclesOnly, instant, knownPhoto) {
       }
       if (idx !== TABLE_IDX && _prevIdx === TABLE_IDX) {
         _slideOut(tablePane);
+      }
+      // ALL SESSIONS pane
+      if (idx === ALL_IDX && _prevIdx !== ALL_IDX) {
+        _slideIn(sessionsPane);
+      }
+      if (idx !== ALL_IDX && _prevIdx === ALL_IDX) {
+        _slideOut(sessionsPane);
       }
     }
     function _bounceEdge() {}
@@ -8472,6 +8482,7 @@ function openExtabExOverlay(exName, musclesOnly, instant, knownPhoto) {
     }
     carousel.appendChild(dots);
     if (musclesOnly !== true) { body.appendChild(progPane); body.appendChild(tablePane); }
+    if (musclesOnly !== true && musclesOnly !== 'stats') body.appendChild(sessionsPane);
     overlay.appendChild(carousel);
   }
 
@@ -15208,12 +15219,13 @@ function filterByRange(data, range) {
   const startOfWeek = new Date(today); startOfWeek.setDate(today.getDate() - today.getDay());
   const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
   const startOf3Month = new Date(today.getFullYear(), today.getMonth() - 2, 1);
+  const startOf6Month = new Date(today.getFullYear(), today.getMonth() - 5, 1);
   const startOfYear = new Date(today.getFullYear(), 0, 1);
   const cutoff = {
-    'day': today.getTime(),
     'week': startOfWeek.getTime(),
     'month': startOfMonth.getTime(),
     '3month': startOf3Month.getTime(),
+    '6month': startOf6Month.getTime(),
     'year': startOfYear.getTime(),
     'max': 0
   }[range] ?? 0;
@@ -15416,7 +15428,7 @@ function updateProgressWorkoutCount() {
   if (!el) return;
   const filtered = filterByRange(workouts.filter(w => !w._draft && !w._template), globalRange);
   const count = filtered.length;
-  const rangeLabels = { day: 'today', week: 'this week', month: 'this month', '3month': 'last 3 months', year: 'this year', custom: 'this period' };
+  const rangeLabels = { week: 'this week', month: 'this month', '3month': 'last 3 months', '6month': 'last 6 months', year: 'this year', custom: 'this period' };
   const label = rangeLabels[globalRange] || 'this period';
   el.innerHTML = count > 0 ? `<span style="display:inline-flex;align-items:baseline;gap:10px;"><span style="color:#34d399;font-weight:700;font-size:22px;">${count}</span><span>Workout${count !== 1 ? 's' : ''} ${label}</span></span>` : `<span style="display:inline-flex;align-items:baseline;gap:10px;"><span style="color:#666;font-weight:700;font-size:22px;">0</span><span>Workouts ${label}</span></span>`;
 }
@@ -15461,7 +15473,7 @@ function toggleProgInfo(infoId, cardId, btn) {
 }
 
 function toggleProgressCard(id) {
-  const cards = ['acc-best','acc-exercise','acc-volume','acc-workouts','acc-capacity','acc-history'];
+  const cards = ['acc-best','acc-exercise','acc-volume','acc-workouts','acc-capacity','acc-heatmap','acc-history'];
   const activeSlot = document.getElementById('acc-active-slot');
   const isOpen = document.getElementById(id).classList.contains('open');
   const openId = cards.find(cid => document.getElementById(cid)?.classList.contains('open'));
@@ -15557,6 +15569,7 @@ function toggleProgressCard(id) {
       if (id === 'acc-best') setTimeout(renderBestBodyPartChart, 50);
       if (id === 'acc-volume') setTimeout(renderVolumeProgressChart, 50);
       if (id === 'acc-capacity') setTimeout(initCapacityCard, 50);
+      if (id === 'acc-heatmap') setTimeout(renderMuscleHeatmap, 50);
       if (id === 'acc-history') setTimeout(renderProgHistory, 50);
       if (id === 'acc-exercise') setTimeout(() => {
         if (!exProgressExercise) {
@@ -15613,17 +15626,17 @@ window._selfTestTimePills = function() {
     if (!pillsWrap) { results.push({ label, pass: false, note: 'no #globalTimePills' }); return; }
     const actual = {};
     pillsWrap.querySelectorAll('.time-pill').forEach(b => { actual[b.dataset.range] = b.style.display === 'none'; });
-    const allRanges = ['day','week','month','3month','year','custom'];
+    const allRanges = ['week','month','3month','6month','year','custom'];
     const pass = allRanges.every(r => actual[r] === expectHidden.includes(r));
     results.push({ label, pass, actual: JSON.parse(JSON.stringify(actual)), expectHidden });
   }
 
-  runCase('No workouts — all ranges hidden', [], ['day','week','month','3month','year']);
+  runCase('No workouts — all ranges hidden', [], ['week','month','3month','6month','year']);
   runCase('Workout today — all shown', [{ id:1, date: now - 1000, name:'T', exercises:[] }], []);
-  runCase('Workout 35d ago — day/week/month hidden', [{ id:2, date: now - 35*DAY, name:'T', exercises:[] }], ['day','week','month']);
-  runCase('Draft excluded — all hidden', [{ id:3, date: now, name:'T', exercises:[], _draft:true }], ['day','week','month','3month','year']);
-  runCase('Template excluded — all hidden', [{ id:4, date: now, name:'T', exercises:[], _template:true }], ['day','week','month','3month','year']);
-  runCase('Custom always shown', [], ['day','week','month','3month','year']);
+  runCase('Workout 35d ago — week/month hidden', [{ id:2, date: now - 35*DAY, name:'T', exercises:[] }], ['week','month']);
+  runCase('Draft excluded — all hidden', [{ id:3, date: now, name:'T', exercises:[], _draft:true }], ['week','month','3month','6month','year']);
+  runCase('Template excluded — all hidden', [{ id:4, date: now, name:'T', exercises:[], _template:true }], ['week','month','3month','6month','year']);
+  runCase('Custom always shown', [], ['week','month','3month','6month','year']);
 
   workouts = _savedWorkouts;
   globalRange = _savedRange;
@@ -15642,13 +15655,14 @@ window._selfTestTimePills = function() {
 function renderProgress() {
   updateProgressWorkoutCount();
   _updateTimePillAvailability();
-  const cards = ['acc-best','acc-exercise','acc-volume','acc-workouts','acc-capacity','acc-history'];
+  const cards = ['acc-best','acc-exercise','acc-volume','acc-workouts','acc-capacity','acc-heatmap','acc-history'];
   const openId = cards.find(id => document.getElementById(id)?.classList.contains('open'));
   if (openId === 'acc-workouts') renderVolumeChart();
   if (openId === 'acc-best') renderBestBodyPartChart();
   if (openId === 'acc-volume') renderVolumeProgressChart();
   if (openId === 'acc-exercise') renderExProgressChart();
   if (openId === 'acc-capacity') { renderCapacityWorkoutList(); renderCapacityChart(); }
+  if (openId === 'acc-heatmap') renderMuscleHeatmap();
   if (openId === 'acc-history') renderProgHistory();
   setTimeout(syncProgressChartDates, 50);
 }
@@ -16805,15 +16819,14 @@ function renderVolumeProgressChart() {
     if (bp) { bp.textContent = 'No data'; bp.style.color = 'var(--muted)'; }
     const _vpc0 = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171',Mix:'#20d4c8' };
     const _vpc0Color = _vpc0[volProgressMuscle] || '#a78bfa';
-    const _days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-    const emptyLabels = globalRange === 'day'
-      ? [_days[new Date().getDay()]]
-      : globalRange === 'week'
-        ? ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
-        : globalRange === 'month'
-          ? ['Week 1','Week 2','Week 3','Week 4']
-          : globalRange === '3month'
-            ? ['Month 1','Month 2','Month 3']
+    const emptyLabels = globalRange === 'week'
+      ? ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
+      : globalRange === 'month'
+        ? ['Week 1','Week 2','Week 3','Week 4']
+        : globalRange === '3month'
+          ? ['Month 1','Month 2','Month 3']
+          : globalRange === '6month'
+            ? ['Month 1','Month 2','Month 3','Month 4','Month 5','Month 6']
             : globalRange === 'year'
               ? ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
               : ['Week 1','Week 2','Week 3','Week 4'];
@@ -17691,8 +17704,7 @@ function renderCalDayWorkouts(ws) {
       const doneSetsArr = e.sets.filter(s=>s.done&&!s.ignored);
       const noDone = doneSetsArr.length === 0;
       const prFlags = [weightPR?'max':'', volPR?'1rm':'', volumePR?'vol':''].filter(Boolean).join(' ');
-      const exHistId = `exhist-cal-${wi}-${ei}`;
-      return `<div class="hcard-ex-item" data-prs="${prFlags}" onclick="toggleHcardExHistory('${exHistId}', '${e.name.replace(/'/g,"\\'")}')" style="cursor:pointer;">
+      return `<div class="hcard-ex-item" data-prs="${prFlags}">
         <div style="flex:1;">
           ${noDone ? `<div style="margin-bottom:1px;"><span style="font-size:9px;font-weight:700;color:#ff4444;border:1px solid #ff444466;border-radius:4px;padding:1px 5px;letter-spacing:.4px;">NOT COMPLETED</span></div>` : ''}
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:1px;">
@@ -17701,7 +17713,6 @@ function renderCalDayWorkouts(ws) {
           </div>
           <div class="hcard-ex-sets">${chips}</div>
           ${e.comment?`<div class="hcard-note">${e.comment}</div>`:''}
-          <div id="${exHistId}" style="display:none;margin-top:10px;" onclick="event.stopPropagation()"></div>
         </div>
         <span style="display:inline-flex;flex-direction:column;align-items:center;gap:4px;">
           <span style="display:inline-flex;gap:2px;align-items:center;">${weightSlot}${volSlot}${volumeSlot}</span>
@@ -17721,7 +17732,7 @@ function renderCalDayWorkouts(ws) {
     const isFinished = !w._draft && !w._template;
     const completedBadge = isFinished ? `<span style="display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;margin-left:6px;"><svg width="18" height="18" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>` : '';
 
-    return `<div class="history-card" id="cal-hcard-${wi}" style="margin-bottom:8px;">
+    return `<div class="history-card" id="cal-hcard-${wi}" style="margin-bottom:8px;position:relative;">
       <div class="hcard-header" onclick="toggleCalHistCard('cal-hbody-${wi}','cal-hchev-${wi}',${wi})">
         <div style="flex:1;display:flex;align-items:center;">
           <div class="hcard-name" style="font-family:'DM Sans';color:#fff;">${w.name}${w._draft?` <span style="font-family:'DM Sans';font-size:11px;font-weight:700;background:rgba(126,200,227,.12);border:1px solid rgba(126,200,227,.4);color:#7ec8e3;border-radius:4px;padding:1px 6px;vertical-align:middle;letter-spacing:.3px;text-transform:uppercase;">DRAFT</span>`:''}</div>
@@ -17729,6 +17740,9 @@ function renderCalDayWorkouts(ws) {
         ${w.durationMins > 0 ? `<div style="display:flex;align-items:center;gap:4px;margin-right:8px;flex-shrink:0;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg><span style="font-family:'DM Sans';font-size:16px;color:#ccc;font-weight:600;">${w.durationMins}m</span></div>` : ''}
         ${completedBadge}
         <span class="hcard-chevron" id="cal-hchev-${wi}" style="display:none;">▾</span>
+      </div>
+      <div id="cal-hcard-hint-${wi}" style="position:absolute;bottom:3px;left:50%;transform:translateX(-50%);pointer-events:none;line-height:0;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
       <div class="hcard-body collapsed" id="cal-hbody-${wi}" style="max-height:0;">
         ${prSummary}
@@ -17773,6 +17787,7 @@ function toggleCalHistCard(bodyId, chevId, wi) {
   const body = document.getElementById(bodyId);
   const chev = document.getElementById(chevId);
   const card = document.getElementById(`cal-hcard-${wi}`);
+  const hint = document.getElementById(`cal-hcard-hint-${wi}`);
   if (!body) return;
   const isCollapsed = body.classList.contains('collapsed');
   const musclesEl = card?.querySelector('.hcard-muscles');
@@ -17781,11 +17796,13 @@ function toggleCalHistCard(bodyId, chevId, wi) {
     body.style.maxHeight = body.scrollHeight + 500 + 'px';
     chev?.classList.add('open');
     if (musclesEl) musclesEl.style.display = '';
+    if (hint) hint.style.display = 'none';
   } else {
     body.style.maxHeight = '0';
     body.classList.add('collapsed');
     chev?.classList.remove('open');
     if (musclesEl) musclesEl.style.display = 'none';
+    if (hint) hint.style.display = '';
     document.querySelectorAll(`#cal-hcard-${wi} .hcard-muscle-chip`).forEach(c => { c.classList.remove('active'); c.style.cssText = ''; });
     document.querySelectorAll(`#cal-hcard-${wi} .hcard-pr-chip`).forEach(c => c.classList.remove('pr-active'));
     body.querySelectorAll('.hcard-ex-item').forEach(item => { item.style.display = ''; item.classList.remove('muscle-filtered','muscle-match'); });
@@ -27837,6 +27854,97 @@ const W2_BODY_IDS = {
   'Mix': ["bf-chest-upper-l0","bf-chest-upper-r0","bf-chest-lower-l0","bf-chest-lower-r0","bf-abs-l0","bf-abs-l1","bf-abs-l2","bf-abs-l3","bf-abs-r0","bf-abs-r1","bf-abs-r2","bf-abs-r3","bf-quadriceps-l0","bf-quadriceps-l1","bf-quadriceps-l2","bf-quadriceps-r0","bf-quadriceps-r1","bf-quadriceps-r2","bf-deltoids-l0","bf-deltoids-r0","bb-upper-back-l0","bb-upper-back-l1","bb-upper-back-l2","bb-upper-back-r0","bb-upper-back-r1","bb-upper-back-r2","bb-hamstring-l0","bb-hamstring-l1","bb-hamstring-l2","bb-hamstring-l3","bb-hamstring-r0","bb-hamstring-r1","bb-hamstring-r2","bb-hamstring-r3","bb-gluteal-l0","bb-gluteal-l1","bb-gluteal-r0","bb-gluteal-r1","bb-trapezius-l0","bb-trapezius-r0"],
 };
 const W2_ALL_MUSCLE_IDS = ["bf-chest-upper-l0","bf-chest-upper-r0","bf-chest-lower-l0","bf-chest-lower-r0","bb-neck-l0","bb-neck-r0","bf-obliques-l0","bf-obliques-l1","bf-obliques-l2","bf-obliques-l3","bf-obliques-l4","bf-obliques-l5","bf-obliques-l6","bf-obliques-l7","bf-obliques-r0","bf-obliques-r1","bf-obliques-r2","bf-obliques-r3","bf-obliques-r4","bf-obliques-r5","bf-obliques-r6","bf-obliques-r7","bf-abs-l0","bf-abs-l1","bf-abs-l2","bf-abs-l3","bf-abs-r0","bf-abs-r1","bf-abs-r2","bf-abs-r3","bf-biceps-l0","bf-biceps-r0","bf-triceps-l0","bf-triceps-r0","bf-trapezius-l0","bf-trapezius-r0","bf-deltoids-l0","bf-deltoids-r0","bf-adductors-l0","bf-adductors-l1","bf-adductors-l2","bf-adductors-r0","bf-adductors-r1","bf-adductors-r2","bf-quadriceps-l0","bf-quadriceps-l1","bf-quadriceps-l2","bf-quadriceps-r0","bf-quadriceps-r1","bf-quadriceps-r2","bf-calves-l0","bf-calves-l1","bf-calves-r0","bf-calves-r1","bf-forearm-l0","bf-forearm-l1","bf-forearm-l2","bf-forearm-r0","bf-forearm-r1","bf-forearm-r2","bb-trapezius-l0","bb-trapezius-r0","bb-deltoids-l0","bb-deltoids-r0","bb-upper-back-l0","bb-upper-back-l1","bb-upper-back-l2","bb-upper-back-r0","bb-upper-back-r1","bb-upper-back-r2","bb-triceps-l0","bb-triceps-l1","bb-triceps-l2","bb-triceps-r0","bb-triceps-r1","bb-triceps-r2","bb-lower-back-l0","bb-lower-back-l1","bb-lower-back-r0","bb-lower-back-r1","bb-forearm-l0","bb-forearm-l1","bb-forearm-l2","bb-forearm-l3","bb-forearm-r0","bb-forearm-r1","bb-forearm-r2","bb-forearm-r3","bb-gluteal-l0","bb-gluteal-l1","bb-gluteal-r0","bb-gluteal-r1","bb-adductors-l0","bb-adductors-r0","bb-hamstring-l0","bb-hamstring-l1","bb-hamstring-l2","bb-hamstring-l3","bb-hamstring-r0","bb-hamstring-r1","bb-hamstring-r2","bb-hamstring-r3","bb-calves-l0","bb-calves-l1","bb-calves-l2","bb-calves-l3","bb-calves-r0","bb-calves-r1","bb-calves-r2","bb-calves-r3"];
+
+// ── MUSCLE HEATMAP (Progress tab) ─────────────────────────────────────────
+// Resolves an exercise definition down to the specific body-map region ids it
+// trains — same branching _buildHighlightedBodyClone uses (Mix/subs/fallback),
+// just collecting ids instead of assigning a fixed per-muscle-group color.
+function _resolveExRegionIds(exDef) {
+  const muscle = exDef?.muscle || 'Other';
+  const subs = exDef?.subMuscles || [];
+  const ids = new Set();
+  if (muscle === 'Mix') {
+    if (subs.length > 0) {
+      subs.forEach(sm => (NEX_SUB_MUSCLE_IDS[sm] || W2_BODY_IDS[sm] || []).forEach(id => ids.add(id)));
+    } else {
+      _COMP_SUBS.forEach(s => (NEX_SUB_MUSCLE_IDS[s.n] || []).forEach(id => ids.add(id)));
+    }
+  } else if (subs.length > 0) {
+    subs.forEach(sm => (NEX_SUB_MUSCLE_IDS[sm] || W2_BODY_IDS[sm] || []).forEach(id => ids.add(id)));
+  } else {
+    const fallbackSubs = NEX_BODY_SUBMUSCLES[muscle] || [];
+    if (fallbackSubs.length > 0) {
+      fallbackSubs.forEach(sm => (NEX_SUB_MUSCLE_IDS[sm] || W2_BODY_IDS[sm] || []).forEach(id => ids.add(id)));
+    } else {
+      (W2_BODY_IDS[muscle] || []).forEach(id => ids.add(id));
+    }
+  }
+  return [...ids];
+}
+
+// Body-grey (untrained, matches the face's own #383838) → bright red (most
+// worked). t is 0..1; t=0 lands exactly on the face grey.
+function _redHeatColor(t) {
+  t = Math.max(0, Math.min(1, t));
+  const lo = [56, 56, 56], hi = [255, 30, 30];
+  const rgb = lo.map((c, i) => Math.round(c + (hi[i] - c) * t));
+  return `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+}
+
+// Big front+back body diagram (same asset _buildBigMuscleDiagram uses) painted
+// entirely in red-spectrum shades keyed by regionVal (region id -> set count).
+function _buildMuscleHeatmapDiagram(regionVal) {
+  const w2Src = document.getElementById('w2-body-container');
+  if (!w2Src) return null;
+  const bc = w2Src.cloneNode(true);
+  bc.removeAttribute('id');
+  bc.style.width = ''; bc.style.transform = ''; bc.style.transformOrigin = '';
+  if (bc.children[0]) bc.children[0].style.display = '';
+  if (bc.children[1]) bc.children[1].style.display = '';
+  bc.querySelectorAll('[id]').forEach(el => { el.id = 'heatmap-' + el.id; });
+  bc.querySelectorAll('[clip-path]').forEach(el => {
+    el.setAttribute('clip-path', el.getAttribute('clip-path').replace(/url\(#([^)]+)\)/g, 'url(#heatmap-$1)'));
+  });
+  const svgs = bc.querySelectorAll('svg');
+  if (svgs.length >= 2) svgs[1].setAttribute('viewBox', '790 -160 820 1510');
+  const maxVal = Math.max(0, ...Object.values(regionVal));
+  W2_ALL_MUSCLE_IDS.forEach(id => {
+    const el = bc.querySelector('#heatmap-' + id);
+    if (!el) return;
+    const v = regionVal[id] || 0;
+    const t = maxVal > 0 ? v / maxVal : 0;
+    el.setAttribute('fill', _redHeatColor(t));
+    el.setAttribute('opacity', '1');
+  });
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'display:flex;justify-content:center;padding:10px 16px 0;';
+  const scaleWrap = document.createElement('div');
+  scaleWrap.style.cssText = 'width:100%;max-width:340px;';
+  scaleWrap.appendChild(bc);
+  wrap.appendChild(scaleWrap);
+  return wrap;
+}
+
+function renderMuscleHeatmap() {
+  const mount = document.getElementById('heatmap-diagram-mount');
+  if (!mount) return;
+  const wsInRange = filterByRange(workouts.filter(w => !w._draft && !w._template), globalRange);
+  const regionVal = {};
+  wsInRange.forEach(w => {
+    w.exercises.forEach(e => {
+      const ds = doneSets(e.sets);
+      if (!ds.length) return;
+      const exDef = getAllExercises().find(x => x.name === e.name || x.label === e.name) || { muscle: e.muscle || 'Other', subMuscles: e.subMuscles || [] };
+      _resolveExRegionIds(exDef).forEach(id => { regionVal[id] = (regionVal[id] || 0) + ds.length; });
+    });
+  });
+  mount.innerHTML = '';
+  const diagram = _buildMuscleHeatmapDiagram(regionVal);
+  if (diagram) mount.appendChild(diagram);
+  const emptyEl = document.getElementById('heatmap-empty');
+  if (emptyEl) emptyEl.style.display = Object.keys(regionVal).length ? 'none' : 'block';
+}
+window.renderMuscleHeatmap = renderMuscleHeatmap;
 
 window._w2SheetIdx = null;
 window._w2SheetExpanded = false;
