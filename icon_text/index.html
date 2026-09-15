@@ -5562,7 +5562,11 @@ function renderExercisesTab() {
   const _segIdx = Math.max(0, _segViews.indexOf(_exTabView));
   const _segIndicatorColor = _exTabView === 'coach' ? '#7ec8e3' : 'var(--accent)';
   const _showPickBackArrow = !!_pickMode && !window._isNewWorkoutFlow;
-  const toggleHtml = `<div style="position:relative;font-family:'DM Sans';font-size:20px;font-weight:700;color:var(--text);padding:10px 0 6px;text-align:center;text-transform:uppercase;">${_showPickBackArrow ? `<button onclick="exitPickMode()" style="position:absolute;left:0;top:50%;transform:translateY(-50%);background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><line x1="19" y1="12" x2="5" y2="12" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round"/><polyline points="11,6 5,12 11,18" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>` : ''}Exercises</div><div style="display:flex;gap:0;margin-bottom:0;align-items:center;">
+  // Plain browse (reached from Profile → Exercises, not picking/building a
+  // workout) — the bottom tab bar has no button for this tab, so it gets
+  // hidden while here (see switchTab) and this "X" is the only way back.
+  const _showCloseX = !_pickMode && !window._isNewWorkoutFlow;
+  const toggleHtml = `<div style="position:relative;font-family:'DM Sans';font-size:20px;font-weight:700;color:var(--text);padding:10px 0 6px;text-align:center;text-transform:uppercase;">${_showPickBackArrow ? `<button onclick="exitPickMode()" style="position:absolute;left:0;top:50%;transform:translateY(-50%);background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><line x1="19" y1="12" x2="5" y2="12" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round"/><polyline points="11,6 5,12 11,18" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>` : _showCloseX ? `<button onclick="switchTab('profile')" style="position:absolute;left:0;top:50%;transform:translateY(-50%);background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round"/></svg></button>` : ''}Exercises</div><div style="display:flex;gap:0;margin-bottom:0;align-items:center;">
     <div id="exTab-seg-wrap" data-views="${_segViews.join(',')}" style="position:relative;display:flex;flex:1;">
       <button onclick="switchExTabView('all')" id="exTab-seg-all" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_exTabView==='all'?'var(--accent)':'#555'};transition:color .15s;">ALL</button>
       <button onclick="switchExTabView('custom')" id="exTab-seg-custom" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_exTabView==='custom'?'var(--accent)':'#555'};transition:color .15s;">CUSTOM</button>
@@ -8843,6 +8847,26 @@ function switchTab(tab) {
   if (tab !== 'workouts') {
     window._keepWorkoutsTabState = false;
     window._wtabSelectedIdx = null;
+  }
+  // Exercises has no bottom-tab button of its own (only reachable via the
+  // Profile menu) — hide the whole tab bar while browsing it there and rely
+  // on the "X" in its header (added in renderExercisesTab's toggleHtml) to get
+  // back, instead of leaving the bar showing with nothing in it highlighted.
+  // Pick-mode/new-workout-flow and coach mode reuse this same tab for their
+  // own flows and keep the normal tab bar, so they're excluded here.
+  // An active workout takes priority over all of that — the bar stays hidden
+  // no matter which tab is navigated to while one's in progress (it was
+  // showTodayWorkoutArea() that hid it in the first place; unconditionally
+  // restoring it here for e.g. tab==='profile'/'workouts2' re-showed it over
+  // an already-active workout the moment you left Today for another tab).
+  const _tabsBar = document.querySelector('.tabs');
+  if (_tabsBar) {
+    const _workoutAreaActive = document.getElementById('today-workout-area')?.style.display !== 'none';
+    if (_workoutAreaActive) {
+      _tabsBar.style.display = 'none';
+    } else if (tab !== 'log') {
+      _tabsBar.style.display = (tab === 'exercises' && !_pickMode && !window._isNewWorkoutFlow && !window._coachMode) ? 'none' : '';
+    }
   }
   // Show/hide toggle bars BEFORE page becomes visible
   const _wtoggleBar = document.getElementById('workoutsToggleBar');
@@ -13472,6 +13496,8 @@ document.addEventListener('DOMContentLoaded', () => {
   _initSwipeDownToClose('share-qr-modal', closeShareQR);
   // Profile → Body Weight modal.
   _initSwipeDownToClose('bwModalOverlay', closeBWModal);
+  // Active workout → Share workout QR page.
+  _initSwipeDownToClose('workout-share-qr-modal', closeWorkoutShareQR);
 });
 
 function openPRStarsInfo() {
@@ -19619,6 +19645,10 @@ window._onAuthReady = (user) => {
     if (typeof _resetWeekProgressForReplay === 'function') _resetWeekProgressForReplay();
     if (typeof renderTodayWeekProgress === 'function') renderTodayWeekProgress(true);
     if (window._hideAppLoadingOverlay) window._hideAppLoadingOverlay();
+    // Shared-workout link/QR (?importWorkout=...) — checked only after local +
+    // Firestore data have both loaded, and once the boot overlay is out of the
+    // way so its confirm dialog is actually visible.
+    if (typeof _checkImportWorkoutFromURL === 'function') _checkImportWorkoutFromURL();
   });
   if (typeof loadLibrary === 'function') loadLibrary();
 
@@ -24283,15 +24313,19 @@ function deleteCoachWorkout(id) {
 
 <!-- Workout Share QR Modal -->
 <div id="workout-share-qr-modal" style="display:none;position:fixed;inset:0;background:#0a0a0a;z-index:300;flex-direction:column;align-items:center;justify-content:space-between;padding:max(env(safe-area-inset-top),48px) 28px max(env(safe-area-inset-bottom),32px);">
+  <div style="position:absolute;top:calc(env(safe-area-inset-top,0px) + 8px);left:50%;transform:translateX(-50%);width:36px;height:4px;border-radius:2px;background:#444;"></div>
+  <button onclick="closeWorkoutShareQR()" style="position:absolute;top:calc(env(safe-area-inset-top,0px) + 16px);left:16px;background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  </button>
   <!-- Top: title -->
   <div style="text-align:center;">
-    <div id="workout-share-qr-name" style="font-family:'DM Sans';font-size:22px;font-weight:900;color:#fff;letter-spacing:.5px;margin-bottom:4px;"></div>
+    <div id="workout-share-qr-name" style="font-family:'DM Sans';font-size:28px;font-weight:900;color:#fff;letter-spacing:.5px;margin-bottom:4px;"></div>
     <div id="workout-share-qr-summary" style="font-family:'DM Sans';font-size:13px;color:#555;"></div>
   </div>
   <!-- Middle: QR box -->
   <div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
     <div style="background:var(--accent);border-radius:16px;padding:10px;display:inline-flex;flex-direction:column;align-items:center;gap:8px;">
-      <div id="workout-share-qr-canvas" style="width:220px;height:220px;"></div>
+      <div id="workout-share-qr-canvas" style="width:220px;height:220px;display:flex;align-items:center;justify-content:center;"></div>
     </div>
 
   </div>
@@ -24301,7 +24335,6 @@ function deleteCoachWorkout(id) {
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
       SHARE LINK
     </button>
-    <button onclick="closeWorkoutShareQR()" style="width:100%;padding:14px;background:transparent;color:#555;border:1px solid #333;border-radius:12px;font-family:'DM Sans';font-size:16px;font-weight:700;cursor:pointer;">CLOSE</button>
   </div>
 </div>
 
@@ -26278,21 +26311,29 @@ function openWorkoutShareQR() {
   if (!modal) return;
 
   // Get current workout name
-  const workoutName = document.getElementById('workout-name-display')?.textContent || 'Workout';
+  const workoutName = (document.getElementById('workoutName')?.value || document.getElementById('workout-hero-name')?.dataset?.name || '').trim() || 'Workout';
   const nameEl = document.getElementById('workout-share-qr-name');
   if (nameEl) nameEl.textContent = workoutName;
 
-  // Build workout data from current session
+  // Build workout data from current session — same per-row extraction
+  // saveSession() uses, so every logged set actually comes along (the old
+  // version here read nonexistent .kg-input/.reps-input classes and always
+  // encoded a single 0kg x 0 rep placeholder set).
   const exercises = Array.from(document.querySelectorAll('#exerciseList .exercise-card')).map(card => {
     const name = card.querySelector('.ex-name')?.textContent || '';
-    const sets = card.querySelectorAll('.set-body tr').length;
-    const firstKg = card.querySelector('.kg-input')?.value || '0';
-    const firstReps = card.querySelector('.reps-input')?.value || '0';
-    return { name, sets, kg: firstKg, reps: firstReps };
+    const muscle = card.dataset.exmuscle || card.dataset.muscle || 'Mix';
+    const exDef = (typeof getAllExercises === 'function') ? getAllExercises().find(x => x.name === name || x.label === name) : null;
+    const subMuscles = exDef?.subMuscles || [];
+    const sets = Array.from(card.querySelectorAll('.set-row')).map(row => {
+      const inp = row.querySelectorAll('.set-input');
+      const reps = (() => { const rs = row.querySelector('.reps-spin-val'); return rs ? (parseInt(rs.dataset.reps) || 0) : (parseInt(inp[1]?.value) || 0); })();
+      return { kg: parseFloat(inp[0]?.value) || 0, reps };
+    });
+    return { name, muscle, subMuscles, sets };
   });
 
   const summaryEl = document.getElementById('workout-share-qr-summary');
-  if (summaryEl) summaryEl.textContent = `${exercises.length} exercises`;
+  if (summaryEl) summaryEl.textContent = 'By ' + (window._currentUserData?.displayName || 'You');
 
   // Encode workout as URL param
   const workoutData = { name: workoutName, exercises };
@@ -26334,6 +26375,82 @@ function closeWorkoutShareQR() {
 }
 window.openShareQR = openShareQR;
 window.openWorkoutShareQR = openWorkoutShareQR;
+
+// ── IMPORT SHARED WORKOUT (?importWorkout=... from openWorkoutShareQR) ─────
+// Checked once per app load, after local + Firestore data are both loaded
+// (see the _onAuthReady call site) so the newly-added workout/exercises never
+// race a Firestore pull — loadFromFirestore's own merge is additive by id/name
+// either way, but running after it keeps this simple and predictable.
+function _checkImportWorkoutFromURL() {
+  const params = new URLSearchParams(location.search);
+  const encoded = params.get('importWorkout');
+  if (!encoded) return;
+  // Strip the param immediately — a refresh, back-navigation, or re-running
+  // this same check later in the session must never re-trigger the import.
+  params.delete('importWorkout');
+  const rest = params.toString();
+  history.replaceState(null, '', location.pathname + (rest ? '?' + rest : ''));
+  let data;
+  try {
+    data = JSON.parse(decodeURIComponent(escape(atob(encoded))));
+  } catch (e) { return; }
+  if (!data || !Array.isArray(data.exercises) || !data.exercises.length) return;
+  _confirmImportWorkout(data);
+}
+window._checkImportWorkoutFromURL = _checkImportWorkoutFromURL;
+
+function _confirmImportWorkout(data) {
+  const allEx = getAllExercises();
+  const newNames = [];
+  data.exercises.forEach(e => {
+    if (!allEx.some(x => x.name === e.name || x.label === e.name) && !newNames.includes(e.name)) newNames.push(e.name);
+  });
+  const exCount = data.exercises.length;
+  const overlay = document.createElement('div');
+  overlay.className = 'delete-confirm-overlay';
+  overlay.style.zIndex = '400';
+  overlay.innerHTML = `
+    <div class="delete-confirm-sheet">
+      <div class="delete-confirm-title">Import Workout?</div>
+      <div class="delete-confirm-sub">"${data.name || 'Workout'}" — ${exCount} exercise${exCount !== 1 ? 's' : ''}.${newNames.length ? ` ${newNames.length} not in your exercise list will be added: ${newNames.join(', ')}.` : ''}</div>
+      <div class="delete-confirm-btns">
+        <button class="btn-del-cancel" id="_impWCancel">Cancel</button>
+        <button class="btn-del-yes-solid" id="_impWConfirm" style="background:var(--accent);color:#000;">Import</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#_impWCancel').onclick = () => overlay.remove();
+  overlay.querySelector('#_impWConfirm').onclick = () => {
+    overlay.remove();
+    _doImportWorkout(data);
+  };
+}
+
+function _doImportWorkout(data) {
+  const allEx = getAllExercises();
+  let addedCount = 0;
+  const importedExercises = data.exercises.map(e => {
+    const existing = allEx.find(x => x.name === e.name || x.label === e.name);
+    if (!existing && !customExercises.some(x => x.name === e.name)) {
+      customExercises.push({ name: e.name, label: e.name, muscle: e.muscle || 'Mix', subMuscles: Array.isArray(e.subMuscles) ? e.subMuscles : [], custom: true });
+      addedCount++;
+    }
+    const sets = (Array.isArray(e.sets) && e.sets.length ? e.sets : [{ kg: 0, reps: 0 }])
+      .map(s => ({ kg: parseFloat(s.kg) || 0, reps: parseInt(s.reps) || 0, done: false, ignored: false }));
+    return { name: e.name, muscle: existing?.muscle || e.muscle || 'Mix', sets };
+  });
+  if (addedCount) saveCustom();
+
+  let name = (data.name || 'Imported Workout').trim() || 'Imported Workout';
+  const existingNames = new Set(workouts.filter(w => !w._draft).map(w => (w.name || '').trim().toLowerCase()));
+  if (existingNames.has(name.toLowerCase())) name = name + ' (Imported)';
+
+  workouts.unshift({ id: Date.now(), name, date: Date.now(), exercises: importedExercises, _template: true });
+  save();
+  if (window._currentUser && window.syncToFirestore) window.syncToFirestore();
+  if (typeof renderWorkoutsTab2 === 'function') renderWorkoutsTab2();
+  switchTab('workouts2');
+}
 
 // ── EXERCISE PHOTO SYSTEM ──────────────────────────────────────────
 let _exPhotoRawImg = null;
