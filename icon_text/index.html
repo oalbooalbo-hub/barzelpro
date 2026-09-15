@@ -6450,6 +6450,11 @@ function _flashNewExBadgeOnce(cardEl, exName) {
   setTimeout(() => {
     if (!cardEl.isConnected) return;
     if (!cardEl.style.position) cardEl.style.position = 'relative';
+    // Border flashes to --accent alongside the badge, and fades back to
+    // whatever it actually was rendering (not assumed) once the badge does.
+    const _origBorderColor = getComputedStyle(cardEl).borderColor;
+    cardEl.style.transition = 'border-color .25s ease';
+    cardEl.style.borderColor = 'var(--accent)';
     const badge = document.createElement('div');
     badge.textContent = 'NEW';
     badge.style.cssText = "position:absolute;top:8px;right:8px;font-family:'DM Sans';font-size:12px;font-weight:900;letter-spacing:.5px;color:var(--accent);opacity:0;transform:translateY(-4px) scale(.85);transition:opacity .25s ease,transform .25s cubic-bezier(.2,.8,.3,1);pointer-events:none;z-index:5;";
@@ -6461,7 +6466,11 @@ function _flashNewExBadgeOnce(cardEl, exName) {
     setTimeout(() => {
       badge.style.opacity = '0';
       badge.style.transform = 'translateY(-4px) scale(.85)';
-      setTimeout(() => badge.remove(), 260);
+      cardEl.style.borderColor = _origBorderColor;
+      setTimeout(() => {
+        badge.remove();
+        cardEl.style.transition = '';
+      }, 260);
     }, 1000);
   }, 450);
 }
@@ -8004,7 +8013,7 @@ function openExtabExOverlay(exName, musclesOnly, instant, knownPhoto) {
         _chartRmSetMap.set(dayKey, { kg: _bestSet.kg, reps: _bestSet.reps });
       }
       if (sessionVol > (_chartVolMap.get(dayKey) || 0)) _chartVolMap.set(dayKey, sessionVol);
-      _allSessions.push({ date: w.date, name: w.name, sets: e.sets.filter(s => !s.ignored) });
+      if (ds.length) _allSessions.push({ date: w.date, name: w.name, sets: e.sets.filter(s => !s.ignored) });
     });
   });
   _allSessions.sort((a, b) => b.date - a.date);
