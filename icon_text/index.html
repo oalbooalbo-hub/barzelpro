@@ -2047,7 +2047,7 @@ window._fbModuleReady = true;
   <div class="modal-sheet">
     <div class="modal-handle"></div>
     <div class="modal-header" style="justify-content:center;">
-      <div class="modal-title">PERSONAL RECORDS</div>
+      <div class="modal-title">NEW PERSONAL RECORDS</div>
     </div>
     <div class="modal-body">
       <div style="display:flex;flex-direction:column;gap:18px;padding:4px 0 8px;">
@@ -5195,6 +5195,42 @@ function makeThumb(ex) {
 let _exTabView = 'all'; // 'all' | 'custom' | 'coach'
 let _wTabView = 'created'; // 'created' or 'library'
 
+// Swipe left/right anywhere over the Exercises tab list to move between
+// body-part filters — reads the current pill order/selection fresh on every
+// swipe (rather than once) since renderExercisesTab rebuilds the pill bar
+// on every muscle switch. Attached once to the persistent #exercisesTabContent
+// node itself (its children get replaced on render, not the node), guarded so
+// repeated renderExercisesTab() calls never attach it twice.
+function _attachExTabMuscleSwipe(el) {
+  if (!el || el._muscleSwipeAttached) return;
+  el._muscleSwipeAttached = true;
+  let _sx = 0, _sy = 0, _axis = null;
+  el.addEventListener('touchstart', e => {
+    _sx = e.touches[0].clientX;
+    _sy = e.touches[0].clientY;
+    _axis = null;
+  }, { passive: true });
+  el.addEventListener('touchmove', e => {
+    if (_axis) return;
+    const dx = e.touches[0].clientX - _sx, dy = e.touches[0].clientY - _sy;
+    if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+    _axis = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
+  }, { passive: true });
+  el.addEventListener('touchend', e => {
+    if (_axis !== 'h') return;
+    const dx = e.changedTouches[0].clientX - _sx;
+    if (Math.abs(dx) < 50) return;
+    const wrap = document.getElementById('exTab-muscle-wrap');
+    if (!wrap) return;
+    const views = (wrap.dataset.views || '').split(',').filter(Boolean);
+    const curIdx = views.indexOf(window._exTabMuscle);
+    if (curIdx < 0) return;
+    const nextIdx = dx < 0 ? curIdx + 1 : curIdx - 1;
+    if (nextIdx < 0 || nextIdx >= views.length) return;
+    selectExTabMuscle(views[nextIdx]);
+  }, { passive: true });
+}
+
 // ── Exercise dumbbell icon — used as placeholder when no photo is set ───────
 function _exSvgIcon(muscle, size) {
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="6.5" y1="6" x2="6.5" y2="18"/><line x1="17.5" y1="6" x2="17.5" y2="18"/><line x1="3.5" y1="9" x2="3.5" y2="15"/><line x1="20.5" y1="9" x2="20.5" y2="15"/><line x1="6.5" y1="12" x2="17.5" y2="12"/></svg>`;
@@ -5203,6 +5239,7 @@ function _exSvgIcon(muscle, size) {
 function renderExercisesTab() {
   const el = document.getElementById('exercisesTabContent');
   if (!el) return;
+  _attachExTabMuscleSwipe(el);
   // Clean up any stale expanded slot outside the list
   document.getElementById('extab-expanded-slot')?.remove();
 
@@ -8429,6 +8466,13 @@ function openExtabExOverlay(exName, musclesOnly, instant, knownPhoto) {
       }
 
       // ── Diagram & pane state machine ───────────────────────────────────────
+      // Exactly one thing is ever leaving and one entering per transition
+      // (diagram <-> a pane, or pane <-> pane). _slideOut only hides its
+      // element 190ms later — starting the entering element's _slideIn right
+      // away used to leave both visible in normal document flow at once,
+      // stacking their heights and causing a visible jump. Delaying every
+      // entrance by that same 190ms so it only starts once the outgoing
+      // element is actually gone keeps the swap simple and jump-free.
       const _wasSpec = _prevIdx === PROG_IDX || _prevIdx === TABLE_IDX || _prevIdx === ALL_IDX;
       const _nowSpec  = idx     === PROG_IDX || idx     === TABLE_IDX || idx     === ALL_IDX;
       const _diagEl = document.getElementById('extab-diag-wrap');
@@ -8437,14 +8481,16 @@ function openExtabExOverlay(exName, musclesOnly, instant, knownPhoto) {
         _slideOut(_diagEl);
       }
       if (!_nowSpec && _wasSpec && _diagEl) {
-        _diagEl.style.display = _progPreDiag ?? '';
-        _slideIn(_diagEl);
+        setTimeout(() => {
+          _diagEl.style.display = _progPreDiag ?? '';
+          _slideIn(_diagEl);
+        }, 190);
       }
       // PROGRESS pane
       if (idx === PROG_IDX && _prevIdx !== PROG_IDX) {
-        _slideIn(progPane);
+        setTimeout(() => _slideIn(progPane), 190);
         periodWrap.style.display = _chartWtMap.size >= 2 ? 'block' : 'none';
-        setTimeout(_renderProgChart, 50);
+        setTimeout(_renderProgChart, 240);
       }
       if (idx !== PROG_IDX && _prevIdx === PROG_IDX) {
         _slideOut(progPane);
@@ -8452,14 +8498,14 @@ function openExtabExOverlay(exName, musclesOnly, instant, knownPhoto) {
       }
       // TABLE pane
       if (idx === TABLE_IDX && _prevIdx !== TABLE_IDX) {
-        _slideIn(tablePane);
+        setTimeout(() => _slideIn(tablePane), 190);
       }
       if (idx !== TABLE_IDX && _prevIdx === TABLE_IDX) {
         _slideOut(tablePane);
       }
       // ALL SESSIONS pane
       if (idx === ALL_IDX && _prevIdx !== ALL_IDX) {
-        _slideIn(sessionsPane);
+        setTimeout(() => _slideIn(sessionsPane), 190);
       }
       if (idx !== ALL_IDX && _prevIdx === ALL_IDX) {
         _slideOut(sessionsPane);
