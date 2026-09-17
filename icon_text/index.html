@@ -1343,7 +1343,10 @@ window._fbModuleReady = true;
     <!-- Weekly strength progress ring / muscle heatmap carousel — swipe area is
          exactly this box (bounded above by the header via the screen's own
          top padding, below by the dots row that immediately follows it). -->
-    <div id="today-week-progress" style="display:none;width:100%;max-width:380px;flex-direction:column;align-items:center;gap:6px;margin-top:50px;overflow:hidden;-webkit-tap-highlight-color:transparent;touch-action:pan-y;">
+    <div id="today-week-progress" style="display:none;width:100%;max-width:380px;flex-direction:column;align-items:center;gap:6px;margin-top:70px;overflow:hidden;-webkit-tap-highlight-color:transparent;touch-action:pan-y;">
+      <!-- Sits above the carousel track, not inside either slide, so it never
+           moves or re-renders when swiping between the ring and the heatmap. -->
+      <div style="font-family:'DM Sans';font-size:14px;font-weight:700;color:#ccc;letter-spacing:.5px;text-transform:uppercase;">This Week</div>
       <div id="today-carousel-track" style="display:flex;width:200%;align-self:flex-start;transform:translateX(0%);transition:transform .3s cubic-bezier(.2,.8,.3,1);">
         <div id="today-carousel-slide-ring" onclick="openStrengthTargetSheet()" style="width:50%;flex-shrink:0;display:flex;justify-content:center;cursor:pointer;">
           <div style="position:relative;width:300px;height:300px;">
@@ -1354,21 +1357,22 @@ window._fbModuleReady = true;
             </svg>
             <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transform:translateY(5px);">
               <div style="display:flex;flex-direction:column;align-items:center;gap:2px;transform:translateY(3px);">
-                <span style="font-family:'DM Sans';font-size:14px;font-weight:700;color:#ccc;letter-spacing:.5px;text-transform:uppercase;">This Week</span>
                 <span id="today-progress-count" style="font-family:'DM Sans';font-size:32px;font-weight:800;color:var(--text);line-height:1;">0/3</span>
-                <span style="font-family:'DM Sans';font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.3px;">workouts</span>
+                <span style="font-family:'DM Sans';font-size:12px;font-weight:600;color:#888;letter-spacing:.3px;">workouts</span>
               </div>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-top:5px;"><polyline points="6 9 12 15 18 9"/></svg>
             </div>
           </div>
         </div>
-        <div id="today-carousel-slide-heatmap" style="width:50%;flex-shrink:0;height:300px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;overflow:hidden;">
-          <div style="position:relative;width:272px;height:272px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <div id="today-carousel-slide-heatmap" style="width:50%;flex-shrink:0;height:300px;position:relative;overflow:hidden;">
+          <!-- Pinned to the exact center of the 300px slide (not centered as a group
+               with the legend below) so this circle's center lands on the same spot
+               as the ring's on page 1. -->
+          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:272px;height:272px;display:flex;align-items:center;justify-content:center;">
             <div style="position:absolute;inset:0;border-radius:50%;background:#000;"></div>
-            <div style="position:absolute;top:22px;left:0;right:0;z-index:1;text-align:center;font-family:'DM Sans';font-size:14px;font-weight:700;color:#ccc;letter-spacing:.5px;text-transform:uppercase;">This Week</div>
             <div id="today-heatmap-mount" style="position:relative;z-index:1;"></div>
           </div>
-          <div style="display:flex;align-items:center;gap:8px;">
+          <div style="position:absolute;bottom:2px;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:8px;">
             <span style="font-family:'DM Sans';font-size:10px;font-weight:700;color:var(--muted);">LESS</span>
             <div style="width:140px;height:6px;border-radius:3px;background:linear-gradient(to right, #3a86ff 0%, #8338ec 40%, #ff006e 70%, #ff0000 100%);"></div>
             <span style="font-family:'DM Sans';font-size:10px;font-weight:700;color:var(--muted);">MORE</span>
@@ -1381,7 +1385,7 @@ window._fbModuleReady = true;
       <span class="today-carousel-dot" onclick="_todayCarouselGoTo(0)" style="width:6px;height:6px;border-radius:50%;background:var(--accent);cursor:pointer;transition:background .2s ease;"></span>
       <span class="today-carousel-dot" onclick="_todayCarouselGoTo(1)" style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.25);cursor:pointer;transition:background .2s ease;"></span>
     </div>
-    <div style="width:100%;max-width:380px;margin-top:60px;">
+    <div style="width:100%;max-width:380px;margin-top:20px;">
       <button id="today-coach-btn" onclick="openCoachesGallery()" style="width:100%;height:55px;display:flex;align-items:center;justify-content:center;background:transparent;color:#ccc;border:1px solid #ccc;border-radius:26px;font-family:'DM Sans';font-size:16px;letter-spacing:0;cursor:pointer;box-sizing:border-box;line-height:1;font-weight:700;opacity:0;transform:translateY(24px);">FIND A COACH</button>
     </div>
     <div id="today-load-btn-wrap" style="width:100%;max-width:380px;display:none;">
