@@ -1347,8 +1347,8 @@ window._fbModuleReady = true;
       <!-- Sits above the carousel track, not inside either slide, so it never
            moves or re-renders when swiping between the ring and the heatmap. -->
       <div style="font-family:'DM Sans';font-size:14px;font-weight:700;color:#ccc;letter-spacing:.5px;text-transform:uppercase;">This Week</div>
-      <div id="today-carousel-track" style="display:flex;width:200%;align-self:flex-start;transform:translateX(0%);transition:transform .3s cubic-bezier(.2,.8,.3,1);">
-        <div id="today-carousel-slide-ring" onclick="openStrengthTargetSheet()" style="width:50%;flex-shrink:0;display:flex;justify-content:center;cursor:pointer;">
+      <div id="today-carousel-track" style="display:flex;width:300%;align-self:flex-start;transform:translateX(0%);transition:transform .3s cubic-bezier(.2,.8,.3,1);">
+        <div id="today-carousel-slide-ring" onclick="openStrengthTargetSheet()" style="width:33.3333%;flex-shrink:0;display:flex;justify-content:center;cursor:pointer;">
           <div style="position:relative;width:300px;height:300px;">
             <svg width="300" height="300" viewBox="0 0 300 300" style="display:block;">
               <circle cx="150" cy="150" r="117.86" fill="none" stroke="#1e1e1e" stroke-width="25.71"/>
@@ -1364,7 +1364,7 @@ window._fbModuleReady = true;
             </div>
           </div>
         </div>
-        <div id="today-carousel-slide-heatmap" style="width:50%;flex-shrink:0;height:300px;position:relative;overflow:hidden;">
+        <div id="today-carousel-slide-heatmap" style="width:33.3333%;flex-shrink:0;height:300px;position:relative;overflow:hidden;">
           <!-- Pinned to the exact center of the 300px slide (not centered as a group
                with the legend below) so this circle's center lands on the same spot
                as the ring's on page 1. -->
@@ -1378,12 +1378,16 @@ window._fbModuleReady = true;
             <span style="font-family:'DM Sans';font-size:10px;font-weight:700;color:#888;">MORE</span>
           </div>
         </div>
+        <div id="today-carousel-slide-prs" style="width:33.3333%;flex-shrink:0;height:300px;display:flex;align-items:center;justify-content:center;">
+          <div id="today-pr-stars" style="display:flex;gap:28px;align-items:flex-start;justify-content:center;"></div>
+        </div>
       </div>
     </div>
     <div id="today-plan-card" style="width:100%;max-width:380px;display:none;"></div>
     <div id="today-carousel-dots" style="display:none;justify-content:center;gap:6px;margin-top:-17px;">
       <span class="today-carousel-dot" onclick="_todayCarouselGoTo(0)" style="width:6px;height:6px;border-radius:50%;background:var(--accent);cursor:pointer;transition:background .2s ease;"></span>
       <span class="today-carousel-dot" onclick="_todayCarouselGoTo(1)" style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.25);cursor:pointer;transition:background .2s ease;"></span>
+      <span class="today-carousel-dot" onclick="_todayCarouselGoTo(2)" style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.25);cursor:pointer;transition:background .2s ease;"></span>
     </div>
     <div style="width:100%;max-width:380px;margin-top:20px;">
       <button id="today-coach-btn" onclick="openCoachesGallery()" style="width:100%;height:55px;display:flex;align-items:center;justify-content:center;background:transparent;color:#ccc;border:1px solid #ccc;border-radius:26px;font-family:'DM Sans';font-size:16px;letter-spacing:0;cursor:pointer;box-sizing:border-box;line-height:1;font-weight:700;opacity:0;transform:translateY(24px);">FIND A COACH</button>
@@ -3504,10 +3508,12 @@ function _fireCoachBtn() {
 }
 window.renderTodayWeekProgress = renderTodayWeekProgress;
 
-// ── Home carousel: page 0 = weekly ring, page 1 = this-week muscle heatmap ──
+// ── Home carousel: page 0 = weekly ring, page 1 = this-week muscle heatmap,
+// page 2 = this-week PR stars ──
 window._todayCarouselIdx = 0;
+const TODAY_CAROUSEL_PAGES = 3;
 function _todayCarouselGoTo(idx, instant) {
-  idx = Math.max(0, Math.min(1, idx));
+  idx = Math.max(0, Math.min(TODAY_CAROUSEL_PAGES - 1, idx));
   const track = document.getElementById('today-carousel-track');
   if (!track) return;
   window._todayCarouselIdx = idx;
@@ -3515,12 +3521,15 @@ function _todayCarouselGoTo(idx, instant) {
     track.style.transition = 'none';
     track.getBoundingClientRect(); // flush before restoring the transition below
   }
-  track.style.transform = `translateX(-${idx * 50}%)`;
+  // Each slide is (100/N)% of the N×-wide track, i.e. exactly one container
+  // width — so translateX by idx * that percentage moves by idx slides.
+  track.style.transform = `translateX(-${idx * (100 / TODAY_CAROUSEL_PAGES)}%)`;
   if (instant) requestAnimationFrame(() => { track.style.transition = 'transform .3s cubic-bezier(.2,.8,.3,1)'; });
   document.querySelectorAll('#today-carousel-dots .today-carousel-dot').forEach((d, i) => {
     d.style.background = i === idx ? 'var(--accent)' : 'rgba(255,255,255,0.25)';
   });
   if (idx === 1 && typeof _renderTodayWeekHeatmap === 'function') _renderTodayWeekHeatmap();
+  if (idx === 2 && typeof _renderTodayWeekPRStars === 'function') _renderTodayWeekPRStars();
 }
 window._todayCarouselGoTo = _todayCarouselGoTo;
 
@@ -28235,6 +28244,37 @@ function _renderTodayWeekHeatmap() {
   mount.style.transform = `translateY(${TODAY_HEATMAP_OFFSET_Y}px) scale(${TODAY_HEATMAP_SCALE})`;
 }
 window._renderTodayWeekHeatmap = _renderTodayWeekHeatmap;
+
+// Home carousel's page 3 — this week's PR stars (MAX / BEST SET / VOL), reusing
+// _computeBodyPartExPRs (the same chronological "was this actually a PR at the
+// time" pass that powers Profile > Progress > Personal Records) instead of
+// re-deriving PR detection, since past workouts don't store PR flags themselves.
+function _renderTodayWeekPRStars() {
+  const mount = document.getElementById('today-pr-stars');
+  if (!mount) return;
+  const now = new Date();
+  const weekStart = new Date(now); weekStart.setDate(now.getDate() - now.getDay()); weekStart.setHours(0, 0, 0, 0);
+  const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate() + 6); weekEnd.setHours(23, 59, 59, 999);
+  const allW = workouts.filter(w => !w._draft && !w._template).slice().sort((a, b) => a.date - b.date);
+  const base = allW.filter(w => { const d = new Date(w.date); return d >= weekStart && d <= weekEnd; });
+  const countFor = (metric) => Object.values(_computeBodyPartExPRs(allW, base, metric)).reduce((a, e) => a + e.count, 0);
+  const maxN = countFor('max'), bestSetN = countFor('1rm'), volN = countFor('vol');
+  // Unlike the in-workout star() (which hides the number and shows a bare grey
+  // star at 0), this always shows the count — 0 included — colored grey only
+  // when it's 0.
+  const star = (color, n, label) => {
+    const lit = n > 0;
+    return `<span style="display:inline-flex;flex-direction:column;align-items:center;gap:4px;">
+      <span style="position:relative;display:inline-flex;align-items:center;justify-content:center;width:68px;height:68px;">
+        <svg width="68" height="68" viewBox="0 0 24 24" fill="${lit ? color : '#333'}"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
+        <span style="position:absolute;font-size:26px;font-weight:800;color:${lit ? '#000' : '#777'};line-height:1;transform:translateY(1px);">${n}</span>
+      </span>
+      <span style="font-size:10px;font-weight:700;color:${lit ? color : '#555'};letter-spacing:.5px;">${label}</span>
+    </span>`;
+  };
+  mount.innerHTML = star('#e8ff47', maxN, 'MAX') + star('#ff8c42', bestSetN, 'BEST SET') + star('#a78bfa', volN, 'VOL');
+}
+window._renderTodayWeekPRStars = _renderTodayWeekPRStars;
 
 function renderMuscleHeatmap() {
   const mount = document.getElementById('heatmap-diagram-mount');
