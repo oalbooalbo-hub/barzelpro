@@ -1340,26 +1340,48 @@ window._fbModuleReady = true;
 
   <!-- START SCREEN: shown when no workout is active -->
   <div id="today-start-screen" style="display:flex;flex-direction:column;align-items:center;justify-content:center;position:fixed;top:0;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom));padding:44px 16px 4px;gap:12px;background:linear-gradient(135deg,#303A42,#050607);z-index:5;">
-    <!-- Weekly strength progress ring -->
-    <div id="today-week-progress" onclick="openStrengthTargetSheet()" style="display:none;width:100%;max-width:380px;flex-direction:column;align-items:center;gap:6px;cursor:pointer;-webkit-tap-highlight-color:transparent;">
-      <div style="position:relative;width:300px;height:300px;">
-        <svg width="300" height="300" viewBox="0 0 300 300" style="display:block;">
-          <circle cx="150" cy="150" r="117.86" fill="none" stroke="#1e1e1e" stroke-width="25.71"/>
-          <circle id="today-progress-ring" cx="150" cy="150" r="117.86" fill="none" stroke="#999" stroke-opacity="0.55" stroke-width="25.71" stroke-linecap="round" stroke-dasharray="740.52" stroke-dashoffset="740.52" transform="rotate(-90 150 150)" style="transition:stroke-dashoffset .6s ease,stroke .4s ease,stroke-opacity .4s ease;"/>
-          <g id="today-progress-goal-ring" transform="rotate(-90 150 150)"></g>
-        </svg>
-        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transform:translateY(5px);">
-          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;transform:translateY(3px);">
-            <span style="font-family:'DM Sans';font-size:14px;font-weight:700;color:#ccc;letter-spacing:.5px;text-transform:uppercase;">This Week</span>
-            <span id="today-progress-count" style="font-family:'DM Sans';font-size:32px;font-weight:800;color:var(--text);line-height:1;">0/3</span>
-            <span style="font-family:'DM Sans';font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.3px;">workouts</span>
+    <!-- Weekly strength progress ring / muscle heatmap carousel — swipe area is
+         exactly this box (bounded above by the header via the screen's own
+         top padding, below by the dots row that immediately follows it). -->
+    <div id="today-week-progress" style="display:none;width:100%;max-width:380px;flex-direction:column;align-items:center;gap:6px;margin-top:50px;overflow:hidden;-webkit-tap-highlight-color:transparent;touch-action:pan-y;">
+      <div id="today-carousel-track" style="display:flex;width:200%;align-self:flex-start;transform:translateX(0%);transition:transform .3s cubic-bezier(.2,.8,.3,1);">
+        <div id="today-carousel-slide-ring" onclick="openStrengthTargetSheet()" style="width:50%;flex-shrink:0;display:flex;justify-content:center;cursor:pointer;">
+          <div style="position:relative;width:300px;height:300px;">
+            <svg width="300" height="300" viewBox="0 0 300 300" style="display:block;">
+              <circle cx="150" cy="150" r="117.86" fill="none" stroke="#1e1e1e" stroke-width="25.71"/>
+              <circle id="today-progress-ring" cx="150" cy="150" r="117.86" fill="none" stroke="#999" stroke-opacity="0.55" stroke-width="25.71" stroke-linecap="round" stroke-dasharray="740.52" stroke-dashoffset="740.52" transform="rotate(-90 150 150)" style="transition:stroke-dashoffset .6s ease,stroke .4s ease,stroke-opacity .4s ease;"/>
+              <g id="today-progress-goal-ring" transform="rotate(-90 150 150)"></g>
+            </svg>
+            <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transform:translateY(5px);">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:2px;transform:translateY(3px);">
+                <span style="font-family:'DM Sans';font-size:14px;font-weight:700;color:#ccc;letter-spacing:.5px;text-transform:uppercase;">This Week</span>
+                <span id="today-progress-count" style="font-family:'DM Sans';font-size:32px;font-weight:800;color:var(--text);line-height:1;">0/3</span>
+                <span style="font-family:'DM Sans';font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.3px;">workouts</span>
+              </div>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-top:5px;"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
           </div>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-top:5px;"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div id="today-carousel-slide-heatmap" style="width:50%;flex-shrink:0;height:300px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;overflow:hidden;">
+          <div style="position:relative;width:272px;height:272px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <div style="position:absolute;inset:0;border-radius:50%;background:#000;"></div>
+            <div style="position:absolute;top:22px;left:0;right:0;z-index:1;text-align:center;font-family:'DM Sans';font-size:14px;font-weight:700;color:#ccc;letter-spacing:.5px;text-transform:uppercase;">This Week</div>
+            <div id="today-heatmap-mount" style="position:relative;z-index:1;"></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-family:'DM Sans';font-size:10px;font-weight:700;color:var(--muted);">LESS</span>
+            <div style="width:140px;height:6px;border-radius:3px;background:linear-gradient(to right, #3a86ff 0%, #8338ec 40%, #ff006e 70%, #ff0000 100%);"></div>
+            <span style="font-family:'DM Sans';font-size:10px;font-weight:700;color:var(--muted);">MORE</span>
+          </div>
         </div>
       </div>
     </div>
     <div id="today-plan-card" style="width:100%;max-width:380px;display:none;"></div>
-    <div style="width:100%;max-width:380px;">
+    <div id="today-carousel-dots" style="display:none;justify-content:center;gap:6px;">
+      <span class="today-carousel-dot" onclick="_todayCarouselGoTo(0)" style="width:6px;height:6px;border-radius:50%;background:var(--accent);cursor:pointer;transition:background .2s ease;"></span>
+      <span class="today-carousel-dot" onclick="_todayCarouselGoTo(1)" style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.25);cursor:pointer;transition:background .2s ease;"></span>
+    </div>
+    <div style="width:100%;max-width:380px;margin-top:60px;">
       <button id="today-coach-btn" onclick="openCoachesGallery()" style="width:100%;height:55px;display:flex;align-items:center;justify-content:center;background:transparent;color:#ccc;border:1px solid #ccc;border-radius:26px;font-family:'DM Sans';font-size:16px;letter-spacing:0;cursor:pointer;box-sizing:border-box;line-height:1;font-weight:700;opacity:0;transform:translateY(24px);">FIND A COACH</button>
     </div>
     <div id="today-load-btn-wrap" style="width:100%;max-width:380px;display:none;">
@@ -1830,7 +1852,7 @@ window._fbModuleReady = true;
       <div id="heatmap-empty" style="display:none;text-align:center;padding:24px 0;font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.5px;">No data for this range</div>
       <div style="display:flex;align-items:center;gap:8px;padding:10px 16px 4px;justify-content:center;">
         <span style="font-family:'DM Sans';font-size:10px;font-weight:700;color:var(--muted);">LESS</span>
-        <div style="flex:1;max-width:140px;height:6px;border-radius:3px;background:linear-gradient(to right, #383838, #ff1e1e);"></div>
+        <div style="flex:1;max-width:140px;height:6px;border-radius:3px;background:linear-gradient(to right, #3a86ff 0%, #8338ec 40%, #ff006e 70%, #ff0000 100%);"></div>
         <span style="font-family:'DM Sans';font-size:10px;font-weight:700;color:var(--muted);">MORE</span>
       </div>
     </div>
@@ -2986,6 +3008,7 @@ function showTodayStartScreen(skipGoalReplay) {
   if (window.hideExFloatBar) hideExFloatBar();
   window._isNewWorkoutFlow = false;
   document.getElementById('today-start-screen').style.display = 'flex';
+  if (typeof _todayCarouselGoTo === 'function') _todayCarouselGoTo(0, true);
   _syncShareBtn();
   document.getElementById('today-workout-area').style.display = 'none';
   const _pageLogC = document.getElementById('page-log');
@@ -3465,6 +3488,8 @@ function renderTodayWeekProgress(withAnim) {
     }
   }
   el.style.display = 'flex';
+  const _dotsEl = document.getElementById('today-carousel-dots');
+  if (_dotsEl) _dotsEl.style.display = 'flex';
 }
 function _fireCoachBtn() {
   const btn = document.getElementById('today-coach-btn');
@@ -3474,6 +3499,59 @@ function _fireCoachBtn() {
   _fadeAnimate(btn, 0, 1, 320);
 }
 window.renderTodayWeekProgress = renderTodayWeekProgress;
+
+// ── Home carousel: page 0 = weekly ring, page 1 = this-week muscle heatmap ──
+window._todayCarouselIdx = 0;
+function _todayCarouselGoTo(idx, instant) {
+  idx = Math.max(0, Math.min(1, idx));
+  const track = document.getElementById('today-carousel-track');
+  if (!track) return;
+  window._todayCarouselIdx = idx;
+  if (instant) {
+    track.style.transition = 'none';
+    track.getBoundingClientRect(); // flush before restoring the transition below
+  }
+  track.style.transform = `translateX(-${idx * 50}%)`;
+  if (instant) requestAnimationFrame(() => { track.style.transition = 'transform .3s cubic-bezier(.2,.8,.3,1)'; });
+  document.querySelectorAll('#today-carousel-dots .today-carousel-dot').forEach((d, i) => {
+    d.style.background = i === idx ? 'var(--accent)' : 'rgba(255,255,255,0.25)';
+  });
+  if (idx === 1 && typeof _renderTodayWeekHeatmap === 'function') _renderTodayWeekHeatmap();
+}
+window._todayCarouselGoTo = _todayCarouselGoTo;
+
+// Swipe handling scoped to the carousel box itself — this box sits below the
+// header and above the dots row by construction, so attaching the gesture
+// here (rather than to today-start-screen as a whole) already keeps the
+// swipe zone exactly "above the dots, below the logo" without extra math.
+(function _initTodayCarouselSwipe() {
+  const zone = document.getElementById('today-week-progress');
+  if (!zone) return;
+  let _tx = 0, _ty = 0, _moved = false;
+  zone.addEventListener('touchstart', e => {
+    if (e.touches.length !== 1) return;
+    _tx = e.touches[0].clientX;
+    _ty = e.touches[0].clientY;
+    _moved = false;
+  }, { passive: true });
+  zone.addEventListener('touchmove', e => {
+    if (!e.touches.length) return;
+    if (Math.abs(e.touches[0].clientX - _tx) > 8) _moved = true;
+  }, { passive: true });
+  zone.addEventListener('touchend', e => {
+    if (!_moved) return;
+    const dx = e.changedTouches[0].clientX - _tx;
+    const dy = e.changedTouches[0].clientY - _ty;
+    if (Math.abs(dx) < 40 || Math.abs(dy) > Math.abs(dx)) return;
+    _todayCarouselGoTo(window._todayCarouselIdx + (dx < 0 ? 1 : -1));
+  }, { passive: true });
+  // A drag that ends inside the ring slide would otherwise still fire its
+  // onclick (openStrengthTargetSheet) once the finger lifts — swallow that
+  // click whenever the gesture just completed was a swipe, not a tap.
+  zone.addEventListener('click', e => {
+    if (_moved) { e.stopPropagation(); e.preventDefault(); }
+  }, true);
+})();
 
 function _getWeekStatusData() {
   const now = new Date();
@@ -9878,7 +9956,10 @@ function updateTodayMuscleChips() {
       : `<span style="font-size:18px;font-weight:700;color:${active ? color : '#888'};line-height:1;">${total}</span>`;
     return `<button onclick="filterTodayByMuscle('${m}')" style="${_btnBase}position:relative;background:${active ? color+'33' : 'rgba(255,255,255,.12)'};border:1px solid ${active ? color : '#333'};">${countHtml}<span style="font-size:14px;font-weight:600;color:${active ? color : '#888'};letter-spacing:.2px;line-height:1;white-space:nowrap;">${_muscleAbbr}</span></button>`;
   }).join('');
-  if (entries.length <= 4) {
+  if (entries.length === 4) {
+    scrollEl.style.justifyContent = 'space-between';
+    scrollEl.style.overflowX = 'hidden';
+  } else if (entries.length <= 4) {
     scrollEl.style.justifyContent = 'center';
     scrollEl.style.overflowX = 'hidden';
   } else {
@@ -28054,12 +28135,27 @@ function _resolveExRegionIds(exDef) {
   return [...ids];
 }
 
-// Body-grey (untrained, matches the face's own #383838) → bright red (most
-// worked). t is 0..1; t=0 lands exactly on the face grey.
+// Body-grey (untrained, matches the face's own #383838) for t=0, otherwise a
+// 4-stop blue→purple→pink→red gradient across the worked range. t is 0..1.
+const _HEAT_GRADIENT_STOPS = [
+  [0.0, [58, 134, 255]],   // #3a86ff
+  [0.4, [131, 56, 236]],   // #8338ec
+  [0.7, [255, 0, 110]],    // #ff006e
+  [1.0, [255, 0, 0]],      // #ff0000
+];
 function _redHeatColor(t) {
   t = Math.max(0, Math.min(1, t));
-  const lo = [56, 56, 56], hi = [255, 30, 30];
-  const rgb = lo.map((c, i) => Math.round(c + (hi[i] - c) * t));
+  if (t === 0) return 'rgb(56,56,56)';
+  let lo = _HEAT_GRADIENT_STOPS[0], hi = _HEAT_GRADIENT_STOPS[_HEAT_GRADIENT_STOPS.length - 1];
+  for (let i = 0; i < _HEAT_GRADIENT_STOPS.length - 1; i++) {
+    if (t >= _HEAT_GRADIENT_STOPS[i][0] && t <= _HEAT_GRADIENT_STOPS[i + 1][0]) {
+      lo = _HEAT_GRADIENT_STOPS[i]; hi = _HEAT_GRADIENT_STOPS[i + 1];
+      break;
+    }
+  }
+  const span = hi[0] - lo[0];
+  const localT = span > 0 ? (t - lo[0]) / span : 0;
+  const rgb = lo[1].map((c, i) => Math.round(c + (hi[1][i] - c) * localT));
   return `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
 }
 
@@ -28096,6 +28192,45 @@ function _buildMuscleHeatmapDiagram(regionVal) {
   wrap.appendChild(scaleWrap);
   return wrap;
 }
+
+// Manually-tuned size for the Home carousel's heatmap diagram — a plain
+// multiplier on the diagram's natural rendered size, not fit to any
+// container. Adjust this single number to resize it.
+const TODAY_HEATMAP_SCALE = 1.1;
+const TODAY_HEATMAP_OFFSET_Y = -10; // px, negative = up
+
+// Home carousel's page 2 — same diagram/gradient as renderMuscleHeatmap below,
+// but scoped to the current calendar week (Sun-Sat) instead of the Progress
+// tab's selectable date range, matching the ring's own "this week" window.
+function _renderTodayWeekHeatmap() {
+  const mount = document.getElementById('today-heatmap-mount');
+  if (!mount) return;
+  const now = new Date();
+  const weekStart = new Date(now); weekStart.setDate(now.getDate() - now.getDay()); weekStart.setHours(0, 0, 0, 0);
+  const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate() + 6); weekEnd.setHours(23, 59, 59, 999);
+  const deletedIds = new Set((deletedWorkouts || []).map(dw => dw.id));
+  const regionVal = {};
+  (workouts || []).forEach(w => {
+    if (w._draft || w._template || deletedIds.has(w.id)) return;
+    const d = new Date(w.date);
+    if (d < weekStart || d > weekEnd) return;
+    (w.exercises || []).forEach(e => {
+      const ds = doneSets(e.sets);
+      if (!ds.length) return;
+      const exDef = getAllExercises().find(x => x.name === e.name || x.label === e.name) || { muscle: e.muscle || 'Other', subMuscles: e.subMuscles || [] };
+      _resolveExRegionIds(exDef).forEach(id => { regionVal[id] = (regionVal[id] || 0) + ds.length; });
+    });
+  });
+  mount.innerHTML = '';
+  const diagram = _buildMuscleHeatmapDiagram(regionVal);
+  if (diagram) mount.appendChild(diagram);
+  // Size/position are plain, manually-tuned constants (not fit to the
+  // circle) — the wrapper's flex centering keeps it centered on the circle
+  // regardless of these values. Adjust TODAY_HEATMAP_SCALE/OFFSET_Y directly.
+  mount.style.transformOrigin = 'center center';
+  mount.style.transform = `translateY(${TODAY_HEATMAP_OFFSET_Y}px) scale(${TODAY_HEATMAP_SCALE})`;
+}
+window._renderTodayWeekHeatmap = _renderTodayWeekHeatmap;
 
 function renderMuscleHeatmap() {
   const mount = document.getElementById('heatmap-diagram-mount');
