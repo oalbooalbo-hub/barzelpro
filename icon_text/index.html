@@ -1372,9 +1372,9 @@ window._fbModuleReady = true;
             <div style="position:absolute;inset:0;border-radius:50%;background:#000;"></div>
             <div id="today-heatmap-mount" style="position:relative;z-index:1;"></div>
           </div>
-          <div style="position:absolute;bottom:2px;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:8px;">
+          <div style="position:absolute;bottom:-2px;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:8px;">
             <span style="font-family:'DM Sans';font-size:10px;font-weight:700;color:#888;">LESS</span>
-            <div style="width:140px;height:6px;border-radius:3px;background:linear-gradient(to right, #3a86ff 0%, #8338ec 40%, #ff006e 70%, #ff0000 100%);"></div>
+            <div style="width:200px;height:4px;border-radius:2px;background:linear-gradient(to right, #3a86ff 0%, #8338ec 40%, #ff006e 70%, #ff0000 100%);"></div>
             <span style="font-family:'DM Sans';font-size:10px;font-weight:700;color:#888;">MORE</span>
           </div>
         </div>
@@ -9024,6 +9024,7 @@ function switchTab(tab) {
       renderTodayPlanCard();
       _resetWeekProgressForReplay();
       renderTodayWeekProgress(true);
+      if (typeof _todayCarouselGoTo === 'function') _todayCarouselGoTo(0, true);
     }
   }
   if (tab !== 'log' && tab !== 'exercises') { if (!window._createNewMode) window._activeTabHighlight = null; if (tab !== 'workouts') { window._loadFromToday = false; window._isChangingWorkout = false; } }
@@ -28247,7 +28248,11 @@ function _redHeatColor(t) {
 
 // Big front+back body diagram (same asset _buildBigMuscleDiagram uses) painted
 // entirely in red-spectrum shades keyed by regionVal (region id -> set count).
-function _buildMuscleHeatmapDiagram(regionVal) {
+// animate=true (Home carousel only — see _renderTodayWeekHeatmap) paints every
+// region in its neutral grey first and stashes the real heat color on the
+// element instead of applying it, so the caller can reveal it later via
+// _animateMuscleHeatmapColors once the carousel slide itself has settled.
+function _buildMuscleHeatmapDiagram(regionVal, animate) {
   const w2Src = document.getElementById('w2-body-container');
   if (!w2Src) return null;
   const bc = w2Src.cloneNode(true);
@@ -28267,7 +28272,14 @@ function _buildMuscleHeatmapDiagram(regionVal) {
     if (!el) return;
     const v = regionVal[id] || 0;
     const t = maxVal > 0 ? v / maxVal : 0;
-    el.setAttribute('fill', _redHeatColor(t));
+    const color = _redHeatColor(t);
+    if (animate) {
+      el.style.transition = 'fill .5s ease';
+      el.dataset.heatColor = color;
+      el.setAttribute('fill', _redHeatColor(0));
+    } else {
+      el.setAttribute('fill', color);
+    }
     el.setAttribute('opacity', '1');
   });
   const wrap = document.createElement('div');
@@ -28279,11 +28291,26 @@ function _buildMuscleHeatmapDiagram(regionVal) {
   return wrap;
 }
 
+// Reveals the real heat colors _buildMuscleHeatmapDiagram(regionVal, true)
+// stashed on each region's dataset.heatColor, triggering their CSS fill
+// transition. Called once the Home carousel's own slide transition has
+// settled (see TODAY_HEATMAP_COLOR_DELAY) rather than while it's still moving.
+function _animateMuscleHeatmapColors(mount) {
+  if (!mount) return;
+  mount.querySelectorAll('[data-heat-color]').forEach(el => {
+    el.setAttribute('fill', el.dataset.heatColor);
+  });
+}
+
 // Manually-tuned size for the Home carousel's heatmap diagram — a plain
 // multiplier on the diagram's natural rendered size, not fit to any
 // container. Adjust this single number to resize it.
 const TODAY_HEATMAP_SCALE = 1.1;
 const TODAY_HEATMAP_OFFSET_Y = -10; // px, negative = up
+// Home carousel's track takes 300ms to slide (see #today-carousel-track's
+// own `transition: transform .3s`) — wait for that to finish, plus a small
+// buffer, before revealing the heatmap's and PR stars' real colors.
+const TODAY_CAROUSEL_COLOR_DELAY = 350;
 
 // Home carousel's page 2 — same diagram/gradient as renderMuscleHeatmap below,
 // but scoped to the current calendar week (Sun-Sat) instead of the Progress
@@ -28308,13 +28335,15 @@ function _renderTodayWeekHeatmap() {
     });
   });
   mount.innerHTML = '';
-  const diagram = _buildMuscleHeatmapDiagram(regionVal);
+  const diagram = _buildMuscleHeatmapDiagram(regionVal, true);
   if (diagram) mount.appendChild(diagram);
   // Size/position are plain, manually-tuned constants (not fit to the
   // circle) — the wrapper's flex centering keeps it centered on the circle
   // regardless of these values. Adjust TODAY_HEATMAP_SCALE/OFFSET_Y directly.
   mount.style.transformOrigin = 'center center';
   mount.style.transform = `translateY(${TODAY_HEATMAP_OFFSET_Y}px) scale(${TODAY_HEATMAP_SCALE})`;
+  clearTimeout(window._todayHeatmapColorTimer);
+  window._todayHeatmapColorTimer = setTimeout(() => _animateMuscleHeatmapColors(mount), TODAY_CAROUSEL_COLOR_DELAY);
 }
 window._renderTodayWeekHeatmap = _renderTodayWeekHeatmap;
 
@@ -28335,19 +28364,30 @@ function _renderTodayWeekPRStars() {
   // Unlike the in-workout star() (which hides the number and shows a bare grey
   // star at 0), this always shows the count — 0 included — colored grey only
   // when it's 0.
+  // Rendered grey/unlit first regardless of the real count, and only swapped
+  // to their real lit color (via CSS transition) once the carousel's own
+  // slide transition has settled — see _animateTodayPRStars/TODAY_CAROUSEL_COLOR_DELAY.
   const star = (color, n, label) => {
     const lit = n > 0;
     return `<span style="display:inline-flex;flex-direction:column;align-items:center;gap:4px;">
       <span style="position:relative;display:inline-flex;align-items:center;justify-content:center;width:68px;height:68px;">
-        <svg width="68" height="68" viewBox="0 0 24 24" fill="${lit ? color : '#333'}"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
-        <span style="position:absolute;font-size:26px;font-weight:800;color:${lit ? '#000' : '#777'};line-height:1;transform:translateY(1px);">${n}</span>
+        <svg class="today-pr-star-svg" data-lit-fill="${lit ? color : '#333'}" width="68" height="68" viewBox="0 0 24 24" fill="#333" style="transition:fill .5s ease;"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
+        <span class="today-pr-star-num" data-lit-color="${lit ? '#000' : '#777'}" style="position:absolute;font-size:26px;font-weight:800;color:#777;line-height:1;transform:translateY(1px);transition:color .5s ease;">${n}</span>
       </span>
-      <span style="font-size:10px;font-weight:700;color:${lit ? color : '#555'};letter-spacing:.5px;">${label}</span>
+      <span class="today-pr-star-label" data-lit-color="${lit ? color : '#555'}" style="font-size:10px;font-weight:700;color:#555;letter-spacing:.5px;transition:color .5s ease;">${label}</span>
     </span>`;
   };
   mount.innerHTML = star('#e8ff47', maxN, 'MAX') + star('#ff8c42', bestSetN, 'BEST SET') + star('#a78bfa', volN, 'VOL');
+  clearTimeout(window._todayPRStarsColorTimer);
+  window._todayPRStarsColorTimer = setTimeout(() => _animateTodayPRStars(mount), TODAY_CAROUSEL_COLOR_DELAY);
 }
 window._renderTodayWeekPRStars = _renderTodayWeekPRStars;
+
+function _animateTodayPRStars(mount) {
+  if (!mount) return;
+  mount.querySelectorAll('.today-pr-star-svg').forEach(el => el.setAttribute('fill', el.dataset.litFill));
+  mount.querySelectorAll('.today-pr-star-num, .today-pr-star-label').forEach(el => { el.style.color = el.dataset.litColor; });
+}
 
 function renderMuscleHeatmap() {
   const mount = document.getElementById('heatmap-diagram-mount');
@@ -28794,12 +28834,14 @@ function openW2Sheet(idx) {
     if (!_dragging && Math.abs(dy) > 8) _dragging = true;
     if (!_dragging) return;
     _curY = dy;
-    const scrollArea = document.getElementById('w2-scroll-area');
     const halfH = Math.max(Math.round(window.innerHeight * 0.80), 520);
     const fullH = window.innerHeight;
     if (window._w2SheetExpanded) {
-      // In expanded state: only allow dragging down when scroll area is at top
-      if (_curY > 0 && (!scrollArea || scrollArea.scrollTop === 0)) sheet.style.transform = `translateY(${_curY}px)`;
+      // Touches here only ever start on the fixed header (drag handle/menu/photo)
+      // — #w2-scroll-area's own touch isolation (below) stops its touches from
+      // ever reaching this handler — so the header should always be able to
+      // drag the sheet closed, regardless of how far the list under it is scrolled.
+      if (_curY > 0) sheet.style.transform = `translateY(${_curY}px)`;
     } else {
       // In half state: allow drag up (expand) or down (close)
       if (_curY < 0) {
@@ -28815,12 +28857,11 @@ function openW2Sheet(idx) {
   function _onEnd() {
     if (!_dragging) return;
     _dragging = false;
-    const scrollArea = document.getElementById('w2-scroll-area');
     const halfH = Math.max(Math.round(window.innerHeight * 0.80), 520);
     const fullH = window.innerHeight;
     const _actualY = parseFloat(sheet.style.transform?.match(/translateY\((.+)px\)/)?.[1] || 0);
     if (window._w2SheetExpanded) {
-      if ((_curY > 100 || _vel > 0.8) && (!scrollArea || scrollArea.scrollTop === 0)) {
+      if (_curY > 100 || _vel > 0.8) {
         closeW2Sheet();
       } else {
         _springAnimate(sheet, _actualY, 0, 300, 30);
