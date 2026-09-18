@@ -3608,8 +3608,8 @@ function renderWeekStatus() {
   if (countEl) countEl.textContent = days.filter(d => d.completed).length;
   const labels = _WEEK_DAY_LABELS;
   wrap.innerHTML = days.map((d, i) => `
-    <div class="week-status-day" data-completed="${d.completed ? '1' : '0'}" onclick="event.stopPropagation();selectWeekStatusDay(${i})" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:5px 0;border-radius:10px;cursor:pointer;-webkit-tap-highlight-color:transparent;">
-      <div class="wsd-circle" style="width:46px;height:${d.completed ? '62px' : '46px'};border-radius:${d.completed ? '23px' : '50%'};background:${d.completed ? 'var(--accent)' : '#2a2a2a'};border:2px solid transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;box-sizing:border-box;transition:background .2s,border-color .2s;">
+    <div class="week-status-day" data-completed="${d.completed ? '1' : '0'}" onclick="event.stopPropagation();selectWeekStatusDay(${i})" style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:5px 0;border-radius:10px;cursor:pointer;-webkit-tap-highlight-color:transparent;">
+      <div class="wsd-circle" style="width:100%;max-width:46px;height:${d.completed ? '62px' : '46px'};border-radius:${d.completed ? '23px' : '50%'};background:${d.completed ? 'var(--accent)' : '#2a2a2a'};border:${d.completed ? '4px' : '2px'} solid transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;box-sizing:border-box;transition:background .2s,border-color .2s;">
         ${d.completed ? `<svg class="wsd-check" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>` : ''}
         <span class="wsd-label" style="font-family:'DM Sans';font-size:12px;font-weight:700;color:${d.completed ? '#000' : 'var(--muted)'};letter-spacing:.3px;">${labels[i]}</span>
       </div>
@@ -3634,7 +3634,7 @@ function selectWeekStatusDay(idx) {
         circle.style.borderColor = isSel ? '#ff8c42' : 'transparent';
         circle.style.background = isCompleted ? 'var(--accent)' : '#2a2a2a';
         if (check) check.setAttribute('stroke', '#000');
-        if (label && isCompleted) label.style.color = '#000';
+        if (label) label.style.color = isCompleted ? '#000' : (isSel ? '#ff8c42' : 'var(--muted)');
         if (isSel) {
           circle.style.animation = 'none';
           requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -24335,7 +24335,7 @@ function deleteCoachWorkout(id) {
 <div id="strength-target-overlay" onclick="closeStrengthTargetSheet()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);z-index:8999;"></div>
 <div id="strength-target-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;z-index:9000;background:#1a1a1a;border-top:1px solid #2a2a2a;border-radius:20px 20px 0 0;padding:12px 20px calc(28px + env(safe-area-inset-bottom,0px));box-sizing:border-box;">
   <div style="width:36px;height:4px;border-radius:2px;background:#444;margin:0 auto 18px;"></div>
-  <div id="week-status-day-label" style="text-align:center;font-family:'DM Sans';font-size:12px;font-weight:700;color:#ccc;letter-spacing:.8px;min-height:14px;margin-bottom:4px;"></div>
+  <div id="week-status-day-label" style="text-align:center;font-family:'DM Sans';font-size:12px;font-weight:700;color:#ff8c42;letter-spacing:.8px;min-height:14px;margin-bottom:4px;"></div>
   <div id="week-status-detail" style="text-align:center;font-family:'DM Sans';font-size:20px;font-weight:600;color:var(--muted);min-height:18px;margin-bottom:10px;"></div>
   <div style="border-top:1px solid #444;margin-bottom:30px;"></div>
   <div id="week-status-completed-count" style="font-family:'DM Sans';font-size:54px;font-weight:800;color:var(--text);text-align:center;line-height:1;margin-bottom:10px;"></div>
@@ -28428,7 +28428,7 @@ function _renderTodayWeekPRStars() {
     return `<span style="display:inline-flex;flex-direction:column;align-items:center;gap:4px;">
       <span style="position:relative;display:inline-flex;align-items:center;justify-content:center;width:68px;height:68px;">
         <svg class="today-pr-star-svg" data-lit-fill="${lit ? color : '#333'}" width="68" height="68" viewBox="0 0 24 24" fill="#333" style="transition:fill .5s ease;"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
-        <span class="today-pr-star-num" data-lit-color="${lit ? '#000' : '#777'}" style="position:absolute;font-size:26px;font-weight:800;color:#777;line-height:1;transform:translateY(1px);transition:color .5s ease;">${n}</span>
+        <span class="today-pr-star-num" data-lit-color="${lit ? '#000' : '#777'}" style="position:absolute;font-size:26px;font-weight:800;color:#777;line-height:1;transform:translateY(3px);transition:color .5s ease;">${n}</span>
       </span>
       <span class="today-pr-star-label" data-lit-color="${lit ? color : '#555'}" style="font-size:10px;font-weight:700;color:#555;letter-spacing:.5px;transition:color .5s ease;">${label}</span>
     </span>`;
