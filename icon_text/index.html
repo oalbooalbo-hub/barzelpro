@@ -13625,9 +13625,21 @@ function openPRStarsInfo() {
 }
 window.openPRStarsInfo = openPRStarsInfo;
 function closePRStarsInfo() {
-  document.getElementById('prStarsInfoOverlay').classList.remove('open');
-  document.getElementById('prStarsSpotlight')?.classList.remove('open');
-  document.getElementById('workout-pr-stars')?.classList.remove('pr-stars-lit');
+  const _ovl = document.getElementById('prStarsInfoOverlay');
+  const _sheet = _ovl.querySelector('.modal-sheet');
+  const _finish = () => {
+    _ovl.classList.remove('open');
+    document.getElementById('prStarsSpotlight')?.classList.remove('open');
+    document.getElementById('workout-pr-stars')?.classList.remove('pr-stars-lit');
+    if (_sheet) _sheet.style.animation = '';
+    window._prStarsClosing = false;
+  };
+  // Already off-screen (swipe-down close) or not showing — nothing to animate.
+  if (!_ovl.classList.contains('open') || !_sheet || _sheet.dataset.swipeClosing) { _finish(); return; }
+  if (window._prStarsClosing) return;
+  window._prStarsClosing = true;
+  _sheet.style.animation = 'sheetSlideDown .2s ease-out forwards';
+  setTimeout(_finish, 200);
 }
 window.closePRStarsInfo = closePRStarsInfo;
 
@@ -13838,8 +13850,8 @@ function _openWorkoutPhotoStepSheet() {
   sheet.id = 'workout-photo-step-sheet';
   sheet.style.cssText = 'position:fixed;inset:0;z-index:500;';
   sheet.innerHTML = `
-    <div onclick="document.getElementById('workout-photo-step-sheet').remove()" style="position:absolute;inset:0;background:rgba(0,0,0,0.6);"></div>
-    <div style="position:absolute;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:#1a1a1a;border-radius:20px 20px 0 0;padding:0 16px calc(16px + env(safe-area-inset-bottom));">
+    <div onclick="_closeWorkoutPhotoStepSheetAnimated()" style="position:absolute;inset:0;background:rgba(0,0,0,0.6);"></div>
+    <div id="workout-photo-step-panel" style="position:absolute;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:#1a1a1a;border-radius:20px 20px 0 0;padding:0 16px calc(16px + env(safe-area-inset-bottom));">
       <div style="width:36px;height:3px;background:#555;border-radius:2px;margin:12px auto 4px;"></div>
       <div style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#888;letter-spacing:.8px;text-align:center;padding:6px 0 12px;">WORKOUT PHOTO</div>
       <button onclick="document.getElementById('workout-photo-step-sheet').remove();_triggerWorkoutPhotoStep('camera')" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
@@ -13859,6 +13871,18 @@ function _openWorkoutPhotoStepSheet() {
     </div>`;
   document.body.appendChild(sheet);
 }
+// Backdrop-tap close: slide the panel down, then remove the whole sheet.
+let _wpStepSheetClosing = false;
+function _closeWorkoutPhotoStepSheetAnimated() {
+  const _sheet = document.getElementById('workout-photo-step-sheet');
+  const _panel = document.getElementById('workout-photo-step-panel');
+  if (_wpStepSheetClosing) return;
+  if (!_sheet || !_panel) { _sheet?.remove(); return; }
+  _wpStepSheetClosing = true;
+  _panel.style.animation = 'sheetSlideDown .2s ease-out forwards';
+  setTimeout(() => { _wpStepSheetClosing = false; _sheet.remove(); }, 200);
+}
+window._closeWorkoutPhotoStepSheetAnimated = _closeWorkoutPhotoStepSheetAnimated;
 function _triggerWorkoutPhotoStep(mode) {
   const input = document.createElement('input');
   input.type = 'file';
@@ -24331,7 +24355,7 @@ function deleteCoachWorkout(id) {
 </div>
 
 <!-- Workout session menu sheet -->
-<div id="workout-menu-overlay" onclick="closeWorkoutMenu()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:300;"></div>
+<div id="workout-menu-overlay" onclick="closeWorkoutMenuAnimated()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:300;"></div>
 <div id="workout-menu-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:#1a1a1a;border-radius:20px 20px 0 0;z-index:301;padding:0 16px calc(16px + env(safe-area-inset-bottom));">
   <div style="width:36px;height:3px;background:#555;border-radius:2px;margin:12px auto 4px;"></div>
   <div style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#888;letter-spacing:.8px;text-align:center;padding:6px 0 12px;">WORKOUT OPTIONS</div>
@@ -24359,7 +24383,7 @@ function deleteCoachWorkout(id) {
 <input id="workout-change-image-input" type="file" accept="image/*" style="display:none" onchange="_handleChangeWorkoutImage(this)">
 
 <!-- Exercise detail menu sheet -->
-<div id="ex-detail-menu-overlay" onclick="closeExDetailMenu()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:300;"></div>
+<div id="ex-detail-menu-overlay" onclick="closeExDetailMenuAnimated()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:300;"></div>
 <div id="ex-detail-menu-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:#1a1a1a;border-radius:20px 20px 0 0;z-index:301;padding:0 16px calc(16px + env(safe-area-inset-bottom));">
   <div style="width:36px;height:3px;background:#555;border-radius:2px;margin:12px auto 4px;"></div>
   <div style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#888;letter-spacing:.8px;text-align:center;padding:6px 0 12px;">EXERCISE OPTIONS</div>
@@ -24439,7 +24463,7 @@ function deleteCoachWorkout(id) {
 </div>
 
 <!-- Exercise Photo Picker Sheet -->
-<div id="ex-photo-sheet-overlay" onclick="closeExPhotoSheet()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:300;"></div>
+<div id="ex-photo-sheet-overlay" onclick="closeExPhotoSheetAnimated()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:300;"></div>
 <div id="ex-photo-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:#1a1a1a;border-radius:20px 20px 0 0;z-index:301;padding:0 16px calc(16px + env(safe-area-inset-bottom));">
   <div style="width:36px;height:3px;background:#555;border-radius:2px;margin:12px auto 4px;"></div>
   <div id="ex-photo-sheet-title" style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#888;letter-spacing:.8px;text-align:center;padding:8px 0 12px;">EXERCISE PHOTO</div>
@@ -24516,8 +24540,8 @@ function deleteCoachWorkout(id) {
      deeply-nested row above this fixed overlay since ancestor elements (cards/lists
      using position:relative) form their own stacking contexts a child z-index can't
      escape, so carving a real gap out of the overlay is the only reliable fix. -->
-<div id="set-options-overlay" onclick="closeSetOptions()" style="display:none;position:fixed;top:0;left:0;right:0;background:rgba(0,0,0,0.85);z-index:300;"></div>
-<div id="set-options-overlay-bottom" onclick="closeSetOptions()" style="display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,0.85);z-index:300;"></div>
+<div id="set-options-overlay" onclick="closeSetOptionsAnimated()" style="display:none;position:fixed;top:0;left:0;right:0;background:rgba(0,0,0,0.85);z-index:300;"></div>
+<div id="set-options-overlay-bottom" onclick="closeSetOptionsAnimated()" style="display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,0.85);z-index:300;"></div>
 <div id="set-options-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:#1a1a1a;border-radius:20px 20px 0 0;z-index:301;padding:0 16px calc(16px + env(safe-area-inset-bottom));">
   <div style="width:36px;height:3px;background:#555;border-radius:2px;margin:12px auto 4px;"></div>
   <div style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#888;letter-spacing:.8px;text-align:center;padding:6px 0 12px;">SET OPTIONS</div>
@@ -24821,7 +24845,7 @@ function toggleWtabCardMenu(idx) {
     overlay = document.createElement('div');
     overlay.id = 'workout-options-overlay';
     overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:300;';
-    overlay.onclick = closeWtabMenu;
+    overlay.onclick = closeWtabMenuAnimated;
     document.body.appendChild(overlay);
 
     sheet = document.createElement('div');
@@ -24872,6 +24896,9 @@ function closeWtabMenu() {
   document.getElementById('workout-options-sheet')?.remove();
 }
 window.closeWtabMenu = closeWtabMenu;
+// Backdrop-tap close: slide the sheet down, then remove both elements.
+function closeWtabMenuAnimated() { _closeMenuSheetAnimated('workout-options-sheet', closeWtabMenu); }
+window.closeWtabMenuAnimated = closeWtabMenuAnimated;
 window.toggleWtabCardMenu = toggleWtabCardMenu;
 // ─────────────────────────────────────────────────────────────────────────
 
@@ -27205,6 +27232,35 @@ function openSetOptions(btn, exId) {
   }
 }
 
+// Backdrop-tap close: slide the sheet down first, then run the normal close.
+let _setOptionsClosing = false;
+function closeSetOptionsAnimated() {
+  const _sht = document.getElementById('set-options-sheet');
+  if (_setOptionsClosing) return;
+  if (!_sht || _sht.style.display === 'none') { closeSetOptions(); return; }
+  _setOptionsClosing = true;
+  _sht.style.animation = 'sheetSlideDown .2s ease-out forwards';
+  setTimeout(() => { _setOptionsClosing = false; closeSetOptions(); }, 200);
+}
+window.closeSetOptionsAnimated = closeSetOptionsAnimated;
+
+// Backdrop-tap close for the "..." menu sheets: slide down, then run closeFn.
+const _menuSheetClosing = {};
+function _closeMenuSheetAnimated(sheetId, closeFn) {
+  const _sht = document.getElementById(sheetId);
+  if (_menuSheetClosing[sheetId]) return;
+  if (!_sht || _sht.style.display === 'none') { closeFn(); return; }
+  _menuSheetClosing[sheetId] = true;
+  _sht.style.animation = 'sheetSlideDown .2s ease-out forwards';
+  setTimeout(() => { _menuSheetClosing[sheetId] = false; closeFn(); }, 200);
+}
+function closeWorkoutMenuAnimated() { _closeMenuSheetAnimated('workout-menu-sheet', closeWorkoutMenu); }
+function closeExDetailMenuAnimated() { _closeMenuSheetAnimated('ex-detail-menu-sheet', closeExDetailMenu); }
+function closeExPhotoSheetAnimated() { _closeMenuSheetAnimated('ex-photo-sheet', closeExPhotoSheet); }
+window.closeExPhotoSheetAnimated = closeExPhotoSheetAnimated;
+window.closeWorkoutMenuAnimated = closeWorkoutMenuAnimated;
+window.closeExDetailMenuAnimated = closeExDetailMenuAnimated;
+
 function closeSetOptions() {
   document.getElementById('set-options-overlay').style.display = 'none';
   document.getElementById('set-options-overlay-bottom').style.display = 'none';
@@ -29016,10 +29072,11 @@ function _runWorkoutLoadingAnim(onFadedIn) {
     const _onEnd = (e) => {
       if (e.target !== _ov || e.propertyName !== 'opacity') return;
       _ov.removeEventListener('transitionend', _onEnd);
-      if (onFadedIn) onFadedIn();
-      // Hold on a totally black screen for a beat before the "LOADING
-      // WORKOUT" label appears, instead of it popping in with the fade.
-      setTimeout(() => { if (_txt) _txt.style.opacity = '1'; }, 300);
+      // Show the "LOADING WORKOUT" label first and let its .4s fade-in finish
+      // before the (main-thread-blocking) build starts, so the label is
+      // actually visible while the workout loads instead of stalling mid-fade.
+      if (_txt) _txt.style.opacity = '1';
+      setTimeout(() => { if (onFadedIn) onFadedIn(); }, 400);
     };
     _ov.addEventListener('transitionend', _onEnd);
   }));
