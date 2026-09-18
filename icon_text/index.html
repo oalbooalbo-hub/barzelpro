@@ -24838,6 +24838,10 @@ function toggleWtabCardMenu(idx) {
   sheet.innerHTML = `
     <div style="width:36px;height:3px;background:#555;border-radius:2px;margin:12px auto 4px;"></div>
     <div style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#888;letter-spacing:.8px;text-align:center;padding:6px 0 12px;">WORKOUT OPTIONS</div>
+    <button onclick="closeWtabMenu();openWtabShareQR(${idx})" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      Share
+    </button>
     <button onclick="closeWtabMenu();closeW2Sheet();editWorkoutFromTab(${idx})" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
       Edit Workout
@@ -26426,9 +26430,10 @@ function openWorkoutShareQR() {
     const sets = Array.from(card.querySelectorAll('.set-row')).map(row => {
       const inp = row.querySelectorAll('.set-input');
       const reps = (() => { const rs = row.querySelector('.reps-spin-val'); return rs ? (parseInt(rs.dataset.reps) || 0) : (parseInt(inp[1]?.value) || 0); })();
-      return { kg: parseFloat(inp[0]?.value) || 0, reps };
+      return { kg: parseFloat(inp[0]?.value) || 0, reps, setType: row.dataset.setType || '' };
     });
-    return { name, muscle, subMuscles, sets };
+    const comment = card.querySelector('.comment-box')?.value || '';
+    return { name, muscle, subMuscles, sets, comment };
   });
 
   const summaryEl = document.getElementById('workout-share-qr-summary');
@@ -26457,6 +26462,63 @@ function openWorkoutShareQR() {
     }
   }, 50);
 }
+
+// Same share flow as openWorkoutShareQR(), but for a saved workout template
+// in the Workouts tab (workouts[idx]) rather than a live session — there's no
+// #exerciseList DOM to read from here, so the shareable data is built
+// straight from the stored exercises/sets instead.
+function openWtabShareQR(idx) {
+  const modal = document.getElementById('workout-share-qr-modal');
+  const w = workouts[idx];
+  if (!modal || !w) return;
+
+  const workoutName = (w.name || 'Workout').trim() || 'Workout';
+  const nameEl = document.getElementById('workout-share-qr-name');
+  if (nameEl) nameEl.textContent = workoutName;
+
+  const exercises = (w.exercises || []).map(ex => {
+    // A template that's never actually been run has no logged sets — fall
+    // back to its default targetSets/targetReps (same defaults shown in the
+    // Workouts-tab exercise list, e.g. "3 sets · 10 reps") instead of sharing
+    // an exercise with zero sets.
+    const sets = (ex.sets && ex.sets.length)
+      ? ex.sets.map(s => ({ kg: parseFloat(s.kg) || 0, reps: parseInt(s.reps) || 0, setType: s.setType || '' }))
+      : Array.from({ length: parseInt(ex.targetSets) || 1 }, () => ({ kg: 0, reps: parseInt(ex.targetReps) || 0, setType: '' }));
+    return {
+      name: ex.name || ex.label || '',
+      muscle: ex.muscle || 'Mix',
+      subMuscles: ex.subMuscles || [],
+      sets,
+      comment: ex.comment || ''
+    };
+  });
+
+  const summaryEl = document.getElementById('workout-share-qr-summary');
+  if (summaryEl) summaryEl.textContent = 'By ' + (window._currentUserData?.displayName || 'You');
+
+  const workoutData = { name: workoutName, exercises };
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(workoutData))));
+  const base = window.location.origin + window.location.pathname.replace(/[^/]*$/, '') + 'index.html';
+  const url = `${base}?importWorkout=${encoded}`;
+  window._workoutShareQRUrl = url;
+
+  modal.style.display = 'flex';
+  if (window._historyPush) window._historyPush('workout-share-qr');
+
+  const qrEl = document.getElementById('workout-share-qr-canvas');
+  if (!qrEl) return;
+  setTimeout(() => {
+    if (window.QRCode) {
+      _renderQR(qrEl, url);
+    } else {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+      s.onload = () => _renderQR(qrEl, url);
+      document.head.appendChild(s);
+    }
+  }, 50);
+}
+window.openWtabShareQR = openWtabShareQR;
 
 function shareWorkoutQRLink() {
   const url = window._workoutShareQRUrl || window.location.href;
@@ -26535,8 +26597,14 @@ function _doImportWorkout(data) {
       addedCount++;
     }
     const sets = (Array.isArray(e.sets) && e.sets.length ? e.sets : [{ kg: 0, reps: 0 }])
-      .map(s => ({ kg: parseFloat(s.kg) || 0, reps: parseInt(s.reps) || 0, done: false, ignored: false }));
-    return { name: e.name, muscle: existing?.muscle || e.muscle || 'Mix', sets };
+      .map(s => {
+        const setType = s.setType || '';
+        // Warmup sets are always saved with ignored:true (purely to exclude
+        // them from stats, not as a "drop this row" marker — see setSetType);
+        // derive that here rather than trusting an incoming `ignored` value.
+        return { kg: parseFloat(s.kg) || 0, reps: parseInt(s.reps) || 0, done: false, ignored: setType === 'warmup', setType };
+      });
+    return { name: e.name, muscle: existing?.muscle || e.muscle || 'Mix', sets, comment: e.comment || '' };
   });
   if (addedCount) saveCustom();
 
