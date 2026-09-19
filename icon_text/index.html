@@ -702,11 +702,11 @@ body.ex-tab-detail-open #ex-float-bar{display:none !important;}
 .cal-dow{font-size:10px;color:var(--muted);text-align:center;font-weight:700;padding:4px 0;text-transform:uppercase;letter-spacing:.5px;}
 .cal-badge-col{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:2px 0;}
 .cal-badge-col-header{height:100%;display:flex;align-items:center;justify-content:center;}
-.cal-target-badge{display:flex;align-items:center;justify-content:center;opacity:0.15;}
-.cal-target-badge.achieved{opacity:1;}
+.cal-target-badge{display:flex;align-items:center;justify-content:center;opacity:1;}
+.cal-target-badge.achieved{opacity:1;}.cal-target-badge-future{opacity:0.15;}
 .cal-target-badge svg{width:20px;height:20px;}
 .cal-target-badge-cardio{color:#7ec8e3;}
-.cal-target-badge-workout{color:var(--accent);}
+.cal-target-badge-workout{color:#fff;}
 .cal-day{position:relative;aspect-ratio:1;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:13px;font-weight:600;cursor:default;color:var(--muted);}
 .cal-day.has-workout{background:transparent;border:2px solid var(--accent);border-radius:50%;color:var(--accent);cursor:pointer;font-size:13px;}
 .cal-day.has-cardio-only{background:transparent;border:2px solid #7ec8e3;color:#7ec8e3;cursor:pointer;font-size:13px;}
@@ -1360,7 +1360,7 @@ window._fbModuleReady = true;
                 <span id="today-progress-count" style="font-family:'DM Sans';font-size:32px;font-weight:800;color:var(--text);line-height:1;">0/3</span>
                 <span style="font-family:'DM Sans';font-size:12px;font-weight:600;color:#888;letter-spacing:.3px;">workouts</span>
               </div>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-top:5px;"><polyline points="6 9 12 15 18 9"/></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-top:5px;"><polyline points="6 9 12 15 18 9"/></svg>
             </div>
           </div>
         </div>
@@ -12633,6 +12633,9 @@ function startTimer(id) {
   const t = _timers[id];
   if (!t || t.running) return;
   if (t.remaining <= 0) { t.remaining = lastTimerSecs; t.target = lastTimerSecs; }
+  // Redraw now so a restart after reaching zero shows the preset (e.g. 01:00)
+  // right away instead of the stale 00:00 until the first tick.
+  updateTimerDisplay(id);
   t.running = true;
   t.startedAt = Date.now();
   t.remainingAtStart = t.remaining;
@@ -17351,7 +17354,7 @@ function renderCalendar() {
   const firstDay = new Date(calYear, calMonth, 1).getDay();
   const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
 
-  const chevSVG = `<svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  const chevSVG = `<svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4.5 2l4 4-4 4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
   const dows = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   let html = '<div class="cal-grid">';
@@ -17420,7 +17423,7 @@ function renderCalendar() {
       const wAch = wkWorkouts >= workoutWeekTarget;
       const wkStartKey1 = weekStart.toDateString();
       html += `<div class="cal-badge-col" style="cursor:pointer;" onclick="openWeekSummary('${wkStartKey1}')">
-        <span class="cal-target-badge cal-target-badge-workout${wAch?' achieved':''}">${chevSVG}</span>
+        <span class="cal-target-badge cal-target-badge-workout${weekStart > today ? ' cal-target-badge-future' : ''}">${chevSVG}</span>
       </div>`;
     }
   }
@@ -17442,7 +17445,7 @@ function renderCalendar() {
     }
     const wkStartKey2 = weekStart2.toDateString();
     html += `<div class="cal-badge-col" style="cursor:pointer;" onclick="openWeekSummary('${wkStartKey2}')">
-      <span class="cal-target-badge cal-target-badge-workout${wAchL?' achieved':''}">${chevSVG}</span>
+      <span class="cal-target-badge cal-target-badge-workout${weekStart2 > today ? ' cal-target-badge-future' : ''}">${chevSVG}</span>
     </div>`;
   }
   html += '</div>';
