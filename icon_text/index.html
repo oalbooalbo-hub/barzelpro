@@ -1343,7 +1343,7 @@ window._fbModuleReady = true;
     <!-- Weekly strength progress ring / muscle heatmap carousel — swipe area is
          exactly this box (bounded above by the header via the screen's own
          top padding, below by the dots row that immediately follows it). -->
-    <div id="today-week-progress" style="display:none;width:100%;max-width:380px;flex-direction:column;align-items:center;gap:6px;margin-top:70px;padding-top:10px;margin-bottom:-10px;transform:translateY(-20px);overflow:hidden;-webkit-tap-highlight-color:transparent;touch-action:pan-y;">
+    <div id="today-week-progress" style="display:none;width:100%;max-width:380px;flex-direction:column;align-items:center;gap:6px;margin-top:70px;padding-top:10px;padding-bottom:4px;margin-bottom:-14px;transform:translateY(-20px);overflow:hidden;-webkit-tap-highlight-color:transparent;touch-action:pan-y;">
       <!-- Sits above the carousel track, not inside either slide, so it never
            moves or re-renders when swiping between the ring and the heatmap. -->
       <div style="font-family:'DM Sans';font-size:14px;font-weight:700;color:#ccc;letter-spacing:.5px;text-transform:uppercase;transform:translateY(-10px);">This Week</div>
@@ -1355,16 +1355,16 @@ window._fbModuleReady = true;
           <div style="position:absolute;top:-10px;left:0;right:0;text-align:center;font-family:'DM Sans';font-size:12px;font-weight:600;color:#aaa;letter-spacing:.5px;text-transform:uppercase;line-height:1;pointer-events:none;">Completed workouts</div>
           <!-- Below the ring, in the ~19px margin under its outer edge (like the
                heatmap legend on page 2) so it adds no height to the slide. -->
-          <div id="today-progress-target" style="position:absolute;bottom:0;left:0;right:0;text-align:center;font-family:'DM Sans';font-size:12px;font-weight:600;color:#888;letter-spacing:.3px;line-height:1;pointer-events:none;">Target: 3</div>
+          <div id="today-progress-target" style="position:absolute;bottom:-4px;left:0;right:0;text-align:center;font-family:'DM Sans';font-size:12px;font-weight:600;color:#888;letter-spacing:.3px;line-height:1;pointer-events:none;">Target: 3</div>
           <div style="position:relative;width:300px;height:300px;">
             <svg width="300" height="300" viewBox="0 0 300 300" style="display:block;">
               <circle cx="150" cy="150" r="117.86" fill="none" stroke="#1e1e1e" stroke-width="25.71"/>
-              <circle id="today-progress-ring" cx="150" cy="150" r="117.86" fill="none" stroke="#999" stroke-opacity="0.55" stroke-width="25.71" stroke-linecap="round" stroke-dasharray="740.52" stroke-dashoffset="740.52" transform="rotate(-90 150 150)" style="transition:stroke-dashoffset .6s ease,stroke .4s ease,stroke-opacity .4s ease;"/>
+              <circle id="today-progress-ring" cx="150" cy="150" r="117.86" fill="none" stroke="#999" stroke-opacity="0.55" stroke-width="25.71" stroke-linecap="round" stroke-dasharray="740.52" stroke-dashoffset="740.52" transform="rotate(-90 150 150)" style="stroke:var(--accent);stroke-opacity:1;transition:stroke-dashoffset .6s ease,stroke .4s ease,stroke-opacity .4s ease;"/>
               <g id="today-progress-goal-ring" transform="rotate(-90 150 150)"></g>
             </svg>
             <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transform:translateY(5px);">
               <div style="display:flex;flex-direction:column;align-items:center;gap:2px;transform:translateY(3px);">
-                <span id="today-progress-count" style="font-family:'DM Sans';font-size:44px;font-weight:800;color:var(--text);line-height:1;">0</span>
+                <span id="today-progress-count" style="font-family:'DM Sans';font-size:50px;font-weight:800;color:var(--text);line-height:1;">0</span>
               </div>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-top:5px;transform:translateY(8px);"><polyline points="6 9 12 15 18 9"/></svg>
             </div>
@@ -1399,7 +1399,7 @@ window._fbModuleReady = true;
       </div>
     </div>
     <div id="today-plan-card" style="width:100%;max-width:380px;display:none;"></div>
-    <div id="today-carousel-dots" style="display:none;justify-content:center;gap:6px;margin-top:-17px;">
+    <div id="today-carousel-dots" style="display:none;justify-content:center;gap:6px;margin-top:-17px;transform:translateY(5px);">
       <span class="today-carousel-dot" onclick="_todayCarouselGoTo(0)" style="width:6px;height:6px;border-radius:50%;background:var(--accent);cursor:pointer;transition:background .2s ease;"></span>
       <span class="today-carousel-dot" onclick="_todayCarouselGoTo(1)" style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.25);cursor:pointer;transition:background .2s ease;"></span>
       <span class="today-carousel-dot" onclick="_todayCarouselGoTo(2)" style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.25);cursor:pointer;transition:background .2s ease;"></span>
@@ -3212,7 +3212,7 @@ function _resetWeekProgressForReplay() {
   if (goalRing.dataset.achieved === '1') goalRing.dataset.achieved = '0';
   const segs = goalRing.querySelectorAll('circle');
   segs.forEach(seg => { seg.style.transition = 'none'; seg.style.stroke = '#999'; seg.style.strokeOpacity = '0.55'; });
-  if (ring) { ring.style.transition = 'none'; ring.style.stroke = '#999'; ring.style.strokeOpacity = '0.55'; }
+  if (ring) { ring.style.transition = 'none'; ring.style.stroke = 'var(--accent)'; ring.style.strokeOpacity = '1'; }
   // Also snap geometry back to the "not yet met" base state (full radius, full gaps).
   // The goal-met flow leaves the ring contracted (radius 60, gaps 0) — without resetting
   // that here too, replaying the achieve animation on return to Home would start from
