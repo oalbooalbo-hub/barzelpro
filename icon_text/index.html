@@ -1343,12 +1343,19 @@ window._fbModuleReady = true;
     <!-- Weekly strength progress ring / muscle heatmap carousel — swipe area is
          exactly this box (bounded above by the header via the screen's own
          top padding, below by the dots row that immediately follows it). -->
-    <div id="today-week-progress" style="display:none;width:100%;max-width:380px;flex-direction:column;align-items:center;gap:6px;margin-top:70px;transform:translateY(-10px);overflow:hidden;-webkit-tap-highlight-color:transparent;touch-action:pan-y;">
+    <div id="today-week-progress" style="display:none;width:100%;max-width:380px;flex-direction:column;align-items:center;gap:6px;margin-top:70px;padding-top:10px;margin-bottom:-10px;transform:translateY(-20px);overflow:hidden;-webkit-tap-highlight-color:transparent;touch-action:pan-y;">
       <!-- Sits above the carousel track, not inside either slide, so it never
            moves or re-renders when swiping between the ring and the heatmap. -->
-      <div style="font-family:'DM Sans';font-size:14px;font-weight:700;color:#ccc;letter-spacing:.5px;text-transform:uppercase;">This Week</div>
+      <div style="font-family:'DM Sans';font-size:14px;font-weight:700;color:#ccc;letter-spacing:.5px;text-transform:uppercase;transform:translateY(-10px);">This Week</div>
       <div id="today-carousel-track" style="display:flex;width:300%;align-self:flex-start;transform:translateX(0%);transition:transform .3s cubic-bezier(.2,.8,.3,1);">
-        <div id="today-carousel-slide-ring" onclick="openStrengthTargetSheet()" style="width:33.3333%;flex-shrink:0;display:flex;justify-content:center;cursor:pointer;">
+        <div id="today-carousel-slide-ring" onclick="openStrengthTargetSheet()" style="width:33.3333%;flex-shrink:0;display:flex;justify-content:center;cursor:pointer;position:relative;">
+          <!-- Page-1-only sub-title under the shared "This Week" heading. Absolutely
+               positioned in the ring's top margin so it adds no height to this
+               slide (pages 2/3 are sized to the same 300px and must not shift). -->
+          <div style="position:absolute;top:-10px;left:0;right:0;text-align:center;font-family:'DM Sans';font-size:12px;font-weight:600;color:#aaa;letter-spacing:.5px;text-transform:uppercase;line-height:1;pointer-events:none;">Completed workouts</div>
+          <!-- Below the ring, in the ~19px margin under its outer edge (like the
+               heatmap legend on page 2) so it adds no height to the slide. -->
+          <div id="today-progress-target" style="position:absolute;bottom:0;left:0;right:0;text-align:center;font-family:'DM Sans';font-size:12px;font-weight:600;color:#888;letter-spacing:.3px;line-height:1;pointer-events:none;">Target: 3</div>
           <div style="position:relative;width:300px;height:300px;">
             <svg width="300" height="300" viewBox="0 0 300 300" style="display:block;">
               <circle cx="150" cy="150" r="117.86" fill="none" stroke="#1e1e1e" stroke-width="25.71"/>
@@ -1357,14 +1364,15 @@ window._fbModuleReady = true;
             </svg>
             <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transform:translateY(5px);">
               <div style="display:flex;flex-direction:column;align-items:center;gap:2px;transform:translateY(3px);">
-                <span id="today-progress-count" style="font-family:'DM Sans';font-size:32px;font-weight:800;color:var(--text);line-height:1;">0/3</span>
-                <span style="font-family:'DM Sans';font-size:12px;font-weight:600;color:#888;letter-spacing:.3px;">workouts</span>
+                <span id="today-progress-count" style="font-family:'DM Sans';font-size:44px;font-weight:800;color:var(--text);line-height:1;">0</span>
               </div>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-top:5px;"><polyline points="6 9 12 15 18 9"/></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-top:5px;transform:translateY(8px);"><polyline points="6 9 12 15 18 9"/></svg>
             </div>
           </div>
         </div>
-        <div id="today-carousel-slide-heatmap" style="width:33.3333%;flex-shrink:0;height:300px;position:relative;overflow:hidden;">
+        <div id="today-carousel-slide-heatmap" style="width:33.3333%;flex-shrink:0;height:300px;position:relative;clip-path:inset(-10px 0 0 0);">
+          <!-- Same page sub-title style as page 1's "Completed workouts". -->
+          <div style="position:absolute;top:-10px;left:0;right:0;text-align:center;font-family:'DM Sans';font-size:12px;font-weight:600;color:#aaa;letter-spacing:.5px;text-transform:uppercase;line-height:1;pointer-events:none;">Total sets</div>
           <!-- Pinned to the exact center of the 300px slide (not centered as a group
                with the legend below) so this circle's center lands on the same spot
                as the ring's on page 1. -->
@@ -1378,7 +1386,9 @@ window._fbModuleReady = true;
             <span style="font-family:'DM Sans';font-size:10px;font-weight:700;color:#888;">MORE</span>
           </div>
         </div>
-        <div id="today-carousel-slide-prs" style="width:33.3333%;flex-shrink:0;height:300px;position:relative;overflow:hidden;">
+        <div id="today-carousel-slide-prs" style="width:33.3333%;flex-shrink:0;height:300px;position:relative;clip-path:inset(-10px 0 0 0);">
+          <!-- Same page sub-title style as pages 1 and 2. -->
+          <div style="position:absolute;top:-10px;left:0;right:0;text-align:center;font-family:'DM Sans';font-size:12px;font-weight:600;color:#aaa;letter-spacing:.5px;text-transform:uppercase;line-height:1;pointer-events:none;">New records</div>
           <!-- Same center/size as the ring (page 1) and the black circle (page 2) —
                pinned to the slide's exact center, not centered as a group with
                anything else, same as those two. -->
@@ -3248,7 +3258,9 @@ function renderTodayWeekProgress(withAnim) {
     return w.exercises && w.exercises.length > 0;
   }).length;
   const countEl = document.getElementById('today-progress-count');
-  if (countEl) countEl.textContent = `${count}/${target}`;
+  if (countEl) countEl.textContent = count;
+  const targetLblEl = document.getElementById('today-progress-target');
+  if (targetLblEl) targetLblEl.textContent = `Target: ${target}`;
   const goalRing = document.getElementById('today-progress-goal-ring');
   const ring = document.getElementById('today-progress-ring');
   const goalAchieved = count >= target;
@@ -12482,7 +12494,7 @@ function toggleTimer(id) {
   // If opening and timer is done (at zero), reset it
   if (isOpen && _timers[id] && _timers[id].remaining <= 0 && !_timers[id].running) {
     const t = _timers[id];
-    t.remaining = t.target;
+    t.remaining = lastTimerSecs; t.target = lastTimerSecs;
     updateTimerDisplay(id);
     const dispRst = document.getElementById(`timer-display-${id}`);
     if (dispRst) dispRst.classList.remove('done');
@@ -12657,6 +12669,8 @@ function startTimer(id) {
     updateTimerDisplay(id);
     if (t.remaining <= 0) {
       clearInterval(t.interval); t.running = false;
+      // Drop any +30 total so the next start begins from the preset.
+      t.target = lastTimerSecs;
       btn?.classList.remove('running'); btn?.classList.add('active');
       if (startBtn) { const _lbl = document.getElementById(`timer-start-label-${id}`); if (_lbl) _lbl.textContent = 'Start'; }
       updateTimerChevronDot(id, false);
@@ -12703,7 +12717,8 @@ function autoStartTimer(exId, clickedBtn) {
   const t = _timers[exId];
   if (t.target === 0) return;
   if (t.running) { stopTimer(exId); }
-  t.remaining = t.target;
+  // Always restart from the current preset, not a +30-extended target.
+  t.remaining = lastTimerSecs; t.target = lastTimerSecs;
 
   // Open timer box exactly as if user tapped the Timer float button
   if (window.exFloatAction) {
@@ -12738,7 +12753,7 @@ function resetTimer(id) {
   const t = _timers[id];
   if (!t) return;
   stopTimer(id);
-  t.remaining = t.target;
+  t.remaining = lastTimerSecs; t.target = lastTimerSecs;
   const disp = document.getElementById(`timer-display-${id}`);
   if (disp) disp.classList.remove('done');
   updateTimerDisplay(id);
@@ -24345,7 +24360,7 @@ function deleteCoachWorkout(id) {
   <div style="font-family:'DM Sans';font-size:18px;font-weight:800;color:var(--text);text-align:center;margin-bottom:20px;letter-spacing:.3px;">COMPLETED WORKOUTS</div>
   <div id="week-status-days" style="display:flex;justify-content:space-between;gap:2px;padding-bottom:30px;"></div>
   <div style="border-top:1px solid #444;padding-bottom:30px;"></div>
-  <div style="font-family:'DM Sans';font-size:18px;font-weight:800;color:var(--text);text-align:center;margin-bottom:18px;letter-spacing:.3px;">MY WEEKLY GOAL</div>
+  <div style="font-family:'DM Sans';font-size:18px;font-weight:800;color:var(--text);text-align:center;margin-bottom:18px;letter-spacing:.3px;">MY WEEKLY TARGET</div>
   <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:28px;">
     <div style="display:flex;align-items:center;justify-content:center;gap:0;">
       <button onclick="event.stopPropagation();_adjustStrengthTarget(-1,this)" style="width:64px;height:64px;border-radius:16px;border:1px solid var(--border);background:#333;color:var(--text);font-size:46px;font-weight:300;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">−</button>
@@ -24752,7 +24767,7 @@ function toggleTimerEnabled(cardId) {
     stopTimer(cardId);
     const t = _timers[cardId];
     if (t) {
-      t.remaining = t.target;
+      t.remaining = lastTimerSecs; t.target = lastTimerSecs;
       updateTimerDisplay(cardId);
       const disp = document.getElementById(`timer-display-${cardId}`);
       if (disp) disp.classList.remove('done');
@@ -26159,9 +26174,9 @@ closeInlineKgEditor(false);
       </div>
       <div style="display:flex;gap:6px;">
         <button onclick="kgPadToggleSign()" id="kgSignToggle" class="editor-tap-btn" style="flex:0 0 auto;width:40px;background:transparent;border:1px solid #333;border-radius:8px;font-family:'DM Sans';font-size:16px;font-weight:700;padding:8px 0;cursor:pointer;text-align:center;"><span style="color:#555;">-/</span><span style="color:var(--accent);">+</span></button>
-        <button onclick="kgPadAdd(1.25)" id="kgAddBtn1" class="editor-tap-btn" style="flex:1;background:transparent;border:1px solid #555;border-radius:8px;font-family:'DM Sans';padding:10px 0;cursor:pointer;display:flex;align-items:baseline;justify-content:center;gap:2px;"><span style="color:var(--accent);font-size:16px;font-weight:700;">+1.25</span><span style="color:var(--accent);font-size:14px;font-weight:300;">Kg</span></button>
-        <button onclick="kgPadAdd(2.5)"  id="kgAddBtn2" class="editor-tap-btn" style="flex:1;background:transparent;border:1px solid #555;border-radius:8px;font-family:'DM Sans';padding:10px 0;cursor:pointer;display:flex;align-items:baseline;justify-content:center;gap:2px;"><span style="color:var(--accent);font-size:16px;font-weight:700;">+2.5</span><span style="color:var(--accent);font-size:14px;font-weight:300;">Kg</span></button>
-        <button onclick="kgPadAdd(5)"    id="kgAddBtn3" class="editor-tap-btn" style="flex:1;background:transparent;border:1px solid #555;border-radius:8px;font-family:'DM Sans';padding:10px 0;cursor:pointer;display:flex;align-items:baseline;justify-content:center;gap:2px;"><span style="color:var(--accent);font-size:16px;font-weight:700;">+5</span><span style="color:var(--accent);font-size:14px;font-weight:300;">Kg</span></button>
+        <button onclick="kgPadAdd(1.25)" id="kgAddBtn1" class="editor-tap-btn" style="flex:1;background:transparent;border:1px solid #555;border-radius:8px;font-family:'DM Sans';padding:10px 0;cursor:pointer;display:flex;align-items:baseline;justify-content:center;gap:4px;"><span style="color:var(--accent);font-size:16px;font-weight:700;">+1.25</span><span style="color:var(--accent);font-size:14px;font-weight:300;">Kg</span></button>
+        <button onclick="kgPadAdd(2.5)"  id="kgAddBtn2" class="editor-tap-btn" style="flex:1;background:transparent;border:1px solid #555;border-radius:8px;font-family:'DM Sans';padding:10px 0;cursor:pointer;display:flex;align-items:baseline;justify-content:center;gap:4px;"><span style="color:var(--accent);font-size:16px;font-weight:700;">+2.5</span><span style="color:var(--accent);font-size:14px;font-weight:300;">Kg</span></button>
+        <button onclick="kgPadAdd(5)"    id="kgAddBtn3" class="editor-tap-btn" style="flex:1;background:transparent;border:1px solid #555;border-radius:8px;font-family:'DM Sans';padding:10px 0;cursor:pointer;display:flex;align-items:baseline;justify-content:center;gap:4px;"><span style="color:var(--accent);font-size:16px;font-weight:700;">+5</span><span style="color:var(--accent);font-size:14px;font-weight:300;">Kg</span></button>
       </div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
         <button class="kg-pad-btn" onclick="kgPadPress('1')">1</button>
