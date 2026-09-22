@@ -150,5 +150,19 @@ service cloud.firestore {
       allow write: if isSuper() || isBrandAdmin(resource.data.brandId);
     }
 
+    // ── SHARED WORKOUTS (QR / link sharing) ─────────────────────────────────
+    // A workout being shared via QR/link is written here under a random id
+    // (generated client-side), so the QR/link only ever needs to encode that
+    // short id instead of the whole workout — the old approach embedded the
+    // full workout JSON in the URL itself, which could overflow a QR code's
+    // data-capacity limit for large workouts.
+    // Any signed-in user can create their own share; read only needs the id
+    // itself (from the QR/link, same trust model as a normal share link) —
+    // no update/delete since shares are write-once.
+    match /sharedWorkouts/{shareId} {
+      allow create: if request.auth != null && request.resource.data.createdBy == request.auth.uid;
+      allow read: if request.auth != null;
+    }
+
   }
 }

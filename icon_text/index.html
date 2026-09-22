@@ -1357,6 +1357,10 @@ window._fbModuleReady = true;
                heatmap legend on page 2) so it adds no height to the slide. -->
           <div style="position:relative;width:300px;height:300px;">
             <svg width="300" height="300" viewBox="0 0 300 300" style="display:block;">
+              <!-- Fills black behind the whole ring (track + progress arc), not just
+                   its interior — radius covers the track's outer edge
+                   (117.86 + 25.71/2 ≈ 130.7), matching pages 2/3's circle background. -->
+              <circle cx="150" cy="150" r="131" fill="#000"/>
               <circle cx="150" cy="150" r="117.86" fill="none" stroke="#1e1e1e" stroke-width="25.71"/>
               <circle id="today-progress-ring" cx="150" cy="150" r="117.86" fill="none" stroke="#999" stroke-opacity="0.55" stroke-width="25.71" stroke-linecap="round" stroke-dasharray="740.52" stroke-dashoffset="740.52" transform="rotate(-90 150 150)" style="stroke:var(--accent);stroke-opacity:1;transition:stroke-dashoffset .6s ease,stroke .4s ease,stroke-opacity .4s ease;"/>
               <g id="today-progress-goal-ring" transform="rotate(-90 150 150)"></g>
@@ -1394,7 +1398,7 @@ window._fbModuleReady = true;
           <!-- Same center/size as the ring (page 1) and the black circle (page 2) —
                pinned to the slide's exact center, not centered as a group with
                anything else, same as those two. -->
-          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:272px;height:272px;border-radius:50%;border:5px solid var(--accent);display:flex;align-items:center;justify-content:center;box-sizing:border-box;">
+          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:272px;height:272px;border-radius:50%;border:5px solid var(--accent);background:#000;display:flex;align-items:center;justify-content:center;box-sizing:border-box;">
             <div id="today-pr-stars" style="display:flex;gap:4px;align-items:flex-start;justify-content:center;"></div>
           </div>
         </div>
@@ -1446,7 +1450,7 @@ window._fbModuleReady = true;
     <!-- Bottom: share + close -->
     <div style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%;max-width:380px;">
       <button onclick="shareQRLink()" style="width:100%;padding:18px;background:var(--accent);color:#000;border:none;border-radius:100px;font-family:'DM Sans';font-size:18px;font-weight:900;cursor:pointer;letter-spacing:.3px;-webkit-tap-highlight-color:transparent;transition:transform .15s;display:flex;align-items:center;justify-content:center;gap:10px;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">
-        SHARE LINK
+        SHARE BY LINK
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
       </button>
     </div>
@@ -24476,20 +24480,24 @@ function deleteCoachWorkout(id) {
   <!-- Top: title -->
   <div style="text-align:center;">
     <div id="workout-share-qr-name" style="font-family:'DM Sans';font-size:28px;font-weight:900;color:#fff;letter-spacing:.5px;margin-bottom:4px;"></div>
-    <div id="workout-share-qr-summary" style="font-family:'DM Sans';font-size:13px;color:#555;"></div>
+    <div id="workout-share-qr-summary" style="font-family:'DM Sans';font-size:20px;color:#fff;"></div>
   </div>
   <!-- Middle: QR box -->
   <div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
     <div style="background:var(--accent);border-radius:16px;padding:10px;display:inline-flex;flex-direction:column;align-items:center;gap:8px;">
-      <div id="workout-share-qr-canvas" style="width:220px;height:220px;display:flex;align-items:center;justify-content:center;"></div>
+      <div id="workout-share-qr-canvas" style="width:198px;height:198px;display:flex;align-items:center;justify-content:center;"></div>
     </div>
-
+    <!-- Same two-line title style as the home page's Share screen. -->
+    <div style="font-family:'DM Sans';font-size:18px;font-weight:700;color:#fff;letter-spacing:.5px;text-align:center;">
+      <div>SHARE</div>
+      <div>WORKOUT</div>
+    </div>
   </div>
   <!-- Bottom: buttons -->
   <div style="width:100%;display:flex;flex-direction:column;gap:10px;">
     <button onclick="shareWorkoutQRLink()" style="width:100%;padding:18px;background:var(--accent);color:#000;border:none;border-radius:100px;font-family:'DM Sans';font-size:18px;font-weight:900;cursor:pointer;letter-spacing:.3px;-webkit-tap-highlight-color:transparent;transition:transform .15s;display:flex;align-items:center;justify-content:center;gap:10px;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-      SHARE LINK
+      SHARE BY LINK
     </button>
   </div>
 </div>
@@ -26421,7 +26429,17 @@ function openShareQR() {
   const tagline = window.BRAND_CONFIG?.tagline || 'Track your workouts, monitor progress.';
   const titleEl = document.getElementById('share-qr-title');
   const tagEl = document.getElementById('share-qr-tagline');
-  if (titleEl) titleEl.textContent = 'SHARE ' + appName.toUpperCase();
+  // Two lines ("SHARE" / the app name) instead of one — built via separate
+  // text nodes rather than a template string, so a brand name never risks
+  // being interpreted as HTML.
+  if (titleEl) {
+    titleEl.innerHTML = '';
+    const _shareLine = document.createElement('div');
+    _shareLine.textContent = 'SHARE';
+    const _nameLine = document.createElement('div');
+    _nameLine.textContent = appName.toUpperCase();
+    titleEl.append(_shareLine, _nameLine);
+  }
   if (tagEl) tagEl.textContent = tagline;
   // Generate QR
   const qrEl = document.getElementById('share-qr-canvas');
@@ -26469,6 +26487,40 @@ function closeShareQR() {
   const overlay = document.getElementById('share-qr-overlay');
   if (overlay) overlay.style.display = 'none';
 }
+// ── ROBUST WORKOUT SHARING (QR / link) ──────────────────────────────────────
+// The QR/link used to embed the ENTIRE workout (every exercise, set, comment)
+// as base64 JSON directly in the URL — fine for small workouts, but a large
+// one could overflow the QR library's data-capacity limit ("Failed to
+// generate QR") and made the URL itself uncomfortably long for link-sharing
+// too. Now the QR/link only ever encodes a short random id; the actual
+// workout data is written to Firestore (sharedWorkouts/{shareId}) in the
+// background, so the QR/link is always small and fast to generate regardless
+// of workout size. See _checkImportWorkoutFromURL for the read side.
+function _generateShareId() {
+  try {
+    if (window.crypto?.randomUUID) return window.crypto.randomUUID().replace(/-/g, '');
+  } catch (_) {}
+  // Fallback for older browsers/non-secure contexts without randomUUID —
+  // not cryptographically strong, but collision odds are negligible for a
+  // share id and this isn't a security boundary.
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 12);
+}
+function _writeSharedWorkout(shareId, workoutData) {
+  if (!window._fbDb || !window._fbDoc || !window._fbSetDoc || !window._currentUser) return;
+  const ref = window._fbDoc(window._fbDb, 'sharedWorkouts', shareId);
+  window._fbSetDoc(ref, {
+    data: workoutData,
+    createdBy: window._currentUser.uid,
+    createdAt: new Date().toISOString()
+  }).catch(() => {
+    // Best-effort — the QR/link are already shown by the time this runs (see
+    // callers below). If this write fails (offline, etc.) the recipient's
+    // import will just fail until the sharer is back online and re-shares;
+    // not surfaced here since the share screen itself already succeeded from
+    // the sharer's point of view.
+  });
+}
+
 function openWorkoutShareQR() {
   const modal = document.getElementById('workout-share-qr-modal');
   if (!modal) return;
@@ -26497,30 +26549,37 @@ function openWorkoutShareQR() {
   });
 
   const summaryEl = document.getElementById('workout-share-qr-summary');
-  if (summaryEl) summaryEl.textContent = 'By ' + (window._currentUserData?.displayName || 'You');
+  const creatorName = window._currentUserData?.displayName || window._currentUser?.displayName || '';
+  if (summaryEl) summaryEl.textContent = 'By ' + (creatorName || 'You');
 
-  // Encode workout as URL param
-  const workoutData = { name: workoutName, exercises };
-  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(workoutData))));
+  // Build a short share id — the URL only ever encodes this, never the
+  // workout itself (see _writeSharedWorkout above). creatorName rides along
+  // so the receiver's copy can be labeled "by <creator>" (see
+  // _doImportWorkout) instead of a generic "(Imported)" suffix.
+  const workoutData = { name: workoutName, exercises, creatorName };
+  const shareId = _generateShareId();
   const base = window.location.origin + window.location.pathname.replace(/[^/]*$/, '') + 'index.html';
-  const url = `${base}?importWorkout=${encoded}`;
+  const url = `${base}?importWorkout=${shareId}`;
   window._workoutShareQRUrl = url;
 
   modal.style.display = 'flex';
   if (window._historyPush) window._historyPush('workout-share-qr');
 
   const qrEl = document.getElementById('workout-share-qr-canvas');
-  if (!qrEl) return;
-  setTimeout(() => {
-    if (window.QRCode) {
-      _renderQR(qrEl, url);
-    } else {
-      const s = document.createElement('script');
-      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
-      s.onload = () => _renderQR(qrEl, url);
-      document.head.appendChild(s);
-    }
-  }, 50);
+  if (qrEl) {
+    setTimeout(() => {
+      if (window.QRCode) {
+        _renderQR(qrEl, url);
+      } else {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+        s.onload = () => _renderQR(qrEl, url);
+        document.head.appendChild(s);
+      }
+    }, 50);
+  }
+  // Fire-and-forget — doesn't block the QR/link, which are already valid above.
+  _writeSharedWorkout(shareId, workoutData);
 }
 
 // Same share flow as openWorkoutShareQR(), but for a saved workout template
@@ -26554,29 +26613,34 @@ function openWtabShareQR(idx) {
   });
 
   const summaryEl = document.getElementById('workout-share-qr-summary');
-  if (summaryEl) summaryEl.textContent = 'By ' + (window._currentUserData?.displayName || 'You');
+  const creatorName = window._currentUserData?.displayName || window._currentUser?.displayName || '';
+  if (summaryEl) summaryEl.textContent = 'By ' + (creatorName || 'You');
 
-  const workoutData = { name: workoutName, exercises };
-  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(workoutData))));
+  // creatorName rides along so the receiver's copy can be labeled
+  // "by <creator>" (see _doImportWorkout) instead of a generic "(Imported)".
+  const workoutData = { name: workoutName, exercises, creatorName };
+  const shareId = _generateShareId();
   const base = window.location.origin + window.location.pathname.replace(/[^/]*$/, '') + 'index.html';
-  const url = `${base}?importWorkout=${encoded}`;
+  const url = `${base}?importWorkout=${shareId}`;
   window._workoutShareQRUrl = url;
 
   modal.style.display = 'flex';
   if (window._historyPush) window._historyPush('workout-share-qr');
 
   const qrEl = document.getElementById('workout-share-qr-canvas');
-  if (!qrEl) return;
-  setTimeout(() => {
-    if (window.QRCode) {
-      _renderQR(qrEl, url);
-    } else {
-      const s = document.createElement('script');
-      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
-      s.onload = () => _renderQR(qrEl, url);
-      document.head.appendChild(s);
-    }
-  }, 50);
+  if (qrEl) {
+    setTimeout(() => {
+      if (window.QRCode) {
+        _renderQR(qrEl, url);
+      } else {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+        s.onload = () => _renderQR(qrEl, url);
+        document.head.appendChild(s);
+      }
+    }, 50);
+  }
+  _writeSharedWorkout(shareId, workoutData);
 }
 window.openWtabShareQR = openWtabShareQR;
 
@@ -26584,9 +26648,20 @@ function shareWorkoutQRLink() {
   const url = window._workoutShareQRUrl || window.location.href;
   const name = document.getElementById('workout-share-qr-name')?.textContent || 'Workout';
   if (navigator.share) {
-    navigator.share({ title: name, text: `Check out my workout: ${name}`, url });
+    navigator.share({ title: name, text: `Check out my workout: ${name}`, url }).catch(err => {
+      // AbortError just means the user closed the native share sheet without
+      // picking anything — expected, not a failure worth surfacing.
+      if (err?.name === 'AbortError') return;
+      alert('Could not share — try again, or copy the link instead.');
+    });
+  } else if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(url).then(() => alert('Link copied!')).catch(() => {
+      alert('Could not copy the link.');
+    });
   } else {
-    navigator.clipboard?.writeText(url).then(() => alert('Link copied!'));
+    // No share sheet and no clipboard API (old browser / insecure context) —
+    // previously this silently did nothing at all.
+    alert('Sharing isn\'t supported in this browser.');
   }
 }
 
@@ -26604,19 +26679,36 @@ window.openWorkoutShareQR = openWorkoutShareQR;
 // either way, but running after it keeps this simple and predictable.
 function _checkImportWorkoutFromURL() {
   const params = new URLSearchParams(location.search);
-  const encoded = params.get('importWorkout');
-  if (!encoded) return;
+  const param = params.get('importWorkout');
+  if (!param) return;
   // Strip the param immediately — a refresh, back-navigation, or re-running
   // this same check later in the session must never re-trigger the import.
   params.delete('importWorkout');
   const rest = params.toString();
   history.replaceState(null, '', location.pathname + (rest ? '?' + rest : ''));
+  // Back-compat: a link/QR made before the id-based sharing rework (see
+  // _writeSharedWorkout) still has the whole workout base64-encoded directly
+  // in this param — try decoding it that way first. A short share id won't
+  // parse into a valid {exercises: [...]} shape, so this safely falls through
+  // to the id lookup below for every current-format link.
   let data;
   try {
-    data = JSON.parse(decodeURIComponent(escape(atob(encoded))));
-  } catch (e) { return; }
-  if (!data || !Array.isArray(data.exercises) || !data.exercises.length) return;
-  _confirmImportWorkout(data);
+    data = JSON.parse(decodeURIComponent(escape(atob(param))));
+  } catch (e) { data = null; }
+  if (data && Array.isArray(data.exercises) && data.exercises.length) {
+    _confirmImportWorkout(data);
+    return;
+  }
+  // Current format: param is a sharedWorkouts/{shareId} doc id — the actual
+  // workout data was written there in the background when the QR/link was
+  // generated (see _writeSharedWorkout).
+  if (!window._fbDb || !window._fbDoc || !window._fbGetDoc) return;
+  window._fbGetDoc(window._fbDoc(window._fbDb, 'sharedWorkouts', param)).then(snap => {
+    if (!snap.exists()) return;
+    const shared = snap.data()?.data;
+    if (!shared || !Array.isArray(shared.exercises) || !shared.exercises.length) return;
+    _confirmImportWorkout(shared);
+  }).catch(() => {});
 }
 window._checkImportWorkoutFromURL = _checkImportWorkoutFromURL;
 
@@ -26669,8 +26761,16 @@ function _doImportWorkout(data) {
   if (addedCount) saveCustom();
 
   let name = (data.name || 'Imported Workout').trim() || 'Imported Workout';
-  const existingNames = new Set(workouts.filter(w => !w._draft).map(w => (w.name || '').trim().toLowerCase()));
-  if (existingNames.has(name.toLowerCase())) name = name + ' (Imported)';
+  const creatorName = (data.creatorName || '').trim();
+  if (creatorName) {
+    // Always credit the sharer ("by Oded Albo"), not just on a name collision.
+    name = name + ` by ${creatorName}`;
+  } else {
+    // No creator known (a link shared before creatorName existed, or a sharer
+    // with no display name set) — fall back to the old collision-only tag.
+    const existingNames = new Set(workouts.filter(w => !w._draft).map(w => (w.name || '').trim().toLowerCase()));
+    if (existingNames.has(name.toLowerCase())) name = name + ' (Imported)';
+  }
 
   workouts.unshift({ id: Date.now(), name, date: Date.now(), exercises: importedExercises, _template: true });
   save();
@@ -27319,7 +27419,9 @@ function closeSetOptions() {
 function setSetType(type) {
   const row = _setOptionsRow;
   const exId = _setOptionsExId;
-  closeSetOptions();
+  // Same slide-down close as tapping outside the sheet, instead of an instant
+  // close — row/exId are captured above since this clears both.
+  closeSetOptionsAnimated();
   if (!row || !exId) return;
 
   const tag = row.querySelector('.set-type-tag');
