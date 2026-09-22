@@ -1352,27 +1352,29 @@ window._fbModuleReady = true;
           <!-- Page-1-only sub-title under the shared "This Week" heading. Absolutely
                positioned in the ring's top margin so it adds no height to this
                slide (pages 2/3 are sized to the same 300px and must not shift). -->
-          <div style="position:absolute;top:-10px;left:0;right:0;text-align:center;font-family:'DM Sans';font-size:12px;font-weight:600;color:#aaa;letter-spacing:.5px;text-transform:uppercase;line-height:1;pointer-events:none;">Completed workouts</div>
+          <div style="position:absolute;top:-10px;left:0;right:0;text-align:center;font-family:'DM Sans';font-size:18px;font-weight:800;color:#fff;letter-spacing:.5px;text-transform:uppercase;line-height:1;pointer-events:none;">Total Workouts</div>
           <!-- Below the ring, in the ~19px margin under its outer edge (like the
                heatmap legend on page 2) so it adds no height to the slide. -->
-          <div id="today-progress-target" style="position:absolute;bottom:-4px;left:0;right:0;text-align:center;font-family:'DM Sans';font-size:12px;font-weight:600;color:#888;letter-spacing:.3px;line-height:1;pointer-events:none;">Target: 3</div>
           <div style="position:relative;width:300px;height:300px;">
             <svg width="300" height="300" viewBox="0 0 300 300" style="display:block;">
               <circle cx="150" cy="150" r="117.86" fill="none" stroke="#1e1e1e" stroke-width="25.71"/>
               <circle id="today-progress-ring" cx="150" cy="150" r="117.86" fill="none" stroke="#999" stroke-opacity="0.55" stroke-width="25.71" stroke-linecap="round" stroke-dasharray="740.52" stroke-dashoffset="740.52" transform="rotate(-90 150 150)" style="stroke:var(--accent);stroke-opacity:1;transition:stroke-dashoffset .6s ease,stroke .4s ease,stroke-opacity .4s ease;"/>
               <g id="today-progress-goal-ring" transform="rotate(-90 150 150)"></g>
             </svg>
-            <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transform:translateY(5px);">
-              <div style="display:flex;flex-direction:column;align-items:center;gap:2px;transform:translateY(3px);">
+            <div id="today-progress-center-outer" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transform:translateY(5px);">
+              <div id="today-progress-center-inner" style="display:flex;flex-direction:column;align-items:center;gap:2px;transform:translateY(3px);">
                 <span id="today-progress-count" style="font-family:'DM Sans';font-size:50px;font-weight:800;color:var(--text);line-height:1;">0</span>
+                <!-- Left spacer's width matches the chevron+gap on the right, so the
+                     "OUT OF n" text stays truly centered instead of the chevron
+                     pulling the whole group off-center. -->
+                <span id="today-progress-target" style="font-family:'DM Sans';font-size:12px;font-weight:600;color:#fff;letter-spacing:.3px;display:flex;align-items:center;justify-content:center;"><span style="width:12px;flex-shrink:0;"></span><span id="today-progress-target-text">OUT OF 3</span><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="margin-left:2px;flex-shrink:0;"><polyline points="9 6 15 12 9 18"/></svg></span>
               </div>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-top:5px;transform:translateY(8px);"><polyline points="6 9 12 15 18 9"/></svg>
             </div>
           </div>
         </div>
         <div id="today-carousel-slide-heatmap" style="width:33.3333%;flex-shrink:0;height:300px;position:relative;clip-path:inset(-10px 0 0 0);">
           <!-- Same page sub-title style as page 1's "Completed workouts". -->
-          <div style="position:absolute;top:-10px;left:0;right:0;text-align:center;font-family:'DM Sans';font-size:12px;font-weight:600;color:#aaa;letter-spacing:.5px;text-transform:uppercase;line-height:1;pointer-events:none;">Total sets</div>
+          <div style="position:absolute;top:-10px;left:0;right:0;text-align:center;font-family:'DM Sans';font-size:18px;font-weight:800;color:#fff;letter-spacing:.5px;text-transform:uppercase;line-height:1;pointer-events:none;">Total sets</div>
           <!-- Pinned to the exact center of the 300px slide (not centered as a group
                with the legend below) so this circle's center lands on the same spot
                as the ring's on page 1. -->
@@ -1388,7 +1390,7 @@ window._fbModuleReady = true;
         </div>
         <div id="today-carousel-slide-prs" style="width:33.3333%;flex-shrink:0;height:300px;position:relative;clip-path:inset(-10px 0 0 0);">
           <!-- Same page sub-title style as pages 1 and 2. -->
-          <div style="position:absolute;top:-10px;left:0;right:0;text-align:center;font-family:'DM Sans';font-size:12px;font-weight:600;color:#aaa;letter-spacing:.5px;text-transform:uppercase;line-height:1;pointer-events:none;">New records</div>
+          <div style="position:absolute;top:-10px;left:0;right:0;text-align:center;font-family:'DM Sans';font-size:18px;font-weight:800;color:#fff;letter-spacing:.5px;text-transform:uppercase;line-height:1;pointer-events:none;">New records</div>
           <!-- Same center/size as the ring (page 1) and the black circle (page 2) —
                pinned to the slide's exact center, not centered as a group with
                anything else, same as those two. -->
@@ -3259,11 +3261,23 @@ function renderTodayWeekProgress(withAnim) {
   }).length;
   const countEl = document.getElementById('today-progress-count');
   if (countEl) countEl.textContent = count;
-  const targetLblEl = document.getElementById('today-progress-target');
-  if (targetLblEl) targetLblEl.textContent = `Target: ${target}`;
+  const targetLblTextEl = document.getElementById('today-progress-target-text');
+  if (targetLblTextEl) targetLblTextEl.textContent = `OUT OF ${target}`;
   const goalRing = document.getElementById('today-progress-goal-ring');
   const ring = document.getElementById('today-progress-ring');
   const goalAchieved = count >= target;
+  // Once the weekly target is met, "OUT OF n >" no longer applies — hide the
+  // whole row (text + chevron) instead of just clearing its text.
+  const targetRowEl = document.getElementById('today-progress-target');
+  if (targetRowEl) targetRowEl.style.display = goalAchieved ? 'none' : 'flex';
+  // The two translateY offsets above exist to visually re-balance the count
+  // against the "OUT OF n >" row sitting under it. With that row hidden
+  // (goal met), drop both offsets so the count itself sits at the circle's
+  // true center instead of staying shifted down for a row that's gone.
+  const centerOuterEl = document.getElementById('today-progress-center-outer');
+  const centerInnerEl = document.getElementById('today-progress-center-inner');
+  if (centerOuterEl) centerOuterEl.style.transform = goalAchieved ? 'none' : 'translateY(5px)';
+  if (centerInnerEl) centerInnerEl.style.transform = goalAchieved ? 'none' : 'translateY(3px)';
   // Brand accent color, applied to both rings together, only once the goal-ring's
   // shrink/connect animation (below) has actually finished — not while it's still
   // mid-transition.
