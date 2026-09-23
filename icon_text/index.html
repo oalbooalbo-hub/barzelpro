@@ -2279,7 +2279,18 @@ const _BRAND_SCOPED_KEYS = new Set([
 ]);
 
 const _LS = {
-  _pfx() { return window.BRAND_ID ? `ironlog_${window.BRAND_ID}_` : 'ironlog_'; },
+  // Scoped by brand AND signed-in uid — two different people signing into the
+  // same brand on the same device/browser must never read or overwrite each
+  // other's local cache (workouts, custom exercises, etc.). Falls back to a
+  // fixed '_anon' bucket only for the brief window before auth resolves on
+  // first boot (see the top-level `let workouts = ...` reads) — that bucket
+  // starts empty and is immediately superseded once _onAuthReady re-reads
+  // everything with the real uid, all still hidden behind the boot overlay.
+  _pfx() {
+    const brand = window.BRAND_ID || 'default';
+    const uid = window._currentUser?.uid || '_anon';
+    return `ironlog_${brand}_${uid}_`;
+  },
   key(k) { return _BRAND_SCOPED_KEYS.has(k) ? k.replace('ironlog_', this._pfx()) : k; },
   get(k) {
     // Try localStorage first (sync), IndexedDB is async so we can't block here
@@ -2298,6 +2309,37 @@ const _LS = {
   }
 };
 window._LS = _LS;
+
+// One-time-per-user recovery for the old brand-only (not uid-scoped) local
+// cache: before this fix, every signed-in user on a given brand shared the
+// exact same localStorage/IndexedDB keys on a given device, so a second
+// person signing in after the first would silently inherit — and then
+// overwrite — the first person's local workout history. Whoever signs in
+// first after this update claims that old shared bucket into their own
+// uid-scoped keys; it's then cleared immediately so no one else can ever
+// inherit it afterward. This can't retroactively separate data that was
+// already mixed together by the bug before this fix shipped — only prevent
+// any further contamination from this point on.
+function _migrateSharedLocalCacheToUser() {
+  const uid = window._currentUser?.uid;
+  if (!uid) return;
+  const brand = window.BRAND_ID || 'default';
+  const oldPfx = `ironlog_${brand}_`;
+  _BRAND_SCOPED_KEYS.forEach(k => {
+    const oldKey = k.replace('ironlog_', oldPfx);
+    const newKey = _LS.key(k);
+    if (oldKey === newKey) return;
+    const oldVal = localStorage.getItem(oldKey);
+    if (oldVal === null) return;
+    if (localStorage.getItem(newKey) === null) {
+      localStorage.setItem(newKey, oldVal);
+      _IDB.set(newKey, oldVal);
+    }
+    localStorage.removeItem(oldKey);
+    _IDB.remove(oldKey);
+  });
+}
+window._migrateSharedLocalCacheToUser = _migrateSharedLocalCacheToUser;
 
 // ── JWT / Session cache ────────────────────────────────
 window.BarzelpNet = {
@@ -6641,6 +6683,58 @@ function _flashNewExBadgeOnce(cardEl, exName) {
     }, 1000);
   }, 450);
 }
+// Same one-time "NEW" flash treatment as _flashNewExBadgeOnce above, for a
+// just-created workout's card back in the Workouts tab — tracked separately
+// (own localStorage key, deduped by workout name) so it doesn't interact
+// with the exercise version's own "shown" list.
+function _flashNewWorkoutBadgeOnce(cardEl, workoutName) {
+  if (!cardEl || !workoutName) return;
+  let shown = [];
+  try { const _p = JSON.parse(_LS.get('ironlog_new_workout_badge_shown') || '[]'); if (Array.isArray(_p)) shown = _p; } catch(_) {}
+  if (shown.includes(workoutName)) return;
+  shown.push(workoutName);
+  _LS.set('ironlog_new_workout_badge_shown', JSON.stringify(shown));
+  if (!cardEl.isConnected) return;
+  if (!cardEl.style.position) cardEl.style.position = 'relative';
+  const _origBorderColor = getComputedStyle(cardEl).borderColor;
+  cardEl.style.transition = 'border-color .25s ease';
+  cardEl.style.borderColor = 'var(--accent)';
+  const badge = document.createElement('div');
+  badge.textContent = 'NEW';
+  badge.style.cssText = "position:absolute;top:8px;right:8px;font-family:'DM Sans';font-size:12px;font-weight:900;letter-spacing:.5px;color:var(--accent);opacity:0;transform:translateY(-4px) scale(.85);transition:opacity .25s ease,transform .25s cubic-bezier(.2,.8,.3,1);pointer-events:none;z-index:5;";
+  cardEl.appendChild(badge);
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    badge.style.opacity = '1';
+    badge.style.transform = 'translateY(0) scale(1)';
+  }));
+  setTimeout(() => {
+    badge.style.opacity = '0';
+    badge.style.transform = 'translateY(-4px) scale(.85)';
+    cardEl.style.borderColor = _origBorderColor;
+    setTimeout(() => {
+      badge.remove();
+      cardEl.style.transition = '';
+    }, 260);
+  }, 1000);
+}
+// Finds the workout just saved via startNewWorkout/doSaveWorkout — it's always
+// unshifted to workouts[0], the same convention renderWorkoutsTab2 already
+// uses for every card element's id (id="...-${workouts.indexOf(w)}") — and
+// runs the flash above on its card, once the workouts2 tab's own .4s
+// entrance transition (tabSlideUp, index.html ~110) has settled.
+function _flashNewWorkoutCardOnce() {
+  const name = window._nwfLastSavedWorkoutName;
+  const wasNewCreation = window._nwfWasNewCreation;
+  window._nwfWasNewCreation = false; // one-shot — never fires again off a stale flag
+  if (!wasNewCreation || !name || !workouts[0] || workouts[0].name !== name) return;
+  setTimeout(() => {
+    const cardEl = document.getElementById('w2-card-border-0');
+    if (!cardEl) return;
+    cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    _flashNewWorkoutBadgeOnce(cardEl, name);
+  }, 450);
+}
+window._flashNewWorkoutCardOnce = _flashNewWorkoutCardOnce;
 function confirmNewEx() {
   const name = document.getElementById('newExInput').value.trim();
   if (!name) {
@@ -9303,7 +9397,7 @@ function renderWorkoutsTab2() {
     const cardInner = `
       <div style="position:relative;">
         ${(!_isPlanStrengthMode && _isTodayPlanned) ? `<span style="position:absolute;top:0;left:14px;transform:translateY(-50%);background:var(--bg);color:var(--accent);font-family:'DM Sans';font-size:10px;font-weight:800;letter-spacing:.4px;padding:0 6px;line-height:1.4;white-space:nowrap;z-index:2;">Today's Plan</span>` : ''}
-        <div style="position:relative;display:flex;border-radius:14px;overflow:hidden;aspect-ratio:21/9;background:#1a1a1a;${_showAccentBorder ? 'border:2px solid var(--accent);' : 'border:1px solid #2a2a2a;'}">
+        <div id="w2-card-border-${i}" style="position:relative;display:flex;border-radius:14px;overflow:hidden;aspect-ratio:21/9;background:#1a1a1a;${_showAccentBorder ? 'border:2px solid var(--accent);' : 'border:1px solid #2a2a2a;'}">
           <div id="w2-card-photo-${i}" style="position:relative;width:80%;flex-shrink:0;overflow:hidden;cursor:pointer;" onclick="${_isPlanStrengthMode ? `_wtabToggleStrengthPick(${i})` : `openW2Sheet(${i})`}">
             ${workoutPhoto ? `<img src="${workoutPhoto}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.72);">` : ''}
             <div style="position:absolute;bottom:0;left:0;right:0;padding:10px 14px 12px;pointer-events:none;text-align:right;">
@@ -11718,7 +11812,16 @@ function _refreshExPRSlots(id) {
       const curMx       = Math.max(0, ...curDone.map(s => s.kg));
       const curVolVal   = Math.max(...curDone.map(s => s.kg * (1 + s.reps / 30)));
       const curVolKgReps = Math.round(curDone.reduce((a, s) => a + s.kg * s.reps, 0));
-      const _effSets = (sets) => { const ds = sets.filter(s => s.done && !s.ignored); return ds.length ? ds : sets.filter(s => !s.ignored); };
+        // Only fall back to "treat every set as done" for genuinely old-format
+      // data that predates the `done` field entirely (no set here has a
+      // `done` key at all) — not for a modern exercise that was finished with
+      // zero sets actually checked off, whose leftover/untouched numbers
+      // must not count as a real lift.
+      const _effSets = (sets) => {
+        const ds = sets.filter(s => s.done && !s.ignored);
+        if (ds.length) return ds;
+        return sets.some(s => 'done' in s) ? [] : sets.filter(s => !s.ignored);
+      };
       workouts.filter(w => !w._draft && !w._template).forEach(w => {
         const prevEx = w.exercises.find(e => e.name === exName);
         if (!prevEx) return;
@@ -13461,6 +13564,10 @@ function saveWorkoutToList() {
   // assume index 0 the way a newly-created workout (unshifted to the front)
   // happens to allow.
   window._nwfLastSavedWorkoutName = _savedName;
+  // Separate from the name above (which _nwfStartWorkout needs regardless of
+  // create vs. edit) — gates the new-workout "NEW" card flash so it never
+  // fires for an edit, only an actual creation. See _flashNewWorkoutCardOnce.
+  window._nwfWasNewCreation = !_wasEditingWorkout;
   window._isNewWorkoutFlow = false;
   window._activeTabHighlight = null;
   window._newFromToday = false;
@@ -13488,7 +13595,7 @@ function saveWorkoutToList() {
         optDiv.id = 'postSaveOptions';
         optDiv.style.cssText = 'display:flex;flex-direction:column;gap:10px;padding:12px 0;opacity:0;transition:opacity 0.4s ease, transform 0.45s cubic-bezier(0.2,0.8,0.3,1);align-items:center;position:fixed;top:50%;left:50%;transform:translate(-50%, calc(-50% + 48px));width:calc(100% - 32px);max-width:398px;z-index:201;';
         const exitOnclick = _wasFromWorkouts
-          ? `document.getElementById('postSaveOptions').remove();document.getElementById('_saveBlackScreen')?.remove();document.getElementById('_nwf-back-wrapper')?.remove();_nwfResetHeaderPadding();document.querySelectorAll('.tab').forEach(t=>{t.style.opacity='';t.style.pointerEvents=''});const _db=document.getElementById('dateBadge');if(_db){_db.style.opacity='';_db.style.cursor='';}actionsRowRestore();resetWorkoutState();document.getElementById('workoutName').value='';showTodayStartScreen();checkFinishReady();switchTab('workouts2');`
+          ? `document.getElementById('postSaveOptions').remove();document.getElementById('_saveBlackScreen')?.remove();document.getElementById('_nwf-back-wrapper')?.remove();_nwfResetHeaderPadding();document.querySelectorAll('.tab').forEach(t=>{t.style.opacity='';t.style.pointerEvents=''});const _db=document.getElementById('dateBadge');if(_db){_db.style.opacity='';_db.style.cursor='';}actionsRowRestore();resetWorkoutState();document.getElementById('workoutName').value='';showTodayStartScreen();checkFinishReady();switchTab('workouts2');_flashNewWorkoutCardOnce();`
           : `document.getElementById('postSaveOptions').remove();document.getElementById('_saveBlackScreen')?.remove();document.getElementById('_nwf-back-wrapper')?.remove();_nwfResetHeaderPadding();document.querySelectorAll('.tab').forEach(t=>{t.style.opacity='';t.style.pointerEvents=''});const _db=document.getElementById('dateBadge');if(_db){_db.style.opacity='';_db.style.cursor='';}actionsRowRestore();resetWorkoutState();document.getElementById('workoutName').value='';showTodayStartScreen();checkFinishReady();`;
         optDiv.innerHTML = `
             <div style="text-align:center;margin-bottom:18px;">
@@ -14450,7 +14557,9 @@ function renderHistory() {
       const chips = e.sets.filter(s=>!s.ignored).map(s=>`<span class="hcard-set-chip${s.done?' done':''}">${s.kg}×${s.reps}</span>`).join('<span style="color:#333;margin:0 2px;">·</span>');
       const muscle = e.muscle || getAllExercises().find(x=>x.name===e.name||x.label===e.name)?.muscle || '';
       // Always recalculate from data (source of truth)
-      const _eff = (sets) => { const ds=sets.filter(s=>s.done&&!s.ignored); return ds.length ? ds : sets.filter(s=>!s.ignored); };
+      // See _refreshExPRSlots for why the fallback is gated on "no `done`
+      // field at all" rather than just "nothing done this time".
+      const _eff = (sets) => { const ds=sets.filter(s=>s.done&&!s.ignored); if(ds.length) return ds; return sets.some(s=>'done' in s) ? [] : sets.filter(s=>!s.ignored); };
       const _eSets = _eff(e.sets);
       const maxKg = Math.max(0,..._eSets.map(s=>s.kg));
       const vol = _eSets.reduce((a,s)=>Math.max(a,s.kg*(1+s.reps/30)),0);
@@ -14579,7 +14688,9 @@ function toggleHcardExHistory(id, exName) {
     return;
   }
   // Build history table for this exercise across all workouts
-  const _effSets = (sets) => { const ds=sets.filter(s=>s.done&&!s.ignored); return ds.length ? ds : sets.filter(s=>!s.ignored); };
+  // See _refreshExPRSlots for why the fallback is gated on "no `done` field
+  // at all" rather than just "nothing done this time".
+  const _effSets = (sets) => { const ds=sets.filter(s=>s.done&&!s.ignored); if(ds.length) return ds; return sets.some(s=>'done' in s) ? [] : sets.filter(s=>!s.ignored); };
   const sessions = [];
   workouts.filter(w => !w._draft && !w._template).forEach(w => {
     w.exercises.filter(e => e.name === exName).forEach(e => {
@@ -16204,7 +16315,9 @@ function setBestBodyPartMetric(metric) {
 function _computeBodyPartExPRs(allW, base, metric) {
   const BODY_ORDER = ['Chest','Back','Legs','Shoulders','Arms','Core','Mix'];
   const baseSet = new Set(base);
-  const _eff = (sets) => { const ds = sets.filter(s => s.done && !s.ignored); return ds.length ? ds : sets.filter(s => !s.ignored); };
+  // See _refreshExPRSlots for why the fallback is gated on "no `done` field
+  // at all" rather than just "nothing done this time".
+  const _eff = (sets) => { const ds = sets.filter(s => s.done && !s.ignored); if (ds.length) return ds; return sets.some(s => 'done' in s) ? [] : sets.filter(s => !s.ignored); };
   const exPRs = {};
   const _runningBest = new Map(); // name -> {maxKg, vol, rawVol}
   allW.forEach(w => {
@@ -17911,7 +18024,9 @@ function renderCalDayWorkouts(ws) {
     const draftColor = w._draft ? 'color:#888' : '';
 
     let weightPRCount = 0, volPRCount = 0, volumePRCount = 0;
-    const _calEff = (sets) => { const ds=sets.filter(s=>s.done&&!s.ignored); return ds.length ? ds : sets.filter(s=>!s.ignored); };
+    // See _refreshExPRSlots for why the fallback is gated on "no `done` field
+    // at all" rather than just "nothing done this time".
+    const _calEff = (sets) => { const ds=sets.filter(s=>s.done&&!s.ignored); if(ds.length) return ds; return sets.some(s=>'done' in s) ? [] : sets.filter(s=>!s.ignored); };
     const calHistW = workouts.filter(pw=>!pw._draft&&!pw._template);
     const exRows = w.exercises.map((e,ei) => {
       const chips = e.sets.filter(s=>!s.ignored).map(s=>`<span class="hcard-set-chip${s.done?' done':''}">${s.kg}×${s.reps}</span>`).join('<span style="color:#333;margin:0 2px;">·</span>');
@@ -19750,7 +19865,12 @@ window._onAuthReady = (user) => {
   // Load notifications for all users
   loadClientNotifications();
 
-  // Reload in-memory data from brand-scoped localStorage keys
+  // Recover this user's own data from the old shared (brand-only, not
+  // uid-scoped) local cache, if any is still sitting there — must run before
+  // the uid-scoped reads below. See _migrateSharedLocalCacheToUser.
+  _migrateSharedLocalCacheToUser();
+
+  // Reload in-memory data from brand+uid-scoped localStorage keys
   workouts = JSON.parse(_LS.get('ironlog_workouts') || '[]');
   deletedWorkouts = JSON.parse(_LS.get('ironlog_deleted_workouts') || '[]');
   cardioLog = JSON.parse(_LS.get('ironlog_cardio') || '[]');
@@ -19853,33 +19973,36 @@ window.loadFromFirestore = function(uid) {
   return window._fbGetDoc(ref).then(snap => {
     if (!snap.exists()) return false;
     const data = snap.data();
-    const pfx = `ironlog_${brandId}_`;
+    // Routed through _LS (brand+uid-scoped, dual-writes IndexedDB too) rather
+    // than a hand-built brand-only key — this runs on every load, so keeping
+    // a hand-built prefix here would keep re-seeding the old shared key this
+    // whole fix is meant to retire (see _migrateSharedLocalCacheToUser).
     if (Array.isArray(data.workouts) && data.workouts.length > 0) {
       const localDrafts = workouts.filter(w => w._draft);
       const cloudIds = new Set(data.workouts.map(w => w.id));
       const localOnly = workouts.filter(w => !w._draft && !cloudIds.has(w.id));
       workouts = [...data.workouts, ...localOnly, ...localDrafts];
-      localStorage.setItem(pfx + 'workouts', JSON.stringify(workouts));
+      _LS.set('ironlog_workouts', JSON.stringify(workouts));
     }
     if (Array.isArray(data.deletedWorkouts)) {
       const existingIds = new Set(deletedWorkouts.map(w => w.id));
       data.deletedWorkouts.filter(w => !existingIds.has(w.id)).forEach(w => deletedWorkouts.push(w));
-      localStorage.setItem(pfx + 'deleted_workouts', JSON.stringify(deletedWorkouts));
+      _LS.set('ironlog_deleted_workouts', JSON.stringify(deletedWorkouts));
     }
     if (Array.isArray(data.cardioLog) && data.cardioLog.length > 0) {
       const existingKeys = new Set(cardioLog.map(c => `${c.date}-${c.type}-${c.mins}`));
       data.cardioLog.filter(c => !existingKeys.has(`${c.date}-${c.type}-${c.mins}`)).forEach(c => cardioLog.push(c));
-      localStorage.setItem(pfx + 'cardio', JSON.stringify(cardioLog));
+      _LS.set('ironlog_cardio', JSON.stringify(cardioLog));
     }
     if (Array.isArray(data.customExercises) && data.customExercises.length > 0) {
       const existingNames = new Set(customExercises.map(e => e.name));
       data.customExercises.filter(e => !existingNames.has(e.name)).forEach(e => customExercises.push(e));
-      localStorage.setItem(pfx + 'custom_ex', JSON.stringify(customExercises));
+      _LS.set('ironlog_custom_ex', JSON.stringify(customExercises));
     }
     if (Array.isArray(data.plannedWorkouts)) {
       const existingPlanIds = new Set((plannedWorkouts||[]).map(p => p.planId));
       data.plannedWorkouts.filter(p => !existingPlanIds.has(p.planId)).forEach(p => plannedWorkouts.push(p));
-      localStorage.setItem(pfx + 'planned', JSON.stringify(plannedWorkouts));
+      _LS.set('ironlog_planned', JSON.stringify(plannedWorkouts));
     }
     if (data.settings) {
       const s = data.settings;
@@ -25148,7 +25271,9 @@ function renderProgHistory() {
     let weightPRCount = 0, volPRCount = 0, volumePRCount = 0;
 
     const exRows = w.exercises.map((e, ei) => {
-      const _eff = (sets) => { const ds=sets.filter(s=>s.done&&!s.ignored); return ds.length ? ds : sets.filter(s=>!s.ignored); };
+      // See _refreshExPRSlots for why the fallback is gated on "no `done`
+      // field at all" rather than just "nothing done this time".
+      const _eff = (sets) => { const ds=sets.filter(s=>s.done&&!s.ignored); if(ds.length) return ds; return sets.some(s=>'done' in s) ? [] : sets.filter(s=>!s.ignored); };
       const _eSets = _eff(e.sets);
       const maxKg = Math.max(0,..._eSets.map(s=>s.kg));
       const vol = _eSets.reduce((a,s)=>Math.max(a,s.kg*(1+s.reps/30)),0);
@@ -26762,14 +26887,22 @@ function _doImportWorkout(data) {
 
   let name = (data.name || 'Imported Workout').trim() || 'Imported Workout';
   const creatorName = (data.creatorName || '').trim();
+  const existingNames = new Set(workouts.filter(w => !w._draft).map(w => (w.name || '').trim().toLowerCase()));
   if (creatorName) {
     // Always credit the sharer ("by Oded Albo"), not just on a name collision.
     name = name + ` by ${creatorName}`;
-  } else {
+  } else if (existingNames.has(name.toLowerCase())) {
     // No creator known (a link shared before creatorName existed, or a sharer
     // with no display name set) — fall back to the old collision-only tag.
-    const existingNames = new Set(workouts.filter(w => !w._draft).map(w => (w.name || '').trim().toLowerCase()));
-    if (existingNames.has(name.toLowerCase())) name = name + ' (Imported)';
+    name = name + ' (Imported)';
+  }
+  // Still collides (e.g. this exact workout, from this exact sharer, was
+  // already imported before) — append an incrementing #N until unique,
+  // e.g. "Leg Day by Oded Albo #1", then "#2", etc.
+  if (existingNames.has(name.toLowerCase())) {
+    let n = 1;
+    while (existingNames.has(`${name} #${n}`.toLowerCase())) n++;
+    name = `${name} #${n}`;
   }
 
   workouts.unshift({ id: Date.now(), name, date: Date.now(), exercises: importedExercises, _template: true });
@@ -26777,6 +26910,12 @@ function _doImportWorkout(data) {
   if (window._currentUser && window.syncToFirestore) window.syncToFirestore();
   if (typeof renderWorkoutsTab2 === 'function') renderWorkoutsTab2();
   switchTab('workouts2');
+  // Same one-time "NEW" card flash as a freshly-created workout — see
+  // _flashNewWorkoutCardOnce, which relies on the just-added workout still
+  // being workouts[0] (true here too, since it's unshifted above).
+  window._nwfLastSavedWorkoutName = name;
+  window._nwfWasNewCreation = true;
+  if (typeof _flashNewWorkoutCardOnce === 'function') _flashNewWorkoutCardOnce();
 }
 
 // ── EXERCISE PHOTO SYSTEM ──────────────────────────────────────────
