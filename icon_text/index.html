@@ -950,9 +950,12 @@ window._loadExPhotoFromCloud = _loadExPhotoFromCloud;
 // Stored under the brand (not per-user) since library workouts are shared —
 // the Firestore library doc keeps only this URL, never the raw data URL, to
 // stay well under Firestore's per-document size limit.
-async function _uploadLibraryWorkoutPhoto(workoutId, dataUrl) {
+// targetBrandId lets the Brand Library publish flow (super_admin) upload to a
+// brand OTHER than the one currently signed into — defaults to the current
+// brand so the existing Explore-publish caller below needs no change.
+async function _uploadLibraryWorkoutPhoto(workoutId, dataUrl, targetBrandId) {
   if (!dataUrl || !storage) return null;
-  const brandId = window.BRAND_ID || 'default';
+  const brandId = targetBrandId || window.BRAND_ID || 'default';
   const path = `library/${brandId}/workout_photos/${workoutId}/photo`;
   try {
     await uploadString(storageRef(storage, path), dataUrl, 'data_url');
@@ -1615,6 +1618,7 @@ window._fbModuleReady = true;
 
   <button id="userMenuAdminBtn" onclick="openAdminPanel()" style="display:none;width:100%;background:transparent;border:none;border-radius:10px;color:#a78bfa;font-family:'DM Sans';font-size:15px;font-weight:600;padding:14px 12px;cursor:pointer;text-align:left;">⚙️ Admin Panel</button>
   <button id="userMenuSuperBtn" onclick="openSuperDashboard()" style="display:none;width:100%;background:transparent;border:none;border-radius:10px;color:#ff4747;font-family:'DM Sans';font-size:15px;font-weight:600;padding:14px 12px;cursor:pointer;text-align:left;">🌐 Super Dashboard</button>
+  <button id="userMenuBrandLibBtn" onclick="openBrandLibPicker()" style="display:none;width:100%;background:transparent;border:none;border-radius:10px;color:#e8ff47;font-family:'DM Sans';font-size:15px;font-weight:600;padding:14px 12px;cursor:pointer;text-align:left;">📚 Brand Library</button>
   <button id="userMenuViewAsBtn" onclick="openViewAsRolePicker()" style="display:none;width:100%;background:transparent;border:none;border-radius:10px;color:#f59e0b;font-family:'DM Sans';font-size:15px;font-weight:600;padding:14px 12px;cursor:pointer;text-align:left;">👁️ View As Role</button>
   <button id="userMenuExitViewBtn" onclick="exitDebugRole()" style="display:none;width:100%;background:#f59e0b22;border:1px solid #f59e0b55;border-radius:10px;color:#f59e0b;font-family:'DM Sans';font-size:15px;font-weight:600;padding:14px 12px;cursor:pointer;text-align:left;margin-bottom:8px;">✕ Exit View Mode</button>
   <button id="userMenuSiteManagerBtn" onclick="openSiteManagerPanel()" style="display:none;width:100%;background:transparent;border:none;border-radius:10px;color:#a78bfa;font-family:'DM Sans';font-size:15px;font-weight:600;padding:14px 12px;cursor:pointer;text-align:left;">🏢 Site Manager <span id="siteManagerBadge" style="display:none;background:#ff4747;color:#fff;border-radius:10px;font-size:10px;padding:2px 6px;margin-left:4px;">0</span></button>
@@ -9209,12 +9213,40 @@ function renderWorkoutsTab2() {
     return;
   }
 
+  // Brand Library publish pick-mode (super_admin) — forces the plain "own
+  // workouts" list (no ALL-view library/default merge, no switching away),
+  // replaces the normal segmented toggle with a purpose-built header, and
+  // hides the main bottom tab bar the same way the other special pick modes
+  // below (plan/strength) already do.
+  const _isPubPickMode = !!window._pubPickMode;
+  // Bare assignment (not window._wTabView) — _wTabView is a top-level `let`
+  // in this same script, not a window property; switchWTabView itself
+  // assigns it the same way.
+  if (_isPubPickMode) _wTabView = 'custom';
+
+  // Long-press-to-delete (CUSTOM only) — never active alongside any of the
+  // other single-purpose pick modes, since they all repurpose a card's own
+  // right-side button for their own single-select checkbox the same way.
+  const _wtabNoDeleteMode = !!(window._replacePlanId || window._planStrengthKey || window._loadFromToday || _isPubPickMode);
+  if (_wtabNoDeleteMode && window._wtabDeleteMode) { window._wtabDeleteMode = false; window._wtabDeleteSelectedIds = null; }
+  const _isDeleteMode = !!window._wtabDeleteMode && _wTabView === 'custom' && !_wtabNoDeleteMode;
+
   // ── Toggle bar ────────────────────────────────────────
   const _wHasCoach = window._currentUserData?.coachId && window._currentUserData?.coachingExpires && new Date(window._currentUserData.coachingExpires) >= new Date();
   const _wSegViews = _wHasCoach ? ['all','custom','coach'] : ['all','custom'];
   const _wSegIdx = Math.max(0, _wSegViews.indexOf(_wTabView));
   const _wSegIndicatorColor = _wTabView === 'coach' ? '#7ec8e3' : 'var(--accent)';
-  const _wToggleHtml = `<div style="display:flex;align-items:center;justify-content:center;padding:10px 0 6px;"><span style="font-family:'DM Sans';font-size:20px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.5px;">Workouts</span></div><div style="display:flex;gap:0;align-items:center;">
+  const _wToggleHtml = _isPubPickMode
+    ? `<div style="padding:10px 0 6px;">
+        <div style="font-family:'DM Sans';font-size:16px;font-weight:800;color:var(--text);">Publish to ${(window._pubTargetBrandName||'').toString()}</div>
+        <div style="font-family:'DM Sans';font-size:12px;color:#555;margin-top:2px;">Select your workouts to publish</div>
+      </div>`
+    : _isDeleteMode
+    ? `<div style="padding:10px 0 6px;">
+        <div style="font-family:'DM Sans';font-size:16px;font-weight:800;color:var(--text);">Select Workouts</div>
+        <div style="font-family:'DM Sans';font-size:12px;color:#555;margin-top:2px;">Tap workouts to select, then delete</div>
+      </div>`
+    : `<div style="display:flex;align-items:center;justify-content:center;padding:10px 0 6px;"><span style="font-family:'DM Sans';font-size:20px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.5px;">Workouts</span></div><div style="display:flex;gap:0;align-items:center;">
     <div id="wTab-seg-wrap" data-views="${_wSegViews.join(',')}" style="position:relative;display:flex;flex:1;">
       <button onclick="switchWTabView('all')" id="wTab-seg-all" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_wTabView==='all'?'var(--accent)':'#555'};transition:color .15s;">ALL</button>
       <button onclick="switchWTabView('custom')" id="wTab-seg-custom" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_wTabView==='custom'?'var(--accent)':'#555'};transition:color .15s;">CUSTOM</button>
@@ -9248,6 +9280,11 @@ function renderWorkoutsTab2() {
   const _seen = new Set();
   const sorted = [...all].sort((a,b) => b.date - a.date).filter(w => {
     if (_deletedTabNames.includes(w.name)) return false;
+    // CUSTOM is meant to be only what the user actually created themselves —
+    // a workout loaded from the brand library (see loadLibraryWorkout, which
+    // stashes a personal copy tagged _libSourceId so it can be reused/synced
+    // across loads) still belongs under ALL, but shouldn't clutter CUSTOM.
+    if (w._libSourceId && (_wTabView === 'custom' || _isPubPickMode)) return false;
     const key = (w.name?.trim().toLowerCase()) || '';
     if (_seen.has(key)) return false;
     _seen.add(key);
@@ -9272,7 +9309,7 @@ function renderWorkoutsTab2() {
   // Hide the main bottom tab bar entirely in this mode — it would otherwise sit fixed
   // on top of (and hide) the Cancel/Save row below. Restored on every other render.
   const _tabsBarEl = document.querySelector('.tabs');
-  if (_tabsBarEl) _tabsBarEl.style.display = _isPlanStrengthMode ? 'none' : '';
+  if (_tabsBarEl) _tabsBarEl.style.display = (_isPlanStrengthMode || _isPubPickMode || _isDeleteMode) ? 'none' : '';
   const MUSCLE_COLORS = {Chest:'#e8ff47',Back:'#7ec8e3',Legs:'#ff8c42',Shoulders:'#a78bfa',Arms:'#34d399',Core:'#f87171',Mix:'#20d4c8'};
   // Today's planned workout (if any) gets an accent-colored card border below — this is
   // the only place that surfaces "planned for today" now; the home page no longer shows
@@ -9295,11 +9332,27 @@ function renderWorkoutsTab2() {
   // the user's own (built further down) — only bail out here for CUSTOM,
   // which never has another source to fall back on.
   if (!sorted.length && _wTabView !== 'all') {
-    el.innerHTML = `<div class="empty-state" style="margin-top:24px;"><span style="color:#fff;">No workouts yet.</span></div>
+    el.innerHTML = _isPubPickMode
+      ? `<div class="empty-state" style="margin-top:24px;"><span style="color:#fff;">You have no saved workouts to publish.</span></div>`
+      : `<div class="empty-state" style="margin-top:24px;"><span style="color:#fff;">No workouts yet.</span></div>
       <button onclick="startNewWorkout(true);" style="width:100%;margin-top:12px;background:transparent;border:1px dashed var(--border);border-radius:12px;color:var(--muted);font-family:'DM Sans';font-size:15px;font-weight:700;padding:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
         <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         Create New Workout
       </button>`;
+    // Publish pick-mode's Cancel bar still needs to appear here — the normal
+    // flow builds it much further below, past this early return.
+    let _pubBarEmpty = document.getElementById('wtab-publish-bar');
+    if (_isPubPickMode) {
+      if (!_pubBarEmpty) {
+        _pubBarEmpty = document.createElement('div');
+        _pubBarEmpty.id = 'wtab-publish-bar';
+        _pubBarEmpty.style.cssText = 'position:fixed;left:0;right:0;bottom:0;max-width:430px;margin:0 auto;z-index:500;background:linear-gradient(to bottom,transparent,#111 40%);box-sizing:border-box;padding:46px 16px calc(env(safe-area-inset-bottom,0px) + 16px);display:flex;gap:10px;';
+        document.body.appendChild(_pubBarEmpty);
+      }
+      _pubBarEmpty.innerHTML = `<button onclick="_pubCancelPickMode();" style="flex:1;background:transparent;border:1px solid #555;border-radius:12px;color:#fff;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">CANCEL</button>`;
+    } else if (_pubBarEmpty) {
+      _pubBarEmpty.remove();
+    }
     return;
   }
 
@@ -9392,13 +9445,29 @@ function renderWorkoutsTab2() {
     const _nwDir = _nwHebrew ? 'direction:rtl;' : '';
     const _isTodayPlanned = !!_wtabTodayPlanName && w.name === _wtabTodayPlanName;
     const _isPlanPicked = _isPlanStrengthMode && _planSelIdx === i;
-    const _showAccentBorder = _isPlanStrengthMode ? _isPlanPicked : _isTodayPlanned;
+    const _isPubPicked = _isPubPickMode && window._pubSelectedIds?.has(w.id);
+    const _isDelPicked = _isDeleteMode && window._wtabDeleteSelectedIds?.has(w.id);
+    const _showAccentBorder = _isPlanStrengthMode ? _isPlanPicked : _isPubPickMode ? _isPubPicked : _isDeleteMode ? _isDelPicked : _isTodayPlanned;
+    // Long-press-to-delete only arms when nothing else already owns this
+    // card's tap/long-press (CUSTOM, no other pick mode active, not already
+    // in delete mode — once in delete mode a plain tap already toggles).
+    const _wtabLPAttrs = (_wTabView === 'custom' && !_wtabNoDeleteMode && !_isDeleteMode)
+      ? ` ontouchstart="_wtabLPStart(${JSON.stringify(w.id)})" ontouchend="_wtabLPRelease()" ontouchmove="_wtabLPCancel()" onmousedown="_wtabLPStart(${JSON.stringify(w.id)})" onmouseup="_wtabLPRelease()" onmouseleave="_wtabLPCancel()"`
+      : '';
+    const _wtabTapAction = _isPlanStrengthMode ? `_wtabToggleStrengthPick(${i})`
+      : _isPubPickMode ? `_pubToggleWorkoutPick(${JSON.stringify(w.id)})`
+      : _isDeleteMode ? `_wtabToggleDeletePick(${JSON.stringify(w.id)})`
+      : `openW2Sheet(${i})`;
+    // Swallow the tap this long-press timer's own gesture would otherwise
+    // also fire (see _wtabLPConsume) — harmless no-op everywhere else, since
+    // it only ever returns true right after a long-press just fired.
+    const _wtabTapOnclick = `if(_wtabLPConsume(${JSON.stringify(w.id)}))return;${_wtabTapAction}`;
 
     const cardInner = `
       <div style="position:relative;">
-        ${(!_isPlanStrengthMode && _isTodayPlanned) ? `<span style="position:absolute;top:0;left:14px;transform:translateY(-50%);background:var(--bg);color:var(--accent);font-family:'DM Sans';font-size:10px;font-weight:800;letter-spacing:.4px;padding:0 6px;line-height:1.4;white-space:nowrap;z-index:2;">Today's Plan</span>` : ''}
-        <div id="w2-card-border-${i}" style="position:relative;display:flex;border-radius:14px;overflow:hidden;aspect-ratio:21/9;background:#1a1a1a;${_showAccentBorder ? 'border:2px solid var(--accent);' : 'border:1px solid #2a2a2a;'}">
-          <div id="w2-card-photo-${i}" style="position:relative;width:80%;flex-shrink:0;overflow:hidden;cursor:pointer;" onclick="${_isPlanStrengthMode ? `_wtabToggleStrengthPick(${i})` : `openW2Sheet(${i})`}">
+        ${(!_isPlanStrengthMode && !_isPubPickMode && !_isDeleteMode && _isTodayPlanned) ? `<span style="position:absolute;top:0;left:14px;transform:translateY(-50%);background:var(--bg);color:var(--accent);font-family:'DM Sans';font-size:10px;font-weight:800;letter-spacing:.4px;padding:0 6px;line-height:1.4;white-space:nowrap;z-index:2;">Today's Plan</span>` : ''}
+        <div id="w2-card-border-${i}"${_wtabLPAttrs} style="position:relative;display:flex;border-radius:14px;overflow:hidden;aspect-ratio:21/9;background:#1a1a1a;${_showAccentBorder ? 'border:2px solid var(--accent);' : 'border:1px solid #2a2a2a;'}">
+          <div id="w2-card-photo-${i}" style="position:relative;width:80%;flex-shrink:0;overflow:hidden;cursor:pointer;" onclick="${_wtabTapOnclick}">
             ${workoutPhoto ? `<img src="${workoutPhoto}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.72);">` : ''}
             <div style="position:absolute;bottom:0;left:0;right:0;padding:10px 14px 12px;pointer-events:none;text-align:right;">
               ${lastDate ? `<div style="font-family:'DM Sans';font-size:11px;font-weight:600;color:rgba(255,255,255,0.55);margin-bottom:2px;">Last Time: ${lastDate}</div>` : ''}
@@ -9411,7 +9480,19 @@ function renderWorkoutsTab2() {
                   ${_isPlanPicked ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>` : ''}
                 </span>
               </button>`
-            : `<button id="w2-card-play-${i}" onclick="_wtabLoadWorkout(${i})" title="Start workout" style="width:20%;flex-shrink:0;background:linear-gradient(to right, #161616, #3a3a3a);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;">
+            : _isPubPickMode
+            ? `<button onclick="_pubToggleWorkoutPick(${JSON.stringify(w.id)})" title="Select workout" style="width:20%;flex-shrink:0;background:linear-gradient(to right, #161616, #3a3a3a);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;">
+                <span style="width:32px;height:32px;border-radius:50%;border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;background:${_isPubPicked ? 'var(--accent)' : 'transparent'};transition:background .15s;">
+                  ${_isPubPicked ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>` : ''}
+                </span>
+              </button>`
+            : _isDeleteMode
+            ? `<button onclick="_wtabToggleDeletePick(${JSON.stringify(w.id)})" title="Select workout" style="width:20%;flex-shrink:0;background:linear-gradient(to right, #161616, #3a3a3a);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;">
+                <span style="width:32px;height:32px;border-radius:50%;border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;background:${_isDelPicked ? 'var(--accent)' : 'transparent'};transition:background .15s;">
+                  ${_isDelPicked ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>` : ''}
+                </span>
+              </button>`
+            : `<button id="w2-card-play-${i}" onclick="if(_wtabLPConsume(${JSON.stringify(w.id)}))return;_wtabLoadWorkout(${i});" title="Start workout" style="width:20%;flex-shrink:0;background:linear-gradient(to right, #161616, #3a3a3a);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;">
                 <svg width="36" height="36" viewBox="0 0 24 24" fill="var(--accent)"><polygon points="6,4 20,12 6,20"/></svg>
               </button>`}
         </div>
@@ -9456,12 +9537,26 @@ function renderWorkoutsTab2() {
       _libRowsHtml = '<div style="text-align:center;padding:16px;color:#555;font-size:13px;">Loading library&</div>';
       loadLibrary().then(() => { if (_wTabView === 'all') renderWorkoutsTab2(); });
     } else if (_allLibWs.length) {
+      // Same photo-card layout as the user's own workouts above (w2-card-border/
+      // w2-card-photo + right-side play button) instead of the old plain
+      // "Load button + right-aligned name" row — library items just have no
+      // per-row index into `workouts`, so identifiers use w.id directly, and
+      // there's no detail sheet to open, so tapping the photo also loads it.
       _libRowsHtml = _allLibWs.map(w => {
-        return `<div data-wlibname="${(w.name||'').replace(/"/g,'&quot;')}" style="border-bottom:1px solid var(--border);">
-          <div style="position:relative;display:flex;align-items:center;gap:12px;padding:14px;">
-            <button onclick="loadLibraryWorkout('${w.id}')" style="background:var(--accent);border:none;border-radius:8px;color:#000;font-family:'DM Sans';font-size:13px;font-weight:700;padding:8px 14px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Load</button>
-            <div style="flex:1;min-width:0;text-align:right;">
-              <div style="font-family:'DM Sans';font-size:28px;font-weight:900;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${w.name||'Workout'}</div>
+        const libPhoto = w.photo || _workoutDefaultPhoto;
+        const safeId = (w.id || '').replace(/'/g, "\\'");
+        return `<div data-wlibname="${(w.name||'').replace(/"/g,'&quot;')}" style="padding:5px 2px;">
+          <div style="position:relative;">
+            <div style="position:relative;display:flex;border-radius:14px;overflow:hidden;aspect-ratio:21/9;background:#1a1a1a;border:1px solid #2a2a2a;">
+              <div style="position:relative;width:80%;flex-shrink:0;overflow:hidden;cursor:pointer;" onclick="loadLibraryWorkout('${safeId}')">
+                ${libPhoto ? `<img src="${libPhoto}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.72);">` : ''}
+                <div style="position:absolute;bottom:0;left:0;right:0;padding:10px 14px 12px;pointer-events:none;text-align:right;">
+                  <div style="font-family:'DM Sans';font-size:20px;font-weight:900;color:#fff;line-height:1.2;">${w.name||'Workout'}</div>
+                </div>
+              </div>
+              <button onclick="loadLibraryWorkout('${safeId}')" title="Load workout" style="width:20%;flex-shrink:0;background:linear-gradient(to right, #161616, #3a3a3a);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="var(--accent)"><polygon points="6,4 20,12 6,20"/></svg>
+              </button>
             </div>
           </div>
         </div>`;
@@ -9498,7 +9593,159 @@ function renderWorkoutsTab2() {
   } else if (_planBar) {
     _planBar.remove();
   }
+
+  // Brand Library publish Cancel/Publish bar — same body-level pattern as the
+  // plan-strength bar above, for the same reason (see comment above _bottomBtns).
+  let _pubBar = document.getElementById('wtab-publish-bar');
+  if (_isPubPickMode) {
+    if (!_pubBar) {
+      _pubBar = document.createElement('div');
+      _pubBar.id = 'wtab-publish-bar';
+      _pubBar.style.cssText = 'position:fixed;left:0;right:0;bottom:0;max-width:430px;margin:0 auto;z-index:500;background:linear-gradient(to bottom,transparent,#111 40%);box-sizing:border-box;padding:46px 16px calc(env(safe-area-inset-bottom,0px) + 16px);display:flex;gap:10px;';
+      document.body.appendChild(_pubBar);
+    }
+    const _pubCount = window._pubSelectedIds ? window._pubSelectedIds.size : 0;
+    _pubBar.innerHTML = `
+      <button onclick="_pubCancelPickMode();" style="flex:1;background:transparent;border:1px solid #555;border-radius:12px;color:#fff;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">CANCEL</button>
+      <button onclick="_pubProceedToReview();" ${_pubCount ? '' : 'disabled'} style="flex:1;background:var(--accent);border:none;border-radius:12px;color:#000;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;padding:14px;cursor:pointer;opacity:${_pubCount ? '1' : '0.4'};-webkit-tap-highlight-color:transparent;">PUBLISH${_pubCount ? ` (${_pubCount})` : ''}</button>`;
+  } else if (_pubBar) {
+    _pubBar.remove();
+  }
+
+  // Long-press-to-delete Cancel/Delete bar — same body-level pattern as above.
+  let _delBar = document.getElementById('wtab-delete-bar');
+  if (_isDeleteMode) {
+    if (!_delBar) {
+      _delBar = document.createElement('div');
+      _delBar.id = 'wtab-delete-bar';
+      _delBar.style.cssText = 'position:fixed;left:0;right:0;bottom:0;max-width:430px;margin:0 auto;z-index:500;background:linear-gradient(to bottom,transparent,#111 40%);box-sizing:border-box;padding:46px 16px calc(env(safe-area-inset-bottom,0px) + 16px);display:flex;gap:10px;';
+      document.body.appendChild(_delBar);
+    }
+    const _delCount = window._wtabDeleteSelectedIds ? window._wtabDeleteSelectedIds.size : 0;
+    _delBar.innerHTML = `
+      <button onclick="_wtabCancelDeleteMode();" style="flex:1;background:transparent;border:1px solid #555;border-radius:12px;color:#fff;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">CANCEL</button>
+      <button onclick="_wtabConfirmDeleteSelected();" ${_delCount ? '' : 'disabled'} style="flex:1;background:#ff4747;border:none;border-radius:12px;color:#fff;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;padding:14px;cursor:pointer;opacity:${_delCount ? '1' : '0.4'};-webkit-tap-highlight-color:transparent;">DELETE${_delCount ? ` (${_delCount})` : ''}</button>`;
+  } else if (_delBar) {
+    _delBar.remove();
+  }
 }
+
+// ── Long-press-to-select delete mode (Workouts tab → CUSTOM only) ──────────
+// No long-press gesture exists elsewhere in the app — built here as a plain
+// timer. Important: the timer firing only ARMS the pending selection: it does
+// NOT touch the DOM or re-render while the finger/mouse is still down.
+// Re-rendering mid-touch (the first version of this did that) replaces the
+// very card the browser is still tracking an active touch on, which both
+// jumped window.scrollY (see _wtabRenderKeepScroll below) and — on real
+// devices — broke that touch sequence badly enough that a second card's tap
+// often silently failed to register at all. The actual selection/re-render
+// only happens once the finger lifts (touchend/mouseup), by which point the
+// gesture has fully ended and mutating the DOM is safe.
+let _wtabLPTimer = null;
+let _wtabLPPendingId = null; // long-press completed, waiting for release
+let _wtabLPFiredId = null;   // consumed once by the tap this same release fires
+function _wtabLPStart(id) {
+  clearTimeout(_wtabLPTimer);
+  _wtabLPPendingId = null;
+  _wtabLPTimer = setTimeout(() => {
+    _wtabLPTimer = null;
+    _wtabLPPendingId = id;
+    if (navigator.vibrate) navigator.vibrate(30);
+  }, 500);
+}
+window._wtabLPStart = _wtabLPStart;
+// touchmove/mouseleave — only aborts a timer that HASN'T fired yet (movement
+// before the hold completes cancels the long-press attempt, same as before).
+// Once the timer HAS fired, a still-held finger very commonly generates its
+// own small touchmove events even while essentially stationary — this must
+// NOT also trigger the actual selection here, or the render would still be
+// happening mid-touch just slightly later than before. Only _wtabLPRelease
+// (a genuine finger-up/mouse-up) applies the pending selection.
+function _wtabLPCancel() {
+  clearTimeout(_wtabLPTimer);
+  _wtabLPTimer = null;
+}
+window._wtabLPCancel = _wtabLPCancel;
+// touchend/mouseup — the actual release. Applies the pending selection (if
+// the hold completed) now that the gesture has genuinely ended.
+function _wtabLPRelease() {
+  clearTimeout(_wtabLPTimer);
+  _wtabLPTimer = null;
+  if (_wtabLPPendingId == null) return;
+  const id = _wtabLPPendingId;
+  _wtabLPPendingId = null;
+  _wtabLPFiredId = id;
+  window._wtabDeleteMode = true;
+  window._wtabDeleteSelectedIds = new Set([id]);
+  _wtabRenderKeepScroll();
+}
+window._wtabLPRelease = _wtabLPRelease;
+function _wtabLPConsume(id) {
+  if (_wtabLPFiredId === id) { _wtabLPFiredId = null; return true; }
+  return false;
+}
+window._wtabLPConsume = _wtabLPConsume;
+
+// Same window.scrollY save/restore technique as _renderExercisesTabKeepScroll
+// (this codebase's existing fix for the same class of bug) — replacing the
+// list's innerHTML can shrink its scrollable height for a moment, which the
+// browser responds to by clamping window.scrollY back down, reading as the
+// page snapping to the top.
+function _wtabRenderKeepScroll() {
+  const savedScroll = window.scrollY;
+  renderWorkoutsTab2();
+  requestAnimationFrame(() => {
+    if (savedScroll > 0) window.scrollTo({ top: savedScroll, behavior: 'instant' });
+  });
+}
+
+function _wtabToggleDeletePick(id) {
+  if (!window._wtabDeleteSelectedIds) return;
+  if (window._wtabDeleteSelectedIds.has(id)) window._wtabDeleteSelectedIds.delete(id);
+  else window._wtabDeleteSelectedIds.add(id);
+  _wtabRenderKeepScroll();
+}
+window._wtabToggleDeletePick = _wtabToggleDeletePick;
+
+function _wtabCancelDeleteMode() {
+  window._wtabDeleteMode = false;
+  window._wtabDeleteSelectedIds = null;
+  renderWorkoutsTab2();
+}
+window._wtabCancelDeleteMode = _wtabCancelDeleteMode;
+
+function _wtabConfirmDeleteSelected() {
+  const ids = window._wtabDeleteSelectedIds;
+  if (!ids || !ids.size) return;
+  const names = workouts.filter(w => ids.has(w.id)).map(w => w.name || 'Workout');
+  if (!names.length) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'delete-confirm-overlay';
+  overlay.style.background = 'rgba(0,0,0,0.85)';
+  overlay.innerHTML = `<div class="delete-confirm-sheet">
+    <div class="delete-confirm-title">Delete ${names.length} Workout${names.length !== 1 ? 's' : ''} ?</div>
+    <div class="delete-confirm-sub">${names.map(n => `"${n}"`).join(', ')} will be permanently removed from your workout list.</div>
+    <div class="delete-confirm-btns">
+      <button class="btn-del-cancel" id="_dwtBulkCancel">Cancel</button>
+      <button class="btn-del-yes-solid" id="_dwtBulkConfirm">Delete</button>
+    </div></div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#_dwtBulkCancel').onclick = () => overlay.remove();
+  overlay.querySelector('#_dwtBulkConfirm').onclick = () => {
+    overlay.remove();
+    // Same "hide from this tab" mechanism the existing single-workout delete
+    // (deleteWorkoutFromTab) already uses — kept consistent with it rather
+    // than introducing a second, harder delete semantics on this same screen.
+    let _deletedTabNames = JSON.parse(_LS.get('ironlog_deleted_tab_names') || '[]');
+    names.forEach(n => { if (!_deletedTabNames.includes(n)) _deletedTabNames.push(n); });
+    _LS.set('ironlog_deleted_tab_names', JSON.stringify(_deletedTabNames));
+    window._wtabDeleteMode = false;
+    window._wtabDeleteSelectedIds = null;
+    window._keepWorkoutsTabState = true;
+    _wtabRenderKeepScroll();
+  };
+}
+window._wtabConfirmDeleteSelected = _wtabConfirmDeleteSelected;
 
 // ══════════════════════════════════════════════════════
 //  WORKOUTS TAB
@@ -19543,6 +19790,46 @@ document.getElementById("installBtn").addEventListener("click", async () => {
   </div>
 </div>
 
+<!-- BRAND LIBRARY PUBLISH — brand picker (super_admin only) -->
+<div id="brandLibPickerOverlay" style="display:none;position:fixed;inset:0;z-index:9100;background:#0a0a0a;overflow-y:auto;">
+  <div style="max-width:430px;margin:0 auto;padding:16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 0 16px;">
+      <div>
+        <div style="font-family:'Bebas Neue';font-size:28px;color:#e8ff47;letter-spacing:1px;">BRAND LIBRARY</div>
+        <div style="font-size:11px;color:#555;letter-spacing:2px;">SELECT A BRAND TO PUBLISH TO</div>
+      </div>
+      <button onclick="closeBrandLibPicker()" style="background:transparent;border:1px solid #2a2a2a;border-radius:8px;color:#888;font-size:18px;width:36px;height:36px;cursor:pointer;">✕</button>
+    </div>
+    <div id="brandLibPickerList"></div>
+  </div>
+</div>
+
+<!-- BRAND LIBRARY PUBLISH — review & confirm -->
+<div id="brandLibReviewOverlay" style="display:none;position:fixed;inset:0;z-index:9200;background:#0a0a0a;overflow-y:auto;">
+  <div style="max-width:430px;margin:0 auto;padding:16px;padding-bottom:110px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 0 16px;">
+      <div>
+        <div style="font-family:'Bebas Neue';font-size:24px;color:#e8ff47;letter-spacing:1px;">REVIEW &amp; PUBLISH</div>
+        <div id="brandLibReviewTarget" style="font-size:11px;color:#555;letter-spacing:1px;"></div>
+      </div>
+      <button onclick="_pubCloseReview()" style="background:transparent;border:1px solid #2a2a2a;border-radius:8px;color:#888;font-size:18px;width:36px;height:36px;cursor:pointer;">✕</button>
+    </div>
+    <div id="brandLibReviewList"></div>
+  </div>
+  <div style="position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:#0a0a0a;border-top:1px solid #2a2a2a;padding:12px 16px calc(12px + env(safe-area-inset-bottom));">
+    <button id="brandLibConfirmBtn" onclick="_pubConfirmPublish()" style="width:100%;padding:16px;background:var(--accent);color:#000;border:none;border-radius:100px;font-family:'DM Sans';font-size:16px;font-weight:900;cursor:pointer;">Confirm &amp; Publish</button>
+  </div>
+</div>
+
+<!-- BRAND LIBRARY PUBLISH — success confirmation -->
+<div id="brandLibSuccessOverlay" style="display:none;position:fixed;inset:0;z-index:9300;background:#0a0a0a;align-items:center;justify-content:center;flex-direction:column;padding:32px;">
+  <div style="width:64px;height:64px;border-radius:50%;background:#34d399;display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+  </div>
+  <div id="brandLibSuccessText" style="font-family:'DM Sans';font-size:18px;font-weight:800;color:#fff;text-align:center;margin-bottom:24px;line-height:1.5;"></div>
+  <button onclick="_pubCloseSuccess()" style="width:100%;max-width:280px;padding:16px;background:var(--accent);color:#000;border:none;border-radius:100px;font-family:'DM Sans';font-size:16px;font-weight:900;cursor:pointer;">Done</button>
+</div>
+
 <!-- ADMIN PANEL -->
 <div id="adminPanelOverlay" style="display:none;position:fixed;inset:0;z-index:9000;background:#0a0a0a;overflow-y:auto;">
   <div style="max-width:430px;margin:0 auto;padding:16px;">
@@ -19819,6 +20106,8 @@ window._onAuthReady = (user) => {
   if (adminBtn && ['super_admin', 'ops_admin', 'brand_admin'].includes(role)) adminBtn.style.display = 'block';
   const superBtn = document.getElementById('userMenuSuperBtn');
   if (superBtn && role === 'super_admin') superBtn.style.display = 'block';
+  const brandLibBtn = document.getElementById('userMenuBrandLibBtn');
+  if (brandLibBtn && role === 'super_admin') brandLibBtn.style.display = 'block';
   // View As Role — super_admin only
   const viewAsBtn = document.getElementById('userMenuViewAsBtn');
   if (viewAsBtn && role === 'super_admin') viewAsBtn.style.display = 'block';
@@ -22337,23 +22626,46 @@ function libCycleFilter(idx, dir) {
   });
 }
 
+// Loading a shared/library workout now goes through the exact same path as
+// loading one of your own (_wtabLoadWorkout — the "LOADING WORKOUT" overlay,
+// session-start tracking, PR photo-lookup reset, etc.), instead of a separate,
+// thinner hand-rolled routine that only carried over exercise name+muscle and
+// dropped sets, notes, description and video link entirely.
 function loadLibraryWorkout(id) {
   const w = _libraryWorkouts.find(x=>x.id===id) || (_defaultWorkouts||[]).find(x=>x.id===id);
   if (!w) return;
-  switchTab('log');
-  setTimeout(() => {
-    resetWorkoutState();
-    showTodayWorkoutArea();
-    document.getElementById('workoutName').value = w.name;
-    if (w.photo) {
-      try { localStorage.setItem(`ironlog_workout_photo_${w.name}`, w.photo); } catch(e) {}
-      _setWorkoutHeroPhoto(w.name);
-    }
-    (w.exercises||[]).forEach(exData => {
-      const ex = getAllExercises().find(e=>e.label===exData.name||e.name===exData.name) || {name:exData.name,label:exData.name,muscle:exData.muscle||'Chest',custom:false};
-      addExerciseCard(ex);
-    });
-  }, 300);
+
+  // Hero photo / video-link button are read on demand, by workout name, from
+  // these same ambient localStorage keys everywhere else in the app (see
+  // _getWorkoutPhoto, and the info sheet's play-video button) — populate them
+  // here exactly like a personal workout already relies on, now including the
+  // video link too (never carried over before).
+  if (w.photo) { try { localStorage.setItem(`ironlog_workout_photo_${w.name}`, w.photo); } catch(e) {} }
+  if (w.videoLink) { try { localStorage.setItem(`ironlog_workout_video_${w.name}`, w.videoLink); } catch(e) {} }
+
+  const exercises = (w.exercises || []).map(e => ({
+    name: e.name,
+    muscle: e.muscle || 'Mix',
+    subMuscles: e.subMuscles || [],
+    sets: (e.sets && e.sets.length)
+      ? e.sets.map(s => ({ kg: s.kg || 0, reps: s.reps || 0, done: false, ignored: !!s.ignored, setType: s.setType || '', bwExtra: s.bwExtra ?? null }))
+      : [{ kg: 0, reps: 0, done: false, ignored: false, setType: '', bwExtra: null }],
+    comment: e.comment || ''
+  }));
+
+  // Reuse the same personal template entry on repeat loads (matches how
+  // loading your own saved workout never duplicates it) instead of piling up
+  // a fresh copy every time this same library item is loaded again.
+  let idx = workouts.findIndex(x => x._libSourceId === id);
+  if (idx === -1) {
+    workouts.unshift({ id: Date.now(), name: w.name, date: Date.now(), exercises, description: w.description || '', _template: true, _libSourceId: id });
+    idx = 0;
+  } else {
+    workouts[idx] = { ...workouts[idx], name: w.name, exercises, description: w.description || '' };
+  }
+  save();
+  if (window._currentUser && window.syncToFirestore) window.syncToFirestore();
+  _wtabLoadWorkout(idx);
 }
 
 window._exploreExLocalPending = false;
@@ -22363,6 +22675,246 @@ function openAddExploreExercise(muscle) {
   window._exploreExerciseMode = true;
   openNewExModal(muscle);
 }
+
+// ══════════════════════════════════════════════════════
+//  BRAND LIBRARY PUBLISH (super_admin only)
+//  Profile → "Brand Library" → pick a brand → pick own workouts (multi) →
+//  review → publish. Writes full workout data (photo, video link, exercises
+//  w/ sets+notes) to that brand's library/{brandId}/workouts, and syncs every
+//  exercise those workouts use into library/{brandId}/exercises (creating
+//  missing ones, updating existing ones to match). Matching is by name
+//  (trimmed, case-insensitive) since there's no cross-brand id linking a
+//  personal workout to a previously-published library copy.
+// ══════════════════════════════════════════════════════
+let _brandLibPickerBrands = [];
+
+function openBrandLibPicker() {
+  if (window._currentUserData?.role !== 'super_admin') { showToast('Access denied'); return; }
+  document.getElementById('brandLibPickerOverlay').style.display = 'block';
+  document.getElementById('brandLibPickerList').innerHTML = '<div style="text-align:center;padding:40px;color:#555;font-size:13px;">Loading brands...</div>';
+  const { getDocs, collection } = window._fbFirestoreExtra || {};
+  if (!getDocs || !window._fbDb) return;
+  getDocs(collection(window._fbDb, 'brands')).then(snap => {
+    _brandLibPickerBrands = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    _renderBrandLibPickerList();
+  }).catch(e => {
+    document.getElementById('brandLibPickerList').innerHTML = `<div style="color:#ff4747;padding:16px;">Error: ${e.message}</div>`;
+  });
+}
+window.openBrandLibPicker = openBrandLibPicker;
+
+function closeBrandLibPicker() {
+  document.getElementById('brandLibPickerOverlay').style.display = 'none';
+}
+window.closeBrandLibPicker = closeBrandLibPicker;
+
+function _renderBrandLibPickerList() {
+  const el = document.getElementById('brandLibPickerList');
+  if (!_brandLibPickerBrands.length) { el.innerHTML = '<div style="text-align:center;padding:40px;color:#555;font-size:13px;">No brands found.</div>'; return; }
+  el.innerHTML = _brandLibPickerBrands.map(brand => {
+    const accentColor = brand.accentColor || '#e8ff47';
+    const safeName = (brand.name || brand.id).replace(/'/g, "\\'");
+    return `<div onclick="selectBrandLibTarget('${brand.id}','${safeName}')" style="background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer;display:flex;align-items:center;gap:10px;">
+      <div style="width:36px;height:36px;border-radius:8px;background:${accentColor}22;border:1px solid ${accentColor}44;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue';font-size:16px;color:${accentColor};flex-shrink:0;">${(brand.name||brand.id).slice(0,1).toUpperCase()}</div>
+      <div style="flex:1;min-width:0;font-family:'DM Sans';font-weight:700;font-size:14px;color:#f0f0f0;">${brand.name||brand.id}</div>
+      <span style="color:#555;font-size:18px;flex-shrink:0;">›</span>
+    </div>`;
+  }).join('');
+}
+
+function selectBrandLibTarget(brandId, brandName) {
+  window._pubTargetBrandId = brandId;
+  window._pubTargetBrandName = brandName;
+  closeBrandLibPicker();
+  window._pubPickMode = true;
+  window._pubSelectedIds = new Set();
+  _wTabView = 'custom'; // bare — see renderWorkoutsTab2's note on this
+  switchTab('workouts2');
+  if (typeof renderWorkoutsTab2 === 'function') renderWorkoutsTab2();
+}
+window.selectBrandLibTarget = selectBrandLibTarget;
+
+function _pubToggleWorkoutPick(id) {
+  if (!window._pubSelectedIds) return;
+  if (window._pubSelectedIds.has(id)) window._pubSelectedIds.delete(id);
+  else window._pubSelectedIds.add(id);
+  // Same window.scrollY save/restore as _wtabRenderKeepScroll — replacing the
+  // list's innerHTML can momentarily shrink its scrollable height, which the
+  // browser answers by clamping scroll back to the top.
+  const savedScroll = window.scrollY;
+  renderWorkoutsTab2();
+  requestAnimationFrame(() => { if (savedScroll > 0) window.scrollTo({ top: savedScroll, behavior: 'instant' }); });
+}
+window._pubToggleWorkoutPick = _pubToggleWorkoutPick;
+
+function _pubCancelPickMode() {
+  window._pubPickMode = false;
+  window._pubSelectedIds = null;
+  window._pubTargetBrandId = null;
+  window._pubTargetBrandName = null;
+  _wTabView = 'all'; // bare — see renderWorkoutsTab2's note on this
+  renderWorkoutsTab2();
+}
+window._pubCancelPickMode = _pubCancelPickMode;
+
+function _norm(s) { return (s || '').trim().toLowerCase(); }
+
+function _pubProceedToReview() {
+  if (!window._pubSelectedIds || !window._pubSelectedIds.size) return;
+  const targetBrandId = window._pubTargetBrandId;
+  if (!targetBrandId || !window._fbDb) return;
+  const selectedWorkouts = workouts.filter(w => window._pubSelectedIds.has(w.id));
+  if (!selectedWorkouts.length) return;
+
+  document.getElementById('brandLibReviewOverlay').style.display = 'block';
+  document.getElementById('brandLibReviewTarget').textContent = `TO ${(window._pubTargetBrandName || targetBrandId).toUpperCase()}`;
+  document.getElementById('brandLibReviewList').innerHTML = '<div style="text-align:center;padding:40px;color:#555;font-size:13px;">Checking existing library...</div>';
+  const confirmBtn = document.getElementById('brandLibConfirmBtn');
+  if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = 'Confirm & Publish'; confirmBtn.style.opacity = '1'; }
+
+  const { getDocs, collection } = window._fbFirestoreExtra || {};
+  if (!getDocs) return;
+  Promise.all([
+    getDocs(collection(window._fbDb, 'library', targetBrandId, 'workouts')),
+    getDocs(collection(window._fbDb, 'library', targetBrandId, 'exercises'))
+  ]).then(([wSnap, eSnap]) => {
+    const existingWorkouts = wSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const existingExercises = eSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    window._pubReviewData = _buildPubReviewData(selectedWorkouts, existingWorkouts, existingExercises, targetBrandId);
+    _renderPubReview();
+  }).catch(e => {
+    document.getElementById('brandLibReviewList').innerHTML = `<div style="color:#ff4747;padding:16px;">Error: ${e.message}</div>`;
+  });
+}
+window._pubProceedToReview = _pubProceedToReview;
+
+// Resolves each exercise against its real definition (muscle/subMuscles) rather
+// than trusting whatever's embedded on the saved workout's own exercise entry,
+// which can be missing subMuscles entirely (see module comment above).
+function _buildPubReviewData(selectedWorkouts, existingWorkouts, existingExercises, targetBrandId) {
+  const existingWByName = new Map(existingWorkouts.map(w => [_norm(w.name), w]));
+  const existingExByName = new Map(existingExercises.map(e => [_norm(e.name), e]));
+
+  const workoutPlans = selectedWorkouts.map(w => {
+    const match = existingWByName.get(_norm(w.name));
+    return { source: w, action: match ? 'update' : 'create', existingId: match ? match.id : null };
+  });
+
+  const exMap = new Map();
+  selectedWorkouts.forEach(w => {
+    (w.exercises || []).forEach(e => {
+      const key = _norm(e.name);
+      if (exMap.has(key)) return;
+      const def = getAllExercises().find(x => x.name === e.name || x.label === e.name);
+      exMap.set(key, {
+        name: e.name,
+        muscle: def?.muscle || e.muscle || 'Mix',
+        subMuscles: def?.subMuscles || e.subMuscles || []
+      });
+    });
+  });
+  const exercisePlans = [...exMap.values()].map(ex => {
+    const match = existingExByName.get(_norm(ex.name));
+    if (!match) return { source: ex, action: 'create', existingId: null };
+    const sameMuscle = _norm(match.muscle) === _norm(ex.muscle);
+    const sameSubs = JSON.stringify((match.subMuscles || []).slice().sort()) === JSON.stringify((ex.subMuscles || []).slice().sort());
+    return { source: ex, action: (sameMuscle && sameSubs) ? 'unchanged' : 'update', existingId: match.id };
+  });
+
+  return { targetBrandId, workoutPlans, exercisePlans };
+}
+
+function _pubBadgeHtml(action) {
+  const map = { create: ['NEW', '#34d399'], update: ['UPDATE', '#ff8c42'], unchanged: ['NO CHANGE', '#555'] };
+  const [label, color] = map[action];
+  return `<span style="font-size:10px;font-weight:800;color:${color};border:1px solid ${color}66;border-radius:6px;padding:2px 6px;letter-spacing:.3px;flex-shrink:0;">${label}</span>`;
+}
+
+function _renderPubReview() {
+  const data = window._pubReviewData;
+  const el = document.getElementById('brandLibReviewList');
+  if (!data || !el) return;
+  const wRows = data.workoutPlans.map(p => `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:#141414;border:1px solid #2a2a2a;border-radius:10px;padding:12px;margin-bottom:8px;">
+    <span style="font-family:'DM Sans';font-size:14px;font-weight:700;color:#f0f0f0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.source.name}</span>
+    ${_pubBadgeHtml(p.action)}
+  </div>`).join('');
+  const changedExCount = data.exercisePlans.filter(p => p.action !== 'unchanged').length;
+  const eRows = data.exercisePlans.map(p => `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:#141414;border:1px solid #2a2a2a;border-radius:10px;padding:10px 12px;margin-bottom:6px;">
+    <span style="font-family:'DM Sans';font-size:13px;color:#ccc;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.source.name} <span style="color:#555;">(${p.source.muscle})</span></span>
+    ${_pubBadgeHtml(p.action)}
+  </div>`).join('');
+  el.innerHTML = `
+    <div style="font-size:11px;color:#555;letter-spacing:1px;margin-bottom:6px;">WORKOUTS (${data.workoutPlans.length})</div>
+    ${wRows}
+    <div style="font-size:11px;color:#555;letter-spacing:1px;margin:16px 0 6px;">EXERCISES USED (${data.exercisePlans.length}${changedExCount ? `, ${changedExCount} to add/update` : ''})</div>
+    ${eRows}
+  `;
+}
+
+function _pubCloseReview() {
+  document.getElementById('brandLibReviewOverlay').style.display = 'none';
+}
+window._pubCloseReview = _pubCloseReview;
+
+function _pubConfirmPublish() {
+  const data = window._pubReviewData;
+  if (!data) return;
+  const btn = document.getElementById('brandLibConfirmBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Publishing...'; btn.style.opacity = '0.6'; }
+  const brandId = data.targetBrandId;
+
+  // Exercises — full overwrite of name/label/muscle/subMuscles so an existing
+  // entry always ends up matching the source exactly, per "update to match".
+  const exWrites = data.exercisePlans.filter(p => p.action !== 'unchanged').map(p => {
+    const id = p.existingId || ((p.source.name || 'ex').replace(/[^a-zA-Z0-9]/g, '_').toLowerCase() + '_' + Date.now());
+    const doc = { name: p.source.name, label: p.source.name, muscle: p.source.muscle, subMuscles: p.source.subMuscles || [], uploadedBy: window._currentUser?.uid, uploadedAt: new Date().toISOString() };
+    return window._fbSetDoc(window._fbDoc(window._fbDb, 'library', brandId, 'exercises', id), doc);
+  });
+
+  // Workouts — full overwrite (not merge): the published copy always mirrors
+  // your current workout's state exactly, matching what the review screen showed.
+  const wWrites = data.workoutPlans.map(async p => {
+    const w = p.source;
+    const id = p.existingId || (Date.now().toString() + '_' + Math.random().toString(36).slice(2, 6));
+    const rawPhoto = localStorage.getItem(`ironlog_workout_photo_${w.name}`) || null;
+    const photoUrl = (rawPhoto && window._uploadLibraryWorkoutPhoto) ? await window._uploadLibraryWorkoutPhoto(id, rawPhoto, brandId) : null;
+    const videoLink = localStorage.getItem(`ironlog_workout_video_${w.name}`) || '';
+    const exercisesPayload = (w.exercises || []).map(e => {
+      const def = getAllExercises().find(x => x.name === e.name || x.label === e.name);
+      return {
+        name: e.name,
+        muscle: def?.muscle || e.muscle || 'Mix',
+        subMuscles: def?.subMuscles || e.subMuscles || [],
+        sets: (e.sets || []).map(s => ({ kg: s.kg || 0, reps: s.reps || 0, done: !!s.done, ignored: !!s.ignored, setType: s.setType || '', bwExtra: s.bwExtra ?? null })),
+        comment: e.comment || ''
+      };
+    });
+    const doc = { name: w.name, description: w.description || '', videoLink, photo: photoUrl, exercises: exercisesPayload, createdBy: window._currentUser?.uid, createdAt: new Date().toISOString() };
+    return window._fbSetDoc(window._fbDoc(window._fbDb, 'library', brandId, 'workouts', id), doc);
+  });
+
+  Promise.all([...exWrites, ...wWrites]).then(() => {
+    _pubShowSuccess(data.workoutPlans.length, exWrites.length, window._pubTargetBrandName || brandId);
+  }).catch(e => {
+    if (btn) { btn.disabled = false; btn.textContent = 'Confirm & Publish'; btn.style.opacity = '1'; }
+    showToast('Publish failed: ' + e.message);
+  });
+}
+window._pubConfirmPublish = _pubConfirmPublish;
+
+function _pubShowSuccess(workoutCount, exerciseChangeCount, brandName) {
+  document.getElementById('brandLibReviewOverlay').style.display = 'none';
+  const exPart = exerciseChangeCount ? ` and ${exerciseChangeCount} exercise${exerciseChangeCount !== 1 ? 's' : ''}` : '';
+  document.getElementById('brandLibSuccessText').textContent = `Published ${workoutCount} workout${workoutCount !== 1 ? 's' : ''}${exPart} to ${brandName}.`;
+  document.getElementById('brandLibSuccessOverlay').style.display = 'flex';
+  _pubCancelPickMode();
+}
+
+function _pubCloseSuccess() {
+  document.getElementById('brandLibSuccessOverlay').style.display = 'none';
+  window._pubReviewData = null;
+}
+window._pubCloseSuccess = _pubCloseSuccess;
 
 function exportLibToFile() {
   const muscles = ['Chest','Back','Legs','Shoulders','Arms','Core','Mix'];
@@ -23255,8 +23807,10 @@ function _refreshUserMenuForRole(role) {
   const exitCoachModeBtn = document.getElementById('userMenuExitCoachModeBtn');
   const findCoachBtn = document.getElementById('userMenuFindCoachBtn');
   const libBtn = document.getElementById('saveToLibraryBtn');
+  const brandLibBtn = document.getElementById('userMenuBrandLibBtn');
   if (adminBtn) adminBtn.style.display = ['super_admin','ops_admin','brand_admin'].includes(role) ? 'block' : 'none';
   if (superBtn) superBtn.style.display = role === 'super_admin' ? 'block' : 'none';
+  if (brandLibBtn) brandLibBtn.style.display = role === 'super_admin' ? 'block' : 'none';
   if (smBtn) smBtn.style.display = ['super_admin','brand_admin','site_manager'].includes(role) ? 'block' : 'none';
   if (coachBtn) coachBtn.style.display = ['super_admin','coach','site_manager'].includes(role) ? 'block' : 'none';
   if (coachModeBtn) coachModeBtn.style.display = ['super_admin','coach','site_manager'].includes(role) && !window._coachMode ? 'block' : 'none';
