@@ -69,14 +69,18 @@ html{overscroll-behavior:none;-webkit-tap-highlight-color:transparent;}*{-webkit
 @supports (height: 100dvh) {
   html { height: 100dvh; }
   .tabs { bottom: env(keyboard-inset-height, env(safe-area-inset-bottom, 0px)); }
-}body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:430px;margin:0 auto;padding-top:env(safe-area-inset-top);padding-bottom:calc(90px + env(safe-area-inset-bottom));padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);-webkit-text-size-adjust:100%;overscroll-behavior:none;-webkit-touch-callout:none;touch-action:manipulation;}
+}body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:430px;margin:0 auto;padding-top:env(safe-area-inset-top);padding-bottom:calc(90px + env(safe-area-inset-bottom));padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);-webkit-text-size-adjust:100%;overscroll-behavior:none;-webkit-touch-callout:none;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-user-drag:none;user-drag:none;}
+/* App-wide native-app feel: no text/image selection, no image drag-out, no
+   long-press "copy/save" callout — restored below specifically for actual
+   text-entry fields, which still need native select/copy/paste/cut. */
+input,textarea,[contenteditable="true"],[contenteditable=""]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default;}
 /* Hebrew text: always use Rubik */
 @font-face{font-family:'AppFont';src:local('Rubik');unicode-range:U+0590-05FF,U+FB1D-FB4F;}
 :lang(he),*[dir="rtl"]{font-family:'Rubik',sans-serif;}
 /* Global font stack: DM Sans with Rubik fallback for Hebrew */
 body,button,input,textarea,select{font-family:'DM Sans','Rubik',sans-serif;}
 button,h1,h2,h3,h4,label,.tab,.tabs,.header,.workout-name-bar,.exercise-card .ex-header,.muscle-chip,.ex-float-bar,.modal-overlay .modal-header{user-select:none;-webkit-user-select:none;}
-img,a,svg{-webkit-touch-callout:none;}
+img,a,svg{-webkit-touch-callout:none;-webkit-user-drag:none;user-drag:none;-webkit-user-select:none;user-select:none;}
 
 body.desktop-mode {
   background:#111;
@@ -598,6 +602,7 @@ body.ex-tab-detail-open #ex-float-bar{display:none !important;}
 @keyframes prStarPop{0%{transform:scale(0) rotate(-25deg);opacity:0}55%{transform:scale(1.5) rotate(10deg);opacity:1}78%{transform:scale(0.85) rotate(-5deg)}100%{transform:scale(1) rotate(0deg);opacity:1}}
 .pr-star-new{animation:prStarPop 1.5s cubic-bezier(.34,1.56,.64,1) forwards;display:block;}
 @keyframes tapPopScale{0%{transform:scale(.8)}60%{transform:scale(1.12)}100%{transform:scale(1)}}
+@keyframes wtabHeaderIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
 .wsd-circle{transition:border-color .2s ease;}
 @keyframes modalFadeIn{from{opacity:0}to{opacity:1}}
 @keyframes findingPulse{0%{opacity:0}50%{opacity:1}100%{opacity:0}}
@@ -2262,6 +2267,15 @@ window.addEventListener('online', () => {
   if (window.syncToFirestore) window.syncToFirestore();
 });
 window.addEventListener('offline', () => _showOfflineBanner(true));
+
+// App-wide native-app feel: suppress the browser's long-press/right-click
+// context menu ("Copy", "Save Image", "Open Link", etc.) everywhere, the same
+// way this was fixed for workout cards specifically — except inside actual
+// text-entry fields, which still need their native copy/paste/select menu.
+document.addEventListener('contextmenu', e => {
+  if (e.target.closest?.('input, textarea, [contenteditable]')) return;
+  e.preventDefault();
+});
 
 function _showOfflineBanner(show) {
   let b = document.getElementById('_offlineBanner');
@@ -9230,6 +9244,11 @@ function renderWorkoutsTab2() {
   const _wtabNoDeleteMode = !!(window._replacePlanId || window._planStrengthKey || window._loadFromToday || _isPubPickMode);
   if (_wtabNoDeleteMode && window._wtabDeleteMode) { window._wtabDeleteMode = false; window._wtabDeleteSelectedIds = null; }
   const _isDeleteMode = !!window._wtabDeleteMode && _wTabView === 'custom' && !_wtabNoDeleteMode;
+  // Only true on the single render that actually flips select mode on — every
+  // later re-render while still in it (selecting another card, etc.) leaves
+  // this false, so the entrance animations below play once, not every tap.
+  const _delJustEntered = _isDeleteMode && !!window._wtabDeleteModeJustEntered;
+  if (_delJustEntered) window._wtabDeleteModeJustEntered = false;
 
   // ── Toggle bar ────────────────────────────────────────
   const _wHasCoach = window._currentUserData?.coachId && window._currentUserData?.coachingExpires && new Date(window._currentUserData.coachingExpires) >= new Date();
@@ -9242,9 +9261,18 @@ function renderWorkoutsTab2() {
         <div style="font-family:'DM Sans';font-size:12px;color:#555;margin-top:2px;">Select your workouts to publish</div>
       </div>`
     : _isDeleteMode
-    ? `<div style="padding:10px 0 6px;">
-        <div style="font-family:'DM Sans';font-size:16px;font-weight:800;color:var(--text);">Select Workouts</div>
-        <div style="font-family:'DM Sans';font-size:12px;color:#555;margin-top:2px;">Tap workouts to select, then delete</div>
+    ? `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0 6px;${_delJustEntered ? 'animation:wtabHeaderIn .25s ease;' : ''}">
+        <div>
+          <div style="font-family:'DM Sans';font-size:16px;font-weight:800;color:var(--text);">Select Workouts</div>
+          <div style="font-family:'DM Sans';font-size:12px;color:#555;margin-top:2px;">Tap workouts to select, then delete</div>
+        </div>
+        <!-- width:20% mirrors the card's own right-side button column below,
+             so this circle lands in the same relative spot as the per-card
+             checkboxes it toggles all of — filled in / synced further down
+             once the eligible workout list (sorted) is known. -->
+        <div style="width:20%;flex-shrink:0;display:flex;justify-content:center;">
+          <button id="wtab-selectall-btn" onclick="_wtabToggleSelectAll()" title="Select all" style="width:32px;height:32px;border-radius:50%;border:2px solid var(--accent);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;${_delJustEntered ? 'animation:tapPopScale .3s cubic-bezier(.175,.885,.32,1.275);' : ''}"></button>
+        </div>
       </div>`
     : `<div style="display:flex;align-items:center;justify-content:center;padding:10px 0 6px;"><span style="font-family:'DM Sans';font-size:20px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.5px;">Workouts</span></div><div style="display:flex;gap:0;align-items:center;">
     <div id="wTab-seg-wrap" data-views="${_wSegViews.join(',')}" style="position:relative;display:flex;flex:1;">
@@ -9290,6 +9318,23 @@ function renderWorkoutsTab2() {
     _seen.add(key);
     return true;
   });
+
+  // Select-all/deselect-all icon (top-right of the delete-mode header) —
+  // built as plain text earlier, before `sorted` existed; synced here now
+  // that the actual eligible-workout list is known.
+  if (_isDeleteMode) {
+    window._wtabDelEligibleIds = sorted.map(w => w.id);
+    const _allSelected = window._wtabDelEligibleIds.length > 0
+      && window._wtabDelEligibleIds.every(id => window._wtabDeleteSelectedIds?.has(id));
+    const _saBtn = document.getElementById('wtab-selectall-btn');
+    if (_saBtn) {
+      _saBtn.style.background = _allSelected ? 'var(--accent)' : 'transparent';
+      _saBtn.title = _allSelected ? 'Deselect all' : 'Select all';
+      _saBtn.innerHTML = _allSelected
+        ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`
+        : '';
+    }
+  }
 
   const _cancelAction = window._replacePlanId
     ? `const _bk=window._replacePlanKey;window._replacePlanId=null;window._replacePlanKey=null;if(_bk){const [_ry,_rm,_rd]=_bk.split('-').map(Number);planWorkoutOnDate(_ry,_rm,_rd);}else{switchTab('log');}`
@@ -9466,9 +9511,9 @@ function renderWorkoutsTab2() {
     const cardInner = `
       <div style="position:relative;">
         ${(!_isPlanStrengthMode && !_isPubPickMode && !_isDeleteMode && _isTodayPlanned) ? `<span style="position:absolute;top:0;left:14px;transform:translateY(-50%);background:var(--bg);color:var(--accent);font-family:'DM Sans';font-size:10px;font-weight:800;letter-spacing:.4px;padding:0 6px;line-height:1.4;white-space:nowrap;z-index:2;">Today's Plan</span>` : ''}
-        <div id="w2-card-border-${i}"${_wtabLPAttrs} style="position:relative;display:flex;border-radius:14px;overflow:hidden;aspect-ratio:21/9;background:#1a1a1a;${_showAccentBorder ? 'border:2px solid var(--accent);' : 'border:1px solid #2a2a2a;'}">
+        <div id="w2-card-border-${i}"${_wtabLPAttrs} oncontextmenu="return false;" style="position:relative;display:flex;border-radius:14px;overflow:hidden;aspect-ratio:21/9;background:#1a1a1a;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;${_showAccentBorder ? 'border:2px solid var(--accent);' : 'border:1px solid #2a2a2a;'}">
           <div id="w2-card-photo-${i}" style="position:relative;width:80%;flex-shrink:0;overflow:hidden;cursor:pointer;" onclick="${_wtabTapOnclick}">
-            ${workoutPhoto ? `<img src="${workoutPhoto}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.72);">` : ''}
+            ${workoutPhoto ? `<img src="${workoutPhoto}" draggable="false" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.72);-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;pointer-events:none;">` : ''}
             <div style="position:absolute;bottom:0;left:0;right:0;padding:10px 14px 12px;pointer-events:none;text-align:right;">
               ${lastDate ? `<div style="font-family:'DM Sans';font-size:11px;font-weight:600;color:rgba(255,255,255,0.55);margin-bottom:2px;">Last Time: ${lastDate}</div>` : ''}
               <div style="font-family:'DM Sans';font-size:20px;font-weight:900;color:#fff;line-height:1.2;${_nwDir}">${_nwHtml}</div>
@@ -9488,7 +9533,7 @@ function renderWorkoutsTab2() {
               </button>`
             : _isDeleteMode
             ? `<button onclick="_wtabToggleDeletePick(${JSON.stringify(w.id)})" title="Select workout" style="width:20%;flex-shrink:0;background:linear-gradient(to right, #161616, #3a3a3a);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;">
-                <span style="width:32px;height:32px;border-radius:50%;border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;background:${_isDelPicked ? 'var(--accent)' : 'transparent'};transition:background .15s;">
+                <span class="wtab-del-circle" style="width:32px;height:32px;border-radius:50%;border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;background:${_isDelPicked ? 'var(--accent)' : 'transparent'};transition:background .15s;${_delJustEntered ? 'animation:tapPopScale .3s cubic-bezier(.175,.885,.32,1.275);' : ''}">
                   ${_isDelPicked ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>` : ''}
                 </span>
               </button>`
@@ -9618,7 +9663,7 @@ function renderWorkoutsTab2() {
     if (!_delBar) {
       _delBar = document.createElement('div');
       _delBar.id = 'wtab-delete-bar';
-      _delBar.style.cssText = 'position:fixed;left:0;right:0;bottom:0;max-width:430px;margin:0 auto;z-index:500;background:linear-gradient(to bottom,transparent,#111 40%);box-sizing:border-box;padding:46px 16px calc(env(safe-area-inset-bottom,0px) + 16px);display:flex;gap:10px;';
+      _delBar.style.cssText = 'position:fixed;left:0;right:0;bottom:0;max-width:430px;margin:0 auto;z-index:500;background:linear-gradient(to bottom,transparent,#111 40%);box-sizing:border-box;padding:46px 16px calc(env(safe-area-inset-bottom,0px) + 16px);display:flex;gap:10px;animation:sheetUp .25s ease;';
       document.body.appendChild(_delBar);
     }
     const _delCount = window._wtabDeleteSelectedIds ? window._wtabDeleteSelectedIds.size : 0;
@@ -9627,6 +9672,24 @@ function renderWorkoutsTab2() {
       <button onclick="_wtabConfirmDeleteSelected();" ${_delCount ? '' : 'disabled'} style="flex:1;background:#ff4747;border:none;border-radius:12px;color:#fff;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;padding:14px;cursor:pointer;opacity:${_delCount ? '1' : '0.4'};-webkit-tap-highlight-color:transparent;">DELETE${_delCount ? ` (${_delCount})` : ''}</button>`;
   } else if (_delBar) {
     _delBar.remove();
+  }
+
+  // Align the header's select-all circle to the actual rendered X position of
+  // a per-card circle, instead of approximating it with matching percentages
+  // — the toggle bar and each card row sit in differently-padded containers,
+  // so equal percentages don't land in the same spot (confirmed visually).
+  // Measuring the real thing after paint is exact regardless of that padding.
+  if (_isDeleteMode) {
+    requestAnimationFrame(() => {
+      const cardCircle = document.querySelector('.wtab-del-circle');
+      const headerBtn = document.getElementById('wtab-selectall-btn');
+      if (cardCircle && headerBtn) {
+        const cardRect = cardCircle.getBoundingClientRect();
+        const btnRect = headerBtn.getBoundingClientRect();
+        const deltaX = (cardRect.left + cardRect.width / 2) - (btnRect.left + btnRect.width / 2);
+        headerBtn.style.transform = `translateX(${deltaX}px)`;
+      }
+    });
   }
 }
 
@@ -9676,6 +9739,7 @@ function _wtabLPRelease() {
   _wtabLPPendingId = null;
   _wtabLPFiredId = id;
   window._wtabDeleteMode = true;
+  window._wtabDeleteModeJustEntered = true; // consumed once by renderWorkoutsTab2 to play the entrance animations, not replayed on every later re-render
   window._wtabDeleteSelectedIds = new Set([id]);
   _wtabRenderKeepScroll();
 }
@@ -9707,6 +9771,19 @@ function _wtabToggleDeletePick(id) {
 }
 window._wtabToggleDeletePick = _wtabToggleDeletePick;
 
+// Top-right header icon — selects every currently-eligible workout if not all
+// are already selected, otherwise clears the selection entirely (standard
+// "select all" toggle behavior). window._wtabDelEligibleIds is refreshed on
+// every render (see renderWorkoutsTab2, right after `sorted` is built), so
+// this always operates on the current CUSTOM list, not a stale snapshot.
+function _wtabToggleSelectAll() {
+  const ids = window._wtabDelEligibleIds || [];
+  const allSelected = ids.length > 0 && ids.every(id => window._wtabDeleteSelectedIds?.has(id));
+  window._wtabDeleteSelectedIds = allSelected ? new Set() : new Set(ids);
+  _wtabRenderKeepScroll();
+}
+window._wtabToggleSelectAll = _wtabToggleSelectAll;
+
 function _wtabCancelDeleteMode() {
   window._wtabDeleteMode = false;
   window._wtabDeleteSelectedIds = null;
@@ -9719,31 +9796,17 @@ function _wtabConfirmDeleteSelected() {
   if (!ids || !ids.size) return;
   const names = workouts.filter(w => ids.has(w.id)).map(w => w.name || 'Workout');
   if (!names.length) return;
-  const overlay = document.createElement('div');
-  overlay.className = 'delete-confirm-overlay';
-  overlay.style.background = 'rgba(0,0,0,0.85)';
-  overlay.innerHTML = `<div class="delete-confirm-sheet">
-    <div class="delete-confirm-title">Delete ${names.length} Workout${names.length !== 1 ? 's' : ''} ?</div>
-    <div class="delete-confirm-sub">${names.map(n => `"${n}"`).join(', ')} will be permanently removed from your workout list.</div>
-    <div class="delete-confirm-btns">
-      <button class="btn-del-cancel" id="_dwtBulkCancel">Cancel</button>
-      <button class="btn-del-yes-solid" id="_dwtBulkConfirm">Delete</button>
-    </div></div>`;
-  document.body.appendChild(overlay);
-  overlay.querySelector('#_dwtBulkCancel').onclick = () => overlay.remove();
-  overlay.querySelector('#_dwtBulkConfirm').onclick = () => {
-    overlay.remove();
-    // Same "hide from this tab" mechanism the existing single-workout delete
-    // (deleteWorkoutFromTab) already uses — kept consistent with it rather
-    // than introducing a second, harder delete semantics on this same screen.
-    let _deletedTabNames = JSON.parse(_LS.get('ironlog_deleted_tab_names') || '[]');
-    names.forEach(n => { if (!_deletedTabNames.includes(n)) _deletedTabNames.push(n); });
-    _LS.set('ironlog_deleted_tab_names', JSON.stringify(_deletedTabNames));
-    window._wtabDeleteMode = false;
-    window._wtabDeleteSelectedIds = null;
-    window._keepWorkoutsTabState = true;
-    _wtabRenderKeepScroll();
-  };
+  // No confirmation step — deletes immediately on tapping DELETE.
+  // Same "hide from this tab" mechanism the existing single-workout delete
+  // (deleteWorkoutFromTab) already uses — kept consistent with it rather
+  // than introducing a second, harder delete semantics on this same screen.
+  let _deletedTabNames = JSON.parse(_LS.get('ironlog_deleted_tab_names') || '[]');
+  names.forEach(n => { if (!_deletedTabNames.includes(n)) _deletedTabNames.push(n); });
+  _LS.set('ironlog_deleted_tab_names', JSON.stringify(_deletedTabNames));
+  window._wtabDeleteMode = false;
+  window._wtabDeleteSelectedIds = null;
+  window._keepWorkoutsTabState = true;
+  _wtabRenderKeepScroll();
 }
 window._wtabConfirmDeleteSelected = _wtabConfirmDeleteSelected;
 
