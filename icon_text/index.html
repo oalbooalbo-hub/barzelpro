@@ -9398,6 +9398,21 @@ function renderWorkoutsTab2() {
     } else if (_pubBarEmpty) {
       _pubBarEmpty.remove();
     }
+    // Same gap existed for the delete-mode bar: this early return sits before
+    // its normal cleanup further below, so canceling/deleting down to zero
+    // remaining CUSTOM workouts left it stuck on screen forever.
+    let _delBarEmpty = document.getElementById('wtab-delete-bar');
+    if (_isDeleteMode) {
+      if (!_delBarEmpty) {
+        _delBarEmpty = document.createElement('div');
+        _delBarEmpty.id = 'wtab-delete-bar';
+        _delBarEmpty.style.cssText = 'position:fixed;left:0;right:0;bottom:0;max-width:430px;margin:0 auto;z-index:500;background:linear-gradient(to bottom,transparent,#111 40%);box-sizing:border-box;padding:46px 16px calc(env(safe-area-inset-bottom,0px) + 16px);display:flex;gap:10px;';
+        document.body.appendChild(_delBarEmpty);
+      }
+      _delBarEmpty.innerHTML = `<button onclick="_wtabCancelDeleteMode();" style="flex:1;background:transparent;border:1px solid #555;border-radius:12px;color:#fff;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">CANCEL</button>`;
+    } else if (_delBarEmpty) {
+      _delBarEmpty.remove();
+    }
     return;
   }
 
@@ -15620,7 +15635,12 @@ function importData(input) {
     try {
       const data = JSON.parse(e.target.result);
       if (!data.workouts && !data.cardioLog && !data.customExercises && !data.plannedWorkouts) {
-        showToast('Invalid backup file'); return;
+        // showToast is a disabled no-op app-wide (see index.html:5349) — this
+        // would otherwise fail completely silently, reading as "loading a
+        // backup file does nothing", so use a real alert here instead.
+        alert('This doesn\'t look like a BARZELPRO backup file — nothing recognizable was found in it.');
+        input.value = '';
+        return;
       }
       // Merge workouts (avoid duplicates by id)
       if (Array.isArray(data.workouts)) {
@@ -15641,7 +15661,10 @@ function importData(input) {
         const existingKeys = new Set(cardioLog.map(c => `${c.date}-${c.type}-${c.mins}`));
         const newC = data.cardioLog.filter(c => !existingKeys.has(`${c.date}-${c.type}-${c.mins}`));
         cardioLog.push(...newC);
-        localStorage.setItem('ironlog_cardio', JSON.stringify(cardioLog));
+        // Routed through _LS (brand+uid-scoped) rather than a bare key — a raw
+        // localStorage.setItem('ironlog_cardio', ...) here would silently
+        // write somewhere the rest of the app never reads from.
+        _LS.set('ironlog_cardio', JSON.stringify(cardioLog));
       }
       // Merge custom exercises
       if (Array.isArray(data.customExercises)) {
@@ -15685,7 +15708,19 @@ function importData(input) {
       if (typeof switchProgressView === 'function') switchProgressView('history');
       if (typeof renderStrengthProgress === 'function') renderStrengthProgress();
     } catch(err) {
+      // This was previously a silent no-op — any failure (invalid JSON, a
+      // corrupt file, or any error anywhere in the merge above) produced
+      // exactly zero visible feedback, which reads as "loading a backup file
+      // doesn't work" regardless of what actually went wrong.
+      console.error('[importData] Failed to load backup:', err);
+      alert('Could not load this backup file: ' + err.message);
+      input.value = '';
     }
+  };
+  reader.onerror = () => {
+    console.error('[importData] FileReader failed:', reader.error);
+    alert('Could not read that file.');
+    input.value = '';
   };
   reader.readAsText(file);
 }
@@ -18980,6 +19015,12 @@ function _duplicateWorkout(idx) {
   while (workouts.some(x => x.name === `${w.name} copy #${copyNum}`)) copyNum++;
   const newName = `${w.name} copy #${copyNum}`;
   const copy = JSON.parse(JSON.stringify(w));
+  // The deep clone above copies the original's id verbatim — without this,
+  // the "duplicate" is a second workout secretly sharing the same id as the
+  // one it was copied from, which anything keyed by id (e.g. the Workouts
+  // tab's long-press multi-select) then treats as literally the same row,
+  // selecting/acting on both together.
+  copy.id = Date.now();
   copy.name = newName;
   copy.date = Date.now();
   delete copy._draft;
