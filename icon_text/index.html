@@ -15700,11 +15700,16 @@ function importData(input) {
       }
       input.value = '';
       closeDataModal();
-      // Refresh all views
+      // Refresh all views — including the Workouts tab, which this was
+      // previously missing entirely. "My Data" opens from Profile, a
+      // different tab, so nothing else here was telling the Workouts tab
+      // (wherever it happened to be in its own render state) to redraw with
+      // the newly-merged workouts.
       window._exTabMuscle = null; // reset so first available muscle is selected
       renderHistory();
       renderCalendar();
       renderExercisesTab();
+      if (typeof renderWorkoutsTab2 === 'function') renderWorkoutsTab2();
       if (typeof switchProgressView === 'function') switchProgressView('history');
       if (typeof renderStrengthProgress === 'function') renderStrengthProgress();
     } catch(err) {
