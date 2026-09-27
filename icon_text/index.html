@@ -1372,14 +1372,22 @@ window._fbModuleReady = true;
               <circle cx="150" cy="150" r="117.86" fill="none" stroke="#1e1e1e" stroke-width="25.71"/>
               <circle id="today-progress-ring" cx="150" cy="150" r="117.86" fill="none" stroke="#999" stroke-opacity="0.55" stroke-width="25.71" stroke-linecap="round" stroke-dasharray="740.52" stroke-dashoffset="740.52" transform="rotate(-90 150 150)" style="stroke:var(--accent);stroke-opacity:1;transition:stroke-dashoffset .6s ease,stroke .4s ease,stroke-opacity .4s ease;"/>
               <g id="today-progress-goal-ring" transform="rotate(-90 150 150)"></g>
+              <!-- Chevron integrated into the inner (completed-workouts) ring at
+                   6 o'clock (ring r=80 → y=230). The black notch behind it sits in
+                   the bottom gap for even targets; for odd targets (no gap there)
+                   it cuts the bottom arc so the chevron still reads as part of the
+                   ring. Hidden with the "OUT OF n" row once the goal is met. -->
+              <g id="today-progress-chev" transform="translate(150 230)" style="pointer-events:none;">
+                <circle r="11" fill="#000"/>
+                <polyline points="-5.5,-2.5 0,3 5.5,-2.5" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--accent);"/>
+              </g>
             </svg>
             <div id="today-progress-center-outer" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transform:translateY(5px);">
               <div id="today-progress-center-inner" style="display:flex;flex-direction:column;align-items:center;gap:2px;transform:translateY(3px);">
                 <span id="today-progress-count" style="font-family:'DM Sans';font-size:50px;font-weight:800;color:var(--text);line-height:1;">0</span>
-                <!-- Left spacer's width matches the chevron+gap on the right, so the
-                     "OUT OF n" text stays truly centered instead of the chevron
-                     pulling the whole group off-center. -->
-                <span id="today-progress-target" style="font-family:'DM Sans';font-size:12px;font-weight:600;color:#fff;letter-spacing:.3px;display:flex;align-items:center;justify-content:center;"><span style="width:12px;flex-shrink:0;"></span><span id="today-progress-target-text">OUT OF 3</span><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="margin-left:2px;flex-shrink:0;"><polyline points="9 6 15 12 9 18"/></svg></span>
+                <!-- The chevron that used to trail this text now lives on the inner
+                     ring itself (#today-progress-chev). -->
+                <span id="today-progress-target" style="font-family:'DM Sans';font-size:12px;font-weight:600;color:#fff;letter-spacing:.3px;display:flex;align-items:center;justify-content:center;"><span id="today-progress-target-text">OUT OF 3</span></span>
               </div>
             </div>
           </div>
@@ -3333,6 +3341,9 @@ function renderTodayWeekProgress(withAnim) {
   // whole row (text + chevron) instead of just clearing its text.
   const targetRowEl = document.getElementById('today-progress-target');
   if (targetRowEl) targetRowEl.style.display = goalAchieved ? 'none' : 'flex';
+  // Its chevron (on the inner ring) goes with it — the ring then contracts.
+  const chevEl = document.getElementById('today-progress-chev');
+  if (chevEl) chevEl.style.display = goalAchieved ? 'none' : '';
   // The two translateY offsets above exist to visually re-balance the count
   // against the "OUT OF n >" row sitting under it. With that row hidden
   // (goal met), drop both offsets so the count itself sits at the circle's
