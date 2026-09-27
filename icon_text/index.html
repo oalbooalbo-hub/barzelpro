@@ -1372,22 +1372,15 @@ window._fbModuleReady = true;
               <circle cx="150" cy="150" r="117.86" fill="none" stroke="#1e1e1e" stroke-width="25.71"/>
               <circle id="today-progress-ring" cx="150" cy="150" r="117.86" fill="none" stroke="#999" stroke-opacity="0.55" stroke-width="25.71" stroke-linecap="round" stroke-dasharray="740.52" stroke-dashoffset="740.52" transform="rotate(-90 150 150)" style="stroke:var(--accent);stroke-opacity:1;transition:stroke-dashoffset .6s ease,stroke .4s ease,stroke-opacity .4s ease;"/>
               <g id="today-progress-goal-ring" transform="rotate(-90 150 150)"></g>
-              <!-- Chevron integrated into the inner (completed-workouts) ring at
-                   6 o'clock (ring r=80 → y=230). The black notch behind it sits in
-                   the bottom gap for even targets; for odd targets (no gap there)
-                   it cuts the bottom arc so the chevron still reads as part of the
-                   ring. Hidden with the "OUT OF n" row once the goal is met. -->
-              <g id="today-progress-chev" transform="translate(150 230)" style="pointer-events:none;">
-                <circle r="11" fill="#000"/>
-                <polyline points="-5.5,-2.5 0,3 5.5,-2.5" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--accent);"/>
-              </g>
             </svg>
             <div id="today-progress-center-outer" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transform:translateY(5px);">
               <div id="today-progress-center-inner" style="display:flex;flex-direction:column;align-items:center;gap:2px;transform:translateY(3px);">
                 <span id="today-progress-count" style="font-family:'DM Sans';font-size:50px;font-weight:800;color:var(--text);line-height:1;">0</span>
-                <!-- The chevron that used to trail this text now lives on the inner
-                     ring itself (#today-progress-chev). -->
-                <span id="today-progress-target" style="font-family:'DM Sans';font-size:12px;font-weight:600;color:#fff;letter-spacing:.3px;display:flex;align-items:center;justify-content:center;"><span id="today-progress-target-text">OUT OF 3</span></span>
+                <!-- Down-chevron (--accent) directly below "OUT OF n". Absolutely
+                     positioned so it adds no height to the centered group — the
+                     count and the text stay exactly where they were — and it lives
+                     inside this row, so it hides with it once the goal is met. -->
+                <span id="today-progress-target" style="position:relative;font-family:'DM Sans';font-size:12px;font-weight:600;color:#fff;letter-spacing:.3px;display:flex;align-items:center;justify-content:center;"><span id="today-progress-target-text">OUT OF 3</span><svg id="today-progress-target-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--accent);position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:3px;"><polyline points="6 9 12 15 18 9"/></svg></span>
               </div>
             </div>
           </div>
@@ -3341,9 +3334,6 @@ function renderTodayWeekProgress(withAnim) {
   // whole row (text + chevron) instead of just clearing its text.
   const targetRowEl = document.getElementById('today-progress-target');
   if (targetRowEl) targetRowEl.style.display = goalAchieved ? 'none' : 'flex';
-  // Its chevron (on the inner ring) goes with it — the ring then contracts.
-  const chevEl = document.getElementById('today-progress-chev');
-  if (chevEl) chevEl.style.display = goalAchieved ? 'none' : '';
   // The two translateY offsets above exist to visually re-balance the count
   // against the "OUT OF n >" row sitting under it. With that row hidden
   // (goal met), drop both offsets so the count itself sits at the circle's
@@ -14833,8 +14823,9 @@ function doSaveWorkout() {
   showTodayStartScreen();
   checkFinishReady();
   _LS.remove('ironlog_session');
-  // Sync to Firestore after local save
-  if(window.syncToFirestore) window.syncToFirestore();
+  // Sync to Firestore after local save — the promise (true = confirmed in the
+  // cloud) is kept for the GOOD/GREAT JOB screen's sync button to wait on.
+  window._lastSaveSync = window.syncToFirestore ? window.syncToFirestore() : Promise.resolve(false);
 }
 
 function confirmSave() {
@@ -14861,8 +14852,36 @@ function confirmSave() {
   cel.id = 'celebrationOverlay';
   cel.style.cssText = 'position:fixed;inset:0;z-index:999;background:linear-gradient(135deg,#303A42,#050607);display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:env(safe-area-inset-top,24px) 24px env(safe-area-inset-bottom,24px);animation:celFadeIn .4s ease;';
   window._workoutSaved = false;
-  const closeAndSave = () => {
+  // "SYNC DATA TO CLOUD" (was CLOSE): save locally, then wait for the cloud
+  // to confirm so the user sees what happened —
+  //   IN PROGRESS… (at least 1s) → SAVED TO CLOUD (confirmed within 4s)
+  //                              → SAVED TO YOUR DEVICE (offline / error / slower
+  //                                than 4s / not signed in — the data is on the
+  //                                device and the app keeps syncing it later)
+  // → shown 2s so it can be read → Home.
+  const _celIco = {
+    cloud: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9"/><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/></svg>',
+    spin:  '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="animation:celSpin .8s linear infinite;"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="42" stroke-dashoffset="14"/></svg>',
+    // Green "V" for both results (SAVED TO CLOUD / SAVED TO YOUR DEVICE).
+    check: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+  };
+  const _celBtnHtml = `<button id="celCloseBtn" style="width:100%;max-width:320px;padding:18px;background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:100px;font-family:'DM Sans';font-size:16px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;margin-bottom:40px;display:flex;align-items:center;justify-content:center;gap:10px;transition:background .2s,color .2s;">${_celIco.cloud}<span>SYNC DATA TO CLOUD</span></button>`;
+  const _sleep = ms => new Promise(r => setTimeout(r, ms));
+  const _celSyncAndClose = async () => {
+    const btn = document.getElementById('celCloseBtn');
+    if (!btn || btn.disabled) return;
+    btn.disabled = true;
+    btn.style.cursor = 'default';
+    btn.innerHTML = `${_celIco.spin}<span>IN PROGRESS…</span>`;
+    const t0 = performance.now();
+    window._lastSaveSync = null;
     doSaveWorkout();
+    const syncP = window._lastSaveSync || Promise.resolve(false);
+    const ok = await Promise.race([syncP.catch(() => false), _sleep(4000).then(() => false)]);
+    await _sleep(Math.max(0, 1000 - (performance.now() - t0)));
+    // Button stays outlined (no accent fill) so the green V reads clearly.
+    btn.innerHTML = `${_celIco.check}<span>${ok ? 'SAVED TO CLOUD' : 'SAVED TO YOUR DEVICE'}</span>`;
+    await _sleep(2000);
     // Same path every other "go to Home" action in the app uses (tab bar
     // active state, header collapse state, toggle bars, etc.) — not just
     // doSaveWorkout's own showTodayStartScreen — so landing on Home here looks
@@ -14875,17 +14894,19 @@ function confirmSave() {
   if (hasStars) {
     const starTypes = [{ label: 'MAX', color: '#e8ff47' },{ label: 'BEST SET', color: '#ff8c42' },{ label: 'VOL', color: '#a78bfa' }];
     const starsRow = starTypes.map((t, ti) => { const count = allStars.filter(s => s.label === t.label).length; if (!count) return ''; return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;animation:starPop .8s cubic-bezier(.175,.885,.32,1.275) both;animation-delay:${ti * 0.25}s;"><div style="position:relative;width:72px;height:72px;display:flex;align-items:center;justify-content:center;">${svgStar(t.color, 72)}<span style="position:absolute;font-family:'Bebas Neue';font-size:26px;color:#000;line-height:1;margin-top:5px;">${count}</span></div><span style="font-size:12px;font-weight:700;color:${t.color};letter-spacing:.5px;text-transform:uppercase;">${t.label}</span></div>`; }).join('');
-    cel.innerHTML = `<style>@keyframes celFadeIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}@keyframes starPop{0%{opacity:0;transform:scale(0) rotate(-20deg)}60%{transform:scale(1.2) rotate(5deg)}100%{opacity:1;transform:scale(1) rotate(0deg)}}</style><div style="display:flex;flex-direction:column;align-items:center;padding-top:23px;">${_brandLogoHtml(38)}</div><div style="display:flex;flex-direction:column;align-items:center;gap:24px;"><div style="font-family:'Bebas Neue';font-size:48px;letter-spacing:3px;color:#fff;text-align:center;line-height:1;">GREAT JOB</div><div style="display:flex;gap:32px;justify-content:center;align-items:flex-end;">${starsRow}</div><div style="font-size:16px;color:#7ec8e3;font-weight:600;"><span style="display:inline-flex;align-items:center;gap:6px;vertical-align:middle;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7ec8e3" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="7" x2="12" y2="12"/><line x1="12" y1="12" x2="15" y2="14"/></svg> ${_durStr}</span></div></div><button id="celCloseBtn" style="width:100%;max-width:320px;padding:18px;background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:100px;font-family:'DM Sans';font-size:16px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;margin-bottom:40px;">CLOSE</button>`;
+    cel.innerHTML = `<style>@keyframes celFadeIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}@keyframes starPop{0%{opacity:0;transform:scale(0) rotate(-20deg)}60%{transform:scale(1.2) rotate(5deg)}100%{opacity:1;transform:scale(1) rotate(0deg)}}</style><div style="display:flex;flex-direction:column;align-items:center;padding-top:23px;">${_brandLogoHtml(38)}</div><div style="display:flex;flex-direction:column;align-items:center;gap:24px;"><div style="font-family:'Bebas Neue';font-size:48px;letter-spacing:3px;color:#fff;text-align:center;line-height:1;">GREAT JOB</div><div style="display:flex;gap:32px;justify-content:center;align-items:flex-end;">${starsRow}</div><div style="font-size:16px;color:#7ec8e3;font-weight:600;"><span style="display:inline-flex;align-items:center;gap:6px;vertical-align:middle;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7ec8e3" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="7" x2="12" y2="12"/><line x1="12" y1="12" x2="15" y2="14"/></svg> ${_durStr}</span></div></div>${_celBtnHtml}`;
   } else {
     cel.innerHTML = `<style>@keyframes celFadeIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
 #coachProfileName::placeholder, #coachProfilePhone::placeholder,
 #coachProfileBio::placeholder, #coachProfileSpecialties::placeholder,
 #coachProfileCerts::placeholder, #coachProfileAvailability::placeholder,
 #coachPhotoUrl::placeholder { color: #666; font-style: italic; }
-</style><div style="display:flex;flex-direction:column;align-items:center;padding-top:23px;">${_brandLogoHtml(38)}</div><div style="display:flex;flex-direction:column;align-items:center;gap:16px;"><div style="font-family:'Bebas Neue';font-size:64px;letter-spacing:3px;color:#fff;text-align:center;line-height:1;">GOOD JOB</div><div style="font-size:16px;color:#7ec8e3;font-weight:600;"><span style="display:inline-flex;align-items:center;gap:6px;vertical-align:middle;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7ec8e3" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="7" x2="12" y2="12"/><line x1="12" y1="12" x2="15" y2="14"/></svg> ${_durStr}</span></div></div><button id="celCloseBtn" style="width:100%;max-width:320px;padding:18px;background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:100px;font-family:'DM Sans';font-size:16px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;margin-bottom:40px;">CLOSE</button>`;
+</style><div style="display:flex;flex-direction:column;align-items:center;padding-top:23px;">${_brandLogoHtml(38)}</div><div style="display:flex;flex-direction:column;align-items:center;gap:16px;"><div style="font-family:'Bebas Neue';font-size:64px;letter-spacing:3px;color:#fff;text-align:center;line-height:1;">GOOD JOB</div><div style="font-size:16px;color:#7ec8e3;font-weight:600;"><span style="display:inline-flex;align-items:center;gap:6px;vertical-align:middle;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7ec8e3" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="7" x2="12" y2="12"/><line x1="12" y1="12" x2="15" y2="14"/></svg> ${_durStr}</span></div></div>${_celBtnHtml}`;
   }
+  // Spinner keyframes for the button's IN PROGRESS… state.
+  cel.insertAdjacentHTML('afterbegin', '<style>@keyframes celSpin{to{transform:rotate(360deg)}}</style>');
   document.body.appendChild(cel);
-  cel.querySelector('#celCloseBtn').addEventListener('click', closeAndSave);
+  cel.querySelector('#celCloseBtn').addEventListener('click', _celSyncAndClose);
 }
 
 // ══════════════════════════════════════════════════════
@@ -21330,18 +21351,22 @@ window._onAuthReady = (user) => {
 };
 
 // Firestore sync - exposed as window globals, called from regular scripts
+// Returns a Promise<boolean>: true once Firestore confirms the write, false
+// when it can't sync right now (not signed in, offline → queued, or error).
+// Existing callers ignore the result; the GOOD/GREAT JOB screen's
+// "SYNC DATA TO CLOUD" button waits on it (see _celSyncAndClose).
 window.syncToFirestore = function() {
-  if (!window._currentUser || !window._fbDb) return;
+  if (!window._currentUser || !window._fbDb) return Promise.resolve(false);
   // If offline — queue for later
   if (!navigator.onLine) {
     _OfflineQueue.enqueue('syncToFirestore', {});
     console.log('[Sync] Offline — queued');
-    return;
+    return Promise.resolve(false);
   }
   const uid = window._currentUser.uid;
   const brandId = window.BRAND_ID || 'default';
   const ref = window._fbDoc(window._fbDb, 'userData', brandId, 'users', uid);
-  window._fbSetDoc(ref, {
+  return window._fbSetDoc(ref, {
     workouts: workouts.filter(w => !w._draft),
     deletedWorkouts: deletedWorkouts,
     cardioLog: cardioLog,
@@ -21358,8 +21383,8 @@ window.syncToFirestore = function() {
       miniChartRange: miniChartRange,
     },
     updatedAt: new Date().toISOString()
-  }).then(() => {
-    }).catch(e => console.warn('Firestore sync failed:', e.message));
+  }).then(() => true)
+    .catch(e => { console.warn('Firestore sync failed:', e.message); return false; });
 };
 
 window.loadFromFirestore = function(uid) {
