@@ -5859,7 +5859,7 @@ function renderExercisesTab() {
       _sa.style.cursor = _saEmpty ? 'default' : 'pointer';
       _sa.style.background = _allSel ? 'var(--accent)' : 'transparent';
       _sa.title = _allSel ? 'Deselect all' : 'Select all';
-      _sa.innerHTML = _allSel ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : '';
+      _sa.innerHTML = _selectAllLabelHtml(_allSel, 9); // 26px circle
     }
     // Line the header circle up with the rows' circles — rAF because the list
     // itself is written further down this function (runs before paint).
@@ -8601,6 +8601,168 @@ function _toggleExDetailStats() {
 }
 window._toggleExDetailStats = _toggleExDetailStats;
 
+// ── ALL SESSIONS (Exercises tab → exercise overlay): long-press to delete ────
+// Long-press a session card (500ms) → select mode: a circle on the right of
+// every card, tap to toggle, body-level CANCEL | DELETE (n) bar. Same gesture
+// rules as the lists' long-press (arm on the timer, enter on finger-up,
+// swallow the release's own click). Cards carry data-key = "workoutIdx|
+// exerciseIdx" (see the _allSessions build in openExtabExOverlay).
+function _extabSessWire(pane, exName) {
+  const cards = [...pane.querySelectorAll('.extab-sess-card')];
+  window._extabSess?.exit();
+  if (!cards.length) { window._extabSess = null; return; }
+  const state = { on: false, sel: new Set() };
+  let timer = null, pending = null, fired = null;
+  const check = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+  const paintBar = () => {
+    let bar = document.getElementById('extab-sess-bar');
+    if (!state.on) { bar?.remove(); return; }
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'extab-sess-bar';
+      // Above the exercise overlay (z-index 250).
+      bar.style.cssText = 'position:fixed;left:0;right:0;bottom:0;max-width:430px;margin:0 auto;z-index:500;background:linear-gradient(to bottom,transparent,#111 40%);box-sizing:border-box;padding:46px 16px calc(env(safe-area-inset-bottom,0px) + 16px);display:flex;gap:10px;animation:sheetUp .25s ease;';
+      document.body.appendChild(bar);
+    }
+    const n = state.sel.size;
+    bar.innerHTML = `
+      <button id="_sessCancel" style="flex:1;background:transparent;border:1px solid #555;border-radius:12px;color:#fff;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">CANCEL</button>
+      <button id="_sessDelete" ${n ? '' : 'disabled'} style="flex:1;background:#ff4747;border:none;border-radius:12px;color:#fff;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;padding:14px;cursor:pointer;opacity:${n ? '1' : '0.4'};-webkit-tap-highlight-color:transparent;">DELETE${n ? ` (${n})` : ''}</button>`;
+    bar.querySelector('#_sessCancel').onclick = () => exit();
+    bar.querySelector('#_sessDelete').onclick = () => _extabConfirmDeleteSessions(exName, [...state.sel]);
+  };
+  // Select-all circle — outside the list, on the "ALL SESSIONS" title line
+  // (#extab-carousel-title, position:relative, same width as the list). The
+  // cards sit 16px in from the edge with a 12px right padding before their
+  // 26px circle, so right:28px puts this one's center exactly over theirs.
+  // Rebuilt with each overlay open (opening clears the title bar).
+  document.getElementById('extab-sess-all')?.remove();
+  const titleBar = document.getElementById('extab-carousel-title');
+  let allBtn = null;
+  if (titleBar) {
+    allBtn = document.createElement('div');
+    allBtn.id = 'extab-sess-all';
+    allBtn.title = 'Select all';
+    allBtn.style.cssText = 'position:absolute;right:28px;top:50%;margin-top:-13px;width:26px;height:26px;border-radius:50%;border:2px solid var(--accent);display:none;align-items:center;justify-content:center;box-sizing:border-box;cursor:pointer;transition:background .15s;-webkit-tap-highlight-color:transparent;';
+    titleBar.appendChild(allBtn);
+  }
+  const paint = () => {
+    cards.forEach(c => {
+      const on = state.sel.has(c.dataset.key);
+      c.style.boxShadow = on ? 'inset 0 0 0 2px var(--accent)' : '';
+      const circ = c.querySelector('.extab-sess-circle');
+      circ.style.display = state.on ? 'flex' : 'none';
+      circ.style.background = on ? 'var(--accent)' : 'transparent';
+      circ.innerHTML = on ? check : '';
+    });
+    if (allBtn) {
+      allBtn.style.display = state.on ? 'flex' : 'none';
+      const all = state.sel.size === cards.length;
+      allBtn.style.background = all ? 'var(--accent)' : 'transparent';
+      allBtn.innerHTML = _selectAllLabelHtml(all, 9); // 26px circle, same as the cards'
+      allBtn.title = all ? 'Deselect all' : 'Select all';
+    }
+    paintBar();
+  };
+  // Select all ↔ clear (like the lists' select-all circles).
+  if (allBtn) allBtn.addEventListener('click', () => {
+    if (!state.on) return;
+    state.sel = state.sel.size === cards.length ? new Set() : new Set(cards.map(c => c.dataset.key));
+    paint();
+  });
+  const exit = () => { state.on = false; state.sel.clear(); paint(); };
+  cards.forEach(c => {
+    const k = c.dataset.key;
+    const start = () => {
+      if (state.on) return;
+      clearTimeout(timer); pending = null;
+      timer = setTimeout(() => { timer = null; pending = k; if (navigator.vibrate) navigator.vibrate(30); }, 500);
+    };
+    const cancel = () => { clearTimeout(timer); timer = null; };
+    const release = () => {
+      clearTimeout(timer); timer = null;
+      if (pending == null) return;
+      const p = pending; pending = null; fired = p;
+      state.on = true; state.sel = new Set([p]); paint();
+    };
+    c.addEventListener('touchstart', start, { passive: true });
+    c.addEventListener('touchend', release);
+    c.addEventListener('touchmove', cancel, { passive: true });
+    c.addEventListener('mousedown', start);
+    c.addEventListener('mouseup', release);
+    c.addEventListener('mouseleave', cancel);
+    c.addEventListener('contextmenu', e => e.preventDefault());
+    c.addEventListener('click', () => {
+      if (fired === k) { fired = null; return; }
+      if (!state.on) return;
+      if (state.sel.has(k)) state.sel.delete(k); else state.sel.add(k);
+      paint();
+    });
+  });
+  window._extabSess = { exit, state };
+}
+
+function _extabConfirmDeleteSessions(exName, keys) {
+  if (!keys.length) return;
+  const n = keys.length;
+  const overlay = document.createElement('div');
+  overlay.className = 'delete-confirm-overlay';
+  overlay.style.zIndex = '600'; // above #extab-sess-bar (500) and the exercise overlay
+  overlay.innerHTML = `
+    <div class="delete-confirm-sheet">
+      <div class="delete-confirm-title">Delete ${n === 1 ? 'Session' : 'Sessions'} ?</div>
+      <div class="delete-confirm-sub">Delete ${n} session${n !== 1 ? 's' : ''} of "${exName}"? The sets will be permanently removed from ${n !== 1 ? 'those workouts' : 'that workout'}.</div>
+      <div class="delete-confirm-btns">
+        <button class="btn-del-cancel" id="_sessDelCancel">Cancel</button>
+        <button class="btn-del-yes-solid" id="_sessDelConfirm">Delete</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#_sessDelCancel').onclick = () => overlay.remove();
+  overlay.querySelector('#_sessDelConfirm').onclick = () => {
+    overlay.remove();
+    _extabDeleteSessions(exName, keys);
+  };
+}
+
+// Removes just this exercise's entry from each selected workout; a (non-
+// template) workout left with no exercises at all is removed too. Every stat
+// (PRs, charts, Last time, weekly count) is computed from this history, so a
+// save + re-render is all they need.
+function _extabDeleteSessions(exName, keys) {
+  const byW = new Map();
+  keys.forEach(k => {
+    const [wi, ei] = k.split('|').map(Number);
+    if (workouts[wi]?.exercises?.[ei]?.name !== exName) return; // stale key — skip
+    if (!byW.has(wi)) byW.set(wi, []);
+    byW.get(wi).push(ei);
+  });
+  const emptyW = [];
+  byW.forEach((eis, wi) => {
+    const w = workouts[wi];
+    eis.sort((a, b) => b - a).forEach(ei => w.exercises.splice(ei, 1));
+    if (!w.exercises.length && !w._template) emptyW.push(wi);
+  });
+  emptyW.sort((a, b) => b - a).forEach(wi => workouts.splice(wi, 1));
+  save();
+  if (window._currentUser && window.syncToFirestore) window.syncToFirestore();
+  _invalidateExCache();
+  window._extabSess?.exit();
+  if (typeof renderExercisesTab === 'function') renderExercisesTab();
+  if (typeof renderTodayWeekProgress === 'function') renderTodayWeekProgress();
+  _extabRefreshOnSessions(exName);
+}
+
+// Rebuilds the open exercise overlay in place (fresh stats on every slide),
+// back on ALL SESSIONS, with no entrance animation and no extra history entry.
+function _extabRefreshOnSessions(exName) {
+  document.getElementById('extab-carousel')?.remove();
+  window._extabReopenOnSessions = true;
+  window._extabSkipHistoryPush = true;
+  openExtabExOverlay(exName, undefined, true);
+}
+Object.assign(window, { _extabSessWire, _extabConfirmDeleteSessions, _extabDeleteSessions, _extabRefreshOnSessions });
+
 function openExtabExOverlay(exName, musclesOnly, instant, knownPhoto) {
   const overlay = document.getElementById('extab-ex-overlay');
   const body = document.getElementById('extab-ex-overlay-body');
@@ -8712,7 +8874,9 @@ function openExtabExOverlay(exName, musclesOnly, instant, knownPhoto) {
   const _chartRmSetMap = new Map();
   const _allSessions = [];
   workouts.filter(w => !w._draft).forEach(w => {
-    w.exercises.filter(e => e.name === exName).forEach(e => {
+    const _wi = workouts.indexOf(w); // ALL SESSIONS delete: which workout…
+    w.exercises.forEach((e, _ei) => { // …and which exercise entry in it
+      if (e.name !== exName) return;
       const ds = doneSets(e.sets);
       ds.forEach(s => {
         if (s.kg > _maxKg) { _maxKg = s.kg; _maxKgDate = w.date; }
@@ -8733,7 +8897,7 @@ function openExtabExOverlay(exName, musclesOnly, instant, knownPhoto) {
       if (sessionVol > (_chartVolMap.get(dayKey) || 0)) _chartVolMap.set(dayKey, sessionVol);
       // Warm-ups are stored ignored:true + setType:'warmup' — keep them (shown
       // tagged W in ALL SESSIONS); only plain IGN'd sets are dropped.
-      if (ds.length) _allSessions.push({ date: w.date, name: w.name, sets: e.sets.filter(s => !(s.ignored && !s.setType)) });
+      if (ds.length) _allSessions.push({ date: w.date, name: w.name, sets: e.sets.filter(s => !(s.ignored && !s.setType)), key: `${_wi}|${_ei}` });
     });
   });
   _allSessions.sort((a, b) => b.date - a.date);
@@ -9004,14 +9168,20 @@ function openExtabExOverlay(exName, musclesOnly, instant, knownPhoto) {
           const _tag = _t ? `<span style="color:${_t[1]};font-weight:700;margin-right:3px;">${_t[0]}</span>` : '';
           return `<span class="hcard-set-chip"${st.done ? ' style="color:#fff;"' : ''}>${_tag}${st.kg}×${st.reps}</span>`;
         }).join('<span style="color:#333;margin:0 4px;">·</span>');
-        return `<div style="background:#161616;border-radius:10px;padding:10px 12px;margin-bottom:8px;">
-          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-family:'DM Sans';font-size:12px;font-weight:700;color:#888;margin-bottom:6px;">
-            <span dir="auto" style="flex:1;min-width:0;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.name}</span>
-            <span style="flex-shrink:0;white-space:nowrap;">${new Date(s.date).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</span>
+        // Long-press → select-to-delete (see _extabSessWire): the circle on the
+        // right only shows while selecting.
+        return `<div class="extab-sess-card" data-key="${s.key}" style="display:flex;align-items:center;gap:10px;background:#161616;border-radius:10px;padding:10px 12px;margin-bottom:8px;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;">
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-family:'DM Sans';font-size:12px;font-weight:700;color:#888;margin-bottom:6px;">
+              <span dir="auto" style="flex:1;min-width:0;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.name}</span>
+              <span style="flex-shrink:0;white-space:nowrap;">${new Date(s.date).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</span>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:4px;">${chips}</div>
           </div>
-          <div style="display:flex;flex-wrap:wrap;gap:4px;">${chips}</div>
+          <div class="extab-sess-circle" style="display:none;width:26px;height:26px;border-radius:50%;border:2px solid var(--accent);flex-shrink:0;align-items:center;justify-content:center;box-sizing:border-box;transition:background .15s;"></div>
         </div>`;
       }).join('');
+      _extabSessWire(sessionsPane, exName);
     } else {
       sessionsPane.innerHTML = '<div style="text-align:center;padding:30px 0;font-family:\'DM Sans\';font-size:16px;font-weight:600;color:#fff;">No sessions yet</div>';
     }
@@ -9107,6 +9277,7 @@ function openExtabExOverlay(exName, musclesOnly, instant, knownPhoto) {
     let _progPreDiag = null;
     function goTo(idx) {
       if (idx === _cur) return;
+      window._extabSess?.exit(); // leaving ALL SESSIONS ends its select mode
       const _prevIdx = _cur;
       const dir = idx > _prevIdx ? 1 : -1; // 1 = forward/right, -1 = backward/left
       _cur = idx;
@@ -9232,6 +9403,12 @@ function openExtabExOverlay(exName, musclesOnly, instant, knownPhoto) {
     if (musclesOnly !== true) { body.appendChild(progPane); body.appendChild(tablePane); }
     if (musclesOnly !== true && musclesOnly !== 'stats') body.appendChild(sessionsPane);
     overlay.appendChild(carousel);
+    // Refreshed after deleting sessions (_extabRefreshOnSessions) — land back
+    // on ALL SESSIONS instead of the default first slide.
+    if (window._extabReopenOnSessions) {
+      window._extabReopenOnSessions = false;
+      if (ALL_IDX >= 0) goTo(ALL_IDX);
+    }
   }
 
   // Chart section: find exercise card with history data
@@ -9277,7 +9454,10 @@ function openExtabExOverlay(exName, musclesOnly, instant, knownPhoto) {
       overlay.addEventListener('transitionend', () => { overlay.style.transition = ''; }, { once: true });
     }));
   }
-  if (window._historyPush) window._historyPush('extab-ex-overlay');
+  // A post-delete refresh reopens in place — the overlay's history entry
+  // already exists, so don't push a second one (Back would need 2 presses).
+  if (window._historyPush && !window._extabSkipHistoryPush) window._historyPush('extab-ex-overlay');
+  window._extabSkipHistoryPush = false;
 }
 window.openExtabExOverlay = openExtabExOverlay;
 
@@ -9296,6 +9476,7 @@ function closeExtabExOverlay() {
     document.getElementById('extab-icon-placeholder')?.remove();
   };
   document.body.classList.remove('extab-ex-open');
+  window._extabSess?.exit(); // ends ALL SESSIONS select mode + removes its bar
   if (overlay.dataset.musclesOnly === '1') {
     overlay.style.pointerEvents = 'none';
     const _curY = parseFloat(overlay.style.transform?.match(/translateY\((.+)px\)/)?.[1] || 0);
@@ -9846,9 +10027,7 @@ function renderWorkoutsTab2() {
       _saBtn.style.cursor = _saEmpty ? 'default' : 'pointer';
       _saBtn.style.background = _allSelected ? 'var(--accent)' : 'transparent';
       _saBtn.title = _allSelected ? 'Deselect all' : 'Select all';
-      _saBtn.innerHTML = _allSelected
-        ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`
-        : '';
+      _saBtn.innerHTML = _selectAllLabelHtml(_allSelected, 10); // 32px circle
     }
   };
   if (_isDeleteMode) {
@@ -9868,9 +10047,7 @@ function renderWorkoutsTab2() {
       _pubSaBtn.style.cursor = _pubEmpty ? 'default' : 'pointer';
       _pubSaBtn.style.background = _pubAll ? 'var(--accent)' : 'transparent';
       _pubSaBtn.title = _pubAll ? 'Deselect all' : 'Select all';
-      _pubSaBtn.innerHTML = _pubAll
-        ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`
-        : '';
+      _pubSaBtn.innerHTML = _selectAllLabelHtml(_pubAll, 10); // 32px circle
     }
   }
 
@@ -10303,6 +10480,13 @@ function renderWorkoutsTab2() {
 //    last aligned offset for that header is reused, so the circle stays put
 //    instead of falling back to its unaligned default spot.
 const _selectAllLeftCache = {};
+// "ALL" label shown inside every long-press select-all circle (Workouts
+// delete/unpublish + publish, Exercises, ALL SESSIONS): accent text on the
+// empty circle, black on the filled (all-selected) one.
+function _selectAllLabelHtml(allSelected, fontPx) {
+  return `<span style="font-family:'DM Sans',sans-serif;font-size:${fontPx || 9}px;font-weight:800;letter-spacing:.2px;line-height:1;color:${allSelected ? '#000' : 'var(--accent)'};pointer-events:none;">ALL</span>`;
+}
+window._selectAllLabelHtml = _selectAllLabelHtml;
 function _alignSelectAllCircle(headerBtn, rowCircle) {
   if (!headerBtn) return;
   headerBtn.style.position = 'relative';
