@@ -871,7 +871,7 @@ body.ex-tab-detail-open #ex-float-bar{display:none !important;}
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, sendPasswordResetEmail } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, getDoc, setDoc, deleteDoc, getDocs, collection, query, where, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-import { getStorage, ref as storageRef, uploadString, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
+import { getStorage, ref as storageRef, uploadString, getDownloadURL, listAll, deleteObject } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
 
 // ── BRAND CONFIG ──────────────────────────────────────
 // Read from config.js (window.BRAND_CONFIG) — fallback to defaults
@@ -949,6 +949,24 @@ async function _loadExPhotoFromCloud(name, isThumb) {
 }
 window._uploadExPhoto = _uploadExPhoto;
 window._loadExPhotoFromCloud = _loadExPhotoFromCloud;
+
+// My Data → Delete All Data: removes everything under the signed-in user's
+// own Storage folder (userData/{brand}/users/{uid}/…, e.g. ex_photos),
+// recursing into sub-folders. Resolves to the number of files deleted.
+async function _deleteMyCloudFiles() {
+  if (!window._currentUser || !storage) return 0;
+  const brandId = window.BRAND_ID || 'default';
+  const root = storageRef(storage, `userData/${brandId}/users/${window._currentUser.uid}`);
+  let n = 0;
+  const walk = async (r) => {
+    const res = await listAll(r);
+    await Promise.all(res.items.map(it => deleteObject(it).then(() => { n++; })));
+    for (const p of res.prefixes) await walk(p);
+  };
+  await walk(root);
+  return n;
+}
+window._deleteMyCloudFiles = _deleteMyCloudFiles;
 
 // ── Shared library workout photo: upload to Storage, return its download URL ──
 // Stored under the brand (not per-user) since library workouts are shared —
@@ -1582,6 +1600,11 @@ window._fbModuleReady = true;
         <button onclick="loadBrandLibraryForMe()" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><polyline points="9 10 12 13 15 10"/><line x1="12" y1="6" x2="12" y2="13"/></svg>
           Load Brand Library
+        </button>
+        <!-- Client users only (shown by openDataModal). -->
+        <button id="dataDeleteAllBtn" onclick="openDeleteAllData()" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#ff4747;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:none;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff4747" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          Delete All Data
         </button>
         <input type="file" id="importFileInput" accept=".json" style="display:none;" onchange="importData(this)">
         <div style="font-size:11px;color:#555;margin-top:8px;text-align:center;">⚠️ This will merge imported data with your existing data</div>
@@ -2300,7 +2323,8 @@ const _BRAND_SCOPED_KEYS = new Set([
   'ironlog_workouts','ironlog_deleted_workouts','ironlog_cardio',
   'ironlog_custom_ex','ironlog_planned','ironlog_cardio_custom',
   'ironlog_session','ironlog_session_start','ironlog_draft_id',
-  'ironlog_deleted_tab_names','ironlog_hidden_ex','ironlog_hidden_lib_workouts'
+  'ironlog_deleted_tab_names','ironlog_hidden_ex','ironlog_hidden_lib_workouts',
+  'ironlog_brand_off','ironlog_data_reset_at'
 ]);
 
 const _LS = {
@@ -5711,6 +5735,17 @@ function renderExercisesTab() {
 
   // Build "Custom" view: only user-created exercises for selected muscle
   let _customExes = (typeof customExercises !== 'undefined' ? customExercises : []).filter(ex => ex.muscle === selected && !hiddenEx.includes(ex.name));
+  // Clients: MY EXERCISES = their own custom exercises + ones they've only
+  // logged (not custom, not in the brand library, not a brand default);
+  // APP EXERCISES = the brand library + brand defaults (see _exAppExes below).
+  if (window._currentUserData?.role !== 'super_admin') {
+    const _myNames = new Set(_customExes.map(e => e.name));
+    (byMuscle[selected] || []).forEach(ex => {
+      if (_myNames.has(ex.name) || hiddenEx.includes(ex.name) || _exLibDef(ex.name) || _exIsDefaultName(ex.name)) return;
+      _myNames.add(ex.name);
+      _customExes.push({ name: ex.name, muscle: ex.muscle || selected });
+    });
+  }
   // Super admin: CUSTOM → PENDING, ALL → PUBLISHED (see _exSuperLists). Logged-
   // only exercises (not custom/library/default) are passed in as history.
   const _exSuper = window._currentUserData?.role === 'super_admin';
@@ -5746,11 +5781,13 @@ function renderExercisesTab() {
   const _hiddenEx = JSON.parse(_LS.get('ironlog_hidden_ex') || '[]');
   const _allExMap = new Map();
   (byMuscle[selected] || []).forEach(ex => _allExMap.set(ex.name, { name: ex.name, muscle: ex.muscle || selected, lastDate: ex.lastDate || 0 }));
-  (typeof _libraryExercises !== 'undefined' ? _libraryExercises : []).filter(e => e.muscle === selected && !_hiddenEx.includes(e.name)).forEach(e => { if (!_allExMap.has(e.name)) _allExMap.set(e.name, { name: e.name, muscle: selected, lastDate: 0 }); });
-  (_defaultExercises[selected] || []).filter(e => !_hiddenEx.includes(e.name)).forEach(e => { if (!_allExMap.has(e.name)) _allExMap.set(e.name, { name: e.name, muscle: selected, lastDate: 0 }); });
+  // Brand content off (after Delete All Data): no library/default exercises.
+  const _exBrandOff = _isBrandContentOff();
+  (_exBrandOff ? [] : (typeof _libraryExercises !== 'undefined' ? _libraryExercises : [])).filter(e => e.muscle === selected && !_hiddenEx.includes(e.name)).forEach(e => { if (!_allExMap.has(e.name)) _allExMap.set(e.name, { name: e.name, muscle: selected, lastDate: 0 }); });
+  (_exBrandOff ? [] : (_defaultExercises[selected] || [])).filter(e => !_hiddenEx.includes(e.name)).forEach(e => { if (!_allExMap.has(e.name)) _allExMap.set(e.name, { name: e.name, muscle: selected, lastDate: 0 }); });
   const _allExes = _exSuper ? _exSuperL.published : [..._allExMap.values()].sort((a, b) => (b.lastDate || 0) - (a.lastDate || 0));
-  let _exAllListHtml = _allExes.length
-    ? _allExes.map(ex => {
+  // One row renderer shared by ALL and (clients) APP EXERCISES.
+  const _exAllRow = ex => {
       const _isPickSel = _pickMode && _pickModeSelected.some(s => s.name === ex.name);
       const _pc = PICKER_COLORS[ex.muscle] || '#888';
       return `<div data-exname="${ex.name.replace(/"/g,'&quot;')}" data-muscle="${ex.muscle}"${_pickMode ? ` onclick="pickExercise('${ex.name.replace(/'/g,"\\'")}') "` : ''}${_exRowAttrs(ex.name)} style="background:${_isPickSel ? 'color-mix(in srgb, var(--accent) 15%, var(--surface))' : 'var(--surface)'};${_exRowBorder(ex.name)}${_exRowDim(ex.name)}border-radius:var(--radius);margin-bottom:8px;overflow:hidden;${_pickMode ? 'cursor:pointer;' : ''}${_exBrowse ? '-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;' : ''}">
@@ -5763,8 +5800,17 @@ function renderExercisesTab() {
         </div>
               </div>
     </div>`;
-    }).join('')
+  };
+  let _exAllListHtml = _allExes.length
+    ? _allExes.map(_exAllRow).join('')
     : `<div class="empty-state"><span style="color:var(--muted);">No ${_exSuper ? 'published ' : ''}exercises found for ${selected}</span></div>`;
+  // Clients' APP EXERCISES: the brand library + brand defaults for this
+  // muscle (not deleted/hidden by the user, not already in MY EXERCISES).
+  const _exMyNames = new Set(_customExes.map(e => e.name));
+  const _exAppExes = _exSuper ? [] : _allExes.filter(e => !_exMyNames.has(e.name) && (_exLibDef(e.name) || _exIsDefaultName(e.name)));
+  const _exAppListHtml = _exAppExes.length
+    ? _exAppExes.map(_exAllRow).join('')
+    : `<div class="empty-state"><span style="color:var(--muted);">No app exercises for ${selected}</span></div>`;
 
   const _exEmpty = !exes.length;
   const _btnColor = _exEmpty ? 'var(--accent)' : 'var(--muted)';
@@ -5809,32 +5855,48 @@ function renderExercisesTab() {
   const _exViewPicker = window._currentUserData?.role !== 'super_admin';
   const _exViewPickerHtml = (() => {
     if (!_exViewPicker) return '';
-    const _vLabels = { all: 'ALL', custom: 'CUSTOM', coach: 'COACH' };
+    // Views: ALL / MY EXERCISES ('custom') / APP EXERCISES ('app') / COACH;
+    // MY and APP are shaded while empty for the selected muscle.
+    const _vLabels = { all: 'ALL', custom: 'MY EXERCISES', app: 'APP EXERCISES', coach: 'COACH' };
     const _vColor = v => v === 'coach' ? '#7ec8e3' : 'var(--accent)';
     const _customEmpty = !_customExes.length;
-    const _opts = _segViews.map((v, i) => {
-      const _off = v === 'custom' && _customEmpty && _exTabView !== 'custom';
+    const _appEmpty = !_exAppExes.length;
+    const _pickViews = _hasCoach ? ['all', 'custom', 'app', 'coach'] : ['all', 'custom', 'app'];
+    const _opts = _pickViews.map((v, i) => {
+      const _off = ((v === 'custom' && _customEmpty) || (v === 'app' && _appEmpty)) && _exTabView !== v;
       return `<button ${_off ? 'disabled' : `onclick="_extabPickView('${v}')"`} style="width:100%;background:transparent;border:none;${i ? 'border-top:1px solid #2a2a2a;' : ''}color:${v === _exTabView ? _vColor(v) : '#fff'};font-family:'DM Sans';font-size:14px;font-weight:700;padding:14px 16px;text-align:left;cursor:${_off ? 'default' : 'pointer'};opacity:${_off ? '0.3' : '1'};-webkit-tap-highlight-color:transparent;">${_vLabels[v]}</button>`;
     }).join('');
     return `<div style="position:relative;display:flex;align-items:center;justify-content:center;min-height:34px;">
       <!-- Symmetric padding + chevron inside the right padding, so the label
            TEXT itself is dead-center on screen (see the Workouts tab's). -->
-      <button id="extab-view-btn" onclick="event.stopPropagation();_extabToggleViewMenu()" style="position:relative;padding:8px 24px;border:none;background:transparent;color:${_vColor(_exTabView)};font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;cursor:pointer;-webkit-tap-highlight-color:transparent;">
+      <button id="extab-view-btn" onclick="event.stopPropagation();${_exDelMode ? '' : '_extabToggleViewMenu()'}" style="${_exDelMode ? 'cursor:default;' : ''}position:relative;padding:8px 24px;border:none;background:transparent;color:${_vColor(_exTabView)};font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;cursor:pointer;-webkit-tap-highlight-color:transparent;">
         ${_vLabels[_exTabView] || 'ALL'}
-        <svg id="extab-view-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;right:6px;top:50%;margin-top:-6px;transition:transform .2s;"><polyline points="6 9 12 15 18 9"/></svg>
+        <svg id="extab-view-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="${_exDelMode ? 'visibility:hidden;' : ''}position:absolute;right:6px;top:50%;margin-top:-6px;transition:transform .2s;"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       <div id="extab-view-menu" style="display:none;position:absolute;top:100%;left:50%;transform:translateX(-50%);min-width:160px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;overflow:hidden;z-index:600;box-shadow:0 8px 24px rgba(0,0,0,.5);">${_opts}</div>
-      <button id="ex-add-btn" onclick="openNewExModal(window._exTabMuscle||'Chest')" style="position:absolute;right:0;top:50%;transform:translateY(-50%);padding:4px 8px 4px 12px;border:none;background:transparent;color:${_exTabView==='custom'?'var(--accent)':'#555'};cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;"><svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></button>
+      <button id="ex-add-btn" onclick="openNewExModal(window._exTabMuscle||'Chest')" ${_exDelMode ? 'tabindex="-1" aria-hidden="true" ' : ''}style="${_exDelMode ? 'visibility:hidden;pointer-events:none;' : ''}position:absolute;right:0;top:50%;transform:translateY(-50%);padding:4px 8px 4px 12px;border:none;background:transparent;color:${_exTabView==='custom'?'var(--accent)':'#555'};cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;"><svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></button>
     </div>`;
   })();
-  const toggleHtml = `<div style="position:relative;font-family:'DM Sans';font-size:20px;font-weight:700;color:var(--text);padding:10px 0 6px;text-align:center;text-transform:uppercase;">${_showPickBackArrow ? `<button onclick="exitPickMode()" style="position:absolute;left:0;top:50%;transform:translateY(-50%);background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><line x1="19" y1="12" x2="5" y2="12" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round"/><polyline points="11,6 5,12 11,18" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>` : _showCloseX ? `<button onclick="switchTab('profile')" style="position:absolute;left:0;top:50%;transform:translateY(-50%);background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round"/></svg></button>` : ''}Exercises</div>${_exViewPicker ? _exViewPickerHtml : `<div style="display:flex;gap:0;margin-bottom:0;align-items:center;">
+  // Long-press select mode keeps this normal top bar (same as the Workouts
+  // tab): title → "n items selected", the select-all circle at the LEFT end
+  // of the title line (rows' circles are on the left; X-aligned to them by
+  // _alignSelectAllCircle) in place of the ✕, which is hidden (space kept);
+  // the + is hidden (space kept); the other filter hidden (super admin) /
+  // ALL ▾ locked (clients). Muscle pills stay usable — the count is the total
+  // across muscles.
+  const _exSelN = _exDelMode ? (window._exDelSelected ? window._exDelSelected.size : 0) : 0;
+  const _exTitleText = _exDelMode ? `${_exSelN} item${_exSelN === 1 ? '' : 's'} selected` : 'Exercises';
+  const _exSelAllHtml = _exDelMode
+    ? `<div style="position:absolute;left:0;top:50%;margin-top:-13px;"><button id="extab-selectall-btn" onclick="_exToggleSelectAll()" title="Select all" style="width:26px;height:26px;border-radius:50%;border:2px solid var(--accent);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;${_exDelJustEntered ? 'animation:tapPopScale .3s cubic-bezier(.175,.885,.32,1.275);' : ''}"></button></div>`
+    : '';
+  const toggleHtml = `<div style="position:relative;font-family:'DM Sans';font-size:20px;font-weight:700;color:var(--text);padding:10px 0 6px;text-align:center;text-transform:uppercase;">${_showPickBackArrow ? `<button onclick="exitPickMode()" style="position:absolute;left:0;top:50%;transform:translateY(-50%);background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><line x1="19" y1="12" x2="5" y2="12" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round"/><polyline points="11,6 5,12 11,18" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>` : _showCloseX ? `<button onclick="switchTab('profile')" ${_exDelMode ? 'tabindex="-1" aria-hidden="true" ' : ''}style="${_exDelMode ? 'visibility:hidden;pointer-events:none;' : ''}position:absolute;left:0;top:50%;transform:translateY(-50%);background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round"/></svg></button>` : ''}${_exSelAllHtml}${_exTitleText}</div>${_exViewPicker ? _exViewPickerHtml : `<div style="display:flex;gap:0;margin-bottom:0;align-items:center;">
     <div id="exTab-seg-wrap" data-views="${_segViews.join(',')}" style="position:relative;display:flex;flex:1;">
-      <button onclick="switchExTabView('all')" id="exTab-seg-all" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_exTabView==='all'?'var(--accent)':'#555'};transition:color .15s;">${_exSuper ? 'PUBLISHED' : 'ALL'}</button>
-      <button onclick="switchExTabView('custom')" id="exTab-seg-custom" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_exTabView==='custom'?'var(--accent)':'#555'};transition:color .15s;">${_exSuper ? 'PENDING' : 'CUSTOM'}</button>
-      ${_hasCoach ? `<button onclick="switchExTabView('coach')" id="exTab-seg-coach" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_exTabView==='coach'?'#7ec8e3':'#555'};transition:color .15s;">COACH</button>` : ''}
+      <button onclick="switchExTabView('all')" id="exTab-seg-all" style="${_exDelMode && _exTabView !== 'all' ? 'visibility:hidden;pointer-events:none;' : ''}flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_exTabView==='all'?'var(--accent)':'#555'};transition:color .15s;">${_exSuper ? 'PUBLISHED' : 'ALL'}</button>
+      <button onclick="switchExTabView('custom')" id="exTab-seg-custom" style="${_exDelMode && _exTabView !== 'custom' ? 'visibility:hidden;pointer-events:none;' : ''}flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_exTabView==='custom'?'var(--accent)':'#555'};transition:color .15s;">${_exSuper ? 'PENDING' : 'CUSTOM'}</button>
+      ${_hasCoach ? `<button onclick="switchExTabView('coach')" id="exTab-seg-coach" style="${_exDelMode && _exTabView !== 'coach' ? 'visibility:hidden;pointer-events:none;' : ''}flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_exTabView==='coach'?'#7ec8e3':'#555'};transition:color .15s;">COACH</button>` : ''}
       <div id="exTab-seg-indicator" style="position:absolute;bottom:0;height:2px;left:calc(100%/${_segViews.length}*${_segIdx});width:calc(100%/${_segViews.length});background:${_segIndicatorColor};transition:none;"></div>
     </div>
-    <button id="ex-add-btn" onclick="openNewExModal(window._exTabMuscle||'Chest')" style="flex-shrink:0;padding:4px 8px 4px 12px;border:none;background:transparent;color:${_exTabView==='custom'?'var(--accent)':'#555'};cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;"><svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></button>
+    <button id="ex-add-btn" onclick="openNewExModal(window._exTabMuscle||'Chest')" ${_exDelMode ? 'tabindex="-1" aria-hidden="true" ' : ''}style="${_exDelMode ? 'visibility:hidden;pointer-events:none;' : ''}flex-shrink:0;padding:4px 8px 4px 12px;border:none;background:transparent;color:${_exTabView==='custom'?'var(--accent)':'#555'};cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;"><svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></button>
   </div>`}${_exSubtitle()}`;
   const exToggleBar = document.getElementById('exercisesToggleBar');
   if (exToggleBar) {
@@ -5845,21 +5907,9 @@ function renderExercisesTab() {
       if (window._coachMode) {
         exToggleBar.innerHTML = `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;"><button onclick="switchTab('coach-profile')" style="background:transparent;border:none;color:#7ec8e3;font-size:22px;cursor:pointer;padding:0;line-height:1;">‹</button><div style="font-family:'DM Sans';font-size:17px;font-weight:700;color:#7ec8e3;">Exercises for my clients</div></div>`;
       } else {
-        // Select-to-delete mode swaps the title + view picker for a "Select
-        // Exercises" header with a select-all circle (same as the Workouts
-        // tab's); the muscle pills stay so the user can move between muscles.
-        // Row circles sit on the LEFT of each row, so the select-all circle
-        // leads the header on the left too (aligned to them by
-        // _alignSelectAllCircle), followed by the title.
-        const _exSelHeader = `<div style="display:flex;align-items:center;justify-content:flex-start;gap:14px;padding:10px 0 6px;${_exDelJustEntered ? 'animation:wtabHeaderIn .25s ease;' : ''}">
-          <div style="padding-left:12px;">
-            <button id="extab-selectall-btn" onclick="_exToggleSelectAll()" title="Select all" style="width:26px;height:26px;border-radius:50%;border:2px solid var(--accent);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;${_exDelJustEntered ? 'animation:tapPopScale .3s cubic-bezier(.175,.885,.32,1.275);' : ''}"></button>
-          </div>
-          <div>
-            <div style="font-family:'DM Sans';font-size:16px;font-weight:800;color:var(--text);">Select Exercises</div>
-          </div>
-        </div>`;
-        exToggleBar.innerHTML = (_exDelMode ? _exSelHeader : toggleHtml) + pillsHtml;
+        // Select mode uses this same normal bar — see _exTitleText /
+        // _exSelAllHtml where toggleHtml is built.
+        exToggleBar.innerHTML = toggleHtml + pillsHtml;
       }
       exToggleBar.style.display = isExActive ? '' : 'none';
       if (isExActive) requestAnimationFrame(_syncExToggleBarHeight);
@@ -5868,7 +5918,7 @@ function renderExercisesTab() {
 
   // Select-to-delete: eligible = the list currently shown (this view + muscle).
   if (_exDelMode) {
-    window._exDelEligible = (_exTabView === 'custom' ? _customExes : _allExes).map(e => e.name).filter(_exSelectable);
+    window._exDelEligible = (_exTabView === 'custom' ? _customExes : _exTabView === 'app' ? _exAppExes : _allExes).map(e => e.name).filter(_exSelectable);
     const _allSel = window._exDelEligible.length > 0 && window._exDelEligible.every(n => window._exDelSelected?.has(n));
     const _sa = document.getElementById('extab-selectall-btn');
     if (_sa) {
@@ -5896,13 +5946,17 @@ function renderExercisesTab() {
       document.body.appendChild(_exDelBar);
     }
     const _n = window._exDelSelected ? window._exDelSelected.size : 0;
+    // Same as the Workouts tab's bar: no counts (the title shows "n items
+    // selected") and identical box metrics on every button so flex:1 makes
+    // them exactly the same size.
+    const _bb = 'flex:1;min-width:0;box-sizing:border-box;border-radius:12px;font-family:\'DM Sans\',sans-serif;font-size:15px;padding:14px 6px;white-space:nowrap;cursor:pointer;-webkit-tap-highlight-color:transparent;';
     _exDelBar.innerHTML = `
-      <button onclick="_exExitDelMode()" style="flex:1;background:transparent;border:1px solid #555;border-radius:12px;color:#fff;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">CANCEL</button>
+      <button onclick="_exExitDelMode()" style="${_bb}background:transparent;border:1px solid #555;color:#fff;font-weight:600;">CANCEL</button>
       ${(_exSuper && _exTabView === 'all')
         // Super admin PUBLISHED → unpublish (same look as the Workouts tab's).
-        ? `<button onclick="_exUnpublishSelected()" ${_n ? '' : 'disabled'} style="flex:1;background:#ff8c42;border:none;border-radius:12px;color:#000;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;padding:14px;cursor:pointer;opacity:${_n ? '1' : '0.4'};-webkit-tap-highlight-color:transparent;">UNPUBLISH${_n ? ` (${_n})` : ''}</button>`
-        : `${_exSuper ? `<button onclick="_exPublishSelected()" ${_n ? '' : 'disabled'} style="flex:1;background:var(--accent);border:none;border-radius:12px;color:#000;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;padding:14px 6px;cursor:pointer;opacity:${_n ? '1' : '0.4'};white-space:nowrap;-webkit-tap-highlight-color:transparent;">PUBLISH${_n ? ` (${_n})` : ''}</button>` : ''}
-      <button onclick="_exConfirmDeleteSelected()" ${_n ? '' : 'disabled'} style="flex:1;background:#ff4747;border:none;border-radius:12px;color:#fff;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;padding:14px;cursor:pointer;opacity:${_n ? '1' : '0.4'};-webkit-tap-highlight-color:transparent;">DELETE${_n ? ` (${_n})` : ''}</button>`}`;
+        ? `<button onclick="_exUnpublishSelected()" ${_n ? '' : 'disabled'} style="${_bb}background:#ff8c42;border:1px solid #ff8c42;color:#000;font-weight:700;opacity:${_n ? '1' : '0.4'};">UNPUBLISH</button>`
+        : `${_exSuper ? `<button onclick="_exPublishSelected()" ${_n ? '' : 'disabled'} style="${_bb}background:var(--accent);border:1px solid var(--accent);color:#000;font-weight:700;opacity:${_n ? '1' : '0.4'};">PUBLISH</button>` : ''}
+      <button onclick="_exConfirmDeleteSelected()" ${_n ? '' : 'disabled'} style="${_bb}background:#ff4747;border:1px solid #ff4747;color:#fff;font-weight:700;opacity:${_n ? '1' : '0.4'};">DELETE</button>`}`;
   } else if (_exDelBar) {
     _exDelBar.remove();
   }
@@ -5965,7 +6019,7 @@ function renderExercisesTab() {
       <button id="extab-library-sync-btn" onclick="syncExploreExercisesToFirestore()" style="background:transparent;border:1px solid #34d39966;border-radius:10px;color:#34d399;font-family:'DM Sans';font-size:13px;font-weight:700;padding:10px 14px;cursor:${window._exploreExLocalPending?'pointer':'not-allowed'};flex-shrink:0;transition:all .2s;opacity:${window._exploreExLocalPending?'1':'0.4'};pointer-events:${window._exploreExLocalPending?'auto':'none'};"><svg width="16" height="16" viewBox="0 0 38 36" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 22 Q4 14 12 14 Q13 8 20 8 Q28 8 28 16 Q34 16 34 22 Q34 28 28 28 L8 28 Q4 28 4 22Z"/></svg> Library</button>
       <button onclick="openAddExploreExercise('${selected}')" style="flex:1;background:transparent;border:1px dashed #34d399;border-radius:10px;color:#34d399;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;">+ Add to Explore</button>
     </div>` : '';
-    el.innerHTML = (_exTabView === 'all' ? _pc + _exAllListHtml : _exTabView === 'created' ? searchHtml + _pc + listBox + (_pickMode ? '' : addBtnHtml) : _exTabView === 'custom' ? _pc + _exCustomListHtml : _exTabView === 'coach' ? buildCoachExercisesHtml() : _pc + (_pickMode ? `<div id="pickModeListBox" style="border:1px solid var(--border);border-radius:12px;padding:6px 0;">` + _exLibListHtml.replace(/<button[^>]*Add to Library[^<]*<\/button>/g,'') + `</div>` : _exLibListHtml + _exLibAddBtns));
+    el.innerHTML = (_exTabView === 'all' ? _pc + _exAllListHtml : _exTabView === 'app' ? _pc + _exAppListHtml :_exTabView === 'created' ? searchHtml + _pc + listBox + (_pickMode ? '' : addBtnHtml) : _exTabView === 'custom' ? _pc + _exCustomListHtml : _exTabView === 'coach' ? buildCoachExercisesHtml() : _pc + (_pickMode ? `<div id="pickModeListBox" style="border:1px solid var(--border);border-radius:12px;padding:6px 0;">` + _exLibListHtml.replace(/<button[^>]*Add to Library[^<]*<\/button>/g,'') + `</div>` : _exLibListHtml + _exLibAddBtns));
     // Pick mode: line the rows' check circles up with the workout cards'.
     if (_pickMode) requestAnimationFrame(_alignPickCircles);
   }
@@ -9892,11 +9946,11 @@ function renderWorkoutsTab2() {
   // and ALL — delete for client users (library items only hidden for them,
   // see _hardDeleteWorkoutNames), unpublish for the super admin's PUBLISHED.
   // Tied to the view it was entered from so it never leaks into the other list.
-  const _wSelectView = _wTabView === 'custom' || _wTabView === 'all';
+  const _wSelectView = _wTabView === 'custom' || _wTabView === 'all' || _wTabView === 'app';
   const _isDeleteMode = !!window._wtabDeleteMode && _wSelectView && window._wtabDeleteModeView === _wTabView && !_wtabNoDeleteMode;
   const _isUnpubMode = _isDeleteMode && _wTabView === 'all' && _wSuperSplit;
   // Select mode on the ALL/PUBLISHED list — library rows take part too.
-  const _isLibSelMode = _isDeleteMode && _wTabView === 'all';
+  const _isLibSelMode = _isDeleteMode && (_wTabView === 'all' || _wTabView === 'app');
   // Only true on the single render that actually flips select mode on — every
   // later re-render while still in it (selecting another card, etc.) leaves
   // this false, so the entrance animations below play once, not every tap.
@@ -9908,6 +9962,20 @@ function renderWorkoutsTab2() {
   const _wSegViews = _wHasCoach ? ['all','custom','coach'] : ['all','custom'];
   const _wSegIdx = Math.max(0, _wSegViews.indexOf(_wTabView));
   const _wSegIndicatorColor = _wTabView === 'coach' ? '#7ec8e3' : 'var(--accent)';
+  // Long-press select mode keeps the normal top bar (filters / ALL ▾ picker)
+  // and only: swaps the "WORKOUTS" title for "n items selected" with the
+  // select-all circle on the right end of that line (X-aligned to the card
+  // circles by _alignSelectAllCircle), hides the +, and hides the other
+  // filters (super admin) / locks the ALL ▾ picker (clients) so the list
+  // can't be switched mid-selection.
+  const _wSelN = _isDeleteMode ? (window._wtabDeleteSelectedIds ? window._wtabDeleteSelectedIds.size : 0) : 0;
+  const _wTitleRowHtml = _isDeleteMode
+    ? `<div style="position:relative;display:flex;align-items:center;justify-content:center;padding:10px 0 6px;"><span style="font-family:'DM Sans';font-size:20px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.5px;">${_wSelN} item${_wSelN === 1 ? '' : 's'} selected</span>
+        <div style="position:absolute;right:0;top:50%;margin-top:-16px;">
+          <button id="wtab-selectall-btn" onclick="_wtabToggleSelectAll()" title="Select all" style="width:32px;height:32px;border-radius:50%;border:2px solid var(--accent);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;${_delJustEntered ? 'animation:tapPopScale .3s cubic-bezier(.175,.885,.32,1.275);' : ''}"></button>
+        </div>
+      </div>`
+    : `<div style="display:flex;align-items:center;justify-content:center;padding:10px 0 6px;"><span style="font-family:'DM Sans';font-size:20px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.5px;">Workouts</span></div>`;
   const _wToggleHtml = _isPubPickMode
     ? `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0 6px;">
         <div>
@@ -9920,54 +9988,49 @@ function renderWorkoutsTab2() {
           <button id="wtab-pub-selectall-btn" onclick="_pubToggleSelectAll()" title="Select all" style="width:32px;height:32px;border-radius:50%;border:2px solid var(--accent);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;"></button>
         </div>
       </div>`
-    : _isDeleteMode
-    ? `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0 6px;${_delJustEntered ? 'animation:wtabHeaderIn .25s ease;' : ''}">
-        <div>
-          <div style="font-family:'DM Sans';font-size:16px;font-weight:800;color:var(--text);">Select Workouts</div>
-        </div>
-        <!-- width:20% mirrors the card's own right-side button column below,
-             so this circle lands in the same relative spot as the per-card
-             checkboxes it toggles all of — filled in / synced further down
-             once the eligible workout list (sorted) is known. -->
-        <div style="width:20%;flex-shrink:0;display:flex;justify-content:center;">
-          <button id="wtab-selectall-btn" onclick="_wtabToggleSelectAll()" title="Select all" style="width:32px;height:32px;border-radius:50%;border:2px solid var(--accent);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;${_delJustEntered ? 'animation:tapPopScale .3s cubic-bezier(.175,.885,.32,1.275);' : ''}"></button>
-        </div>
-      </div>`
     : !_wSuperSplit
     // Client users: one centered "ALL ▾" view picker (dropdown) instead of the
     // segmented ALL/CUSTOM tabs; CUSTOM is shaded out while it has nothing in
     // it. The + button sits absolutely on the right so the label stays
     // centered on screen. Super admin keeps the PUBLISHED/PENDING segments.
     ? (() => {
-        const _vLabels = { all: 'ALL', custom: 'CUSTOM', coach: 'COACH' };
+        // Views: ALL / MY WORKOUTS ('custom') / APP WORKOUTS ('app') / COACH.
+        const _vLabels = { all: 'ALL', custom: 'MY WORKOUTS', app: 'APP WORKOUTS', coach: 'COACH' };
         const _vColor = v => v === 'coach' ? '#7ec8e3' : 'var(--accent)';
         const _dtn = JSON.parse(_LS.get('ironlog_deleted_tab_names') || '[]');
-        const _customEmpty = !workouts.some(w => !w._draft && !w._libSourceId && !_dtn.includes(w.name));
-        const _opts = _wSegViews.map((v, i) => {
-          const _off = v === 'custom' && _customEmpty && _wTabView !== 'custom';
+        const _appNames = _wAppNameSet();
+        const _k = s => (s || '').trim().toLowerCase();
+        const _customEmpty = !workouts.some(w => !w._draft && !_dtn.includes(w.name) && !_appNames.has(_k(w.name)));
+        const _hidLib = new Set(_getHiddenLibNames());
+        const _appEmpty = _libraryLoaded
+          && !workouts.some(w => !w._draft && !_dtn.includes(w.name) && _appNames.has(_k(w.name)))
+          && (_isBrandContentOff() || ![...(_libraryWorkouts || []), ...(_defaultWorkouts || [])].some(w => !_hidLib.has(_k(w.name))));
+        const _pickViews = _wHasCoach ? ['all', 'custom', 'app', 'coach'] : ['all', 'custom', 'app'];
+        const _opts = _pickViews.map((v, i) => {
+          const _off = ((v === 'custom' && _customEmpty) || (v === 'app' && _appEmpty)) && _wTabView !== v;
           return `<button ${_off ? 'disabled' : `onclick="_wtabPickView('${v}')"`} style="width:100%;background:transparent;border:none;${i ? 'border-top:1px solid #2a2a2a;' : ''}color:${v === _wTabView ? _vColor(v) : '#fff'};font-family:'DM Sans';font-size:14px;font-weight:700;padding:14px 16px;text-align:left;cursor:${_off ? 'default' : 'pointer'};opacity:${_off ? '0.3' : '1'};-webkit-tap-highlight-color:transparent;">${_vLabels[v]}</button>`;
         }).join('');
-        return `<div style="display:flex;align-items:center;justify-content:center;padding:10px 0 6px;"><span style="font-family:'DM Sans';font-size:20px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.5px;">Workouts</span></div>
+        return `${_wTitleRowHtml}
     <div style="position:relative;display:flex;align-items:center;justify-content:center;min-height:34px;">
       <!-- Symmetric padding + chevron absolutely placed inside the right
            padding, so the label TEXT itself (not label+chevron as a group)
            is what sits dead-center on screen. -->
-      <button id="wtab-view-btn" onclick="event.stopPropagation();_wtabToggleViewMenu()" style="position:relative;padding:8px 24px;border:none;background:transparent;color:${_vColor(_wTabView)};font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;cursor:pointer;-webkit-tap-highlight-color:transparent;">
+      <button id="wtab-view-btn" onclick="event.stopPropagation();${_isDeleteMode ? '' : '_wtabToggleViewMenu()'}" style="${_isDeleteMode ? 'cursor:default;' : ''}position:relative;padding:8px 24px;border:none;background:transparent;color:${_vColor(_wTabView)};font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;cursor:pointer;-webkit-tap-highlight-color:transparent;">
         ${_vLabels[_wTabView] || 'ALL'}
-        <svg id="wtab-view-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;right:6px;top:50%;margin-top:-6px;transition:transform .2s;"><polyline points="6 9 12 15 18 9"/></svg>
+        <svg id="wtab-view-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="${_isDeleteMode ? 'visibility:hidden;' : ''}position:absolute;right:6px;top:50%;margin-top:-6px;transition:transform .2s;"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       <div id="wtab-view-menu" style="display:none;position:absolute;top:100%;left:50%;transform:translateX(-50%);min-width:160px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;overflow:hidden;z-index:600;box-shadow:0 8px 24px rgba(0,0,0,.5);">${_opts}</div>
-      ${window._planStrengthKey ? '' : `<button id="w2-add-btn" onclick="startNewWorkout(true)" style="position:absolute;right:0;top:50%;transform:translateY(-50%);padding:4px 8px 4px 12px;border:none;background:transparent;color:${_wTabView==='custom'?'var(--accent)':'#555'};cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;"><svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></button>`}
+      ${window._planStrengthKey ? '' : `<button id="w2-add-btn" onclick="startNewWorkout(true)" ${_isDeleteMode ? 'tabindex="-1" aria-hidden="true" ' : ''}style="${_isDeleteMode ? 'visibility:hidden;pointer-events:none;' : ''}position:absolute;right:0;top:50%;transform:translateY(-50%);padding:4px 8px 4px 12px;border:none;background:transparent;color:${_wTabView==='custom'?'var(--accent)':'#555'};cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;"><svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></button>`}
     </div>`;
       })()
-    : `<div style="display:flex;align-items:center;justify-content:center;padding:10px 0 6px;"><span style="font-family:'DM Sans';font-size:20px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.5px;">Workouts</span></div><div style="display:flex;gap:0;align-items:center;">
+    : `${_wTitleRowHtml}<div style="display:flex;gap:0;align-items:center;">
     <div id="wTab-seg-wrap" data-views="${_wSegViews.join(',')}" style="position:relative;display:flex;flex:1;">
-      <button onclick="switchWTabView('all')" id="wTab-seg-all" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_wTabView==='all'?'var(--accent)':'#555'};transition:color .15s;">${_wSuperSplit ? 'PUBLISHED' : 'ALL'}</button>
-      <button onclick="switchWTabView('custom')" id="wTab-seg-custom" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_wTabView==='custom'?'var(--accent)':'#555'};transition:color .15s;">${_wSuperSplit ? 'PENDING' : 'CUSTOM'}</button>
-      ${_wHasCoach ? `<button onclick="switchWTabView('coach')" id="wTab-seg-coach" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_wTabView==='coach'?'#7ec8e3':'#555'};transition:color .15s;">COACH</button>` : ''}
+      <button onclick="switchWTabView('all')" id="wTab-seg-all" style="${_isDeleteMode && _wTabView !== 'all' ? 'visibility:hidden;pointer-events:none;' : ''}flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_wTabView==='all'?'var(--accent)':'#555'};transition:color .15s;">${_wSuperSplit ? 'PUBLISHED' : 'ALL'}</button>
+      <button onclick="switchWTabView('custom')" id="wTab-seg-custom" style="${_isDeleteMode && _wTabView !== 'custom' ? 'visibility:hidden;pointer-events:none;' : ''}flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_wTabView==='custom'?'var(--accent)':'#555'};transition:color .15s;">${_wSuperSplit ? 'PENDING' : 'CUSTOM'}</button>
+      ${_wHasCoach ? `<button onclick="switchWTabView('coach')" id="wTab-seg-coach" style="${_isDeleteMode && _wTabView !== 'coach' ? 'visibility:hidden;pointer-events:none;' : ''}flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_wTabView==='coach'?'#7ec8e3':'#555'};transition:color .15s;">COACH</button>` : ''}
       <div id="wTab-seg-indicator" style="position:absolute;bottom:0;height:2px;left:calc(100%/${_wSegViews.length}*${_wSegIdx});width:calc(100%/${_wSegViews.length});background:${_wSegIndicatorColor};transition:none;"></div>
     </div>
-    ${window._planStrengthKey ? '' : `<button id="w2-add-btn" onclick="startNewWorkout(true)" style="flex-shrink:0;padding:4px 8px 4px 12px;border:none;background:transparent;color:${_wTabView==='custom'?'var(--accent)':'#555'};cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;"><svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></button>`}
+    ${window._planStrengthKey ? '' : `<button id="w2-add-btn" onclick="startNewWorkout(true)" ${_isDeleteMode ? 'tabindex="-1" aria-hidden="true" ' : ''}style="${_isDeleteMode ? 'visibility:hidden;pointer-events:none;' : ''}flex-shrink:0;padding:4px 8px 4px 12px;border:none;background:transparent;color:${_wTabView==='custom'?'var(--accent)':'#555'};cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;"><svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></button>`}
   </div>`;
   if (toggleBar) {
     toggleBar.innerHTML = _wToggleHtml;
@@ -9997,17 +10060,21 @@ function renderWorkoutsTab2() {
   const _wPubNames = _wSuperSplit
     ? new Set(all.filter(_wIsPublishedHere).map(w => (w.name||'').trim().toLowerCase()))
     : null;
+  // Clients: MY WORKOUTS ('custom') vs APP WORKOUTS ('app') — see _wAppNameSet.
+  const _wAppNames = _wSuperSplit ? null : _wAppNameSet();
   const sorted = [...all].sort((a,b) => b.date - a.date).filter(w => {
     if (_deletedTabNames.includes(w.name)) return false;
     if (_wSuperSplit) {
       const _isPub = _wPubNames.has((w.name||'').trim().toLowerCase());
       if (_wTabView === 'custom' ? _isPub : !_isPub) return false;
     }
-    // CUSTOM is meant to be only what the user actually created themselves —
-    // a workout loaded from the brand library (see loadLibraryWorkout, which
-    // stashes a personal copy tagged _libSourceId so it can be reused/synced
-    // across loads) still belongs under ALL, but shouldn't clutter CUSTOM.
-    else if (w._libSourceId && (_wTabView === 'custom' || _isPubPickMode)) return false;
+    // MY WORKOUTS is only what the user made themselves (incl. app workouts
+    // they've edited); an unedited copy of an app workout (loadLibraryWorkout
+    // tags it _libSourceId) belongs to APP WORKOUTS. ALL shows both.
+    else if (_wTabView === 'custom' || _wTabView === 'app') {
+      const _isApp = _wAppNames.has((w.name||'').trim().toLowerCase());
+      if (_wTabView === 'custom' ? _isApp : !_isApp) return false;
+    }
     const key = (w.name?.trim().toLowerCase()) || '';
     if (_seen.has(key)) return false;
     _seen.add(key);
@@ -10093,10 +10160,10 @@ function renderWorkoutsTab2() {
     if (_tpIdx > 0) sorted.unshift(sorted.splice(_tpIdx, 1)[0]);
   }
 
-  // ALL still has library/brand-default workouts to show even with zero of
-  // the user's own (built further down) — only bail out here for CUSTOM,
-  // which never has another source to fall back on.
-  if (!sorted.length && _wTabView !== 'all') {
+  // ALL and APP WORKOUTS still have library/brand-default workouts to show
+  // even with zero of the user's own (built further down) — only bail out
+  // here for CUSTOM / MY WORKOUTS, which has no other source to fall back on.
+  if (!sorted.length && _wTabView !== 'all' && _wTabView !== 'app') {
     el.innerHTML = _isPubPickMode
       ? `<div class="empty-state" style="margin-top:24px;"><span style="color:#fff;">You have no saved workouts to publish.</span></div>`
       : `<div class="empty-state" style="margin-top:24px;"><span style="color:#fff;">No workouts yet.</span></div>
@@ -10313,20 +10380,23 @@ function renderWorkoutsTab2() {
   // your own, Firestore's shared library, and brand_library.json's own
   // "workouts" section (_defaultWorkouts, see loadDefaultExercises).
   let _libRowsHtml = '';
-  if (_wTabView === 'all') {
+  if (_wTabView === 'all' || _wTabView === 'app') {
     // Super admin: also skip names sitting in PENDING (e.g. edited after
     // publishing) — the old live copy mustn't show in PUBLISHED as well.
-    const _userNames = new Set((_wSuperSplit ? all.filter(w => !_deletedTabNames.includes(w.name)) : sorted).map(w => (w.name||'').trim().toLowerCase()));
+    // Clients' APP WORKOUTS likewise skips names the user now has in MY
+    // WORKOUTS (an app workout they edited is theirs, not the app's).
+    const _userNames = new Set(((_wSuperSplit || _wTabView === 'app') ? all.filter(w => !_deletedTabNames.includes(w.name)) : sorted).map(w => (w.name||'').trim().toLowerCase()));
     // Client users: also skip library/default workouts they deleted (hidden
     // for them only — see _getHiddenLibNames).
     const _hiddenLib = new Set(_wSuperSplit ? [] : _getHiddenLibNames());
     const _libWs = (_libraryWorkouts||[]).filter(w => !_userNames.has((w.name||'').trim().toLowerCase()) && !_hiddenLib.has((w.name||'').trim().toLowerCase()));
     const _libNames = new Set(_libWs.map(w => (w.name||'').trim().toLowerCase()));
     const _defWs = (_defaultWorkouts||[]).filter(w => !_userNames.has((w.name||'').trim().toLowerCase()) && !_libNames.has((w.name||'').trim().toLowerCase()) && !_hiddenLib.has((w.name||'').trim().toLowerCase()));
-    const _allLibWs = [..._libWs, ..._defWs];
+    // Brand content off (after Delete All Data): no library/default rows at all.
+    const _allLibWs = _isBrandContentOff() ? [] : [..._libWs, ..._defWs];
     if (!_libraryLoaded) {
       _libRowsHtml = '<div style="text-align:center;padding:16px;color:#555;font-size:13px;">Loading library&</div>';
-      loadLibrary().then(() => { if (_wTabView === 'all') renderWorkoutsTab2(); });
+      loadLibrary().then(() => { if (_wTabView === 'all' || _wTabView === 'app') renderWorkoutsTab2(); });
     } else if (_allLibWs.length) {
       // Same photo-card layout as the user's own workouts above (w2-card-border/
       // w2-card-photo + right-side play button) instead of the old plain
@@ -10382,9 +10452,9 @@ function renderWorkoutsTab2() {
   // ALL with nothing at all (no own workouts, and library+brand-defaults came
   // back empty too, as opposed to still loading) — the per-row "No workouts
   // yet" case above only covers CUSTOM now, so this is ALL's equivalent.
-  const _wtabTrulyEmpty = _wTabView === 'all' && !sorted.length && !_libRowsHtml && _libraryLoaded;
+  const _wtabTrulyEmpty = (_wTabView === 'all' || _wTabView === 'app') && !sorted.length && !_libRowsHtml && _libraryLoaded;
   const _wtabEmptyMsg = _wtabTrulyEmpty
-    ? `<div class="empty-state" style="margin-top:24px;"><span style="color:#fff;">No workouts yet.</span></div>`
+    ? `<div class="empty-state" style="margin-top:24px;"><span style="color:#fff;">${_wTabView === 'app' ? 'No app workouts yet.' : 'No workouts yet.'}</span></div>`
     : '';
 
   // Render all at once — no async, no reflow
@@ -10437,12 +10507,17 @@ function renderWorkoutsTab2() {
       document.body.appendChild(_delBar);
     }
     const _delCount = window._wtabDeleteSelectedIds ? window._wtabDeleteSelectedIds.size : 0;
+    // Every button gets identical box metrics (1px border in its own color,
+    // 14px 6px padding) so flex:1 makes them exactly the same size — with
+    // flex:1 the padding/border sit on top of each equal share, so the old
+    // mix (CANCEL bordered, PUBLISH 6px padding, others 14px) came out uneven.
+    const _bb = 'flex:1;min-width:0;box-sizing:border-box;border-radius:12px;font-family:\'DM Sans\',sans-serif;font-size:15px;padding:14px 6px;white-space:nowrap;cursor:pointer;-webkit-tap-highlight-color:transparent;';
     _delBar.innerHTML = `
-      <button onclick="_wtabCancelDeleteMode();" style="flex:1;background:transparent;border:1px solid #555;border-radius:12px;color:#fff;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent;">CANCEL</button>
+      <button onclick="_wtabCancelDeleteMode();" style="${_bb}background:transparent;border:1px solid #555;color:#fff;font-weight:600;">CANCEL</button>
       ${_isUnpubMode
-        ? `<button onclick="_wtabConfirmUnpublishSelected();" ${_delCount ? '' : 'disabled'} style="flex:1;background:#ff8c42;border:none;border-radius:12px;color:#000;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;padding:14px;cursor:pointer;opacity:${_delCount ? '1' : '0.4'};-webkit-tap-highlight-color:transparent;">UNPUBLISH${_delCount ? ` (${_delCount})` : ''}</button>`
-        : `${_wSuperSplit ? `<button onclick="_wtabPublishSelected();" ${_delCount ? '' : 'disabled'} style="flex:1;background:var(--accent);border:none;border-radius:12px;color:#000;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;padding:14px 6px;cursor:pointer;opacity:${_delCount ? '1' : '0.4'};white-space:nowrap;-webkit-tap-highlight-color:transparent;">PUBLISH${_delCount ? ` (${_delCount})` : ''}</button>` : ''}
-        <button onclick="_wtabConfirmDeleteSelected();" ${_delCount ? '' : 'disabled'} style="flex:1;background:#ff4747;border:none;border-radius:12px;color:#fff;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;padding:14px;cursor:pointer;opacity:${_delCount ? '1' : '0.4'};-webkit-tap-highlight-color:transparent;">DELETE${_delCount ? ` (${_delCount})` : ''}</button>`}`;
+        ? `<button onclick="_wtabConfirmUnpublishSelected();" ${_delCount ? '' : 'disabled'} style="${_bb}background:#ff8c42;border:1px solid #ff8c42;color:#000;font-weight:700;opacity:${_delCount ? '1' : '0.4'};">UNPUBLISH</button>`
+        : `${_wSuperSplit ? `<button onclick="_wtabPublishSelected();" ${_delCount ? '' : 'disabled'} style="${_bb}background:var(--accent);border:1px solid var(--accent);color:#000;font-weight:700;opacity:${_delCount ? '1' : '0.4'};">PUBLISH</button>` : ''}
+        <button onclick="_wtabConfirmDeleteSelected();" ${_delCount ? '' : 'disabled'} style="${_bb}background:#ff4747;border:1px solid #ff4747;color:#fff;font-weight:700;opacity:${_delCount ? '1' : '0.4'};">DELETE</button>`}`;
   } else if (_delBar) {
     _delBar.remove();
   }
@@ -14686,6 +14761,9 @@ function saveWorkoutToList() {
     window._editingWorkoutIdx = undefined;
     // Edited → back to PENDING (super admin) until published again.
     _wMarkUnpublished(_prevName);
+    // A client's copy of an app workout, once edited, is theirs: APP WORKOUTS
+    // → MY WORKOUTS (see _wAppNameSet).
+    if (existing._libSourceId) existing._libEdited = true;
   } else {
     workouts.unshift({ id: Date.now(), name, date: Date.now(), exercises, description, _template: true });
   }
@@ -16326,6 +16404,9 @@ function openDataModal() {
         <div style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;">${it.label}</div>
       </div>`).join('');
   }
+  // Delete All Data — client users only.
+  const _delAllBtn = document.getElementById('dataDeleteAllBtn');
+  if (_delAllBtn) _delAllBtn.style.display = window._currentUserData?.role === 'super_admin' ? 'none' : 'flex';
   document.getElementById('dataModalOverlay').classList.add('open');
 }
 
@@ -16337,14 +16418,20 @@ function closeDataModal() {
 // library) and brand-default workout/exercise this user deleted/hid, by
 // dropping them from the per-user hide lists. Nothing is copied or
 // overwritten — anything the user already has stays exactly as it is.
-async function loadBrandLibraryForMe() {
+// Core of Load Brand Library (no UI): fresh library, brand content switched
+// back ON, and every hidden library/default workout/exercise un-hidden.
+// Returns { ok:false } if the library couldn't be fetched (nothing changed),
+// else { ok:true, restoredW, restoredEx, wasOff }. Also used by the
+// Delete All Data → "Sync to brand library? → YES" step.
+async function _restoreBrandLibraryForMe() {
   try {
     _libraryLoaded = false;
     await loadLibrary(); // fresh copy from Firestore (+ brand_library.json)
   } catch(e) {
-    alert('Couldn\'t load the brand library — check your connection and try again.');
-    return;
+    return { ok: false };
   }
+  const wasOff = _LS.get('ironlog_brand_off') === '1';
+  _setBrandContentOff(false);
   const _k = s => (s || '').trim().toLowerCase();
 
   // Workouts — hidden via _hardDeleteWorkoutNames (client users).
@@ -16365,14 +16452,200 @@ async function loadBrandLibraryForMe() {
   const restoredEx = hiddenEx.length - keptEx.length;
   if (restoredEx) { _LS.set('ironlog_hidden_ex', JSON.stringify(keptEx)); _invalidateExCache(); }
 
+  if (restoredW || restoredEx || wasOff) _invalidateExCache();
   if (window._currentUser && window.syncToFirestore) window.syncToFirestore();
   if (typeof renderWorkoutsTab2 === 'function') renderWorkoutsTab2();
   if (typeof renderExercisesTab === 'function') renderExercisesTab();
-  alert(restoredW || restoredEx
+  return { ok: true, restoredW, restoredEx, wasOff };
+}
+window._restoreBrandLibraryForMe = _restoreBrandLibraryForMe;
+
+async function loadBrandLibraryForMe() {
+  const r = await _restoreBrandLibraryForMe();
+  if (!r.ok) { alert('Couldn\'t load the brand library — check your connection and try again.'); return; }
+  const { restoredW, restoredEx, wasOff } = r;
+  alert((restoredW || restoredEx
     ? `Brand library loaded — restored ${restoredW} workout${restoredW !== 1 ? 's' : ''} and ${restoredEx} exercise${restoredEx !== 1 ? 's' : ''}.`
-    : 'Brand library loaded — nothing was missing.');
+    : 'Brand library loaded — nothing was missing.') + (wasOff ? ' Brand content is back on.' : ''));
 }
 window.loadBrandLibraryForMe = loadBrandLibraryForMe;
+
+// ══════════════════════════════════════════════════════
+//  MY DATA → DELETE ALL DATA (client users)
+//  Confirm (type DELETE; "Download backup first") → progress: cloud userData
+//  reset (+ reset marker, brand content off) → cloud files → this device →
+//  "Delete process completed" → "Sync to brand library?" YES/NO → Home.
+//  Cloud first: if it fails, the device is left untouched (Try again).
+//  The account itself is kept.
+// ══════════════════════════════════════════════════════
+
+// Clears every piece of this user's data from THIS device (memory,
+// localStorage/_LS incl. its IndexedDB mirror, localforage photos). Also
+// called by loadFromFirestore when another device did Delete All Data.
+function _wipeLocalUserData() {
+  try { if (typeof resetWorkoutState === 'function') resetWorkoutState(); } catch(e) {}
+  workouts = []; deletedWorkouts = []; cardioLog = []; customExercises = []; plannedWorkouts = []; customCardioTypes = [];
+  ['ironlog_workouts','ironlog_deleted_workouts','ironlog_cardio','ironlog_custom_ex','ironlog_planned','ironlog_cardio_custom',
+   'ironlog_session','ironlog_session_start','ironlog_draft_id',
+   'ironlog_deleted_tab_names','ironlog_hidden_ex','ironlog_hidden_lib_workouts'].forEach(k => { try { _LS.remove(k); } catch(e) {} });
+  try {
+    Object.keys(localStorage)
+      .filter(k => /^ironlog_(workout_photo_|workout_video_|workout_video_broken_|ex_photo_|ex_video_broken_)/.test(k))
+      .forEach(k => localStorage.removeItem(k));
+    ['ironlog_workout_target','ironlog_cardio_target','ironlog_timer_secs','ironlog_last_timer','ironlog_mini_range','ironlog_cardio_type','ironlog_cardio_dur']
+      .forEach(k => localStorage.removeItem(k));
+  } catch(e) {}
+  workoutWeekTarget = 3; cardioWeekTarget = 150; lastTimerSecs = 60; miniChartRange = '3M';
+  if (window.localforage) {
+    window.localforage.keys()
+      .then(keys => Promise.all(keys.filter(k => /^ironlog_(ex_photo_|workout_photo_)/.test(k)).map(k => window.localforage.removeItem(k))))
+      .catch(() => {});
+  }
+  if (typeof _invalidateExCache === 'function') _invalidateExCache();
+}
+window._wipeLocalUserData = _wipeLocalUserData;
+
+function openDeleteAllData() {
+  if (window._currentUserData?.role === 'super_admin') return;
+  const overlay = document.createElement('div');
+  overlay.className = 'delete-confirm-overlay';
+  overlay.style.zIndex = '9000'; // above the My Data sheet
+  overlay.innerHTML = `
+    <div class="delete-confirm-sheet">
+      <div class="delete-confirm-title">Delete All Data ?</div>
+      <div class="delete-confirm-sub" style="line-height:1.55;">This permanently deletes all your workouts, workout history, exercises, cardio, plans and settings — <b>from this device and from the cloud</b> — and hides all brand content. Your account stays. <span style="color:#ff4747;">This can't be undone.</span></div>
+      <button id="_delAllBackup" style="width:100%;margin:0 0 14px;background:transparent;border:1px solid var(--accent);border-radius:12px;color:var(--accent);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;padding:12px;cursor:pointer;">Download backup first</button>
+      <div style="font-family:'DM Sans';font-size:12px;color:#888;margin-bottom:6px;">Type <b style="color:#fff;">DELETE</b> to confirm</div>
+      <input id="_delAllInput" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" style="width:100%;box-sizing:border-box;background:#111;border:1px solid #444;border-radius:10px;color:#fff;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:700;letter-spacing:1px;padding:12px;margin-bottom:16px;outline:none;">
+      <div class="delete-confirm-btns">
+        <button class="btn-del-cancel" id="_delAllCancel">Cancel</button>
+        <button class="btn-del-yes-solid" id="_delAllGo" disabled style="opacity:.4;">Delete</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  const input = overlay.querySelector('#_delAllInput');
+  const go = overlay.querySelector('#_delAllGo');
+  input.addEventListener('input', () => {
+    const ok = input.value.trim().toUpperCase() === 'DELETE';
+    go.disabled = !ok; go.style.opacity = ok ? '1' : '.4';
+  });
+  overlay.querySelector('#_delAllBackup').onclick = () => { if (typeof exportData === 'function') exportData(); };
+  overlay.querySelector('#_delAllCancel').onclick = () => overlay.remove();
+  go.onclick = () => {
+    if (go.disabled) return;
+    if (!navigator.onLine || !window._currentUser || !window._fbDb || !window._fbSetDoc) {
+      alert("Deleting all data needs an internet connection (so it's also removed from the cloud). Nothing was deleted.");
+      return;
+    }
+    overlay.remove();
+    _runDeleteAllData();
+  };
+}
+window.openDeleteAllData = openDeleteAllData;
+
+async function _runDeleteAllData() {
+  const _sleep = ms => new Promise(r => setTimeout(r, ms));
+  let ov = document.getElementById('del-all-overlay');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'del-all-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:9500;background:#0a0a0a;display:flex;align-items:center;justify-content:center;padding:32px;box-sizing:border-box;';
+    document.body.appendChild(ov);
+  }
+  const showProgress = (title) => {
+    ov.innerHTML = `<div style="width:100%;max-width:340px;text-align:center;font-family:'DM Sans',sans-serif;">
+      <div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:18px;">${title}</div>
+      <div style="height:8px;background:#222;border-radius:4px;overflow:hidden;"><div id="del-all-bar" style="height:100%;width:0;background:var(--accent);transition:width .5s ease;"></div></div>
+      <div id="del-all-step" style="margin-top:14px;font-size:14px;color:#aaa;min-height:20px;"></div>
+    </div>`;
+  };
+  const step = (pct, label) => {
+    const b = document.getElementById('del-all-bar'); if (b) b.style.width = pct + '%';
+    const s = document.getElementById('del-all-step'); if (s) s.textContent = label;
+  };
+  // Each step stays on screen at least this long so it can be read.
+  const atLeast = async (ms, p) => { const [r] = await Promise.all([p, _sleep(ms)]); return r; };
+
+  showProgress('Deleting your data');
+  window._deleteAllInProgress = true; // pauses background syncs (see syncToFirestore)
+  const resetAt = new Date().toISOString();
+  try {
+    // 1) Cloud: overwrite this user's userData doc with an empty state + the
+    //    reset marker (other devices wipe instead of re-uploading) + brand off.
+    step(10, 'Deleting from cloud…');
+    const uid = window._currentUser.uid, brandId = window.BRAND_ID || 'default';
+    const ref = window._fbDoc(window._fbDb, 'userData', brandId, 'users', uid);
+    await atLeast(900, Promise.race([
+      window._fbSetDoc(ref, {
+        workouts: [], deletedWorkouts: [], cardioLog: [], customExercises: [], plannedWorkouts: [], customCardioTypes: [],
+        hiddenLibWorkouts: [], brandContentOff: true, dataResetAt: resetAt, settings: {}, updatedAt: resetAt,
+      }),
+      _sleep(15000).then(() => { throw new Error('The cloud didn\'t respond'); }),
+    ]));
+    step(45, 'Deleting photos…');
+    // 2) Cloud files (best effort — the data itself is already gone).
+    await atLeast(700, (window._deleteMyCloudFiles ? window._deleteMyCloudFiles() : Promise.resolve(0)).catch(e => console.warn('[DeleteAll] Cloud files:', e?.message)));
+  } catch(e) {
+    window._deleteAllInProgress = false;
+    ov.innerHTML = `<div style="width:100%;max-width:340px;text-align:center;font-family:'DM Sans',sans-serif;">
+      <div style="font-size:18px;font-weight:800;color:#ff4747;margin-bottom:10px;">Couldn't delete from the cloud</div>
+      <div style="font-size:14px;color:#aaa;line-height:1.5;margin-bottom:22px;">${(e && e.message) || 'Unknown error'}. Nothing was deleted from this device.</div>
+      <div style="display:flex;gap:10px;">
+        <button id="_delAllClose" style="flex:1;background:transparent;border:1px solid #555;border-radius:12px;color:#fff;font-size:15px;font-weight:600;padding:14px;cursor:pointer;">CANCEL</button>
+        <button id="_delAllRetry" style="flex:1;background:#ff4747;border:1px solid #ff4747;border-radius:12px;color:#fff;font-size:15px;font-weight:700;padding:14px;cursor:pointer;">TRY AGAIN</button>
+      </div></div>`;
+    ov.querySelector('#_delAllClose').onclick = () => ov.remove();
+    ov.querySelector('#_delAllRetry').onclick = () => _runDeleteAllData();
+    return;
+  }
+  // 3) This device.
+  step(75, 'Deleting from this device…');
+  await atLeast(700, Promise.resolve().then(() => {
+    _wipeLocalUserData();
+    _LS.set('ironlog_data_reset_at', resetAt);
+    _setBrandContentOff(true);
+  }));
+  step(100, 'Done ✓');
+  await _sleep(600);
+  window._deleteAllInProgress = false;
+
+  // Completion + the brand library choice.
+  const finish = () => {
+    ov.remove();
+    if (typeof closeDataModal === 'function') closeDataModal();
+    if (typeof switchTab === 'function') switchTab('log');
+    if (typeof showTodayStartScreen === 'function') showTodayStartScreen();
+    if (typeof renderTodayWeekProgress === 'function') renderTodayWeekProgress();
+    if (typeof renderTodayPlanCard === 'function') renderTodayPlanCard();
+    if (typeof renderWorkoutsTab2 === 'function') renderWorkoutsTab2();
+    if (typeof renderExercisesTab === 'function') renderExercisesTab();
+  };
+  ov.innerHTML = `<div style="width:100%;max-width:340px;text-align:center;font-family:'DM Sans',sans-serif;">
+    <div style="font-size:30px;font-weight:900;color:#fff;line-height:1.2;">Delete process completed</div>
+    <div style="margin-top:34px;font-size:17px;font-weight:600;color:#ccc;">Sync to brand library?</div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button id="_delAllNo" style="flex:1;background:transparent;border:1px solid #555;border-radius:12px;color:#fff;font-size:15px;font-weight:700;padding:14px;cursor:pointer;">NO</button>
+      <button id="_delAllYes" style="flex:1;background:var(--accent);border:1px solid var(--accent);border-radius:12px;color:#000;font-size:15px;font-weight:700;padding:14px;cursor:pointer;">YES</button>
+    </div></div>`;
+  ov.querySelector('#_delAllNo').onclick = finish;
+  ov.querySelector('#_delAllYes').onclick = async () => {
+    showProgress('Syncing brand library');
+    step(30, 'Loading the brand library…');
+    const r = await atLeast(900, _restoreBrandLibraryForMe());
+    if (!r.ok) {
+      step(100, '');
+      ov.innerHTML = `<div style="width:100%;max-width:340px;text-align:center;font-family:'DM Sans',sans-serif;">
+        <div style="font-size:16px;color:#ccc;line-height:1.5;margin-bottom:22px;">Couldn't reach the brand library. You can do it any time from My Data → Load Brand Library.</div>
+        <button id="_delAllOk" style="width:100%;background:var(--accent);border:1px solid var(--accent);border-radius:12px;color:#000;font-size:15px;font-weight:700;padding:14px;cursor:pointer;">OK</button></div>`;
+      ov.querySelector('#_delAllOk').onclick = finish;
+      return;
+    }
+    step(100, 'Done ✓');
+    await _sleep(600);
+    finish();
+  };
+}
+window._runDeleteAllData = _runDeleteAllData;
 
 // ── Saving a backup file under the SAME name (no "(1)", "(2)" suffixes) ──────
 // A plain <a download> can never overwrite — the browser/OS always adds a
@@ -20077,6 +20350,19 @@ function _setHiddenLibNames(list) {
 window._getHiddenLibNames = _getHiddenLibNames;
 window._setHiddenLibNames = _setHiddenLibNames;
 
+// "Brand content off" (client users): set by My Data → Delete All Data. While
+// on, NO brand-library / brand-default workouts or exercises show for this
+// user — including ones published later. Turned back off by "Sync to brand
+// library? → YES" or My Data → Load Brand Library. Synced to their userData.
+function _isBrandContentOff() {
+  return window._currentUserData?.role !== 'super_admin' && _LS.get('ironlog_brand_off') === '1';
+}
+function _setBrandContentOff(on) {
+  if (on) _LS.set('ironlog_brand_off', '1'); else _LS.remove('ironlog_brand_off');
+}
+window._isBrandContentOff = _isBrandContentOff;
+window._setBrandContentOff = _setBrandContentOff;
+
 function _hardDeleteWorkoutNames(names) {
   const keys = new Set(names.map(n => (n || '').trim().toLowerCase()).filter(Boolean));
   if (!keys.size) return;
@@ -20107,6 +20393,17 @@ function _hardDeleteWorkoutNames(names) {
   if (window._currentUser && window.syncToFirestore) window.syncToFirestore();
 }
 window._hardDeleteWorkoutNames = _hardDeleteWorkoutNames;
+
+// ── Client Workouts tab: MY WORKOUTS vs APP WORKOUTS ──
+// Starting an app (published / brand-default) workout saves a personal copy
+// tagged _libSourceId (loadLibraryWorkout). While that copy is unedited it's
+// still "the app's" workout → APP WORKOUTS; once the user edits or renames
+// it (_libEdited) it's theirs → MY WORKOUTS. Decided per NAME, since the
+// Workouts list dedups by name and may land on a session record of it.
+function _wAppNameSet() {
+  return new Set((workouts || []).filter(w => !w._draft && w._libSourceId && !w._libEdited).map(w => (w.name || '').trim().toLowerCase()));
+}
+window._wAppNameSet = _wAppNameSet;
 
 // ── Super admin PUBLISHED / PENDING split (Workouts tab) ──
 // A workout counts as published when it was published to the brand the app is
@@ -21501,6 +21798,9 @@ window._onAuthReady = (user) => {
 // "SYNC DATA TO CLOUD" button waits on it (see _celSyncAndClose).
 window.syncToFirestore = function() {
   if (!window._currentUser || !window._fbDb) return Promise.resolve(false);
+  // Delete All Data is resetting the cloud copy — don't let a background sync
+  // re-upload this device's (about to be wiped) data in the middle of it.
+  if (window._deleteAllInProgress) return Promise.resolve(false);
   // If offline — queue for later
   if (!navigator.onLine) {
     _OfflineQueue.enqueue('syncToFirestore', {});
@@ -21520,6 +21820,10 @@ window.syncToFirestore = function() {
     // Library/brand-default workouts this user deleted from their ALL list
     // (see _hardDeleteWorkoutNames) — hidden for them only.
     hiddenLibWorkouts: _getHiddenLibNames(),
+    brandContentOff: _LS.get('ironlog_brand_off') === '1',
+    // Set by Delete All Data — other devices see it and wipe their local
+    // copy instead of re-uploading it (see loadFromFirestore).
+    dataResetAt: _LS.get('ironlog_data_reset_at') || null,
     settings: {
       workoutWeekTarget: workoutWeekTarget,
       cardioWeekTarget: cardioWeekTarget,
@@ -21538,6 +21842,14 @@ window.loadFromFirestore = function(uid) {
   return window._fbGetDoc(ref).then(snap => {
     if (!snap.exists()) return false;
     const data = snap.data();
+    // "Delete All Data" was done (on another device, or before this device's
+    // cache): this device's local data is stale — wipe it FIRST so the merges
+    // below can't re-upload deleted workouts ("localOnly") to the cloud.
+    if (data.dataResetAt && data.dataResetAt !== _LS.get('ironlog_data_reset_at')) {
+      if (window._wipeLocalUserData) window._wipeLocalUserData();
+      _LS.set('ironlog_data_reset_at', data.dataResetAt);
+    }
+    if (typeof data.brandContentOff === 'boolean' && window._setBrandContentOff) window._setBrandContentOff(data.brandContentOff);
     // Routed through _LS (brand+uid-scoped, dual-writes IndexedDB too) rather
     // than a hand-built brand-only key — this runs on every load, so keeping
     // a hand-built prefix here would keep re-seeding the old shared key this
@@ -30073,6 +30385,7 @@ function _w2ApplyNameChange() {
       localStorage.removeItem(`ironlog_workout_photo_${oldName}`);
     }
     w.name = newName;
+    if (w._libSourceId) w._libEdited = true; // renamed app workout → MY WORKOUTS
     _wMarkUnpublished(oldName);
     _wMarkUnpublished(newName);
     save();
