@@ -4982,7 +4982,65 @@ function _setWorkoutHeroPhoto(name) {
   // leaving the spacer stale and the exercise list rendering under the fixed header.
   _syncWorkoutHeaderSpacer();
   requestAnimationFrame(_syncWorkoutHeaderSpacer);
+  // The FINISH WORKOUT button may have just (re)appeared — re-line-up the
+  // exercise cards' status circles under it.
+  _scheduleExCircleAlign();
 }
+
+// Active workout: each exercise card's status circle (not started / in
+// progress / done) is centered horizontally under the FINISH WORKOUT button.
+// The button and the cards live in differently-padded containers, so the
+// offset is measured (layout positions — unaffected by running animations)
+// and stored once as --ex-circle-ml on #exerciseList, which every circle's
+// margin-left reads. Re-run (rAF-debounced) when cards are added, the
+// workout header is drawn, or the screen resizes; no-op while FINISH is
+// hidden (e.g. building a new workout), where the 12px default applies.
+// Horizontal layout center of an element (sums the offsetLeft chain, so
+// transforms/animations don't skew it).
+function _layoutCenterX(el) { let x = el.offsetWidth / 2; for (let n = el; n; n = n.offsetParent) x += n.offsetLeft; return x; }
+
+function _alignExCardCircles() {
+  const btn = document.getElementById('workout-finish-btn');
+  const list = document.getElementById('exerciseList');
+  if (!btn || !list || !btn.offsetParent) return;
+  const cx = _layoutCenterX;
+  // Remembered so the exercise picker (Add exercise) can put its check
+  // circles at this same spot — see _alignPickCircles.
+  window._exCircleCenterX = cx(btn);
+  const card = list.querySelector('.exercise-card');
+  if (!card) return;
+  const circ = [...card.querySelectorAll('[id^="no-done-check-"],[id^="in-progress-check-"],[id^="done-check-"]')].find(el => el.offsetParent);
+  if (!circ) return;
+  const cur = parseFloat(list.style.getPropertyValue('--ex-circle-ml')) || 12;
+  const ml = Math.max(0, cur + (cx(btn) - cx(circ)));
+  list.style.setProperty('--ex-circle-ml', ml.toFixed(1) + 'px');
+}
+let _exCircleAlignRaf = 0;
+function _scheduleExCircleAlign() {
+  cancelAnimationFrame(_exCircleAlignRaf);
+  _exCircleAlignRaf = requestAnimationFrame(_alignExCardCircles);
+}
+window.addEventListener('resize', _scheduleExCircleAlign);
+window._alignExCardCircles = _alignExCardCircles;
+
+// Exercise picker (Active workout → Add exercise): each row's check circle,
+// on the LEFT, centered at the same X as the workout cards' status circles.
+// Its left padding reads --pick-circle-ml (on #exercisesTabContent), measured
+// against window._exCircleCenterX; 12px until the workout has been measured.
+function _exPickCircleHtml(sel) {
+  // Same size as the workout card's circle: 28px + 2px border (32px overall).
+  return `<div style="display:flex;align-items:center;padding-left:var(--pick-circle-ml,12px);flex-shrink:0;"><div class="picker-check" style="width:28px;height:28px;border-radius:50%;border:2px solid ${sel ? 'var(--accent)' : '#333'};background:${sel ? 'var(--accent)' : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:all .15s;">${sel ? '<svg width="15" height="15" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</div></div>`;
+}
+function _alignPickCircles() {
+  const target = window._exCircleCenterX;
+  const host = document.getElementById('exercisesTabContent');
+  const el = host && host.querySelector('.picker-check');
+  if (target == null || !el || !el.offsetParent) return;
+  const cur = parseFloat(host.style.getPropertyValue('--pick-circle-ml')) || 12;
+  host.style.setProperty('--pick-circle-ml', Math.max(0, cur + target - _layoutCenterX(el)).toFixed(1) + 'px');
+}
+window._exPickCircleHtml = _exPickCircleHtml;
+window._alignPickCircles = _alignPickCircles;
 function _renderProgressSegments(wrap, total, done) {
   // Segments fill left-to-right in completion order — not tied to which specific exercise
   // is done or where it sits in the list. Only grow/shrink the tail (never a wholesale
@@ -5673,14 +5731,13 @@ function renderExercisesTab() {
         const _pc = PICKER_COLORS[ex.muscle] || '#888';
         return `<div data-exname="${ex.name.replace(/"/g,'&quot;')}" data-muscle="${ex.muscle}"${_pickMode ? ` onclick="pickExercise('${ex.name.replace(/'/g,"\\'")}') "` : ''}${_exRowAttrs(ex.name)} style="background:${_isPickSel ? 'color-mix(in srgb, var(--accent) 15%, var(--surface))' : 'var(--surface)'};${_exRowBorder(ex.name)}${_exRowDim(ex.name)}border-radius:var(--radius);margin-bottom:8px;overflow:hidden;${_pickMode ? 'cursor:pointer;' : ''}${_exBrowse ? '-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;' : ''}">
           <div onclick="${_pickMode ? '' : _exRowTap(ex.name)}" style="display:flex;align-items:stretch;${_pickMode ? '' : 'cursor:pointer;'}">
-            ${_exRowCircle(ex.name)}
+            ${_exRowCircle(ex.name)}${_pickMode ? _exPickCircleHtml(_isPickSel) : ''}
             <div style="width:15px;min-height:96px;flex-shrink:0;"></div>
             <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;align-items:flex-end;padding:8px 15px 8px 0;">
               <div dir="auto" style="font-family:'DM Sans';font-size:17px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;">${_tn(ex.name)}</div>
               ${_lcd ? `<div style="font-family:'DM Sans';font-size:11px;font-weight:600;color:var(--muted);margin-top:2px;text-align:right;">${fmtShort(_lcd)}</div>` : ''}
             </div>
-            ${_pickMode ? `<div style="display:flex;align-items:center;padding-right:10px;"><div class="picker-check" style="width:22px;height:22px;border-radius:50%;border:2px solid ${_isPickSel ? 'var(--accent)' : '#333'};background:${_isPickSel ? 'var(--accent)' : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;">${_isPickSel ? '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</div></div>` : ''}
-          </div>
+                      </div>
         </div>`;
       }).join('')
     : `<div class="empty-state"><span style="color:var(--muted);">No ${_exSuper ? 'pending' : 'custom'} exercises for ${selected}</span></div>`;
@@ -5698,14 +5755,13 @@ function renderExercisesTab() {
       const _pc = PICKER_COLORS[ex.muscle] || '#888';
       return `<div data-exname="${ex.name.replace(/"/g,'&quot;')}" data-muscle="${ex.muscle}"${_pickMode ? ` onclick="pickExercise('${ex.name.replace(/'/g,"\\'")}') "` : ''}${_exRowAttrs(ex.name)} style="background:${_isPickSel ? 'color-mix(in srgb, var(--accent) 15%, var(--surface))' : 'var(--surface)'};${_exRowBorder(ex.name)}${_exRowDim(ex.name)}border-radius:var(--radius);margin-bottom:8px;overflow:hidden;${_pickMode ? 'cursor:pointer;' : ''}${_exBrowse ? '-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;' : ''}">
       <div onclick="${_pickMode ? '' : _exRowTap(ex.name)}" style="display:flex;align-items:stretch;${_pickMode ? '' : 'cursor:pointer;'}">
-        ${_exRowCircle(ex.name)}
+        ${_exRowCircle(ex.name)}${_pickMode ? _exPickCircleHtml(_isPickSel) : ''}
         <div style="width:15px;min-height:96px;flex-shrink:0;"></div>
         <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;align-items:flex-end;padding:8px 15px 8px 0;">
           <div dir="auto" style="font-family:'DM Sans';font-size:17px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;">${_tn(ex.name)}</div>
           ${ex.lastDate ? `<div style="font-family:'DM Sans';font-size:11px;font-weight:600;color:var(--muted);margin-top:2px;text-align:right;">${fmtShort(ex.lastDate)}</div>` : ''}
         </div>
-        ${_pickMode ? `<div style="display:flex;align-items:center;padding-right:10px;"><div class="picker-check" style="width:22px;height:22px;border-radius:50%;border:2px solid ${_isPickSel ? 'var(--accent)' : '#333'};background:${_isPickSel ? 'var(--accent)' : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;">${_isPickSel ? '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</div></div>` : ''}
-      </div>
+              </div>
     </div>`;
     }).join('')
     : `<div class="empty-state"><span style="color:var(--muted);">No ${_exSuper ? 'published ' : ''}exercises found for ${selected}</span></div>`;
@@ -5910,6 +5966,8 @@ function renderExercisesTab() {
       <button onclick="openAddExploreExercise('${selected}')" style="flex:1;background:transparent;border:1px dashed #34d399;border-radius:10px;color:#34d399;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;">+ Add to Explore</button>
     </div>` : '';
     el.innerHTML = (_exTabView === 'all' ? _pc + _exAllListHtml : _exTabView === 'created' ? searchHtml + _pc + listBox + (_pickMode ? '' : addBtnHtml) : _exTabView === 'custom' ? _pc + _exCustomListHtml : _exTabView === 'coach' ? buildCoachExercisesHtml() : _pc + (_pickMode ? `<div id="pickModeListBox" style="border:1px solid var(--border);border-radius:12px;padding:6px 0;">` + _exLibListHtml.replace(/<button[^>]*Add to Library[^<]*<\/button>/g,'') + `</div>` : _exLibListHtml + _exLibAddBtns));
+    // Pick mode: line the rows' check circles up with the workout cards'.
+    if (_pickMode) requestAnimationFrame(_alignPickCircles);
   }
 
   // Cards always start collapsed (minimized view by default)
@@ -11320,20 +11378,20 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
   // 4a. No-sets-done indicator (grey circle — shown when no set is marked done)
   const noDoneCheck = document.createElement('div');
   noDoneCheck.id = `no-done-check-${id}`;
-  noDoneCheck.style.cssText = `display:flex;width:28px;height:28px;border-radius:50%;background:transparent;border:2px solid ${_todayMuscleFilter ? muscleColor : '#555'};flex-shrink:0;align-self:center;margin-left:12px;cursor:pointer;`;
+  noDoneCheck.style.cssText = `display:flex;width:28px;height:28px;border-radius:50%;background:transparent;border:2px solid ${_todayMuscleFilter ? muscleColor : '#555'};flex-shrink:0;align-self:center;margin-left:var(--ex-circle-ml,12px);cursor:pointer;`;
   noDoneCheck.onclick = () => openExDetail(id);
 
   // 4b. Done check (bare checkmark, no circle — shown when exercise is finished)
   const doneCheck = document.createElement('div');
   doneCheck.id = `done-check-${id}`;
-  doneCheck.style.cssText = 'display:none;flex-shrink:0;align-items:center;justify-content:center;align-self:center;margin-left:12px;cursor:pointer;';
+  doneCheck.style.cssText = 'display:none;width:32px;height:32px;flex-shrink:0;align-items:center;justify-content:center;align-self:center;margin-left:var(--ex-circle-ml,12px);cursor:pointer;';
   doneCheck.onclick = () => openExDetail(id);
   doneCheck.innerHTML = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="${_todayMuscleFilter ? muscleColor : '#fff'}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
 
   // 4c. In-progress indicator (partial ring — shown when some but not all sets are done)
   const inProgressCheck = document.createElement('div');
   inProgressCheck.id = `in-progress-check-${id}`;
-  inProgressCheck.style.cssText = 'display:none;position:relative;width:28px;height:28px;flex-shrink:0;align-self:center;margin-left:12px;cursor:pointer;';
+  inProgressCheck.style.cssText = 'display:none;position:relative;width:28px;height:28px;flex-shrink:0;align-self:center;margin-left:var(--ex-circle-ml,12px);cursor:pointer;';
   inProgressCheck.onclick = () => openExDetail(id);
   inProgressCheck.innerHTML = `<svg width="28" height="28" viewBox="0 0 28 28" style="transform:rotate(-90deg);"><circle cx="14" cy="14" r="11" fill="none" stroke="#3a2a12" stroke-width="2.5"/><circle class="in-progress-ring-fg" cx="14" cy="14" r="11" fill="none" stroke="#f5a623" stroke-width="2.5" stroke-linecap="round" style="transition:stroke-dashoffset .3s ease;"/></svg><span class="in-progress-frac" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'DM Sans';font-size:9px;font-weight:800;color:#f5a623;"></span>`;
 
@@ -11358,8 +11416,9 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
     header.append(trashWrap, contentArea);
   } else {
     // Status circle (not started / in progress / done) on the LEFT of the card,
-  // then name + sets.
+  // then name + sets. Centered under FINISH WORKOUT via --ex-circle-ml.
   header.append(noDoneCheck, inProgressCheck, doneCheck, contentArea);
+  _scheduleExCircleAlign();
   }
 
   // BODY
@@ -23614,11 +23673,12 @@ function buildExerciseLibraryHtml(selectedMuscle) {
     // No exercise thumbnail any more — same plain 96px-tall spacer as the
     // Exercises tab's other lists.
     const thumbHtml = `<div style="width:15px;min-height:96px;flex-shrink:0;"></div>`;
-    const pickerCheck = _pickMode
-      ? `<div style="display:flex;align-items:center;padding-right:12px;"><div class="picker-check" style="width:22px;height:22px;border-radius:50%;border:2px solid ${isPickSelected ? 'var(--accent)' : '#333'};background:${isPickSelected ? 'var(--accent)' : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:all .15s;">${isPickSelected ? '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</div></div>`
-      : (extraRight ? `<div style="display:flex;align-items:center;padding-right:8px;">${extraRight}</div>` : '');
+    // Pick mode: the check circle leads the row on the LEFT, at the same spot
+    // as the active workout's card circles (_exPickCircleHtml).
+    const pickerCheck = _pickMode ? '' : (extraRight ? `<div style="display:flex;align-items:center;padding-right:8px;">${extraRight}</div>` : '');
     const _exld = (window._exLastDateMap && window._exLastDateMap.get(exName)) || 0;
     return `<div style="display:flex;align-items:stretch;background:${isPickSelected ? 'color-mix(in srgb, var(--accent) 15%, var(--surface))' : 'var(--surface)'};border:1px solid #555;border-radius:var(--radius);margin-bottom:8px;overflow:hidden;">
+      ${_pickMode ? _exPickCircleHtml(isPickSelected) : ''}
       ${thumbHtml}
       <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;padding:8px 0;">
         <div style="font-family:'DM Sans';font-size:15px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${exName}</div>
