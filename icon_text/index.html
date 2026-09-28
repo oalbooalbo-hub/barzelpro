@@ -1373,14 +1373,18 @@ window._fbModuleReady = true;
               <circle id="today-progress-ring" cx="150" cy="150" r="117.86" fill="none" stroke="#999" stroke-opacity="0.55" stroke-width="25.71" stroke-linecap="round" stroke-dasharray="740.52" stroke-dashoffset="740.52" transform="rotate(-90 150 150)" style="stroke:var(--accent);stroke-opacity:1;transition:stroke-dashoffset .6s ease,stroke .4s ease,stroke-opacity .4s ease;"/>
               <g id="today-progress-goal-ring" transform="rotate(-90 150 150)"></g>
             </svg>
-            <div id="today-progress-center-outer" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transform:translateY(5px);">
-              <div id="today-progress-center-inner" style="display:flex;flex-direction:column;align-items:center;gap:2px;transform:translateY(3px);">
-                <span id="today-progress-count" style="font-family:'DM Sans';font-size:50px;font-weight:800;color:var(--text);line-height:1;">0</span>
+            <!-- Sizes/offsets matched to the design mock (measured vs. the ring's
+                 center): number ≈17px above center, "OUT OF n" ≈27px below, the
+                 chevron ≈53px below. translateY(-4px) (outer) sets that balance;
+                 renderTodayWeekProgress drops it to 'none' once the goal is met
+                 and the row under the number hides, so the number re-centers. -->
+            <div id="today-progress-center-outer" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;transform:translateY(-4px);">
+              <div id="today-progress-center-inner" style="display:flex;flex-direction:column;align-items:center;gap:3.5px;">
+                <span id="today-progress-count" style="font-family:'DM Sans';font-size:60px;font-weight:700;color:var(--text);line-height:1;">0</span>
                 <!-- Down-chevron (--accent) directly below "OUT OF n". Absolutely
-                     positioned so it adds no height to the centered group — the
-                     count and the text stay exactly where they were — and it lives
-                     inside this row, so it hides with it once the goal is met. -->
-                <span id="today-progress-target" style="position:relative;font-family:'DM Sans';font-size:12px;font-weight:600;color:#fff;letter-spacing:.3px;display:flex;align-items:center;justify-content:center;"><span id="today-progress-target-text">OUT OF 3</span><svg id="today-progress-target-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--accent);position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:3px;"><polyline points="6 9 12 15 18 9"/></svg></span>
+                     positioned so it adds no height to the centered group, and it
+                     lives inside this row, so it hides with it once the goal is met. -->
+                <span id="today-progress-target" style="position:relative;font-family:'DM Sans';font-size:18px;font-weight:500;color:#fff;letter-spacing:.3px;display:flex;align-items:center;justify-content:center;"><span id="today-progress-target-text">OUT OF 3</span><svg id="today-progress-target-chev" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--accent);position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:2px;"><polyline points="6 9 12 15 18 9"/></svg></span>
               </div>
             </div>
           </div>
@@ -3340,8 +3344,8 @@ function renderTodayWeekProgress(withAnim) {
   // true center instead of staying shifted down for a row that's gone.
   const centerOuterEl = document.getElementById('today-progress-center-outer');
   const centerInnerEl = document.getElementById('today-progress-center-inner');
-  if (centerOuterEl) centerOuterEl.style.transform = goalAchieved ? 'none' : 'translateY(5px)';
-  if (centerInnerEl) centerInnerEl.style.transform = goalAchieved ? 'none' : 'translateY(3px)';
+  if (centerOuterEl) centerOuterEl.style.transform = goalAchieved ? 'none' : 'translateY(-4px)';
+  if (centerInnerEl) centerInnerEl.style.transform = 'none';
   // Brand accent color, applied to both rings together, only once the goal-ring's
   // shrink/connect animation (below) has actually finished — not while it's still
   // mid-transition.
