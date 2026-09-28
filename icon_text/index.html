@@ -16557,14 +16557,25 @@ async function _runDeleteAllData() {
       <div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:18px;">${title}</div>
       <div style="height:8px;background:#222;border-radius:4px;overflow:hidden;"><div id="del-all-bar" style="height:100%;width:0;background:var(--accent);transition:width .5s ease;"></div></div>
       <div id="del-all-step" style="margin-top:14px;font-size:14px;color:#aaa;min-height:20px;"></div>
+      <div id="del-all-hint" style="margin-top:6px;font-size:12px;color:#777;min-height:16px;"></div>
     </div>`;
   };
+  // Any step still running after 3s shows a "still working" hint, so a slow
+  // connection doesn't look like a frozen screen. Reset on every step change.
+  let _hintTimer = null;
   const step = (pct, label) => {
     const b = document.getElementById('del-all-bar'); if (b) b.style.width = pct + '%';
     const s = document.getElementById('del-all-step'); if (s) s.textContent = label;
+    const h = document.getElementById('del-all-hint'); if (h) h.textContent = '';
+    clearTimeout(_hintTimer);
+    if (pct < 100) _hintTimer = setTimeout(() => {
+      const h2 = document.getElementById('del-all-hint'); if (h2) h2.textContent = 'Still working… slow connection';
+    }, 3000);
   };
   // Each step stays on screen at least this long so it can be read.
   const atLeast = async (ms, p) => { const [r] = await Promise.all([p, _sleep(ms)]); return r; };
+  // Every network step has a time limit, so the screen can never hang.
+  const withTimeout = (p, ms) => Promise.race([p, _sleep(ms).then(() => { throw new Error('timeout'); })]);
 
   showProgress('Deleting your data');
   window._deleteAllInProgress = true; // pauses background syncs (see syncToFirestore)
@@ -16583,9 +16594,12 @@ async function _runDeleteAllData() {
       _sleep(15000).then(() => { throw new Error('The cloud didn\'t respond'); }),
     ]));
     step(45, 'Deleting photos…');
-    // 2) Cloud files (best effort — the data itself is already gone).
-    await atLeast(700, (window._deleteMyCloudFiles ? window._deleteMyCloudFiles() : Promise.resolve(0)).catch(e => console.warn('[DeleteAll] Cloud files:', e?.message)));
+    // 2) Cloud files (best effort — the data itself is already gone): max
+    //    15s, then carry on regardless.
+    await atLeast(700, withTimeout(window._deleteMyCloudFiles ? window._deleteMyCloudFiles() : Promise.resolve(0), 15000)
+      .catch(e => console.warn('[DeleteAll] Cloud files skipped:', e?.message)));
   } catch(e) {
+    clearTimeout(_hintTimer);
     window._deleteAllInProgress = false;
     ov.innerHTML = `<div style="width:100%;max-width:340px;text-align:center;font-family:'DM Sans',sans-serif;">
       <div style="font-size:18px;font-weight:800;color:#ff4747;margin-bottom:10px;">Couldn't delete from the cloud</div>
@@ -16607,6 +16621,7 @@ async function _runDeleteAllData() {
   }));
   step(100, 'Done ✓');
   await _sleep(600);
+  clearTimeout(_hintTimer);
   window._deleteAllInProgress = false;
 
   // Completion + the brand library choice.
@@ -16631,7 +16646,9 @@ async function _runDeleteAllData() {
   ov.querySelector('#_delAllYes').onclick = async () => {
     showProgress('Syncing brand library');
     step(30, 'Loading the brand library…');
-    const r = await atLeast(900, _restoreBrandLibraryForMe());
+    // Max 15s — a stalled library fetch falls through to the "do it later" note.
+    const r = await atLeast(900, withTimeout(_restoreBrandLibraryForMe(), 15000).catch(() => ({ ok: false })));
+    clearTimeout(_hintTimer);
     if (!r.ok) {
       step(100, '');
       ov.innerHTML = `<div style="width:100%;max-width:340px;text-align:center;font-family:'DM Sans',sans-serif;">
