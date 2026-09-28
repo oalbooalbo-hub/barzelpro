@@ -151,7 +151,6 @@ body.desktop-mode .pages-wrap {
 @keyframes pickNoticeBgFade{0%{background:rgba(255,140,66,.08);border-color:rgba(255,140,66,.2);}50%{background:rgba(255,140,66,.08);border-color:rgba(255,140,66,.2);}100%{background:rgba(255,140,66,0);border-color:rgba(255,140,66,0);}}
 .exercise-card.completed{border-color:rgba(var(--accent-rgb),.15);border-color:color-mix(in srgb, var(--accent) 15%, transparent);}
 .exercise-card.completed .ex-header{background:color-mix(in srgb, var(--accent) 6%, transparent);}
-.exercise-card.completed .ex-photo-box img{filter:grayscale(1) brightness(0.7) !important;}
 .ex-header{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid transparent;}
 .exercise-card[data-open="true"] .ex-header{border-bottom-color:var(--border);}
 .ex-card-body.collapsed ~ .ex-header, .exercise-card:not([data-open="true"]) .ex-header{border-bottom-color:transparent;}
@@ -942,9 +941,9 @@ async function _loadExPhotoFromCloud(name, isThumb) {
   const path = `userData/${brandId}/users/${uid}/ex_photos/${encodeURIComponent(name)}/${isThumb ? 'thumb' : 'photo'}`;
   try {
     const url = await getDownloadURL(storageRef(storage, path));
-    // Cache in localStorage for next time
-    const lsKey = isThumb ? `ironlog_ex_photo_thumb_${name}` : `ironlog_ex_photo_${name}`;
-    try { localStorage.setItem(lsKey, url); } catch(_) {}
+    // Cache the full photo in localStorage for next time (small thumbnail
+    // copies are no longer kept on the device).
+    if (!isThumb) { try { localStorage.setItem(`ironlog_ex_photo_${name}`, url); } catch(_) {} }
     return url;
   } catch(e) { return null; }
 }
@@ -1412,7 +1411,7 @@ window._fbModuleReady = true;
                pinned to the slide's exact center, not centered as a group with
                anything else, same as those two. -->
           <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:272px;height:272px;border-radius:50%;border:5px solid var(--accent);background:#000;display:flex;align-items:center;justify-content:center;box-sizing:border-box;">
-            <div id="today-pr-stars" style="display:flex;gap:4px;align-items:flex-start;justify-content:center;"></div>
+            <div id="today-pr-stars" style="display:flex;gap:0;align-items:flex-start;justify-content:center;transform:translateY(-1px);"></div>
           </div>
         </div>
       </div>
@@ -1933,9 +1932,13 @@ window._fbModuleReady = true;
     <div id="newExScrollArea" style="padding:0 16px calc(80px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:16px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;">
       <!-- Photo box -->
       <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
-        <div id="newExPhotoBox" onclick="openNewExPhotoSheet()" style="width:80px;height:80px;border-radius:8px;border:1px solid #555;background:#0d0d0d;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;flex-shrink:0;">
+        <div id="newExPhotoBox" onclick="openNewExPhotoSheet()" style="position:relative;width:100%;aspect-ratio:21/9;box-sizing:border-box;border-radius:8px;border:1px solid #555;background:#0d0d0d;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;flex-shrink:0;">
           <img id="newExPhotoDefaultImg" src="" style="width:100%;height:100%;object-fit:cover;display:none;filter:brightness(0.75);" onerror="this.style.display='none'">
           <img id="newExPhotoImg" src="" style="display:none;width:100%;height:100%;object-fit:cover;">
+          <!-- Camera button — same as the New Workout "Step 1 of 2" hero's. -->
+          <button onclick="event.stopPropagation();openNewExPhotoSheet()" style="position:absolute;top:8px;right:8px;z-index:4;background:rgba(0,0,0,0.55);border:none;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </button>
         </div>
         <span id="newExPhotoLabel" style="display:none;font-family:'DM Sans';font-size:12px;color:#fff;font-weight:700;letter-spacing:.5px;cursor:pointer;" onclick="openNewExPhotoSheet()">Change Image <span style="color:#888;font-weight:500;">(optional)</span></span>
       </div>
@@ -2407,7 +2410,8 @@ window.BarzelpNet = {
 // localforage, so only they belong in this migration.
 function _migratePhotosToIDB() {
   if (!window.localforage) return;
-  const photoKeys = Object.keys(localStorage).filter(k => k.startsWith('ironlog_ex_photo_'));
+  // (Small thumbnail copies are no longer used — _purgeExPhotoThumbs deletes them.)
+  const photoKeys = Object.keys(localStorage).filter(k => k.startsWith('ironlog_ex_photo_') && !k.startsWith('ironlog_ex_photo_thumb_'));
   photoKeys.forEach(k => {
     const val = localStorage.getItem(k);
     if (!val) return;
@@ -2445,6 +2449,25 @@ function _restoreWorkoutPhotosFromIDB() {
 // naturally yields to whatever's still busy on the main thread right after boot —
 // including the weekly-goal ring's entrance animation — instead of racing it on a
 // fixed clock. The timeout is a fallback guarantee in case the thread never idles.
+// Exercise lists/cards no longer show small photos, so the extra small copy
+// saved for them (ironlog_ex_photo_thumb_*) is dead weight — delete every one
+// still on the device, in localStorage and (moved there by
+// _migratePhotosToIDB when storage filled up) in IndexedDB. Idempotent.
+function _purgeExPhotoThumbs() {
+  try {
+    Object.keys(localStorage).filter(k => k.startsWith('ironlog_ex_photo_thumb_')).forEach(k => localStorage.removeItem(k));
+  } catch(e) {}
+  if (window.localforage) {
+    window.localforage.keys()
+      .then(keys => Promise.all(keys.filter(k => k.startsWith('ironlog_ex_photo_thumb_')).map(k => window.localforage.removeItem(k))))
+      .catch(() => {});
+  }
+}
+if (!localStorage.getItem('ironlog_ex_thumbs_purged')) {
+  const _runThumbPurge = () => { _purgeExPhotoThumbs(); try { localStorage.setItem('ironlog_ex_thumbs_purged', '1'); } catch(e) {} };
+  if ('requestIdleCallback' in window) requestIdleCallback(_runThumbPurge, { timeout: 3000 });
+  else setTimeout(_runThumbPurge, 1500);
+}
 if (!sessionStorage.getItem('_photosIDBMigrated')) {
   sessionStorage.setItem('_photosIDBMigrated', '1');
   if ('requestIdleCallback' in window) requestIdleCallback(_migratePhotosToIDB, { timeout: 3000 });
@@ -5524,75 +5547,9 @@ function renderExercisesTab() {
   };
   const _defaultSvgIcon = '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M8 12h8"/></svg>';
 
-  // In-memory cache of localforage photo lookups, keyed by the same key
-  // used to store them. Populated once per exercise per page session (see
-  // _updateExTabThumbs). Without this, every re-render of the list (e.g.
-  // switching muscle filters, reopening the tab) redid the async lookup from
-  // scratch for every exercise, replaying the default-then-swap flash again
-  // and again — and for exercises with no photo at all, there was nothing to
-  // "not blink" against, so leaving the cell blank until resolved (the
-  // previous fix) introduced a NEW blank-then-default flash for them too.
-  window._exPhotoMemCache = window._exPhotoMemCache || {};
-
-  function _makeExThumbHtml(name, muscle) {
-    const photo = localStorage.getItem(`ironlog_ex_photo_thumb_${name}`) || localStorage.getItem(`ironlog_ex_photo_${name}`);
-    const safeKey = name.replace(/"/g, '&quot;');
-    const memKey = `ironlog_ex_photo_${safeKey}`;
-    let inner, noPhotoAttr = '';
-    if (photo) {
-      inner = `<img src="${photo}" style="width:100%;height:100%;object-fit:cover;display:block;">`;
-    } else if (memKey in window._exPhotoMemCache) {
-      // Already resolved earlier this session — render the final state
-      // synchronously and skip the async lookup entirely. No flash.
-      const cached = window._exPhotoMemCache[memKey];
-      inner = cached
-        ? `<img src="${cached}" style="width:100%;height:100%;object-fit:cover;display:block;">`
-        : _exThumbDefaultHtml(muscle);
-    } else if (window.localforage) {
-      // Never looked up before this session. Show the default immediately
-      // (matches pre-existing, no-flash behavior for the common no-photo
-      // case) and upgrade to the real photo in the background if one turns
-      // up — a one-time flash at worst, for this exercise, this session; see
-      // _updateExTabThumbs, which caches the result so every later render
-      // (including switching back to this muscle/tab) is instant.
-      inner = _exThumbDefaultHtml(muscle);
-      noPhotoAttr = ` data-photo-key="${memKey}" data-photo-muscle="${muscle}"`;
-    } else {
-      inner = _exThumbDefaultHtml(muscle);
-    }
-    return `<div style="position:relative;width:80px;height:80px;flex-shrink:0;margin:8px 12px 8px 10px;">
-      <div${noPhotoAttr} style="width:100%;height:100%;border:1px solid #1e1e1e;border-radius:8px;overflow:hidden;background:#0d0d0d;">${inner}</div>
-    </div>`;
-  }
-
-  function _exThumbDefaultHtml(muscle) {
-    const mc = MUSCLE_COLORS[muscle] || '#888';
-    const defaultSrc = _EX_DEFAULT_PHOTOS[muscle];
-    return defaultSrc
-      ? `<img src="${defaultSrc}" style="width:100%;height:100%;object-fit:cover;display:block;filter:brightness(0.75);" onerror="this.style.display='none'">`
-      : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:${mc};">${_svgFallbacks[muscle] || _defaultSvgIcon}</div>`;
-  }
-
-  function _updateExTabThumbs() {
-    if (!window.localforage) return;
-    document.querySelectorAll('#exercisesTabContent [data-photo-key]').forEach(el => {
-      const key = el.getAttribute('data-photo-key');
-      if (!key) return;
-      const muscle = el.getAttribute('data-photo-muscle');
-      window.localforage.getItem(key).then(p => {
-        window._exPhotoMemCache[key] = p || null;
-        el.removeAttribute('data-photo-key');
-        el.removeAttribute('data-photo-muscle');
-        // Only touch the DOM if a photo actually turned up — the element is
-        // already showing the correct default from the initial render, so
-        // leaving it alone in the (common) no-photo case means zero visual
-        // change at all, not just a fast one.
-        if (p) {
-          el.innerHTML = `<img src="${p}" style="width:100%;height:100%;object-fit:cover;display:block;">`;
-        }
-      });
-    });
-  }
+  // (List rows no longer show an exercise photo/thumbnail — each row starts
+  // with a plain 96px-tall spacer instead; the big photo lives on the
+  // exercise's own screen.)
 
   const _isHeb = n => /[א-ת]/.test(n);
   const _tn = n => { if (n.length <= 35) return n; const _cut = n.slice(0,35).trimEnd().replace(/[,،.!?:;]+$/, ''); return _isHeb(n) ? _cut + '...' : _cut + '…'; };
@@ -5622,7 +5579,7 @@ function renderExercisesTab() {
     ? `_exToggleDelPick(${_nJs(n)})`
     : `if(_exLPConsume(${_nJs(n)}))return;openExtabExOverlay('${n.replace(/'/g,"\\'")}')`;
   const _exRowCircle = n => (_exDelMode && _exSelectable(n))
-    ? `<div style="display:flex;align-items:center;padding-right:10px;"><div class="extab-del-circle" style="width:26px;height:26px;border-radius:50%;border:2px solid var(--accent);background:${_exRowPicked(n) ? 'var(--accent)' : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s;${_exDelJustEntered ? 'animation:tapPopScale .3s cubic-bezier(.175,.885,.32,1.275);' : ''}">${_exRowPicked(n) ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : ''}</div></div>`
+    ? `<div style="display:flex;align-items:center;padding-left:12px;"><div class="extab-del-circle" style="width:26px;height:26px;border-radius:50%;border:2px solid var(--accent);background:${_exRowPicked(n) ? 'var(--accent)' : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s;${_exDelJustEntered ? 'animation:tapPopScale .3s cubic-bezier(.175,.885,.32,1.275);' : ''}">${_exRowPicked(n) ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : ''}</div></div>`
     : '';
   const _exRowBorder = n => _exRowPicked(n) ? 'border:2px solid var(--accent);' : 'border:1px solid #555;';
 
@@ -5651,7 +5608,7 @@ function renderExercisesTab() {
     listHtml += `<div data-exname="${ex.name.replace(/"/g,'&quot;')}" data-muscle="${ex.muscle||'Chest'}" style="--muscle-color:${_mc};background:${isPickSelected ? 'color-mix(in srgb, var(--accent) 15%, var(--surface))' : 'var(--surface)'};border:1px solid #555;border-radius:var(--radius);margin-bottom:8px;overflow:hidden;">
       <!-- Flat row -->
       <div ${isExpandable && !_pickMode ? `onclick="openExtabExOverlay('${ex.name.replace(/'/g,"\\'")}')"` : ''} style="display:flex;align-items:stretch;${isExpandable && !_pickMode ? 'cursor:pointer;' : ''}">
-        ${_makeExThumbHtml(ex.name, ex.muscle)}
+        <div style="width:15px;min-height:96px;flex-shrink:0;"></div>
         <!-- Name + stats -->
         <div ${_pickMode ? `onclick="pickExercise('${ex.name.replace(/'/g,"\\'")}') "` : ''} style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;align-items:flex-end;padding:8px 15px 8px 0;${_pickMode ? 'cursor:pointer;' : ''}">
           <div dir="auto" style="font-family:'DM Sans';font-size:17px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;">${_tn(ex.name)}</div>
@@ -5716,12 +5673,12 @@ function renderExercisesTab() {
         const _pc = PICKER_COLORS[ex.muscle] || '#888';
         return `<div data-exname="${ex.name.replace(/"/g,'&quot;')}" data-muscle="${ex.muscle}"${_pickMode ? ` onclick="pickExercise('${ex.name.replace(/'/g,"\\'")}') "` : ''}${_exRowAttrs(ex.name)} style="background:${_isPickSel ? 'color-mix(in srgb, var(--accent) 15%, var(--surface))' : 'var(--surface)'};${_exRowBorder(ex.name)}${_exRowDim(ex.name)}border-radius:var(--radius);margin-bottom:8px;overflow:hidden;${_pickMode ? 'cursor:pointer;' : ''}${_exBrowse ? '-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;' : ''}">
           <div onclick="${_pickMode ? '' : _exRowTap(ex.name)}" style="display:flex;align-items:stretch;${_pickMode ? '' : 'cursor:pointer;'}">
-            ${_makeExThumbHtml(ex.name, ex.muscle)}
+            ${_exRowCircle(ex.name)}
+            <div style="width:15px;min-height:96px;flex-shrink:0;"></div>
             <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;align-items:flex-end;padding:8px 15px 8px 0;">
               <div dir="auto" style="font-family:'DM Sans';font-size:17px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;">${_tn(ex.name)}</div>
               ${_lcd ? `<div style="font-family:'DM Sans';font-size:11px;font-weight:600;color:var(--muted);margin-top:2px;text-align:right;">${fmtShort(_lcd)}</div>` : ''}
             </div>
-            ${_exRowCircle(ex.name)}
             ${_pickMode ? `<div style="display:flex;align-items:center;padding-right:10px;"><div class="picker-check" style="width:22px;height:22px;border-radius:50%;border:2px solid ${_isPickSel ? 'var(--accent)' : '#333'};background:${_isPickSel ? 'var(--accent)' : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;">${_isPickSel ? '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</div></div>` : ''}
           </div>
         </div>`;
@@ -5741,12 +5698,12 @@ function renderExercisesTab() {
       const _pc = PICKER_COLORS[ex.muscle] || '#888';
       return `<div data-exname="${ex.name.replace(/"/g,'&quot;')}" data-muscle="${ex.muscle}"${_pickMode ? ` onclick="pickExercise('${ex.name.replace(/'/g,"\\'")}') "` : ''}${_exRowAttrs(ex.name)} style="background:${_isPickSel ? 'color-mix(in srgb, var(--accent) 15%, var(--surface))' : 'var(--surface)'};${_exRowBorder(ex.name)}${_exRowDim(ex.name)}border-radius:var(--radius);margin-bottom:8px;overflow:hidden;${_pickMode ? 'cursor:pointer;' : ''}${_exBrowse ? '-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;' : ''}">
       <div onclick="${_pickMode ? '' : _exRowTap(ex.name)}" style="display:flex;align-items:stretch;${_pickMode ? '' : 'cursor:pointer;'}">
-        ${_makeExThumbHtml(ex.name, ex.muscle)}
+        ${_exRowCircle(ex.name)}
+        <div style="width:15px;min-height:96px;flex-shrink:0;"></div>
         <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;align-items:flex-end;padding:8px 15px 8px 0;">
           <div dir="auto" style="font-family:'DM Sans';font-size:17px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;">${_tn(ex.name)}</div>
           ${ex.lastDate ? `<div style="font-family:'DM Sans';font-size:11px;font-weight:600;color:var(--muted);margin-top:2px;text-align:right;">${fmtShort(ex.lastDate)}</div>` : ''}
         </div>
-        ${_exRowCircle(ex.name)}
         ${_pickMode ? `<div style="display:flex;align-items:center;padding-right:10px;"><div class="picker-check" style="width:22px;height:22px;border-radius:50%;border:2px solid ${_isPickSel ? 'var(--accent)' : '#333'};background:${_isPickSel ? 'var(--accent)' : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;">${_isPickSel ? '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</div></div>` : ''}
       </div>
     </div>`;
@@ -5835,13 +5792,15 @@ function renderExercisesTab() {
         // Select-to-delete mode swaps the title + view picker for a "Select
         // Exercises" header with a select-all circle (same as the Workouts
         // tab's); the muscle pills stay so the user can move between muscles.
-        const _exSelHeader = `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0 6px;${_exDelJustEntered ? 'animation:wtabHeaderIn .25s ease;' : ''}">
+        // Row circles sit on the LEFT of each row, so the select-all circle
+        // leads the header on the left too (aligned to them by
+        // _alignSelectAllCircle), followed by the title.
+        const _exSelHeader = `<div style="display:flex;align-items:center;justify-content:flex-start;gap:14px;padding:10px 0 6px;${_exDelJustEntered ? 'animation:wtabHeaderIn .25s ease;' : ''}">
+          <div style="padding-left:12px;">
+            <button id="extab-selectall-btn" onclick="_exToggleSelectAll()" title="Select all" style="width:26px;height:26px;border-radius:50%;border:2px solid var(--accent);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;${_exDelJustEntered ? 'animation:tapPopScale .3s cubic-bezier(.175,.885,.32,1.275);' : ''}"></button>
+          </div>
           <div>
             <div style="font-family:'DM Sans';font-size:16px;font-weight:800;color:var(--text);">Select Exercises</div>
-            <div style="font-family:'DM Sans';font-size:12px;color:#555;margin-top:2px;">Tap exercises to select, then ${_exSuper ? (_exTabView === 'all' ? 'unpublish' : 'publish or delete') : 'delete'}</div>
-          </div>
-          <div style="padding-right:12px;">
-            <button id="extab-selectall-btn" onclick="_exToggleSelectAll()" title="Select all" style="width:26px;height:26px;border-radius:50%;border:2px solid var(--accent);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;${_exDelJustEntered ? 'animation:tapPopScale .3s cubic-bezier(.175,.885,.32,1.275);' : ''}"></button>
           </div>
         </div>`;
         exToggleBar.innerHTML = (_exDelMode ? _exSelHeader : toggleHtml) + pillsHtml;
@@ -5951,7 +5910,6 @@ function renderExercisesTab() {
       <button onclick="openAddExploreExercise('${selected}')" style="flex:1;background:transparent;border:1px dashed #34d399;border-radius:10px;color:#34d399;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;">+ Add to Explore</button>
     </div>` : '';
     el.innerHTML = (_exTabView === 'all' ? _pc + _exAllListHtml : _exTabView === 'created' ? searchHtml + _pc + listBox + (_pickMode ? '' : addBtnHtml) : _exTabView === 'custom' ? _pc + _exCustomListHtml : _exTabView === 'coach' ? buildCoachExercisesHtml() : _pc + (_pickMode ? `<div id="pickModeListBox" style="border:1px solid var(--border);border-radius:12px;padding:6px 0;">` + _exLibListHtml.replace(/<button[^>]*Add to Library[^<]*<\/button>/g,'') + `</div>` : _exLibListHtml + _exLibAddBtns));
-    _updateExTabThumbs();
   }
 
   // Cards always start collapsed (minimized view by default)
@@ -6705,7 +6663,6 @@ function openNewExModal(muscle) {
   window._newExCompoundMuscles = [];
   window._newExPhoto = null;
   window._newExPhoto32 = null;
-  window._newExPhotoThumb = null;
   const input = document.getElementById('newExInput');
   if (input) input.value = '';
   _nwfSyncFieldFloatByEl(input);
@@ -7066,7 +7023,6 @@ function closeNewExModal() {
   window._newExPhotoMode = false;
   window._newExPhoto = null;
   window._newExPhoto32 = null;
-  window._newExPhotoThumb = null;
   window._newExCompoundMuscles = [];
   const _vInp = document.getElementById('newExVideoUrl');
   if (_vInp) _vInp.value = '';
@@ -7213,14 +7169,13 @@ function confirmNewEx() {
   if (window._editExName) {
     const oldName = window._editExName;
     window._editExName = null;
-    // Save 21:9 to IndexedDB; tiny thumb to localStorage for instant card display —
-    // or, if the form's photo state is empty (user tapped Remove Photo), clear
-    // whatever's stored instead. A never-had-a-photo exercise just harmlessly
+    // Save 21:9 to IndexedDB — or, if the form's photo state is empty (user
+    // tapped Remove Photo), clear whatever's stored instead (incl. any old
+    // small thumbnail copy). A never-had-a-photo exercise just harmlessly
     // removes a key that was never set.
     const _editPhotoToSave = window._newExPhoto32 || window._newExPhoto;
     if (_editPhotoToSave) {
       if (window.localforage) window.localforage.setItem(`ironlog_ex_photo_${name}`, _editPhotoToSave).catch(e => showToast('Photo save failed'));
-      if (window._newExPhotoThumb) try { localStorage.setItem(`ironlog_ex_photo_thumb_${name}`, window._newExPhotoThumb); } catch(_) {}
     } else {
       if (window.localforage) window.localforage.removeItem(`ironlog_ex_photo_${name}`).catch(() => {});
       try { localStorage.removeItem(`ironlog_ex_photo_thumb_${name}`); } catch(_) {}
@@ -7259,11 +7214,6 @@ function confirmNewEx() {
     }
     closeNewExModal();
     showToast('Exercise updated');
-    // Keep the mem-cached full-photo lookup (_makeExThumbHtml's last-resort
-    // fallback, used only once both localStorage thumb/full checks come up
-    // empty) in sync too — otherwise a just-removed photo could still render
-    // from a stale earlier-this-session cache entry even after re-rendering below.
-    if (window._exPhotoMemCache) window._exPhotoMemCache[`ironlog_ex_photo_${name}`] = _editPhotoToSave || null;
     // Update all cards with the old name in the DOM
     document.querySelectorAll('.exercise-card').forEach(card => {
       if (card.dataset.exname === oldName) {
@@ -7271,11 +7221,6 @@ function confirmNewEx() {
         // Update name display
         const nameEl = card.querySelector('.ex-name');
         if (nameEl) nameEl.textContent = name;
-        // Update photo — same thumb-then-full priority _makeExThumbHtml uses;
-        // this used to only ever check the (never-written-to) non-thumb key.
-        const photoImg = card.querySelector('.ex-photo-box img');
-        const newPhoto = localStorage.getItem(`ironlog_ex_photo_thumb_${name}`) || localStorage.getItem(`ironlog_ex_photo_${name}`);
-        if (photoImg && newPhoto) photoImg.src = newPhoto;
       }
     });
     // Exercises tab list — its row was rendered before this edit and has no
@@ -7296,11 +7241,10 @@ function confirmNewEx() {
     return;
   }
 
-  // Save 21:9 to IndexedDB; tiny thumb to localStorage for instant card display
+  // Save 21:9 to IndexedDB (no separate small thumbnail copy any more).
   const _newPhotoToSave = window._newExPhoto32 || window._newExPhoto;
   if (_newPhotoToSave && name && window.localforage)
     window.localforage.setItem(`ironlog_ex_photo_${name}`, _newPhotoToSave).catch(e => showToast('Photo save failed'));
-  if (window._newExPhotoThumb && name) try { localStorage.setItem(`ironlog_ex_photo_thumb_${name}`, window._newExPhotoThumb); } catch(_) {}
 
   // Explore exercise mode: save locally to library, highlight sync button
   if (_wasExploreMode) {
@@ -9922,7 +9866,6 @@ function renderWorkoutsTab2() {
     ? `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0 6px;${_delJustEntered ? 'animation:wtabHeaderIn .25s ease;' : ''}">
         <div>
           <div style="font-family:'DM Sans';font-size:16px;font-weight:800;color:var(--text);">Select Workouts</div>
-          <div style="font-family:'DM Sans';font-size:12px;color:#555;margin-top:2px;">Tap workouts to select, then ${_isUnpubMode ? 'unpublish' : 'delete'}</div>
         </div>
         <!-- width:20% mirrors the card's own right-side button column below,
              so this circle lands in the same relative spot as the per-card
@@ -11328,60 +11271,12 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
   const muscleColor = muscleColors[_exMuscle] || '#888';
   card.style.setProperty('--muscle-color', muscleColor);
 
-  // SVG fallbacks per muscle
-  const _svgFallbacks = {
-    Chest: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><path d="M4 8c2-2 5-3 8-3s6 1 8 3v8c-2 2-5 3-8 3s-6-1-8-3V8z"/><path d="M12 5v14M4 12h16"/></svg>',
-    Back: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><path d="M12 3v18M7 6l5-3 5 3M7 18l5 3 5-3M4 10l8 2 8-2M4 14l8 2 8-2"/></svg>',
-    Legs: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><path d="M9 3v10l-3 8M15 3v10l3 8M9 10h6"/></svg>',
-    Shoulders: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><path d="M12 8a4 4 0 0 0-4 4v4h8v-4a4 4 0 0 0-4-4z"/><path d="M4 12c0-3 2-5 4-6M20 12c0-3-2-5-4-6"/></svg>',
-    Arms: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><path d="M7 20c1-4 2-8 5-10 2-1 4 0 5 2l1 3-3 1-2-3c-1 3-2 6-2 7"/><path d="M8 8a4 4 0 1 1 8 0"/></svg>',
-    Core: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><ellipse cx="12" cy="12" rx="6" ry="9"/><line x1="6" y1="9" x2="18" y2="9"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="6" y1="15" x2="18" y2="15"/></svg>',
-    Mix: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><path d="M12 3L4 9v12h16V9L12 3z"/><path d="M9 21V12h6v9"/></svg>',
-  };
-  const _svgIcon = _svgFallbacks[_exMuscle] || '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/></svg>';
-  const _exPhotoKey = `ironlog_ex_photo_${exLabel}`;
-  const _savedPhoto = localStorage.getItem(`ironlog_ex_photo_thumb_${exLabel}`) || localStorage.getItem(_exPhotoKey);
-
   card.style.position = 'relative';
 
-  // 2. Photo box
-  const photoBox = document.createElement('div');
-  photoBox.className = 'ex-photo-box';
-  photoBox.id = `ex-photo-box-${id}`;
-  photoBox.style.cssText = 'width:80px;height:80px;flex-shrink:0;margin:8px 0 8px 10px;border:1px solid #1e1e1e;border-radius:8px;overflow:hidden;background:#0d0d0d;display:flex;align-items:center;justify-content:center;cursor:pointer;';
-  if (window._isNewWorkoutFlow) photoBox.style.display = 'none';
-  photoBox.onclick = () => openExDetail(id);
-  const _defMusKey = _EX_DEFAULT_IMG_KEYS[_exMuscle];
-  const _showDefaultPhoto = () => {
-    if (_defMusKey) {
-      photoBox.innerHTML = `<img src="images/small_images/${_defMusKey}.webp" style="width:100%;height:100%;object-fit:cover;display:block;">`;
-      photoBox.querySelector('img').onerror = () => { photoBox.innerHTML = `<div style="color:${muscleColor};opacity:0.4;">${_svgIcon}</div>`; };
-    } else {
-      photoBox.innerHTML = `<div style="color:${muscleColor};opacity:0.4;">${_svgIcon}</div>`;
-    }
-  };
-  if (_savedPhoto) {
-    photoBox.innerHTML = `<img src="${_savedPhoto}" style="width:100%;height:100%;object-fit:cover;display:block;">`;
-  } else if (window.localforage) {
-    // Don't render the default muscle image yet — a saved photo may still be
-    // sitting in localforage (IndexedDB) under a key the synchronous
-    // localStorage checks above don't cover. Rendering the default first and
-    // then swapping to the real photo once this resolves is exactly the
-    // "default image blinks over the user's photo" flash. Leave the box
-    // empty (its own #0d0d0d background) until we know for sure.
-    // Recorded so _waitForExerciseImagesLoaded (the workout-loading overlay's
-    // "images ready" check) knows this box is still waiting on something even
-    // though it has no <img> tag yet — see that function for why.
-    const _photoLookup = window.localforage.getItem(_exPhotoKey).then(p => {
-      if (p) photoBox.innerHTML = `<img src="${p}" style="width:100%;height:100%;object-fit:cover;display:block;">`;
-      else _showDefaultPhoto();
-    });
-    if (window._exPhotoLookupPromises) window._exPhotoLookupPromises.push(_photoLookup);
-  } else {
-    _showDefaultPhoto();
-  }
+  // (No photo box any more — the card is name + sets only; tapping it still
+  // opens the exercise's detail screen, which shows the big photo.)
 
-  // 3. Right content: name + sets
+  // Content: name + sets
   const contentArea = document.createElement('div');
   contentArea.style.cssText = `flex:1;display:flex;flex-direction:column;justify-content:center;padding:${window._isNewWorkoutFlow ? '12px' : '10px'} 12px;gap:6px;cursor:pointer;min-width:0;`;
   contentArea.onclick = () => openExDetail(id);
@@ -11425,20 +11320,20 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
   // 4a. No-sets-done indicator (grey circle — shown when no set is marked done)
   const noDoneCheck = document.createElement('div');
   noDoneCheck.id = `no-done-check-${id}`;
-  noDoneCheck.style.cssText = `display:flex;width:28px;height:28px;border-radius:50%;background:transparent;border:2px solid ${_todayMuscleFilter ? muscleColor : '#555'};flex-shrink:0;align-self:center;margin-right:10px;cursor:pointer;`;
+  noDoneCheck.style.cssText = `display:flex;width:28px;height:28px;border-radius:50%;background:transparent;border:2px solid ${_todayMuscleFilter ? muscleColor : '#555'};flex-shrink:0;align-self:center;margin-left:12px;cursor:pointer;`;
   noDoneCheck.onclick = () => openExDetail(id);
 
   // 4b. Done check (bare checkmark, no circle — shown when exercise is finished)
   const doneCheck = document.createElement('div');
   doneCheck.id = `done-check-${id}`;
-  doneCheck.style.cssText = 'display:none;flex-shrink:0;align-items:center;justify-content:center;align-self:center;margin-right:10px;cursor:pointer;';
+  doneCheck.style.cssText = 'display:none;flex-shrink:0;align-items:center;justify-content:center;align-self:center;margin-left:12px;cursor:pointer;';
   doneCheck.onclick = () => openExDetail(id);
   doneCheck.innerHTML = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="${_todayMuscleFilter ? muscleColor : '#fff'}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
 
   // 4c. In-progress indicator (partial ring — shown when some but not all sets are done)
   const inProgressCheck = document.createElement('div');
   inProgressCheck.id = `in-progress-check-${id}`;
-  inProgressCheck.style.cssText = 'display:none;position:relative;width:28px;height:28px;flex-shrink:0;align-self:center;margin-right:10px;cursor:pointer;';
+  inProgressCheck.style.cssText = 'display:none;position:relative;width:28px;height:28px;flex-shrink:0;align-self:center;margin-left:12px;cursor:pointer;';
   inProgressCheck.onclick = () => openExDetail(id);
   inProgressCheck.innerHTML = `<svg width="28" height="28" viewBox="0 0 28 28" style="transform:rotate(-90deg);"><circle cx="14" cy="14" r="11" fill="none" stroke="#3a2a12" stroke-width="2.5"/><circle class="in-progress-ring-fg" cx="14" cy="14" r="11" fill="none" stroke="#f5a623" stroke-width="2.5" stroke-linecap="round" style="transition:stroke-dashoffset .3s ease;"/></svg><span class="in-progress-frac" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'DM Sans';font-size:9px;font-weight:800;color:#f5a623;"></span>`;
 
@@ -11462,7 +11357,9 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
     trashWrap.append(trashBtn);
     header.append(trashWrap, contentArea);
   } else {
-    header.append(photoBox, contentArea, noDoneCheck, inProgressCheck, doneCheck);
+    // Status circle (not started / in progress / done) on the LEFT of the card,
+  // then name + sets.
+  header.append(noDoneCheck, inProgressCheck, doneCheck, contentArea);
   }
 
   // BODY
@@ -15363,7 +15260,6 @@ function _nwfStartWorkout() {
     // position. See saveWorkoutToList, which sets this right before landing here.
     const _savedName = window._nwfLastSavedWorkoutName;
     const _savedIdx = _savedName ? workouts.findIndex(w => w.name === _savedName) : -1;
-    window._exPhotoLookupPromises = [];
     loadWorkout(_savedIdx >= 0 ? _savedIdx : 0);
     switchTab('log');
     _finishWorkoutLoading(_loadStart);
@@ -20605,7 +20501,8 @@ window.addEventListener('load', function() {
     <div style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;color:#aaa;letter-spacing:.2px;margin-top:2px;">Step 1 of 2</div>
   </div>
   <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 10px calc(env(safe-area-inset-bottom,0px) + 96px);">
-    <div onclick="_openPhotoModalFromHero()" style="position:relative;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;">
+    <!-- Border matches the Workout Name box below (.nwf-field-box: 1px #444). -->
+    <div onclick="_openPhotoModalFromHero()" style="position:relative;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;border:1px solid #444;box-sizing:border-box;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;">
       <img id="nwf-hero-bg" src="images/workout_background.webp" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;filter:brightness(0.85);">
       <button onclick="event.stopPropagation();_openPhotoModalFromHero()" style="position:absolute;top:8px;right:8px;z-index:4;background:rgba(0,0,0,0.55);border:none;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
@@ -23714,23 +23611,9 @@ function buildExerciseLibraryHtml(selectedMuscle) {
     const color = MUSCLE_COLORS[muscle] || '#888';
     const isPickSelected = _pickMode && _pickModeSelected.some(s => s.name === exName);
     const pColor = PICKER_COLORS[muscle] || '#888';
-    const _svgFallbacks = {
-      Chest:'<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><path d="M4 8c2-2 5-3 8-3s6 1 8 3v8c-2 2-5 3-8 3s-6-1-8-3V8z"/><path d="M12 5v14M4 12h16"/></svg>',
-      Back:'<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><path d="M12 3v18M7 6l5-3 5 3M7 18l5 3 5-3M4 10l8 2 8-2M4 14l8 2 8-2"/></svg>',
-      Legs:'<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><path d="M9 3v10l-3 8M15 3v10l3 8M9 10h6"/></svg>',
-      Shoulders:'<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><path d="M12 8a4 4 0 0 0-4 4v4h8v-4a4 4 0 0 0-4-4z"/><path d="M4 12c0-3 2-5 4-6M20 12c0-3-2-5-4-6"/><line x1="12" y1="8" x2="12" y2="4"/></svg>',
-      Arms:'<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><path d="M7 20c1-4 2-8 5-10 2-1 4 0 5 2l1 3-3 1-2-3c-1 3-2 6-2 7"/><path d="M8 8a4 4 0 1 1 8 0"/></svg>',
-      Core:'<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><ellipse cx="12" cy="12" rx="6" ry="9"/><line x1="6" y1="9" x2="18" y2="9"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="6" y1="15" x2="18" y2="15"/></svg>',
-      Mix:'<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><path d="M12 3L4 9v12h16V9L12 3z"/><path d="M9 21V12h6v9"/></svg>',
-    };
-    const _svgIcon = _svgFallbacks[muscle] || '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M8 12h8"/></svg>';
-    const _exPhoto = localStorage.getItem(`ironlog_ex_photo_thumb_${exName}`) || localStorage.getItem(`ironlog_ex_photo_${exName}`);
-    const _thumbInner = _exPhoto
-      ? `<img src="${_exPhoto}" style="width:100%;height:100%;object-fit:cover;display:block;">`
-      : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:${color};opacity:0.5;">${_svgIcon}</div>`;
-    const thumbHtml = `<div style="position:relative;width:80px;height:80px;flex-shrink:0;margin:8px 12px 8px 10px;">
-      <div style="width:100%;height:100%;border:1px solid #1e1e1e;border-radius:8px;overflow:hidden;background:#0d0d0d;">${_thumbInner}</div>
-    </div>`;
+    // No exercise thumbnail any more — same plain 96px-tall spacer as the
+    // Exercises tab's other lists.
+    const thumbHtml = `<div style="width:15px;min-height:96px;flex-shrink:0;"></div>`;
     const pickerCheck = _pickMode
       ? `<div style="display:flex;align-items:center;padding-right:12px;"><div class="picker-check" style="width:22px;height:22px;border-radius:50%;border:2px solid ${isPickSelected ? 'var(--accent)' : '#333'};background:${isPickSelected ? 'var(--accent)' : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:all .15s;">${isPickSelected ? '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</div></div>`
       : (extraRight ? `<div style="display:flex;align-items:center;padding-right:8px;">${extraRight}</div>` : '');
@@ -26747,9 +26630,6 @@ function deleteCoachWorkout(id) {
         <span style="font-family:'DM Sans';font-size:12px;font-weight:600;color:rgba(255,255,255,0.35);">21:9</span>
       </span>
     </div>
-    <div id="ex-photo-preview-11-wrap" style="width:64px;height:64px;flex-shrink:0;align-self:center;">
-      <canvas id="ex-photo-preview-11" style="width:64px;height:64px;border-radius:6px;border:1px solid #2a2a2a;display:block;"></canvas>
-    </div>
   </div>
   <!-- Crop area — 21:9 container -->
   <div id="ex-photo-cropper-wrap" style="position:relative;width:100%;flex-shrink:0;overflow:hidden;background:#111;">
@@ -29118,11 +28998,6 @@ function _openExPhotoCropper(img) {
   overlay.style.display = 'flex';
   overlay.style.zIndex = '9999';
 
-  // 1:1 preview is only meaningful for exercises, not workouts
-  const _isWorkoutCtx = window._workoutPhotoMode || window._newWorkoutPhotoStepMode;
-  const p11wrap = document.getElementById('ex-photo-preview-11-wrap');
-  if (p11wrap) p11wrap.style.display = _isWorkoutCtx ? 'none' : '';
-
   const wrap = document.getElementById('ex-photo-cropper-wrap');
   const canvas = document.getElementById('ex-photo-cropper-canvas');
   if (!canvas) return;
@@ -29269,8 +29144,7 @@ function _updatePreviews() {
   const s = _exPhotoCropState;
   if (!s.img) return;
   const p32 = document.getElementById('ex-photo-preview-32');
-  const p11 = document.getElementById('ex-photo-preview-11');
-  if (!p32 || !p11) return;
+  if (!p32) return;
   const srcX = s.cropX / s.scale;
   const srcY = s.cropY / s.scale;
   const srcW = s.cropW / s.scale;
@@ -29295,12 +29169,7 @@ function _updatePreviews() {
   } else {
     p32ctx.drawImage(s.img, srcX, srcY, srcW, srcH, 0, 0, p32.width, p32.height);
   }
-  // 1:1 preview
-  const sqSrcW = srcH;
-  const sqSrcX = srcX + (srcW - sqSrcW) / 2;
-  const p11size = Math.round(64 * dpr);
-  p11.width = p11size; p11.height = p11size;
-  p11.getContext('2d').drawImage(s.img, sqSrcX, srcY, sqSrcW, srcH, 0, 0, p11size, p11size);
+  // (The small 1:1 preview is gone — exercises no longer show small images.)
   // Workout name overlay on preview (workout context only)
   const _isWCtx = window._workoutPhotoMode || window._newWorkoutPhotoStepMode;
   const _pg = document.getElementById('ex-photo-preview-gradient');
@@ -29331,37 +29200,23 @@ function saveExPhotoCrop() {
   const srcW = s.cropW / s.scale;
   const srcH = s.cropH / s.scale;
 
-  // 3:2 image at 300x200
+  // The one exercise image: 21:9 at 420×180. (No square/small versions any
+  // more — nothing displays them.)
   const out32 = document.createElement('canvas');
   out32.width = 420; out32.height = 180;
   out32.getContext('2d').drawImage(img, srcX, srcY, srcW, srcH, 0, 0, 420, 180);
   let url32 = out32.toDataURL('image/webp', 0.85);
   if (!url32.startsWith('data:image/webp')) url32 = out32.toDataURL('image/jpeg', 0.85);
 
-  // 1:1 image at 200x200 (center square of crop)
-  const sqSrcW = srcH;
-  const sqSrcX = srcX + (srcW - sqSrcW) / 2;
-  const out11 = document.createElement('canvas');
-  out11.width = 200; out11.height = 200;
-  out11.getContext('2d').drawImage(img, sqSrcX, srcY, sqSrcW, srcH, 0, 0, 200, 200);
-  let url11 = out11.toDataURL('image/webp', 0.85);
-  if (!url11.startsWith('data:image/webp')) url11 = out11.toDataURL('image/jpeg', 0.85);
-
-  // Tiny 80×80 thumbnail for localStorage (sync card display, ~3 KB)
-  const outThumb = document.createElement('canvas');
-  outThumb.width = 80; outThumb.height = 80;
-  outThumb.getContext('2d').drawImage(img, sqSrcX, srcY, sqSrcW, srcH, 0, 0, 80, 80);
-  let urlThumb = outThumb.toDataURL('image/webp', 0.7);
-  if (!urlThumb.startsWith('data:image/webp')) urlThumb = outThumb.toDataURL('image/jpeg', 0.7);
-
   if (window._newExPhotoMode) {
-    window._newExPhoto = url11;
+    // The New/Edit Exercise form's box is 21:9 too, so it previews exactly
+    // what gets saved.
+    window._newExPhoto = url32;
     window._newExPhoto32 = url32;
-    window._newExPhotoThumb = urlThumb;
     const imgEl = document.getElementById('newExPhotoImg');
     const defImg = document.getElementById('newExPhotoDefaultImg');
     const label = document.getElementById('newExPhotoLabel');
-    if (imgEl) { imgEl.src = url11; imgEl.style.display = 'block'; }
+    if (imgEl) { imgEl.src = url32; imgEl.style.display = 'block'; }
     if (defImg) defImg.style.display = 'none';
     if (label) { label.textContent = 'Change Image'; label.style.color = 'var(--accent)'; }
     window._newExPhotoMode = false;
@@ -29428,7 +29283,6 @@ function saveExPhotoCrop() {
     if (window.localforage)
       window.localforage.setItem(`ironlog_ex_photo_${exName}`, url32).catch(e => showToast('Photo save failed'));
     else { try { localStorage.setItem(`ironlog_ex_photo_${exName}`, url32); } catch(e) { showToast('Storage full — photo not saved'); } }
-    try { localStorage.setItem(`ironlog_ex_photo_thumb_${exName}`, urlThumb); } catch(_) {}
   }
 
   // Show 3:2 in overlay header — remove placeholder if present
@@ -29444,23 +29298,6 @@ function saveExPhotoCrop() {
   if (noPhotoWrap) noPhotoWrap.style.display = 'none';
 
   setTimeout(() => { if (typeof renderExercisesTab === 'function') renderExercisesTab(); }, 100);
-
-  // Update thumbnail in exercise card in workout list immediately
-  if (exName) {
-    document.querySelectorAll('.exercise-card').forEach(card => {
-      if (card.dataset.exname === exName) {
-        const photoBox = card.querySelector('.ex-photo-box');
-        if (photoBox) {
-          let img = photoBox.querySelector('img');
-          if (img) {
-            img.src = url11;
-          } else {
-            photoBox.innerHTML = `<img src="${url11}" style="width:100%;height:100%;object-fit:cover;display:block;">`;
-          }
-        }
-      }
-    });
-  }
 
   closeExPhotoCropper();
 }
@@ -29528,8 +29365,7 @@ function removeExPhoto() {
     window._newExPhotoMode = false;
     window._newExPhoto = null;
     window._newExPhoto32 = null;
-    window._newExPhotoThumb = null;
-    const photoImg = document.getElementById('newExPhotoImg');
+      const photoImg = document.getElementById('newExPhotoImg');
     const defImg = document.getElementById('newExPhotoDefaultImg');
     const label = document.getElementById('newExPhotoLabel');
     if (photoImg) { photoImg.src = ''; photoImg.style.display = 'none'; }
@@ -29802,7 +29638,6 @@ function editExerciseDetail() {
   // Set up edit mode
   window._editExName = name;
   window._newExPhoto32 = null;
-  window._newExPhotoThumb = null;
   window._newExMuscle = exData.muscle || 'Chest';
   window._newExCompoundMuscles = exData.compoundMuscles || [];
   window._newExSelectedSubMuscles = exData.subMuscles || [];
@@ -30838,17 +30673,26 @@ function _renderTodayWeekPRStars() {
   // Rendered grey/unlit first regardless of the real count, and only swapped
   // to their real lit color (via CSS transition) once the carousel's own
   // slide transition has settled — see _animateTodayPRStars/TODAY_CAROUSEL_COLOR_DELAY.
-  const star = (color, n, label) => {
+  // Sized/placed to the design mock: 81px-wide columns (so the larger stars
+  // overlap their neighbours); the star shape fills ~83% of its SVG box, so
+  // side SVGs are 106px (≈88px visible) and BEST SET 126px (≈105px visible),
+  // lifted 6px and drawn in front (z-index). Star box 104px + 8px + 24px
+  // label; the group is nudged up 1px (see #today-pr-stars) so the side
+  // stars' centers sit ~18px above the circle's center, labels ~55px below.
+  const star = (color, n, label, size, lift, z) => {
     const lit = n > 0;
-    return `<span style="display:inline-flex;flex-direction:column;align-items:center;gap:4px;">
-      <span style="position:relative;display:inline-flex;align-items:center;justify-content:center;width:68px;height:68px;">
-        <svg class="today-pr-star-svg" data-lit-fill="${lit ? color : '#333'}" width="68" height="68" viewBox="0 0 24 24" fill="#333" style="transition:fill .5s ease;"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
-        <span class="today-pr-star-num" data-lit-color="${lit ? '#000' : '#777'}" style="position:absolute;font-size:26px;font-weight:800;color:#777;line-height:1;transform:translateY(3px);transition:color .5s ease;">${n}</span>
+    return `<span style="position:relative;z-index:${z};width:81px;display:flex;flex-direction:column;align-items:center;gap:8px;">
+      <span style="position:relative;width:81px;height:104px;display:flex;align-items:center;justify-content:center;">
+        <span style="position:absolute;left:50%;top:50%;width:${size}px;height:${size}px;margin-left:${-size / 2}px;margin-top:${-size / 2 - lift}px;display:flex;align-items:center;justify-content:center;">
+          <svg class="today-pr-star-svg" data-lit-fill="${lit ? color : '#333'}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="#333" style="position:absolute;inset:0;transition:fill .5s ease;"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
+          <span class="today-pr-star-num" data-lit-color="${lit ? '#000' : '#777'}" style="position:relative;font-size:42px;font-weight:800;color:#777;line-height:1;transform:translateY(${(size * 3 / 68).toFixed(1)}px);transition:color .5s ease;">${n}</span>
+        </span>
       </span>
-      <span class="today-pr-star-label" data-lit-color="${lit ? color : '#555'}" style="font-size:10px;font-weight:700;color:#555;letter-spacing:.5px;transition:color .5s ease;">${label}</span>
+      <span class="today-pr-star-label" data-lit-color="${lit ? color : '#555'}" style="font-size:20px;font-weight:700;color:#555;letter-spacing:.3px;line-height:24px;white-space:nowrap;transition:color .5s ease;">${label}</span>
     </span>`;
   };
-  mount.innerHTML = star('#e8ff47', maxN, 'MAX') + star('#ff8c42', bestSetN, 'BEST SET') + star('#a78bfa', volN, 'VOL');
+  // BEST SET (middle) is drawn in front of the other two via z-index.
+  mount.innerHTML = star('#e8ff47', maxN, 'MAX', 106, 0, 1) + star('#ff8c42', bestSetN, 'BEST SET', 126, 6, 2) + star('#a78bfa', volN, 'VOL', 106, 0, 1);
   clearTimeout(window._todayPRStarsColorTimer);
   window._todayPRStarsColorTimer = setTimeout(() => _animateTodayPRStars(mount), TODAY_CAROUSEL_COLOR_DELAY);
 }
@@ -31519,69 +31363,12 @@ function _hideWorkoutLoadingAnim() {
 }
 window._hideWorkoutLoadingAnim = _hideWorkoutLoadingAnim;
 
-// Fades the loading overlay out only once every exercise thumbnail has actually
-// finished loading (instead of a fixed timer), so images are guaranteed visible
-// the moment it clears. Tracks images already in the DOM plus any that show up
-// shortly after (exercise photos can resolve async via localforage/IndexedDB),
-// with a hard cap so a stuck/broken image can never leave the overlay stuck.
-function _waitForExerciseImagesLoaded(callback, maxWait = 3000) {
-  const list = document.getElementById('exerciseList');
-  if (!list) { callback(); return; }
-  let settled = false;
-  let scanDone = false;
-  const pending = new Set();
-  const finish = () => {
-    if (settled) return;
-    settled = true;
-    obs.disconnect();
-    clearTimeout(hardTimer);
-    callback();
-  };
-  const track = (img) => {
-    if (img.complete) return;
-    pending.add(img);
-    const done = () => {
-      pending.delete(img);
-      img.removeEventListener('load', done);
-      img.removeEventListener('error', done);
-      if (scanDone && pending.size === 0) finish();
-    };
-    img.addEventListener('load', done);
-    img.addEventListener('error', done);
-  };
-  list.querySelectorAll('.ex-photo-box img').forEach(track);
-  const obs = new MutationObserver(muts => {
-    muts.forEach(m => m.addedNodes.forEach(n => {
-      if (n.nodeType !== 1) return;
-      if (n.tagName === 'IMG') track(n);
-      n.querySelectorAll?.('img').forEach(track);
-    }));
-  });
-  obs.observe(list, { childList: true, subtree: true });
-  const hardTimer = setTimeout(finish, maxWait);
-  // Wait for every card's own async photo lookup (localforage/IndexedDB — see
-  // addExerciseCard, which pushes each lookup's promise onto
-  // window._exPhotoLookupPromises) to resolve and insert its <img> tag before
-  // treating the initial scan as complete. A photo box mid-lookup has no <img>
-  // tag yet, so the querySelectorAll/MutationObserver tracking above can't see
-  // it at all — without this, a lookup slower than a fixed short timer let the
-  // scan finish (and the overlay fade out) before that image ever appeared,
-  // which is exactly the "thumbnails popping in after loading" bug this fixes.
-  Promise.all(window._exPhotoLookupPromises || []).finally(() => {
-    list.querySelectorAll('.ex-photo-box img').forEach(track);
-    scanDone = true;
-    if (pending.size === 0) finish();
-  });
-}
-
-// Keeps the "LOADING WORKOUT" overlay up for at least MIN_MS total, using that
-// time to load the exercises/images — only fading out early once images are
-// both ready AND the minimum has elapsed, whichever comes later.
+// Keeps the "LOADING WORKOUT" overlay up for at least MIN_MS total. (It used
+// to also wait for every exercise card's photo to load — cards no longer
+// show photos, so there's nothing left to wait for.)
 function _finishWorkoutLoading(startTs, MIN_MS = 1200) {
-  _waitForExerciseImagesLoaded(() => {
-    const remain = Math.max(0, MIN_MS - (performance.now() - startTs));
-    setTimeout(_hideWorkoutLoadingAnim, remain);
-  });
+  const remain = Math.max(0, MIN_MS - (performance.now() - startTs));
+  setTimeout(_hideWorkoutLoadingAnim, remain);
 }
 
 function _wtabLoadWorkout(idx) {
@@ -31593,9 +31380,6 @@ function _wtabLoadWorkout(idx) {
     window._activeTabHighlight = null;
     window._loadFromToday = false;
     window._wtabSelectedIdx = null;
-    // Reset before loadWorkout builds the cards below, so it collects only
-    // this load's own photo lookups — see addExerciseCard/_waitForExerciseImagesLoaded.
-    window._exPhotoLookupPromises = [];
     loadWorkout(idx);
     switchTab('log');
     const _now = Date.now();
@@ -31620,7 +31404,6 @@ function w2SheetStart() {
     window._activeTabHighlight = null;
     window._loadFromToday = false;
     window._wtabSelectedIdx = null;
-    window._exPhotoLookupPromises = [];
     loadWorkout(idx);
     switchTab('log');
     const _now = Date.now();
