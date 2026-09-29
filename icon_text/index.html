@@ -709,80 +709,23 @@ body.ex-tab-detail-open #ex-float-bar{display:none !important;}
 .cal-target-badge{display:flex;align-items:center;justify-content:center;opacity:1;}
 .cal-target-badge.achieved{opacity:1;}.cal-target-badge-future{opacity:0.15;}
 .cal-target-badge svg{width:20px;height:20px;}
-.cal-target-badge-cardio{color:#7ec8e3;}
 .cal-target-badge-workout{color:#fff;}
 .cal-day{position:relative;aspect-ratio:1;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:13px;font-weight:600;cursor:default;color:var(--muted);}
 .cal-day.has-workout{background:transparent;border:2px solid var(--accent);border-radius:50%;color:var(--accent);cursor:pointer;font-size:13px;}
-.cal-day.has-cardio-only{background:transparent;border:2px solid #7ec8e3;color:#7ec8e3;cursor:pointer;font-size:13px;}
-.cal-day.has-cardio-only:hover{background:rgba(126,200,227,.08);}
 .cal-day.has-workout:hover{background:rgba(232,255,71,.08);}
-.cal-day.has-both{
-  position:relative;
-  border-radius:50%;
-  color:var(--accent);
-  cursor:pointer;
-  font-size:13px;
-  background: transparent;
-  border: 2px solid transparent;
-  background-image:
-    linear-gradient(var(--surface2), var(--surface2)),
-    linear-gradient(135deg, #7ec8e3 0%, #7ec8e3 50%, #e8ff47 50%, #e8ff47 100%);
-  background-origin: border-box;
-  background-clip: padding-box, border-box;
-}
-.cal-day.has-both:hover{
-  background-image:
-    linear-gradient(rgba(232,255,71,.05), rgba(232,255,71,.05)),
-    linear-gradient(135deg, #7ec8e3 0%, #7ec8e3 50%, #e8ff47 50%, #e8ff47 100%);
-  background-origin: border-box;
-  background-clip: padding-box, border-box;
-}
 .cal-day.today{border:1px solid #fff;color:var(--text);}
 .cal-day.today.selected{border-color:transparent;}
 .cal-day.selected{outline:2px solid #ff8c42;outline-offset:1px;border-radius:50%;}
 .cal-day.empty{opacity:0;}
 .cal-day.future{cursor:pointer;}
 .cal-day.past{opacity:.55;}
-/* Completed workout/cardio days stay fully bright even in the past — they should stand out, not fade. */
-.cal-day.past.has-workout,.cal-day.past.has-cardio-only,.cal-day.past.has-both{opacity:1;}
+/* Completed workout days stay fully bright even in the past — they should stand out, not fade. */
+.cal-day.past.has-workout{opacity:1;}
 .cal-day.cal-day-adjacent{opacity:.4;}
 /* Same exception for prev/next-month days — a completed workout must stay visible even across the boundary. */
-.cal-day.cal-day-adjacent.has-workout,.cal-day.cal-day-adjacent.has-cardio-only,.cal-day.cal-day-adjacent.has-both{opacity:1;}
-.cal-day-cardio-dot{width:5px;height:5px;border-radius:50%;background:#7ec8e3;margin-top:2px;}
+.cal-day.cal-day-adjacent.has-workout{opacity:1;}
 .cal-day-dots{display:flex;gap:2px;margin-top:2px;}
 
-.cal-cardio-item{background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:7px;overflow:hidden;}
-.cal-cardio-header{display:flex;align-items:center;gap:8px;padding:10px 16px 10px 12px;}
-.cal-cardio-info{flex:1;}
-.cal-cardio-name{font-family:"Bebas Neue";font-size:15px;letter-spacing:.5px;color:#7ec8e3;}
-.cal-cardio-meta{font-size:11px;color:#fff;}
-.cal-cardio-delete{background:transparent;border:none;color:#555;cursor:pointer;padding:5px;display:flex;align-items:center;}
-.cal-cardio-edit{background:transparent;border:none;color:#555;cursor:pointer;padding:5px;display:flex;align-items:center;width:26px;height:26px;}
-.cal-cardio-edit svg{width:14px;height:14px;}
-.cal-cardio-edit:hover{color:var(--accent);}
-.cal-cardio-delete svg{width:14px;height:14px;}
-.cal-cardio-delete:hover{color:var(--accent2);}
-.cal-add-cardio-btn{width:100%;background:rgba(126,200,227,.08);border:1px solid rgba(126,200,227,.25);border-radius:8px;color:#7ec8e3;font-family:"DM Sans";font-size:12px;font-weight:700;padding:9px;cursor:pointer;margin-top:6px;transition:all .2s;}
-.cal-add-cardio-btn:hover{background:rgba(126,200,227,.18);}
-.cal-cardio-form{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:7px;}
-.cal-cardio-form-row{display:flex;gap:7px;margin-bottom:8px;}
-.cal-cardio-select{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:"DM Sans";font-size:12px;font-weight:600;padding:7px 10px;outline:none;cursor:pointer;}
-.cal-cardio-select:focus{border-color:#7ec8e3;}
-.cal-mins-wheel{display:flex;align-items:center;gap:4px;}
-.cal-mins-wheel-btn{background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--muted);font-size:16px;font-weight:700;width:30px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;user-select:none;}
-.cal-mins-wheel-btn:hover{border-color:#7ec8e3;color:#7ec8e3;}
-.cal-mins-wheel-val{font-family:"Bebas Neue";font-size:22px;color:#fff;min-width:44px;text-align:center;line-height:1;}
-.cal-cardio-custom-row{display:flex;gap:6px;margin-bottom:8px;}
-.cal-cardio-custom-input{flex:1;background:var(--surface);border:1px solid #7ec8e3;border-radius:7px;color:var(--text);font-family:"DM Sans";font-size:16px;font-weight:600;padding:7px 10px;outline:none;}
-.cal-cardio-custom-input::placeholder{color:var(--muted);}
-.cal-cardio-custom-add{background:rgba(126,200,227,.15);border:1px solid rgba(126,200,227,.4);border-radius:7px;color:#7ec8e3;font-family:"DM Sans";font-size:12px;font-weight:700;padding:7px 12px;cursor:pointer;white-space:nowrap;transition:all .2s;}
-.cal-cardio-custom-add:hover{background:rgba(126,200,227,.28);}
-.cal-cardio-save-btn{flex:1;background:rgba(126,200,227,.15);border:1px solid rgba(126,200,227,.4);border-radius:8px;color:#7ec8e3;font-family:"DM Sans";font-size:13px;font-weight:700;padding:9px;cursor:pointer;transition:all .2s;}
-.cal-cardio-save-btn:hover{background:rgba(126,200,227,.28);}
-.cal-cardio-cancel-btn{flex:1;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:"DM Sans";font-size:13px;font-weight:700;padding:9px;cursor:pointer;transition:all .2s;}
-.cal-cardio-cancel-btn:hover{border-color:var(--accent2);color:var(--accent2);}
-.cal-cardio-btn-row{display:flex;gap:8px;}
-.cal-cardio-target-row{display:flex;align-items:center;gap:8px;padding:8px 0;color:var(--muted);font-size:11px;}
 .cal-targets-row{display:flex;gap:10px;padding:10px 0 4px;border-top:1px solid var(--border);margin-top:8px;}
 .cal-target-item{flex:1;display:flex;flex-direction:column;gap:4px;align-items:center;}
 .cal-target-val{font-family:'Bebas Neue';font-size:13px;min-width:28px;text-align:center;line-height:1;}
@@ -791,8 +734,6 @@ body.ex-tab-detail-open #ex-float-bar{display:none !important;}
 .cal-target-label{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;text-align:center;}
 .cal-target-control{display:flex;align-items:center;gap:5px;}
 .cal-target-unit{font-size:11px;color:var(--muted);white-space:normal;text-align:center;}
-.cal-cardio-target-input{width:55px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:"DM Sans";font-size:12px;font-weight:700;padding:4px 8px;text-align:center;outline:none;}
-.cal-cardio-target-input:focus{border-color:#7ec8e3;}
 .cal-week-achieved{font-size:9px;font-weight:700;color:#7ec8e3;}.cal-day-dot{width:5px;height:5px;border-radius:50%;background:var(--accent);margin-top:2px;}
 .cal-workout-list{margin-top:14px;border-top:1px solid var(--border);padding-top:12px;}
 .cal-workout-item{background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:7px;overflow:hidden;}
@@ -2320,8 +2261,8 @@ function _showOfflineBanner(show) {
 
 // ── Dual-write localStorage + IndexedDB ───────────────
 const _BRAND_SCOPED_KEYS = new Set([
-  'ironlog_workouts','ironlog_deleted_workouts','ironlog_cardio',
-  'ironlog_custom_ex','ironlog_planned','ironlog_cardio_custom',
+  'ironlog_workouts','ironlog_deleted_workouts',
+  'ironlog_custom_ex','ironlog_planned',
   'ironlog_session','ironlog_session_start','ironlog_draft_id',
   'ironlog_deleted_tab_names','ironlog_hidden_ex','ironlog_hidden_lib_workouts',
   'ironlog_brand_off','ironlog_data_reset_at'
@@ -2584,21 +2525,32 @@ let volumeChartInst, strengthChartInst, exHistMiniChartInst;
 let volumeRange = 'week', strengthRange = 'week', globalRange = 'week', strengthMuscle = 'Chest';
 let lastTimerSecs = (parseInt(localStorage.getItem('ironlog_timer_secs')) || 60);
 window.lastTimerSecs = lastTimerSecs;
-let cardioLog = JSON.parse(_LS.get('ironlog_cardio') || '[]'); // [{date, type, mins}]
-let lastCardioType = localStorage.getItem('ironlog_cardio_type') || 'Run';
-let lastCardioDuration = parseInt(localStorage.getItem('ironlog_cardio_dur') || '30');
-let cardioWeekTarget = parseInt(localStorage.getItem('ironlog_cardio_target') || '150');
-let customCardioTypes = JSON.parse(_LS.get('ironlog_cardio_custom') || '[]');
-function saveCustomCardioTypes() { _LS.set('ironlog_cardio_custom', JSON.stringify(customCardioTypes)); }
-function getAllCardioTypes() { return ['Run','Walk','Incline','Swim','Bike',...customCardioTypes,'Other']; }
 let workoutWeekTarget = parseInt(localStorage.getItem('ironlog_workout_target') || '3');
-function saveCardio() { _LS.set('ironlog_cardio', JSON.stringify(cardioLog)); if(window._currentUser) if(window.syncToFirestore) window.syncToFirestore(); }
 
 // ── AUTO-DRAFT SAVE ─────────────────────────────
 let _draftId = _LS.get('ironlog_draft_id') ? parseInt(_LS.get('ironlog_draft_id')) : null;
 let _wtabMuscleFilter = null;
 let plannedWorkouts = (() => { try { return JSON.parse(_LS.get('ironlog_planned') || '[]') || []; } catch(e) { return []; } })();
 function savePlanned() { _LS.set('ironlog_planned', JSON.stringify(plannedWorkouts)); }
+
+// Cardio recording/planning was removed from the app. Deletes whatever an
+// older version left on this device: every cardio key (any brand/uid scope,
+// plus its IndexedDB mirror) and any cardio items in the planned list. The
+// cloud copy goes away on the next syncToFirestore, which overwrites the
+// whole user document without the old cardio fields.
+function _purgeLegacyCardioData() {
+  try {
+    Object.keys(localStorage).filter(k => /^ironlog_.*cardio/.test(k)).forEach(k => {
+      localStorage.removeItem(k);
+      try { _IDB.remove(k); } catch(e) {}
+    });
+  } catch(e) {}
+  if ((plannedWorkouts || []).some(p => p && p.type === 'cardio')) {
+    plannedWorkouts = plannedWorkouts.filter(p => p && p.type !== 'cardio');
+    savePlanned();
+  }
+}
+_purgeLegacyCardioData();
 
 function autoSaveDraft() {
   // Only save if at least one set is marked done
@@ -2755,18 +2707,7 @@ function _checkFinishReadyImpl() {
   // Update PICK button visibility based on whether workouts exist
   const _inStartScreen = document.getElementById('today-start-screen')?.style.display !== 'none';
   if (_inStartScreen) {
-    const _hasWk = (() => {
-    const _dn = JSON.parse(_LS.get('ironlog_deleted_tab_names')||'[]');
-    const _seen = new Set();
-    return (workouts||[]).filter(w => {
-      if (w._draft) return false;
-      if (_dn.includes(w.name)) return false;
-      const k = (w.name?.trim().toLowerCase())||'';
-      if (_seen.has(k)) return false;
-      _seen.add(k);
-      return true;
-    }).length > 0;
-  })();
+    const _hasWk = _homeHasStartableWorkouts(); // own OR brand workouts
     // Shown whenever workouts exist, regardless of whether a plan exists for today —
     // the home page no longer swaps this button out for a plan card/preview (that's
     // now only surfaced as an accent border on the Workouts tab).
@@ -3159,18 +3100,7 @@ function showTodayStartScreen(skipGoalReplay) {
   if (_tabsEl2) _tabsEl2.style.display = '';
   ['workoutsToggleBar','exercisesToggleBar','progressToggleBar','w2ToggleBar','profileToggleBar'].forEach(id=>{const b=document.getElementById(id);if(b)b.style.display='none';});
   // Hide PICK if no saved workouts exist
-  const hasWorkouts = (() => {
-    const _dn = JSON.parse(_LS.get('ironlog_deleted_tab_names')||'[]');
-    const _seen = new Set();
-    return (workouts||[]).filter(w => {
-      if (w._draft) return false;
-      if (_dn.includes(w.name)) return false;
-      const k = (w.name?.trim().toLowerCase())||'';
-      if (_seen.has(k)) return false;
-      _seen.add(k);
-      return true;
-    }).length > 0;
-  })();
+  const hasWorkouts = _homeHasStartableWorkouts(); // own OR brand workouts
   const loadWrap = document.getElementById('today-load-btn-wrap');
   if (loadWrap) loadWrap.style.display = hasWorkouts ? '' : 'none';
   renderTodayPlanCard();
@@ -3195,7 +3125,6 @@ function replaceTodayPlan() {
   const _now = new Date();
   const _ty = _now.getFullYear(), _tm = _now.getMonth(), _td = _now.getDate();
   const todayPlan = (plannedWorkouts||[]).find(p => {
-    if (p.type === 'cardio') return false;
     const d = new Date(p.date);
     return d.getFullYear()===_ty && d.getMonth()===_tm && d.getDate()===_td;
   });
@@ -3861,18 +3790,7 @@ function renderTodayPlanCard() {
   // always renders the same as the old "no plan for today" state, so nothing else about
   // the home page changes.
   cardEl.style.display = 'none';
-  const hasWorkouts = (() => {
-    const _dn = JSON.parse(_LS.get('ironlog_deleted_tab_names')||'[]');
-    const _seen = new Set();
-    return (workouts||[]).filter(w => {
-      if (w._draft) return false;
-      if (_dn.includes(w.name)) return false;
-      const k = (w.name?.trim().toLowerCase())||'';
-      if (_seen.has(k)) return false;
-      _seen.add(k);
-      return true;
-    }).length > 0;
-  })();
+  const hasWorkouts = _homeHasStartableWorkouts(); // own OR brand workouts
   if (loadWrap) loadWrap.style.display = hasWorkouts ? '' : 'none';
   if (replaceBtn) replaceBtn.style.display = 'none';
   const deletePlanBtn = document.getElementById('today-delete-plan-btn');
@@ -5028,9 +4946,12 @@ function _alignExCardCircles() {
   const list = document.getElementById('exerciseList');
   if (!btn || !list || !btn.offsetParent) return;
   const cx = _layoutCenterX;
-  // Remembered so the exercise picker (Add exercise) can put its check
-  // circles at this same spot — see _alignPickCircles.
+  // Remembered so the exercise picker (Add exercise) and the Exercises tab's
+  // long-press circles can sit at this same spot — see _alignPickCircles.
+  // Also persisted per screen width, for when the Exercises tab is opened
+  // before any workout screen this session.
   window._exCircleCenterX = cx(btn);
+  try { localStorage.setItem('ironlog_ex_circle_cx', JSON.stringify({ w: window.innerWidth, x: window._exCircleCenterX })); } catch(e) {}
   const card = list.querySelector('.exercise-card');
   if (!card) return;
   const circ = [...card.querySelectorAll('[id^="no-done-check-"],[id^="in-progress-check-"],[id^="done-check-"]')].find(el => el.offsetParent);
@@ -5055,13 +4976,34 @@ function _exPickCircleHtml(sel) {
   // Same size as the workout card's circle: 28px + 2px border (32px overall).
   return `<div style="display:flex;align-items:center;padding-left:var(--pick-circle-ml,12px);flex-shrink:0;"><div class="picker-check" style="width:28px;height:28px;border-radius:50%;border:2px solid ${sel ? 'var(--accent)' : '#333'};background:${sel ? 'var(--accent)' : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:all .15s;">${sel ? '<svg width="15" height="15" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</div></div>`;
 }
+// Where the active workout's card circles are centered (see
+// _alignExCardCircles): this session's measurement, else the one remembered
+// for this screen width; null if never measured.
+function _exCircleTargetX() {
+  if (window._exCircleCenterX != null) return window._exCircleCenterX;
+  try {
+    const s = JSON.parse(localStorage.getItem('ironlog_ex_circle_cx') || 'null');
+    if (s && s.w === window.innerWidth && typeof s.x === 'number') return s.x;
+  } catch(e) {}
+  return null;
+}
+// Exercises tab: lines up the row circles with the workout cards' circles —
+// the picker's check circles (--pick-circle-ml) and the long-press select
+// circles (--exsel-circle-ml) — then re-aligns the select-all circle over the
+// (just moved) row circles. 12px defaults until a workout has been measured.
 function _alignPickCircles() {
-  const target = window._exCircleCenterX;
+  const target = _exCircleTargetX();
   const host = document.getElementById('exercisesTabContent');
-  const el = host && host.querySelector('.picker-check');
-  if (target == null || !el || !el.offsetParent) return;
-  const cur = parseFloat(host.style.getPropertyValue('--pick-circle-ml')) || 12;
-  host.style.setProperty('--pick-circle-ml', Math.max(0, cur + target - _layoutCenterX(el)).toFixed(1) + 'px');
+  if (target == null || !host) return;
+  [['.picker-check', '--pick-circle-ml'], ['.extab-del-circle', '--exsel-circle-ml']].forEach(([sel, v]) => {
+    const el = host.querySelector(sel);
+    if (!el || !el.offsetParent) return;
+    const cur = parseFloat(host.style.getPropertyValue(v)) || 12;
+    host.style.setProperty(v, Math.max(0, cur + target - _layoutCenterX(el)).toFixed(1) + 'px');
+  });
+  const saBtn = document.getElementById('extab-selectall-btn');
+  const rowCirc = host.querySelector('.extab-del-circle');
+  if (saBtn && rowCirc) _alignSelectAllCircle(saBtn, rowCirc);
 }
 window._exPickCircleHtml = _exPickCircleHtml;
 window._alignPickCircles = _alignPickCircles;
@@ -5661,9 +5603,14 @@ function renderExercisesTab() {
     ? `_exToggleDelPick(${_nJs(n)})`
     : `if(_exLPConsume(${_nJs(n)}))return;openExtabExOverlay('${n.replace(/'/g,"\\'")}')`;
   const _exRowCircle = n => (_exDelMode && _exSelectable(n))
-    ? `<div style="display:flex;align-items:center;padding-left:12px;"><div class="extab-del-circle" style="width:26px;height:26px;border-radius:50%;border:2px solid var(--accent);background:${_exRowPicked(n) ? 'var(--accent)' : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s;${_exDelJustEntered ? 'animation:tapPopScale .3s cubic-bezier(.175,.885,.32,1.275);' : ''}">${_exRowPicked(n) ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : ''}</div></div>`
+    ? `<div style="display:flex;align-items:center;padding-left:var(--exsel-circle-ml,12px);"><div class="extab-del-circle" style="width:26px;height:26px;border-radius:50%;border:2px solid var(--accent);background:${_exRowPicked(n) ? 'var(--accent)' : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s;${_exDelJustEntered ? 'animation:tapPopScale .3s cubic-bezier(.175,.885,.32,1.275);' : ''}">${_exRowPicked(n) ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : ''}</div></div>`
     : '';
-  const _exRowBorder = n => _exRowPicked(n) ? 'border:2px solid var(--accent);' : 'border:1px solid #555;';
+  // Selected rows (long-press select OR the picker in an active workout) get
+  // an --accent frame: 1px border + 1px inset shadow — looks 2px, but the
+  // row's size never changes, so its circle stays aligned with the workout's.
+  const _exRowBorder = n => (_exRowPicked(n) || (_pickMode && _pickModeSelected.some(s => s.name === n)))
+    ? 'border:1px solid var(--accent);box-shadow:inset 0 0 0 1px var(--accent);'
+    : 'border:1px solid #555;';
 
   // Build exercise list for selected muscle (Favorites view)
   const exes = byMuscle[selected] || [];
@@ -5687,7 +5634,7 @@ function renderExercisesTab() {
     </div>` : '';
     const _mc = MUSCLE_COLORS[ex.muscle] || '#888';
 
-    listHtml += `<div data-exname="${ex.name.replace(/"/g,'&quot;')}" data-muscle="${ex.muscle||'Chest'}" style="--muscle-color:${_mc};background:${isPickSelected ? 'color-mix(in srgb, var(--accent) 15%, var(--surface))' : 'var(--surface)'};border:1px solid #555;border-radius:var(--radius);margin-bottom:8px;overflow:hidden;">
+    listHtml += `<div data-exname="${ex.name.replace(/"/g,'&quot;')}" data-muscle="${ex.muscle||'Chest'}" style="--muscle-color:${_mc};background:${isPickSelected ? 'color-mix(in srgb, var(--accent) 30%, var(--surface))' : 'var(--surface)'};${isPickSelected ? 'border:1px solid var(--accent);box-shadow:inset 0 0 0 1px var(--accent);' : 'border:1px solid #555;'}border-radius:var(--radius);margin-bottom:8px;overflow:hidden;">
       <!-- Flat row -->
       <div ${isExpandable && !_pickMode ? `onclick="openExtabExOverlay('${ex.name.replace(/'/g,"\\'")}')"` : ''} style="display:flex;align-items:stretch;${isExpandable && !_pickMode ? 'cursor:pointer;' : ''}">
         <div style="width:15px;min-height:96px;flex-shrink:0;"></div>
@@ -5764,7 +5711,7 @@ function renderExercisesTab() {
         const _lcd = (window._exLastDateMap && window._exLastDateMap.get(ex.name)) || 0;
         const _isPickSel = _pickMode && _pickModeSelected.some(s => s.name === ex.name);
         const _pc = PICKER_COLORS[ex.muscle] || '#888';
-        return `<div data-exname="${ex.name.replace(/"/g,'&quot;')}" data-muscle="${ex.muscle}"${_pickMode ? ` onclick="pickExercise('${ex.name.replace(/'/g,"\\'")}') "` : ''}${_exRowAttrs(ex.name)} style="background:${_isPickSel ? 'color-mix(in srgb, var(--accent) 15%, var(--surface))' : 'var(--surface)'};${_exRowBorder(ex.name)}${_exRowDim(ex.name)}border-radius:var(--radius);margin-bottom:8px;overflow:hidden;${_pickMode ? 'cursor:pointer;' : ''}${_exBrowse ? '-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;' : ''}">
+        return `<div data-exname="${ex.name.replace(/"/g,'&quot;')}" data-muscle="${ex.muscle}"${_pickMode ? ` onclick="pickExercise('${ex.name.replace(/'/g,"\\'")}') "` : ''}${_exRowAttrs(ex.name)} style="background:${(_isPickSel || _exRowPicked(ex.name)) ? 'color-mix(in srgb, var(--accent) 30%, var(--surface))' : 'var(--surface)'};${_exRowBorder(ex.name)}${_exRowDim(ex.name)}border-radius:var(--radius);margin-bottom:8px;overflow:hidden;${_pickMode ? 'cursor:pointer;' : ''}${_exBrowse ? '-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;' : ''}">
           <div onclick="${_pickMode ? '' : _exRowTap(ex.name)}" style="display:flex;align-items:stretch;${_pickMode ? '' : 'cursor:pointer;'}">
             ${_exRowCircle(ex.name)}${_pickMode ? _exPickCircleHtml(_isPickSel) : ''}
             <div style="width:15px;min-height:96px;flex-shrink:0;"></div>
@@ -5790,7 +5737,7 @@ function renderExercisesTab() {
   const _exAllRow = ex => {
       const _isPickSel = _pickMode && _pickModeSelected.some(s => s.name === ex.name);
       const _pc = PICKER_COLORS[ex.muscle] || '#888';
-      return `<div data-exname="${ex.name.replace(/"/g,'&quot;')}" data-muscle="${ex.muscle}"${_pickMode ? ` onclick="pickExercise('${ex.name.replace(/'/g,"\\'")}') "` : ''}${_exRowAttrs(ex.name)} style="background:${_isPickSel ? 'color-mix(in srgb, var(--accent) 15%, var(--surface))' : 'var(--surface)'};${_exRowBorder(ex.name)}${_exRowDim(ex.name)}border-radius:var(--radius);margin-bottom:8px;overflow:hidden;${_pickMode ? 'cursor:pointer;' : ''}${_exBrowse ? '-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;' : ''}">
+      return `<div data-exname="${ex.name.replace(/"/g,'&quot;')}" data-muscle="${ex.muscle}"${_pickMode ? ` onclick="pickExercise('${ex.name.replace(/'/g,"\\'")}') "` : ''}${_exRowAttrs(ex.name)} style="background:${(_isPickSel || _exRowPicked(ex.name)) ? 'color-mix(in srgb, var(--accent) 30%, var(--surface))' : 'var(--surface)'};${_exRowBorder(ex.name)}${_exRowDim(ex.name)}border-radius:var(--radius);margin-bottom:8px;overflow:hidden;${_pickMode ? 'cursor:pointer;' : ''}${_exBrowse ? '-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;' : ''}">
       <div onclick="${_pickMode ? '' : _exRowTap(ex.name)}" style="display:flex;align-items:stretch;${_pickMode ? '' : 'cursor:pointer;'}">
         ${_exRowCircle(ex.name)}${_pickMode ? _exPickCircleHtml(_isPickSel) : ''}
         <div style="width:15px;min-height:96px;flex-shrink:0;"></div>
@@ -5887,7 +5834,7 @@ function renderExercisesTab() {
   const _exSelN = _exDelMode ? (window._exDelSelected ? window._exDelSelected.size : 0) : 0;
   const _exTitleText = _exDelMode ? `${_exSelN} item${_exSelN === 1 ? '' : 's'} selected` : 'Exercises';
   const _exSelAllHtml = _exDelMode
-    ? `<div style="position:absolute;left:0;top:50%;margin-top:-13px;"><button id="extab-selectall-btn" onclick="_exToggleSelectAll()" title="Select all" style="width:26px;height:26px;border-radius:50%;border:2px solid var(--accent);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;${_exDelJustEntered ? 'animation:tapPopScale .3s cubic-bezier(.175,.885,.32,1.275);' : ''}"></button></div>`
+    ? `<div style="position:absolute;left:0;top:50%;margin-top:-13px;"><button id="extab-selectall-btn" onclick="_exToggleSelectAll()" title="Select all" style="position:relative;left:${(window._selectAllLeftCache || {})['extab-selectall-btn'] || 0}px;width:26px;height:26px;border-radius:50%;border:2px solid var(--accent);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;${_exDelJustEntered ? 'animation:tapPopScale .3s cubic-bezier(.175,.885,.32,1.275);' : ''}"></button></div>`
     : '';
   const toggleHtml = `<div style="position:relative;font-family:'DM Sans';font-size:20px;font-weight:700;color:var(--text);padding:10px 0 6px;text-align:center;text-transform:uppercase;">${_showPickBackArrow ? `<button onclick="exitPickMode()" style="position:absolute;left:0;top:50%;transform:translateY(-50%);background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><line x1="19" y1="12" x2="5" y2="12" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round"/><polyline points="11,6 5,12 11,18" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>` : _showCloseX ? `<button onclick="switchTab('profile')" ${_exDelMode ? 'tabindex="-1" aria-hidden="true" ' : ''}style="${_exDelMode ? 'visibility:hidden;pointer-events:none;' : ''}position:absolute;left:0;top:50%;transform:translateY(-50%);background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round"/></svg></button>` : ''}${_exSelAllHtml}${_exTitleText}</div>${_exViewPicker ? _exViewPickerHtml : `<div style="display:flex;gap:0;margin-bottom:0;align-items:center;">
     <div id="exTab-seg-wrap" data-views="${_segViews.join(',')}" style="position:relative;display:flex;flex:1;">
@@ -5981,7 +5928,7 @@ function renderExercisesTab() {
       const pickColor = PICKER_COLORS[selected] || '#7ec8e3';
       _coachMyDataListHtml = coachExes.map(ex => {
         const isSelected = _pickModeSelected.some(s => s.name === ex.name);
-        return `<div data-exname="${ex.name}" onclick="pickExercise('${ex.name.replace(/'/g,"\\'")}'); " style="margin-bottom:6px;background:${isSelected ? 'color-mix(in srgb, var(--accent) 15%, var(--surface))' : 'var(--surface)'};border:1px solid ${isSelected ? pickColor : 'var(--border)'};border-radius:10px;overflow:hidden;cursor:pointer;transition:border-color .15s;">
+        return `<div data-exname="${ex.name}" onclick="pickExercise('${ex.name.replace(/'/g,"\\'")}'); " style="margin-bottom:6px;background:${isSelected ? 'color-mix(in srgb, var(--accent) 30%, var(--surface))' : 'var(--surface)'};border:1px solid ${isSelected ? 'var(--accent)' : 'var(--border)'};${isSelected ? 'box-shadow:inset 0 0 0 1px var(--accent);' : ''};border-radius:10px;overflow:hidden;cursor:pointer;transition:border-color .15s;">
           <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;">
             <div dir="auto" style="font-family:'DM Sans';font-size:17px;font-weight:400;color:var(--text);flex:1;">${_tn(ex.name)}</div>
             <div class="picker-check" style="width:22px;height:22px;border-radius:50%;border:2px solid ${isSelected ? 'var(--accent)' : '#333'};background:${isSelected ? 'var(--accent)' : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;">${isSelected ? '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</div>
@@ -6020,8 +5967,9 @@ function renderExercisesTab() {
       <button onclick="openAddExploreExercise('${selected}')" style="flex:1;background:transparent;border:1px dashed #34d399;border-radius:10px;color:#34d399;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;">+ Add to Explore</button>
     </div>` : '';
     el.innerHTML = (_exTabView === 'all' ? _pc + _exAllListHtml : _exTabView === 'app' ? _pc + _exAppListHtml :_exTabView === 'created' ? searchHtml + _pc + listBox + (_pickMode ? '' : addBtnHtml) : _exTabView === 'custom' ? _pc + _exCustomListHtml : _exTabView === 'coach' ? buildCoachExercisesHtml() : _pc + (_pickMode ? `<div id="pickModeListBox" style="border:1px solid var(--border);border-radius:12px;padding:6px 0;">` + _exLibListHtml.replace(/<button[^>]*Add to Library[^<]*<\/button>/g,'') + `</div>` : _exLibListHtml + _exLibAddBtns));
-    // Pick mode: line the rows' check circles up with the workout cards'.
-    if (_pickMode) requestAnimationFrame(_alignPickCircles);
+    // Pick mode / long-press select mode: line the rows' circles up with the
+    // workout cards' (and the select-all circle over them).
+    if (_pickMode || _exDelMode) requestAnimationFrame(_alignPickCircles);
   }
 
   // Cards always start collapsed (minimized view by default)
@@ -7479,13 +7427,10 @@ function openWeekSummary(weekStartStr) {
   const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate()+6); weekEnd.setHours(23,59,59,999);
   const fmt = d => d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
   
-  // Collect workouts and cardio in this week
+  // Collect workouts in this week
   const wkWorkouts = workouts.filter(w => {
     const d = new Date(w.date); return d >= weekStart && d <= weekEnd && !w._draft && !w._template;
   });
-  const wkCardio = cardioLog ? cardioLog.filter(c => {
-    const d = new Date(c.date); return d >= weekStart && d <= weekEnd;
-  }) : [];
 
   const totalWorkouts = wkWorkouts.length;
 
@@ -7507,16 +7452,6 @@ function openWeekSummary(weekStartStr) {
     </div>`;
   }).join('');
 
-  const cardioRows = [...wkCardio].sort((a,b)=>new Date(b.date)-new Date(a.date)).map(c=>{
-    const d = new Date(c.date);
-    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #1e1e1e;">
-      <div>
-        <div style="font-family:'DM Sans';font-size:16px;letter-spacing:.5px;color:#7ec8e3;">${c.type||'Cardio'}</div>
-        <div style="font-size:11px;color:var(--muted);">${d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})}</div>
-      </div>
-      <div style="font-size:12px;color:#7ec8e3;font-weight:600;">${c.mins||0} min</div>
-    </div>`;
-  }).join('');
 
   document.getElementById('weekSummaryContent').innerHTML = `
     <div style="font-family:'DM Sans';font-size:14px;font-weight:600;margin-bottom:16px;text-align:center;">${fmt(weekStart)} - ${fmt(weekEnd)}</div>
@@ -7526,7 +7461,7 @@ function openWeekSummary(weekStartStr) {
         <div style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#ccc;letter-spacing:1px;text-transform:uppercase;">Completed Workouts</div>
       </div>
     </div>
-    <div style="max-height:260px;overflow-y:auto;">${workoutRows}${cardioRows}</div>
+    <div style="max-height:260px;overflow-y:auto;">${workoutRows}</div>
   `;
   document.getElementById('weekSummaryOverlay').classList.add('open');
   if (window._historyPush) window._historyPush('week-summary');
@@ -8104,8 +8039,10 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
   const _totalExSessions = _chartWtMap.size;
 
   const _volStr = _maxVol >= 1000 ? (_maxVol / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : String(Math.round(_maxVol));
-  const slides = [{ val: 'PROGRESS' }, { val: 'YOUR BEST' }];
-  const PROG_IDX = 0, TABLE_IDX = 1;
+  // Pages: 1 YOUR BEST (default) · 2 PROGRESS · 3 ALL SESSIONS (same cards as
+  // the Exercises tab's — _exAllSessionsHtml).
+  const slides = [{ val: 'YOUR BEST' }, { val: 'PROGRESS' }, { val: 'ALL SESSIONS' }];
+  const TABLE_IDX = 0, PROG_IDX = 1, ALL_IDX = 2;
   let _cur = TABLE_IDX; // default to the YOUR BEST slide
 
   if (titleEl) { titleEl.textContent = slides[_cur].val; titleEl.style.color = '#ccc'; }
@@ -8339,6 +8276,17 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
 
   tablePane.append(bestBigVal, bestBar);
 
+  // ── ALL SESSIONS pane (page 3) — every past session of this exercise ──
+  // (vertical scroll inside the carousel; horizontal swipes still change page).
+  const sessionsPane = document.createElement('div');
+  sessionsPane.id = 'ex-detail-stats-sessions-pane';
+  sessionsPane.style.cssText = 'display:none;height:100%;box-sizing:border-box;padding:6px 16px 8px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;';
+  sessionsPane.innerHTML = _exAllSessionsHtml(exName, true);
+  // Long-press select-to-delete, same as the Exercises tab's ALL SESSIONS:
+  // select-all "ALL" circle on this stats title line; after a delete the
+  // whole stats view rebuilds (fresh YOUR BEST/PROGRESS too) back on page 3.
+  _extabSessWire(sessionsPane, exName, { titleEl: (titleEl && titleEl.parentElement) || titleEl, onDeleted: _exStatsRefreshOnSessions, hideFloatBar: true });
+
   function _onProgScrub(idx) {
     const chart = progCanvas._chartInst;
     if (!chart?._pts) return;
@@ -8427,6 +8375,7 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
   // conflicting with the exercise-detail overlay's own scroll/swipe behavior) ──────
   function goTo(idx) {
     if (idx === _cur) return;
+    window._extabSess?.exit(); // leaving ALL SESSIONS ends its select mode
     const _prevIdx = _cur;
     const dir = idx > _prevIdx ? 1 : -1;
     _cur = idx;
@@ -8475,6 +8424,8 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
     if (idx !== PROG_IDX && _prevIdx === PROG_IDX) { _slideOut(progPane); }
     if (idx === TABLE_IDX && _prevIdx !== TABLE_IDX) { tablePane.style.display = 'flex'; _slideIn(tablePane); }
     if (idx !== TABLE_IDX && _prevIdx === TABLE_IDX) { _slideOut(tablePane); }
+    if (idx === ALL_IDX && _prevIdx !== ALL_IDX) { sessionsPane.scrollTop = 0; _slideIn(sessionsPane); }
+    if (idx !== ALL_IDX && _prevIdx === ALL_IDX) { _slideOut(sessionsPane); }
     // periodWrap lives in the title row (not inside progPane), so it isn't hidden by
     // progPane's own display toggling — only relevant on the PROGRESS slide, and
     // never shown at all when there isn't enough data to select a period for.
@@ -8501,6 +8452,7 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
   panesContainer.style.cssText = 'overflow:hidden;flex:1;';
   panesContainer.appendChild(progPane);
   panesContainer.appendChild(tablePane);
+  panesContainer.appendChild(sessionsPane);
   const _swipeAC = new AbortController();
   panesContainer._swipeAC = _swipeAC;
   let _tx = 0, _ty = 0, _swipeBlocked = false;
@@ -8519,8 +8471,25 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
     goTo(next);
   }, { passive: true, signal: _swipeAC.signal });
 
+  // Rebuilt after deleting sessions (_exStatsRefreshOnSessions) — land back
+  // on ALL SESSIONS rather than the default page.
+  if (window._exStatsReopenOnSessions) {
+    window._exStatsReopenOnSessions = false;
+    setTimeout(() => goTo(ALL_IDX), 0);
+  }
+
   return { dots, panesContainer, periodWrap };
 }
+
+// After deleting sessions from the stats ALL SESSIONS page: rebuild the whole
+// stats view in place (so YOUR BEST / PROGRESS reflect the deletion too),
+// back on ALL SESSIONS.
+function _exStatsRefreshOnSessions() {
+  document.getElementById('ex-detail-stats-section')?.remove();
+  window._exStatsReopenOnSessions = true;
+  _toggleExDetailStats();
+}
+window._exStatsRefreshOnSessions = _exStatsRefreshOnSessions;
 window._buildExDetailStatsCarousel = _buildExDetailStatsCarousel;
 
 // Tapping the "Stats" float-bar action while the exercise-detail overlay is open
@@ -8550,6 +8519,7 @@ function _toggleExDetailStats() {
   };
 
   if (existing) {
+    window._extabSess?.exit(); // closing Statistics ends ALL SESSIONS select mode
     // Marks the section as mid-exit so _updateExFloatBar's #ex-detail-stats-section
     // lookup (which excludes .closing) doesn't see it as "still open" and re-add the
     // Stats button's active state during the 350ms it takes to actually remove it.
@@ -8661,13 +8631,58 @@ function _toggleExDetailStats() {
 }
 window._toggleExDetailStats = _toggleExDetailStats;
 
+// ALL SESSIONS cards (read-only) for one exercise — same look as the
+// Exercises-tab overlay's ALL SESSIONS page (workout name left, "15 Jul"
+// right, done sets white, W/D tags): every past session with ≥1 completed
+// set, most recent first. Used by the active-workout stats carousel.
+// withSelect: also emit the long-press select markup (.extab-sess-card with
+// data-key "workoutIdx|exerciseIdx" + a hidden .extab-sess-circle) so
+// _extabSessWire can drive select-to-delete on it.
+function _exAllSessionsHtml(exName, withSelect) {
+  const sessions = [];
+  (workouts || []).forEach((w, wi) => {
+    if (w._draft) return;
+    (w.exercises || []).forEach((e, ei) => {
+      if (e.name !== exName || !doneSets(e.sets).length) return;
+      sessions.push({ date: w.date, name: w.name, sets: (e.sets || []).filter(s => !(s.ignored && !s.setType)), key: `${wi}|${ei}` });
+    });
+  });
+  if (!sessions.length) return '<div style="text-align:center;padding:30px 0;font-family:\'DM Sans\';font-size:16px;font-weight:600;color:#fff;">No sessions yet</div>';
+  sessions.sort((a, b) => b.date - a.date);
+  const TAG = { warmup: ['W', '#fbbf24'], drop: ['D', '#60a5fa'] };
+  return sessions.map(s => {
+    const chips = s.sets.map(st => {
+      const t = TAG[st.setType];
+      const tag = t ? `<span style="color:${t[1]};font-weight:700;margin-right:3px;">${t[0]}</span>` : '';
+      return `<span class="hcard-set-chip"${st.done ? ' style="color:#fff;"' : ''}>${tag}${st.kg}×${st.reps}</span>`;
+    }).join('<span style="color:#333;margin:0 4px;">·</span>');
+    const head = `<div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-family:'DM Sans';font-size:12px;font-weight:700;color:#888;margin-bottom:6px;">
+        <span dir="auto" style="flex:1;min-width:0;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.name}</span>
+        <span style="flex-shrink:0;white-space:nowrap;">${new Date(s.date).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;">${chips}</div>`;
+    return withSelect
+      ? `<div class="extab-sess-card" data-key="${s.key}" style="display:flex;align-items:center;gap:10px;background:#161616;border-radius:10px;padding:10px 12px;margin-bottom:8px;text-align:left;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;">
+          <div style="flex:1;min-width:0;">${head}</div>
+          <div class="extab-sess-circle" style="display:none;width:26px;height:26px;border-radius:50%;border:2px solid var(--accent);flex-shrink:0;align-items:center;justify-content:center;box-sizing:border-box;transition:background .15s;"></div>
+        </div>`
+      : `<div style="background:#161616;border-radius:10px;padding:10px 12px;margin-bottom:8px;text-align:left;">${head}</div>`;
+  }).join('');
+}
+window._exAllSessionsHtml = _exAllSessionsHtml;
+
 // ── ALL SESSIONS (Exercises tab → exercise overlay): long-press to delete ────
 // Long-press a session card (500ms) → select mode: a circle on the right of
 // every card, tap to toggle, body-level CANCEL | DELETE (n) bar. Same gesture
 // rules as the lists' long-press (arm on the timer, enter on finger-up,
 // swallow the release's own click). Cards carry data-key = "workoutIdx|
 // exerciseIdx" (see the _allSessions build in openExtabExOverlay).
-function _extabSessWire(pane, exName) {
+// opts (optional): { titleEl — element to host the select-all circle (default:
+// the Exercises-tab overlay's #extab-carousel-title), onDeleted — refresh to
+// run after a delete (default: rebuild that overlay on ALL SESSIONS) }. The
+// active-workout stats carousel passes its own (see _buildExDetailStatsCarousel).
+function _extabSessWire(pane, exName, opts) {
+  opts = opts || {};
   const cards = [...pane.querySelectorAll('.extab-sess-card')];
   window._extabSess?.exit();
   if (!cards.length) { window._extabSess = null; return; }
@@ -8675,6 +8690,13 @@ function _extabSessWire(pane, exName) {
   let timer = null, pending = null, fired = null;
   const check = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
   const paintBar = () => {
+    // Active-workout stats: the Note / Timer / Stats float bar is fully hidden
+    // while selecting. visibility (not display — other code toggles its
+    // display, e.g. the kg editor), restored as soon as select mode ends.
+    if (opts.hideFloatBar) {
+      const fb = document.getElementById('ex-float-bar');
+      if (fb) fb.style.visibility = state.on ? 'hidden' : '';
+    }
     let bar = document.getElementById('extab-sess-bar');
     if (!state.on) { bar?.remove(); return; }
     if (!bar) {
@@ -8697,7 +8719,7 @@ function _extabSessWire(pane, exName) {
   // 26px circle, so right:28px puts this one's center exactly over theirs.
   // Rebuilt with each overlay open (opening clears the title bar).
   document.getElementById('extab-sess-all')?.remove();
-  const titleBar = document.getElementById('extab-carousel-title');
+  const titleBar = opts.titleEl || document.getElementById('extab-carousel-title');
   let allBtn = null;
   if (titleBar) {
     allBtn = document.createElement('div');
@@ -8710,6 +8732,9 @@ function _extabSessWire(pane, exName) {
     cards.forEach(c => {
       const on = state.sel.has(c.dataset.key);
       c.style.boxShadow = on ? 'inset 0 0 0 2px var(--accent)' : '';
+      // Same 30%-accent selected background as the exercise lists (mixed with
+      // this card's own #161616).
+      c.style.background = on ? 'color-mix(in srgb, var(--accent) 30%, #161616)' : '#161616';
       const circ = c.querySelector('.extab-sess-circle');
       circ.style.display = state.on ? 'flex' : 'none';
       circ.style.background = on ? 'var(--accent)' : 'transparent';
@@ -8759,7 +8784,7 @@ function _extabSessWire(pane, exName) {
       paint();
     });
   });
-  window._extabSess = { exit, state };
+  window._extabSess = { exit, state, onDeleted: opts.onDeleted || null };
 }
 
 function _extabConfirmDeleteSessions(exName, keys) {
@@ -8790,6 +8815,7 @@ function _extabConfirmDeleteSessions(exName, keys) {
 // (PRs, charts, Last time, weekly count) is computed from this history, so a
 // save + re-render is all they need.
 function _extabDeleteSessions(exName, keys) {
+  const _after = window._extabSess?.onDeleted; // screen-specific refresh (if any)
   const byW = new Map();
   keys.forEach(k => {
     const [wi, ei] = k.split('|').map(Number);
@@ -8810,7 +8836,7 @@ function _extabDeleteSessions(exName, keys) {
   window._extabSess?.exit();
   if (typeof renderExercisesTab === 'function') renderExercisesTab();
   if (typeof renderTodayWeekProgress === 'function') renderTodayWeekProgress();
-  _extabRefreshOnSessions(exName);
+  if (_after) _after(); else _extabRefreshOnSessions(exName);
 }
 
 // Rebuilds the open exercise overlay in place (fresh stats on every slide),
@@ -9972,7 +9998,7 @@ function renderWorkoutsTab2() {
   const _wTitleRowHtml = _isDeleteMode
     ? `<div style="position:relative;display:flex;align-items:center;justify-content:center;padding:10px 0 6px;"><span style="font-family:'DM Sans';font-size:20px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.5px;">${_wSelN} item${_wSelN === 1 ? '' : 's'} selected</span>
         <div style="position:absolute;right:0;top:50%;margin-top:-16px;">
-          <button id="wtab-selectall-btn" onclick="_wtabToggleSelectAll()" title="Select all" style="width:32px;height:32px;border-radius:50%;border:2px solid var(--accent);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;${_delJustEntered ? 'animation:tapPopScale .3s cubic-bezier(.175,.885,.32,1.275);' : ''}"></button>
+          <button id="wtab-selectall-btn" onclick="_wtabToggleSelectAll()" title="Select all" style="position:relative;left:${(window._selectAllLeftCache || {})['wtab-selectall-btn'] || 0}px;width:32px;height:32px;border-radius:50%;border:2px solid var(--accent);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;${_delJustEntered ? 'animation:tapPopScale .3s cubic-bezier(.175,.885,.32,1.275);' : ''}"></button>
         </div>
       </div>`
     : `<div style="display:flex;align-items:center;justify-content:center;padding:10px 0 6px;"><span style="font-family:'DM Sans';font-size:20px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.5px;">Workouts</span></div>`;
@@ -9985,7 +10011,7 @@ function renderWorkoutsTab2() {
         <!-- Select-all — same as the delete-mode header's; filled in / synced
              and X-aligned to the card circles further down. -->
         <div style="width:20%;flex-shrink:0;display:flex;justify-content:center;">
-          <button id="wtab-pub-selectall-btn" onclick="_pubToggleSelectAll()" title="Select all" style="width:32px;height:32px;border-radius:50%;border:2px solid var(--accent);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;"></button>
+          <button id="wtab-pub-selectall-btn" onclick="_pubToggleSelectAll()" title="Select all" style="position:relative;left:${(window._selectAllLeftCache || {})['wtab-pub-selectall-btn'] || 0}px;width:32px;height:32px;border-radius:50%;border:2px solid var(--accent);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;"></button>
         </div>
       </div>`
     : !_wSuperSplit
@@ -10149,7 +10175,6 @@ function renderWorkoutsTab2() {
   const _wtabNow = new Date();
   const _wtabTy = _wtabNow.getFullYear(), _wtabTm = _wtabNow.getMonth(), _wtabTd = _wtabNow.getDate();
   const _wtabTodayPlanName = (plannedWorkouts||[]).find(p => {
-    if (p.type === 'cardio') return false;
     const d = new Date(p.date);
     return d.getFullYear() === _wtabTy && d.getMonth() === _wtabTm && d.getDate() === _wtabTd;
   })?.name;
@@ -10319,9 +10344,11 @@ function renderWorkoutsTab2() {
     const cardInner = `
       <div style="position:relative;">
         ${(!_isPlanStrengthMode && !_isPubPickMode && !_isDeleteMode && _isTodayPlanned) ? `<span style="position:absolute;top:0;left:14px;transform:translateY(-50%);background:var(--bg);color:var(--accent);font-family:'DM Sans';font-size:10px;font-weight:800;letter-spacing:.4px;padding:0 6px;line-height:1.4;white-space:nowrap;z-index:2;">Today's Plan</span>` : ''}
-        <div id="w2-card-border-${i}"${_wtabLPAttrs} oncontextmenu="return false;" style="position:relative;display:flex;border-radius:14px;overflow:hidden;aspect-ratio:21/9;background:#1a1a1a;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;${_showAccentBorder ? 'border:2px solid var(--accent);' : 'border:1px solid #2a2a2a;'}">
+        <div id="w2-card-border-${i}"${_wtabLPAttrs} oncontextmenu="return false;" style="position:relative;display:flex;border-radius:14px;overflow:hidden;aspect-ratio:21/9;background:#1a1a1a;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;${_showAccentBorder ? 'border:1px solid var(--accent);' : 'border:1px solid #2a2a2a;'}">
+            ${_showAccentBorder ? `<div style="position:absolute;inset:0;border:1px solid var(--accent);border-radius:13px;pointer-events:none;z-index:3;"></div>` : ''}
           <div id="w2-card-photo-${i}" style="position:relative;width:80%;flex-shrink:0;overflow:hidden;cursor:pointer;" onclick="${_wtabTapOnclick}">
             ${workoutPhoto ? `<img src="${workoutPhoto}" draggable="false" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.72);-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;pointer-events:none;">` : ''}
+            ${_isDelPicked ? `<div style="position:absolute;inset:0;background:color-mix(in srgb, var(--accent) 30%, transparent);pointer-events:none;"></div>` : ''}
             <div style="position:absolute;bottom:0;left:0;right:0;padding:10px 14px 12px;pointer-events:none;text-align:right;">
               ${lastDate ? `<div style="font-family:'DM Sans';font-size:11px;font-weight:600;color:rgba(255,255,255,0.55);margin-bottom:2px;">Last Time: ${lastDate}</div>` : ''}
               <div style="font-family:'DM Sans';font-size:20px;font-weight:900;color:#fff;line-height:1.2;${_nwDir}">${_nwHtml}</div>
@@ -10340,7 +10367,7 @@ function renderWorkoutsTab2() {
                 </span>
               </button>`
             : _isDeleteMode
-            ? `<button onclick="_wtabToggleDeletePick(${JSON.stringify(w.id)})" title="Select workout" style="width:20%;flex-shrink:0;background:linear-gradient(to right, #161616, #3a3a3a);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;">
+            ? `<button onclick="_wtabToggleDeletePick(${JSON.stringify(w.id)})" title="Select workout" style="width:20%;flex-shrink:0;background:${_isDelPicked ? 'color-mix(in srgb, var(--accent) 30%, #161616)' : 'linear-gradient(to right, #161616, #3a3a3a)'};border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;">
                 <span class="wtab-del-circle" style="width:32px;height:32px;border-radius:50%;border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;background:${_isDelPicked ? 'var(--accent)' : 'transparent'};transition:background .15s;${_delJustEntered ? 'animation:tapPopScale .3s cubic-bezier(.175,.885,.32,1.275);' : ''}">
                   ${_isDelPicked ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>` : ''}
                 </span>
@@ -10422,15 +10449,17 @@ function renderWorkoutsTab2() {
         const _dimmed = _isLibSelMode && !_sel;
         return `<div data-wlibname="${(w.name||'').replace(/"/g,'&quot;')}" style="padding:5px 2px;${_dimmed ? 'opacity:0.25;pointer-events:none;' : ''}">
           <div style="position:relative;">
-            <div${_lpAttrs} oncontextmenu="return false;" style="position:relative;display:flex;border-radius:14px;overflow:hidden;aspect-ratio:21/9;background:#1a1a1a;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;${_picked ? 'border:2px solid var(--accent);' : 'border:1px solid #2a2a2a;'}">
+            <div${_lpAttrs} oncontextmenu="return false;" style="position:relative;display:flex;border-radius:14px;overflow:hidden;aspect-ratio:21/9;background:#1a1a1a;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;${_picked ? 'border:1px solid var(--accent);' : 'border:1px solid #2a2a2a;'}">
+              ${_picked ? `<div style="position:absolute;inset:0;border:1px solid var(--accent);border-radius:13px;pointer-events:none;z-index:3;"></div>` : ''}
               <div style="position:relative;width:80%;flex-shrink:0;overflow:hidden;cursor:pointer;" onclick="if(_wtabLPConsume(${_idJs}))return;${_tap}">
                 ${libPhoto ? `<img src="${libPhoto}" draggable="false" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.72);-webkit-touch-callout:none;pointer-events:none;">` : ''}
+                ${_picked ? `<div style="position:absolute;inset:0;background:color-mix(in srgb, var(--accent) 30%, transparent);pointer-events:none;"></div>` : ''}
                 <div style="position:absolute;bottom:0;left:0;right:0;padding:10px 14px 12px;pointer-events:none;text-align:right;">
                   <div style="font-family:'DM Sans';font-size:20px;font-weight:900;color:#fff;line-height:1.2;">${w.name||'Workout'}</div>
                 </div>
               </div>
               ${(_isLibSelMode && _sel)
-                ? `<button onclick="_wtabToggleDeletePick(${_idJs})" title="Select workout" style="width:20%;flex-shrink:0;background:linear-gradient(to right, #161616, #3a3a3a);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;">
+                ? `<button onclick="_wtabToggleDeletePick(${_idJs})" title="Select workout" style="width:20%;flex-shrink:0;background:${_picked ? 'color-mix(in srgb, var(--accent) 30%, #161616)' : 'linear-gradient(to right, #161616, #3a3a3a)'};border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;">
                     <span class="wtab-del-circle" style="width:32px;height:32px;border-radius:50%;border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;background:${_picked ? 'var(--accent)' : 'transparent'};transition:background .15s;${_delJustEntered ? 'animation:tapPopScale .3s cubic-bezier(.175,.885,.32,1.275);' : ''}">
                       ${_picked ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>` : ''}
                     </span>
@@ -10559,7 +10588,9 @@ function renderWorkoutsTab2() {
 //  • with an empty list (no row circle to measure — the shaded state), the
 //    last aligned offset for that header is reused, so the circle stays put
 //    instead of falling back to its unaligned default spot.
-const _selectAllLeftCache = {};
+// Also on window, so the header templates can draw a rebuilt select-all
+// circle straight at its last aligned spot (no hop when the header re-renders).
+const _selectAllLeftCache = window._selectAllLeftCache = window._selectAllLeftCache || {};
 // "ALL" label shown inside every long-press select-all circle (Workouts
 // delete/unpublish + publish, Exercises, ALL SESSIONS): accent text on the
 // empty circle, black on the filled (all-selected) one.
@@ -10575,7 +10606,11 @@ function _alignSelectAllCircle(headerBtn, rowCircle) {
     if (headerBtn.id in _selectAllLeftCache) headerBtn.style.left = _selectAllLeftCache[headerBtn.id] + 'px';
     return;
   }
-  const cx = el => { let x = el.offsetWidth / 2; for (let n = el; n; n = n.offsetParent) x += n.offsetLeft; return x; };
+  // Sub-pixel horizontal centers (offsetLeft/offsetWidth are whole pixels —
+  // measured ~1.6–1.8px off on phones). Horizontal-only use is safe: the
+  // animations around here only move things vertically or scale about the
+  // center, which doesn't shift an element's horizontal center.
+  const cx = el => { const r = el.getBoundingClientRect(); return r.left + r.width / 2; };
   const cur = parseFloat(headerBtn.style.left) || 0;
   const left = cx(rowCircle) - (cx(headerBtn) - cur);
   _selectAllLeftCache[headerBtn.id] = left;
@@ -12516,6 +12551,7 @@ function closeExDetailOverlay() {
   const overlay = document.getElementById('ex-detail-overlay');
   const overlayBody = document.getElementById('ex-detail-overlay-body');
   if (!overlay) return;
+  window._extabSess?.exit(); // stats ALL SESSIONS select mode + its bottom bar
 
   if (window._isNewWorkoutFlow) {
     const _nwfTitle = document.getElementById('_nwf-edit-title');
@@ -13448,6 +13484,13 @@ function kgPadPress(char) {
   _updateKgDisplay(val, window._kgEditorBWMode);
 }
 function kgPadBack() {
+  // BW on with no "+" extra (cell shows just "BW", extra '' or 0): ⌫ turns BW
+  // off exactly like tapping "Remove Body Weight (BW)". With an extra (e.g.
+  // BW+12.5) ⌫ keeps deleting its digits below, down to plain "BW" first.
+  if (window._kgEditorBWMode) {
+    const _cur = window._kgEditorVal || '';
+    if (_cur === '' || (!_cur.includes('.') && parseFloat(_cur) === 0)) { kgPadBW(); return; }
+  }
   let val = window._kgEditorVal || '';
   val = val.slice(0, -1);
   window._kgEditorVal = val;
@@ -15033,7 +15076,6 @@ function doSaveWorkout() {
   const _ty = _now.getFullYear(), _tm = _now.getMonth(), _td = _now.getDate();
   const _prevLen = (plannedWorkouts||[]).length;
   plannedWorkouts = (plannedWorkouts||[]).filter(p => {
-    if (p.type === 'cardio') return true;
     const d = new Date(p.date);
     if (d.getFullYear() !== _ty || d.getMonth() !== _tm || d.getDate() !== _td) return true;
     return false;
@@ -16244,7 +16286,7 @@ function clearAllHistory() {
     <div class="delete-confirm-sheet">
       <div class="delete-confirm-title">Delete Data</div>
       <div class="delete-confirm-sub" style="margin-bottom:14px;">Select what to clear:</div>
-      <div style="display:flex;align-items:center;gap:12px;cursor:pointer;padding:10px 14px;margin-bottom:6px;border-bottom:1px solid var(--border);" onclick="const all=document.querySelectorAll('#_clrHistory,#_clrWorkouts,#_clrExercises,#_clrPlanned,#_clrCardio,#_clrRecordedCardio');const anyUnchecked=[...all].some(c=>!c.checked);all.forEach(c=>c.checked=anyUnchecked);this.querySelector('.clr-cb-box').style.background=anyUnchecked?'var(--accent)':'';this.querySelector('.clr-cb-box').style.borderColor=anyUnchecked?'var(--accent)':'var(--border)';">
+      <div style="display:flex;align-items:center;gap:12px;cursor:pointer;padding:10px 14px;margin-bottom:6px;border-bottom:1px solid var(--border);" onclick="const all=document.querySelectorAll('#_clrHistory,#_clrWorkouts,#_clrExercises,#_clrPlanned');const anyUnchecked=[...all].some(c=>!c.checked);all.forEach(c=>c.checked=anyUnchecked);this.querySelector('.clr-cb-box').style.background=anyUnchecked?'var(--accent)':'';this.querySelector('.clr-cb-box').style.borderColor=anyUnchecked?'var(--accent)':'var(--border)';">
         <span class="clr-cb-box" style="width:20px;height:20px;border-radius:5px;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
         <span style="font-family:'DM Sans';font-size:14px;font-weight:700;color:var(--text);">Select All</span>
       </div>
@@ -16263,15 +16305,7 @@ function clearAllHistory() {
           </label>
         <label style="display:flex;align-items:center;gap:12px;cursor:pointer;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;">
           <label class="clr-checkbox" for="_clrPlanned"><input type="checkbox" id="_clrPlanned"><span class="clr-cb-box"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></label>
-          <span style="font-family:'DM Sans';font-size:14px;font-weight:600;color:var(--text);">Planned Strength</span>
-        </label>
-        <label style="display:flex;align-items:center;gap:12px;cursor:pointer;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;">
-          <label class="clr-checkbox" for="_clrCardio"><input type="checkbox" id="_clrCardio"><span class="clr-cb-box"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></label>
-          <span style="font-family:'DM Sans';font-size:14px;font-weight:600;color:var(--text);">Planned Cardio</span>
-        </label>
-        <label style="display:flex;align-items:center;gap:12px;cursor:pointer;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;">
-          <label class="clr-checkbox" for="_clrRecordedCardio"><input type="checkbox" id="_clrRecordedCardio"><span class="clr-cb-box"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></label>
-          <span style="font-family:'DM Sans';font-size:14px;font-weight:600;color:var(--text);">Recorded Cardio</span>
+          <span style="font-family:'DM Sans';font-size:14px;font-weight:600;color:var(--text);">Planned Workouts</span>
         </label>
       </div>
       <div class="delete-confirm-btns">
@@ -16285,10 +16319,8 @@ function clearAllHistory() {
     const doHistory = overlay.querySelector('#_clrHistory').checked;
     const doWorkouts = overlay.querySelector('#_clrWorkouts').checked;
     const doExercises = overlay.querySelector('#_clrExercises').checked;
-    const doCardio = overlay.querySelector('#_clrCardio').checked;
-    const doRecordedCardio = overlay.querySelector('#_clrRecordedCardio').checked;
     const doPlanned = overlay.querySelector('#_clrPlanned').checked;
-    if (!doHistory && !doWorkouts && !doExercises && !doCardio && !doRecordedCardio && !doPlanned) {
+    if (!doHistory && !doWorkouts && !doExercises && !doPlanned) {
       overlay.remove();
       return;
     }
@@ -16342,23 +16374,11 @@ function clearAllHistory() {
       renderExercisesTab();
       msgs.push(`Exercises tab cleared`);
     }
-    if (doRecordedCardio) {
-      const count = cardioLog.length;
-      cardioLog = [];
-      saveCardio();
-      msgs.push(`${count} recorded cardio session${count!==1?'s':''} deleted`);
-    }
-    if (doCardio) {
-      const count = (plannedWorkouts||[]).filter(p => p.type === 'cardio').length;
-      plannedWorkouts = (plannedWorkouts||[]).filter(p => p.type !== 'cardio');
-      savePlanned();
-      msgs.push(`${count} planned cardio session${count!==1?'s':''} deleted`);
-    }
     if (doPlanned) {
-      const count = (plannedWorkouts||[]).filter(p => p.type !== 'cardio').length;
-      plannedWorkouts = (plannedWorkouts||[]).filter(p => p.type === 'cardio');
+      const count = (plannedWorkouts||[]).length;
+      plannedWorkouts = [];
       savePlanned();
-      msgs.push(`${count} planned strength workout${count!==1?'s':''} deleted`);
+      msgs.push(`${count} planned workout${count!==1?'s':''} deleted`);
     }
     renderHistory(); updateTrashCount();
     if (typeof renderWorkoutsTab === 'function') { window._keepWorkoutsTabState = false; }
@@ -16484,18 +16504,19 @@ window.loadBrandLibraryForMe = loadBrandLibraryForMe;
 // called by loadFromFirestore when another device did Delete All Data.
 function _wipeLocalUserData() {
   try { if (typeof resetWorkoutState === 'function') resetWorkoutState(); } catch(e) {}
-  workouts = []; deletedWorkouts = []; cardioLog = []; customExercises = []; plannedWorkouts = []; customCardioTypes = [];
-  ['ironlog_workouts','ironlog_deleted_workouts','ironlog_cardio','ironlog_custom_ex','ironlog_planned','ironlog_cardio_custom',
+  workouts = []; deletedWorkouts = []; customExercises = []; plannedWorkouts = [];
+  ['ironlog_workouts','ironlog_deleted_workouts','ironlog_custom_ex','ironlog_planned',
    'ironlog_session','ironlog_session_start','ironlog_draft_id',
    'ironlog_deleted_tab_names','ironlog_hidden_ex','ironlog_hidden_lib_workouts'].forEach(k => { try { _LS.remove(k); } catch(e) {} });
   try {
     Object.keys(localStorage)
       .filter(k => /^ironlog_(workout_photo_|workout_video_|workout_video_broken_|ex_photo_|ex_video_broken_)/.test(k))
       .forEach(k => localStorage.removeItem(k));
-    ['ironlog_workout_target','ironlog_cardio_target','ironlog_timer_secs','ironlog_last_timer','ironlog_mini_range','ironlog_cardio_type','ironlog_cardio_dur']
+    ['ironlog_workout_target','ironlog_timer_secs','ironlog_last_timer','ironlog_mini_range']
       .forEach(k => localStorage.removeItem(k));
   } catch(e) {}
-  workoutWeekTarget = 3; cardioWeekTarget = 150; lastTimerSecs = 60; miniChartRange = '3M';
+  _purgeLegacyCardioData();
+  workoutWeekTarget = 3; lastTimerSecs = 60; miniChartRange = '3M';
   if (window.localforage) {
     window.localforage.keys()
       .then(keys => Promise.all(keys.filter(k => /^ironlog_(ex_photo_|workout_photo_)/.test(k)).map(k => window.localforage.removeItem(k))))
@@ -16513,7 +16534,7 @@ function openDeleteAllData() {
   overlay.innerHTML = `
     <div class="delete-confirm-sheet">
       <div class="delete-confirm-title">Delete All Data ?</div>
-      <div class="delete-confirm-sub" style="line-height:1.55;">This permanently deletes all your workouts, workout history, exercises, cardio, plans and settings — <b>from this device and from the cloud</b> — and hides all brand content. Your account stays. <span style="color:#ff4747;">This can't be undone.</span></div>
+      <div class="delete-confirm-sub" style="line-height:1.55;">This permanently deletes all your workouts, workout history, exercises, plans and settings — <b>from this device and from the cloud</b> — and hides all brand content. Your account stays. <span style="color:#ff4747;">This can't be undone.</span></div>
       <button id="_delAllBackup" style="width:100%;margin:0 0 14px;background:transparent;border:1px solid var(--accent);border-radius:12px;color:var(--accent);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;padding:12px;cursor:pointer;">Download backup first</button>
       <div style="font-family:'DM Sans';font-size:12px;color:#888;margin-bottom:6px;">Type <b style="color:#fff;">DELETE</b> to confirm</div>
       <input id="_delAllInput" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" style="width:100%;box-sizing:border-box;background:#111;border:1px solid #444;border-radius:10px;color:#fff;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:700;letter-spacing:1px;padding:12px;margin-bottom:16px;outline:none;">
@@ -16588,12 +16609,12 @@ async function _runDeleteAllData() {
     const ref = window._fbDoc(window._fbDb, 'userData', brandId, 'users', uid);
     await atLeast(900, Promise.race([
       window._fbSetDoc(ref, {
-        workouts: [], deletedWorkouts: [], cardioLog: [], customExercises: [], plannedWorkouts: [], customCardioTypes: [],
+        workouts: [], deletedWorkouts: [], customExercises: [], plannedWorkouts: [],
         hiddenLibWorkouts: [], brandContentOff: true, dataResetAt: resetAt, settings: {}, updatedAt: resetAt,
       }),
       _sleep(15000).then(() => { throw new Error('The cloud didn\'t respond'); }),
     ]));
-    step(45, 'Deleting photos…');
+    step(45, 'Deleting app photos…');
     // 2) Cloud files (best effort — the data itself is already gone): max
     //    15s, then carry on regardless.
     await atLeast(700, withTimeout(window._deleteMyCloudFiles ? window._deleteMyCloudFiles() : Promise.resolve(0), 15000)
@@ -16803,17 +16824,13 @@ function exportDataWithDialog() {
             const ids = new Set(deletedWorkouts.map(w => w.id));
             prev.deletedWorkouts.filter(w => !ids.has(w.id)).forEach(w => deletedWorkouts.push(w));
           }
-          if (Array.isArray(prev.cardioLog)) {
-            const keys = new Set(cardioLog.map(c => `${c.date}-${c.type}-${c.mins}`));
-            prev.cardioLog.filter(c => !keys.has(`${c.date}-${c.type}-${c.mins}`)).forEach(c => cardioLog.push(c));
-          }
           if (Array.isArray(prev.customExercises)) {
             const names = new Set(customExercises.map(e => e.name));
             prev.customExercises.filter(e => !names.has(e.name)).forEach(e => customExercises.push(e));
           }
           if (Array.isArray(prev.plannedWorkouts)) {
             const ids = new Set((plannedWorkouts||[]).map(p => p.planId));
-            prev.plannedWorkouts.filter(p => !ids.has(p.planId)).forEach(p => plannedWorkouts.push(p));
+            prev.plannedWorkouts.filter(p => p.type !== 'cardio' && !ids.has(p.planId)).forEach(p => plannedWorkouts.push(p));
           }
           exportData(true);
         } catch { showToast('Invalid backup file'); }
@@ -16846,17 +16863,12 @@ function exportData(merged = false) {
       exportedAt: new Date().toISOString(),
       workouts: activeWorkouts,
       deletedWorkouts: [],
-      cardioLog: cardioLog,
       customExercises: activeCustomEx,
       plannedWorkouts: (plannedWorkouts||[]).filter(p => !p._deleted),
-      customCardioTypes: customCardioTypes,
       hiddenExercises: [],
       settings: {
         workoutWeekTarget: workoutWeekTarget,
-        cardioWeekTarget: cardioWeekTarget,
         lastTimerSecs: lastTimerSecs,
-        lastCardioType: localStorage.getItem('ironlog_cardio_type') || '',
-        lastCardioDuration: localStorage.getItem('ironlog_cardio_dur') || '',
         miniChartRange: miniChartRange,
       }
     };
@@ -16876,17 +16888,12 @@ function exportData(merged = false) {
     exportedAt: new Date().toISOString(),
     workouts: cleanWorkouts,
     deletedWorkouts: deletedWorkouts,
-    cardioLog: cardioLog,
     customExercises: cleanCustomEx,
     plannedWorkouts: plannedWorkouts,
-    customCardioTypes: customCardioTypes,
     hiddenExercises: JSON.parse(_LS.get('ironlog_hidden_ex') || '[]'),
     settings: {
       workoutWeekTarget: workoutWeekTarget,
-      cardioWeekTarget: cardioWeekTarget,
       lastTimerSecs: lastTimerSecs,
-      lastCardioType: localStorage.getItem('ironlog_cardio_type') || '',
-      lastCardioDuration: localStorage.getItem('ironlog_cardio_dur') || '',
       miniChartRange: miniChartRange,
     }
   };
@@ -16901,7 +16908,7 @@ function importData(input) {
   reader.onload = function(e) {
     try {
       const data = JSON.parse(e.target.result);
-      if (!data.workouts && !data.cardioLog && !data.customExercises && !data.plannedWorkouts) {
+      if (!data.workouts && !data.customExercises && !data.plannedWorkouts) {
         // showToast is a disabled no-op app-wide (see index.html:5349) — this
         // would otherwise fail completely silently, reading as "loading a
         // backup file does nothing", so use a real alert here instead.
@@ -16937,16 +16944,6 @@ function importData(input) {
         deletedWorkouts.push(...newDW);
         saveDeleted();
       }
-      // Merge cardio (by date+type, avoid duplicates)
-      if (Array.isArray(data.cardioLog)) {
-        const existingKeys = new Set(cardioLog.map(c => `${c.date}-${c.type}-${c.mins}`));
-        const newC = data.cardioLog.filter(c => !existingKeys.has(`${c.date}-${c.type}-${c.mins}`));
-        cardioLog.push(...newC);
-        // Routed through _LS (brand+uid-scoped) rather than a bare key — a raw
-        // localStorage.setItem('ironlog_cardio', ...) here would silently
-        // write somewhere the rest of the app never reads from.
-        _LS.set('ironlog_cardio', JSON.stringify(cardioLog));
-      }
       // Merge custom exercises
       if (Array.isArray(data.customExercises)) {
         const existingNames = new Set(customExercises.map(e => e.name));
@@ -16954,18 +16951,13 @@ function importData(input) {
         customExercises.push(...newEx);
         saveCustom();
       }
-      // Merge planned workouts (avoid duplicates by planId)
+      // Merge planned workouts (avoid duplicates by planId). Cardio plans from
+      // old backups are skipped — cardio is no longer part of the app.
       if (Array.isArray(data.plannedWorkouts)) {
         const existingPlanIds = new Set((plannedWorkouts||[]).map(p => p.planId));
-        const newP = data.plannedWorkouts.filter(p => !existingPlanIds.has(p.planId));
+        const newP = data.plannedWorkouts.filter(p => p.type !== 'cardio' && !existingPlanIds.has(p.planId));
         plannedWorkouts.push(...newP);
         savePlanned();
-      }
-      // Merge custom cardio types
-      if (Array.isArray(data.customCardioTypes)) {
-        const existingTypes = new Set(customCardioTypes);
-        data.customCardioTypes.forEach(t => { if (!existingTypes.has(t)) customCardioTypes.push(t); });
-        saveCustomCardioTypes();
       }
       // Clear hidden exercises list so imported exercises all appear visible
       localStorage.removeItem('ironlog_hidden_ex');
@@ -16973,10 +16965,7 @@ function importData(input) {
       if (data.settings) {
         const s = data.settings;
         if (s.workoutWeekTarget) { workoutWeekTarget = s.workoutWeekTarget; localStorage.setItem('ironlog_workout_target', s.workoutWeekTarget); }
-        if (s.cardioWeekTarget)  { cardioWeekTarget  = s.cardioWeekTarget;  localStorage.setItem('ironlog_cardio_target',  s.cardioWeekTarget); }
         if (s.lastTimerSecs)     { lastTimerSecs     = s.lastTimerSecs;     localStorage.setItem('ironlog_last_timer',     s.lastTimerSecs); }
-        if (s.lastCardioType)    localStorage.setItem('ironlog_cardio_type', s.lastCardioType);
-        if (s.lastCardioDuration)localStorage.setItem('ironlog_cardio_dur',  s.lastCardioDuration);
         if (s.miniChartRange)    { miniChartRange    = s.miniChartRange;    localStorage.setItem('ironlog_mini_range',     s.miniChartRange); }
       }
       input.value = '';
@@ -18917,8 +18906,7 @@ function selectCalDay(key) {
   const parts = key.split('-');
   const ts = new Date(parseInt(parts[0]), parseInt(parts[1]), parseInt(parts[2])).getTime();
   const hasW = workouts.filter(w=>!w._draft&&!w._template).some(w=>{ const d=new Date(w.date); return d.getFullYear()===parseInt(parts[0])&&d.getMonth()===parseInt(parts[1])&&d.getDate()===parseInt(parts[2]); });
-  const hasC = cardioLog.some(c=>{ const d=new Date(c.date); return d.getFullYear()===parseInt(parts[0])&&d.getMonth()===parseInt(parts[1])&&d.getDate()===parseInt(parts[2]); });
-  if (hasW || hasC) showCalDay(key); else showCalDayEmpty(key);
+  if (hasW) showCalDay(key); else showCalDayEmpty(key);
 }
 
 function openCalendar() {
@@ -19056,7 +19044,6 @@ function renderCalendar() {
   const today0s = new Date(); today0s.setHours(0,0,0,0);
   const plannedOnlyDays = new Set();
   (plannedWorkouts||[]).forEach(p => {
-    if (p.type === 'cardio') return; // cardio plans handled separately
     const d = new Date(p.date);
     if (d < today0s) return; // skip past unimplemented planned strength
     const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
@@ -19069,41 +19056,6 @@ function renderCalendar() {
     if (ws.every(w => w._planned)) plannedOnlyDays.add(key);
   });
 
-  // Build cardio days map (all time, for day selection)
-  const cardioDays = new Map();
-  cardioLog.forEach(c => {
-    const d = new Date(c.date);
-    const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-    if (!cardioDays.has(key)) cardioDays.set(key, []);
-    cardioDays.get(key).push(c);
-  });
-  // Track planned cardio days separately (dot only, no box)
-  const today0 = new Date(); today0.setHours(0,0,0,0);
-  const plannedCardioDays = new Set();
-  (plannedWorkouts||[]).forEach(p => {
-    if (p.type !== 'cardio') return;
-    const d = new Date(p.date);
-    const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-    plannedCardioDays.add(key);
-  });
-
-  // Compute weekly cardio totals (week starts Sunday)
-  const weeklyMins = new Map();
-  const calMonthStartMins = new Date(calYear, calMonth, 1);
-  const calMonthEndMins = new Date(calYear, calMonth+1, 0);
-  const rangeStartMins = new Date(calMonthStartMins); rangeStartMins.setDate(calMonthStartMins.getDate() - calMonthStartMins.getDay());
-  const rangeEndMins = new Date(calMonthEndMins);
-  if (calMonthEndMins.getDay() !== 6) rangeEndMins.setDate(calMonthEndMins.getDate() + (6 - calMonthEndMins.getDay()));
-  rangeEndMins.setHours(23,59,59,999);
-  cardioLog.forEach(c => {
-    const d = new Date(c.date);
-    if (d >= rangeStartMins && d <= rangeEndMins) {
-      const dayOfWeek = d.getDay();
-      const weekStart = new Date(d); weekStart.setDate(d.getDate()-dayOfWeek);
-      const wk = weekStart.toDateString();
-      weeklyMins.set(wk, (weeklyMins.get(wk)||0) + c.mins);
-    }
-  });
   // Compute weekly workout counts (cross-month: count any week that overlaps this calendar month)
   const weeklyWorkouts = new Map();
   const deletedIds = new Set(deletedWorkouts.map(dw=>dw.id));
@@ -19146,25 +19098,20 @@ function renderCalendar() {
   const _calDayCell = (year, month, day, adjacent) => {
     const key = `${year}-${month}-${day}`;
     const hasW = workoutDays.has(key);
-    const hasC = cardioDays.has(key);
     const isToday = today.getFullYear()===year && today.getMonth()===month && today.getDate()===day;
     const thisDate = new Date(year, month, day);
     const isFuture = thisDate > today && !isToday;
     const isPlannedOnly = plannedOnlyDays.has(key) && (thisDate >= today || isToday);
-    const isPlannedCardio = plannedCardioDays.has(key);
     const hasRealW = hasW && !isPlannedOnly;
     let cls = 'cal-day';
-    if(hasRealW && hasC) cls += ' has-both';
-    else if(hasRealW) cls += ' has-workout';
-    else if(hasC) cls += ' has-cardio-only';
+    if(hasRealW) cls += ' has-workout';
     if(isToday) cls += ' today';
     if(isFuture) cls += ' future';
     if(adjacent) cls += ' cal-day-adjacent';
     let dots = '<div class="cal-day-dots">';
     if(isPlannedOnly) dots += '<div class="cal-day-dot" style="background:var(--accent);"></div>';
-    if(isPlannedCardio && !hasC) dots += '<div class="cal-day-dot" style="background:#7ec8e3;"></div>';
     dots += '</div>';
-    const hasAny = hasW || hasC || isPlannedOnly || isPlannedCardio;
+    const hasAny = hasW || isPlannedOnly;
     const isSelected = selectedCalDay === key;
     const isPlanSelected = window._wtabPlanMode && (window._wtabPlanSelectedDays||new Set()).has(key);
     const isPast = !isToday && !isFuture;
@@ -19174,7 +19121,7 @@ function renderCalendar() {
     const onclick = isPlanPast ? '' : `onclick="selectCalDay('${key}')"`;
     const planHighlight = isPlanSelected ? 'outline:2px solid var(--accent);outline-offset:1px;' : '';
     const pastStyle = isPlanPast ? 'opacity:0.25;cursor:default;pointer-events:none;' : '';
-    return `<div class="${cls}" style="${hasAny?'cursor:pointer':''}${planHighlight}${pastStyle}" ${onclick}>${day}${isPlanSelected ? '<div style="width:5px;height:5px;border-radius:50%;background:var(--accent);margin:1px auto 0;"></div>' : (isPlannedOnly || isPlannedCardio ? dots : '')}</div>`;
+    return `<div class="${cls}" style="${hasAny?'cursor:pointer':''}${planHighlight}${pastStyle}" ${onclick}>${day}${isPlanSelected ? '<div style="width:5px;height:5px;border-radius:50%;background:var(--accent);margin:1px auto 0;"></div>' : (isPlannedOnly ? dots : '')}</div>`;
   };
 
   const prevMonthRef = new Date(calYear, calMonth, 0);
@@ -19189,14 +19136,12 @@ function renderCalendar() {
     const thisDate = new Date(calYear, calMonth, d);
     const dayOfWeek = thisDate.getDay();
     const weekStart = new Date(thisDate); weekStart.setDate(thisDate.getDate()-dayOfWeek);
-    const wkMins = weeklyMins.get(weekStart.toDateString())||0;
     const wkWorkouts = weeklyWorkouts.get(weekStart.toDateString())||0;
 
     html += _calDayCell(calYear, calMonth, d, false);
 
     // After Saturday (dayOfWeek===6), insert badge column cell for this week
     if (dayOfWeek === 6) {
-      const cAch = wkMins >= cardioWeekTarget;
       const wAch = wkWorkouts >= workoutWeekTarget;
       const wkStartKey1 = weekStart.toDateString();
       html += `<div class="cal-badge-col" style="cursor:pointer;" onclick="openWeekSummary('${wkStartKey1}')">
@@ -19209,9 +19154,7 @@ function renderCalendar() {
   if (lastDayOfWeek !== 6) {
     const lastDate = new Date(calYear, calMonth, daysInMonth);
     const weekStart2 = new Date(lastDate); weekStart2.setDate(lastDate.getDate()-lastDayOfWeek);
-    const wkMinsLast = weeklyMins.get(weekStart2.toDateString())||0;
     const wkWOsLast  = weeklyWorkouts.get(weekStart2.toDateString())||0;
-    const cAchL = wkMinsLast >= cardioWeekTarget;
     const wAchL = wkWOsLast >= workoutWeekTarget;
     // Fill remaining day cells with the start of next month
     const nextMonthRef = new Date(calYear, calMonth+1, 1);
@@ -19233,8 +19176,7 @@ function renderCalendar() {
   let listContent;
   if (selectedCalDay) {
     const ws = workoutDays.get(selectedCalDay) || [];
-    const cs = cardioDays.get(selectedCalDay) || [];
-    listContent = renderCalDayContent(selectedCalDay, ws, cs);
+    listContent = renderCalDayContent(selectedCalDay, ws);
   } else {
     const nowForCal = new Date();
     const isFutureMonth = calYear > nowForCal.getFullYear() || (calYear === nowForCal.getFullYear() && calMonth > nowForCal.getMonth());
@@ -19259,34 +19201,17 @@ function renderCalendar() {
         <button class="cal-target-step" onclick="adjustTarget('workout',1)">+</button>
       </div>
     </div>
-    <div class="cal-target-item">
-      <span class="cal-target-label" style="color:#7ec8e3;">Cardio target</span>
-      <div class="cal-target-control">
-        <button class="cal-target-step" onclick="adjustTarget('cardio',-10)"></button>
-        <div style="display:flex;flex-direction:column;align-items:center;min-width:36px;">
-          <span class="cal-target-val" id="cardioTargetDisplay">${cardioWeekTarget}</span>
-          <span class="cal-target-unit">min/wk</span>
-        </div>
-        <button class="cal-target-step" onclick="adjustTarget('cardio',10)">+</button>
-      </div>
-    </div>
   </div>`;
   html += `<div class="cal-workout-list" id="calWorkoutList">${listContent}</div>`;
 
   document.getElementById('calBody').innerHTML = html;
   if (window._wtabPlanMode) setTimeout(_renderWtabPlanBar, 0);
   window._calWorkoutDays = workoutDays;
-  window._calCardioDays  = cardioDays;
 }
 
 function adjustTarget(type, delta) {
-  if (type === 'cardio') {
-    cardioWeekTarget = Math.max(10, cardioWeekTarget + delta);
-    localStorage.setItem('ironlog_cardio_target', cardioWeekTarget);
-  } else {
-    workoutWeekTarget = Math.max(1, workoutWeekTarget + delta);
-    localStorage.setItem('ironlog_workout_target', workoutWeekTarget);
-  }
+  workoutWeekTarget = Math.max(1, workoutWeekTarget + delta);
+  localStorage.setItem('ironlog_workout_target', workoutWeekTarget);
   if (window._currentUser && window.syncToFirestore) window.syncToFirestore();
   renderCalendar();
   if (selectedCalDay) selectCalDay(selectedCalDay);
@@ -19294,12 +19219,11 @@ function adjustTarget(type, delta) {
 
 function showCalDay(key) {
   const ws = window._calWorkoutDays?.get(key)||[];
-  const cs = window._calCardioDays?.get(key)||[];
-  document.getElementById('calWorkoutList').innerHTML = renderCalDayContent(key, ws, cs);
+  document.getElementById('calWorkoutList').innerHTML = renderCalDayContent(key, ws);
 }
 
 function showCalDayEmpty(key) {
-  document.getElementById('calWorkoutList').innerHTML = renderCalDayContent(key, [], []);
+  document.getElementById('calWorkoutList').innerHTML = renderCalDayContent(key, []);
 }
 
 function _getPlanTotalSets(planExercises, planName) {
@@ -19320,7 +19244,7 @@ function _getPlanTotalSets(planExercises, planName) {
     return a;
   }, 0);
 }
-function renderCalDayContent(key, ws, cs) {
+function renderCalDayContent(key, ws) {
   if (!key) return '';
   const [ky,km,kd] = key.split('-').map(Number);
   const keyDate = new Date(ky, km, kd);
@@ -19332,97 +19256,18 @@ function renderCalDayContent(key, ws, cs) {
   let html = '';
   // Render workout items (real only)
   if (realWs.length) html += renderCalDayWorkouts(realWs);
-  // Render cardio items
-  if (cs.length && allExsForDay.length) html += '<div style="margin-top:25px;"></div>';
-  cs.forEach((c, ci) => {
-    const globalIdx = cardioLog.indexOf(c);
-    const cardioActionsId = `cal-cardio-actions-${globalIdx}`;
-    html += `<div class="cal-cardio-item" ${!isFutureDay ? `onclick="toggleCalCardioActions('${cardioActionsId}')" style="cursor:pointer;"` : ''}>
-      <div class="cal-cardio-header" style="justify-content:space-between;align-items:flex-start;">
-        <div class="cal-cardio-info">
-          <div class="cal-cardio-name">${c.type}</div>
-          <div class="cal-cardio-meta">${c.mins} min</div>
-        </div>
-        <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:rgba(126,200,227,.15);border:1px solid rgba(126,200,227,.4);flex-shrink:0;margin-top:2px;"><svg width="16" height="16" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#7ec8e3" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-      </div>
-      ${!isFutureDay ? `<div id="${cardioActionsId}" style="display:none;padding:0 12px 10px;">
-        <div style="display:flex;gap:8px;padding-top:4px;">
-          <button class="btn-edit-workout" style="flex:1;" onclick="event.stopPropagation();editCardioEntry(${globalIdx})">Edit</button>
-          <button class="btn-delete-workout" style="flex:1;" onclick="event.stopPropagation();confirmDeleteCardio(${globalIdx})">Delete</button>
-        </div>
-      </div>` : ''}
-    </div>`;
-  });
-  // Render unfinished planned cardio for past days
-  if (!isPlannable) {
-    const [_ky,_km,_kd] = key.split('-').map(Number);
-    const pastPlannedCardio = (plannedWorkouts||[]).filter(p => {
-      if (p.type !== 'cardio') return false;
-      const d = new Date(p.date);
-      return d.getFullYear()===_ky && d.getMonth()===_km && d.getDate()===_kd;
-    });
-    pastPlannedCardio.forEach(p => {
-      const pcActionsId = `cal-plan-cardio-actions-${p.planId.replace(/[^a-z0-9]/gi,'_')}`;
-      html += `<div class="cal-cardio-item" style="background:rgba(126,200,227,.04);border-color:rgba(126,200,227,.2);margin-bottom:8px;">
-        <div style="display:flex;align-items:stretch;gap:6px;padding:10px 10px 10px 12px;">
-          <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
-            <span style="font-family:'DM Sans';font-size:10px;color:#7ec8e3;font-weight:600;letter-spacing:.5px;margin-bottom:2px;">Planned cardio</span>
-            <div class="cal-cardio-name" style="color:#7ec8e3;">${p.activity||'Cardio'}</div>
-            <div class="cal-cardio-meta">${p.mins} min</div>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;justify-content:space-between;">
-            <div style="display:flex;flex-direction:column;gap:4px;align-items:stretch;">
-              <div style="display:flex;flex-direction:row;gap:4px;align-items:center;justify-content:flex-end;">
-                <button onclick="event.stopPropagation();deletePlannedWorkout('${p.planId}')" style="background:transparent;border:none;color:#555;cursor:pointer;padding:5px;border-radius:6px;display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M3 5h14M8 5V3h4v2M5 5l1 11a1 1 0 001 1h6a1 1 0 001-1l1-11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><line x1="8" y1="9" x2="8" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="12" y1="9" x2="12" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
-                <button onclick="event.stopPropagation();completePlannedCardio('${p.planId}','${key}')" style="background:transparent;border:1px solid #7ec8e3;border-radius:7px;color:#7ec8e3;font-size:13px;font-weight:700;padding:7px 0;cursor:pointer;white-space:nowrap;min-width:52px;text-align:center;">Done</button>
-              </div>
-              <div style="display:flex;flex-direction:row;gap:6px;align-items:center;">
-                <button onclick="event.stopPropagation();editPlannedCardio('${p.planId}','')" style="background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--muted);font-size:12px;font-weight:700;padding:6px 8px;cursor:pointer;width:100%;">Replace</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>`;
-    });
-  }
   // Plan Workout button for future days
   if (isPlannable) {
     const [_ky,_km,_kd] = key.split('-').map(Number);
     const planned = (plannedWorkouts||[]).filter(p => {
       const d = new Date(p.date);
       return d.getFullYear()===_ky && d.getMonth()===_km && d.getDate()===_kd;
-    }).sort((a,b) => (a.type==='cardio' ? 1 : 0) - (b.type==='cardio' ? 1 : 0));
+    });
     // Show existing plans
     const BODY_ORDER_C = ['Chest','Back','Legs','Shoulders','Arms','Core','Mix'];
     const COLORS_C = ['#e8ff47','#7ec8e3','#ff8c42','#a78bfa','#34d399','#f87171','#20d4c8'];
     let _dayStrengthPlan = null;
     planned.forEach((p, pi) => {
-      const isCardio = p.type === 'cardio';
-      if (isCardio) {
-        const pcActionsId = `cal-plan-cardio-actions-${p.planId.replace(/[^a-z0-9]/gi,'_')}`;
-        const isToday = !isFutureDay && keyDate.getTime() === todayD.getTime();
-        html += `<div class="cal-cardio-item" style="background:rgba(126,200,227,.04);border-color:rgba(126,200,227,.2);margin-bottom:8px;">
-          <div style="display:flex;align-items:stretch;gap:6px;padding:10px 10px 10px 12px;">
-            <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
-              <span style="font-family:'DM Sans';font-size:10px;color:#7ec8e3;font-weight:600;letter-spacing:.5px;margin-bottom:2px;">Planned cardio</span>
-              <div class="cal-cardio-name" style="color:#7ec8e3;">${p.activity||'Cardio'}</div>
-              <div class="cal-cardio-meta">${p.mins} min</div>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;justify-content:space-between;">
-              <div style="display:flex;flex-direction:column;gap:4px;align-items:stretch;">
-                <div style="display:flex;flex-direction:row;gap:4px;align-items:center;justify-content:flex-end;">
-                  <button onclick="event.stopPropagation();deletePlannedWorkout('${p.planId}')" style="background:transparent;border:none;color:#555;cursor:pointer;padding:5px;border-radius:6px;display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M3 5h14M8 5V3h4v2M5 5l1 11a1 1 0 001 1h6a1 1 0 001-1l1-11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><line x1="8" y1="9" x2="8" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="12" y1="9" x2="12" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
-                  ${isToday ? `<button onclick="event.stopPropagation();completePlannedCardio('${p.planId}','${key}')" style="background:transparent;border:1px solid #7ec8e3;border-radius:7px;color:#7ec8e3;font-size:13px;font-weight:700;padding:7px 0;cursor:pointer;white-space:nowrap;min-width:52px;text-align:center;">Done</button>` : ''}
-                </div>
-                <div style="display:flex;flex-direction:row;gap:6px;align-items:center;">
-                  <button onclick="event.stopPropagation();editPlannedCardio('${p.planId}','${pcActionsId}')" style="background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--muted);font-size:12px;font-weight:700;padding:6px 8px;cursor:pointer;width:100%;">Replace</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>`;
-        return;
-      }
       // Strength-planned workouts no longer render the rich Workouts-tab-style card
       // (chart, EX/SETS, Go/Replace/Delete) they used to — just captured here so the
       // button below can be replaced with a simple name display instead. The plan itself
@@ -19449,195 +19294,6 @@ function renderCalDayContent(key, ws, cs) {
   return html;
 }
 
-function toggleCalCardioActions(id) {
-  const el = document.getElementById(id);
-  const chev = document.getElementById(id + '-chev');
-  if (!el) return;
-  const isOpen = el.style.display !== 'none';
-  el.style.display = isOpen ? 'none' : 'block';
-  if (chev) { chev.style.color = isOpen ? '#444' : 'var(--accent)'; chev.style.transform = isOpen ? '' : 'rotate(180deg)'; }
-}
-
-function renderAddCardioBtn(key) {
-  const [y,m,d] = key.split('-').map(Number);
-  const keyDate = new Date(y, m, d);
-  const today = new Date(); today.setHours(0,0,0,0);
-  if (keyDate > today) return '';
-  return `<button class="cal-add-cardio-btn" onclick="showCardioForm('${key}')">+ Add Cardio</button>`;
-}
-
-function adjustCardioMins(elId, delta) {
-  const el = document.getElementById(elId);
-  if (!el) return;
-  const cur = parseInt(el.textContent) || 0;
-  el.textContent = Math.max(10, cur + delta);
-}
-
-function buildTypeOptions(selected) {
-  return getAllCardioTypes().map(t=>`<option value="${t}"${t===selected?' selected':''}>${t}</option>`).join('');
-}
-
-function onCardioTypeChange(selectEl, customRowId) {
-  const row = document.getElementById(customRowId);
-  if (row) row.style.display = selectEl.value === 'Other' ? 'flex' : 'none';
-}
-
-function addCustomCardioType(inputId, selectId, customRowId) {
-  const input = document.getElementById(inputId);
-  const name = input?.value.trim();
-  if (!name) return;
-  if (!customCardioTypes.includes(name) && !['Run','Walk','Incline','Swim','Bike','Other'].includes(name)) {
-    customCardioTypes.push(name);
-    saveCustomCardioTypes();
-  }
-  // Update select and pick new type
-  const sel = document.getElementById(selectId);
-  if (sel) {
-    sel.innerHTML = buildTypeOptions(name);
-    sel.value = name;
-  }
-  if (document.getElementById(customRowId)) document.getElementById(customRowId).style.display = 'none';
-  input.value = '';
-}
-
-function showCardioForm(key) {
-  const list = document.getElementById('calWorkoutList');
-  list.querySelector('.cal-cardio-form')?.remove();
-  const defaultMins = lastCardioDuration;
-  const showCustom = lastCardioType === 'Other' ? 'flex' : 'none';
-  const form = document.createElement('div');
-  form.className = 'cal-cardio-form';
-  form.innerHTML = `
-    <div class="cal-cardio-form-row">
-      <select class="cal-cardio-select" id="_cardioType" onchange="onCardioTypeChange(this,'_cardioCustomRow')">
-        ${buildTypeOptions(lastCardioType)}
-      </select>
-      <div class="cal-mins-wheel">
-        <button class="cal-mins-wheel-btn" onclick="adjustCardioMins('_cardioMinsVal',-10)"></button>
-        <span style="display:inline-flex;flex-direction:column;align-items:center;gap:1px;"><span class="cal-mins-wheel-val" id="_cardioMinsVal">${defaultMins}</span><span style="font-size:9px;font-weight:700;color:var(--muted);letter-spacing:1px;display:block;text-align:center;">MIN</span></span>
-        <button class="cal-mins-wheel-btn" onclick="adjustCardioMins('_cardioMinsVal',10)">+</button>
-      </div>
-    </div>
-    <div class="cal-cardio-custom-row" id="_cardioCustomRow" style="display:${showCustom}">
-      <input class="cal-cardio-custom-input" id="_cardioCustomName" placeholder="Activity name&" type="text"/>
-      <button class="cal-cardio-custom-add" onclick="addCustomCardioType('_cardioCustomName','_cardioType','_cardioCustomRow')">Add</button>
-    </div>
-    <div class="cal-cardio-btn-row">
-      <button class="cal-cardio-cancel-btn" onclick="this.closest('.cal-cardio-form').remove()">Cancel</button>
-      <button class="cal-cardio-save-btn" onclick="saveCardioEntry('${key}')">Save</button>
-    </div>`;
-  const addBtn = list.querySelector('.cal-add-cardio-btn');
-  if (addBtn) list.insertBefore(form, addBtn);
-  else list.appendChild(form);
-}
-
-function saveCardioEntry(key) {
-  let type = document.getElementById('_cardioType')?.value || lastCardioType;
-  // If "Other" and custom row visible with a value, warn user to click Add first
-  if (type === 'Other') {
-    const customVal = document.getElementById('_cardioCustomName')?.value.trim();
-    if (customVal) { showToast('Tap "Add" to confirm activity name'); return; }
-    // If Other still selected with no custom added, use "Other"
-  }
-  const mins = parseInt(document.getElementById('_cardioMinsVal')?.textContent) || 0;
-  if (mins <= 0) { showToast('Enter duration in minutes'); return; }
-  lastCardioType = type; lastCardioDuration = mins;
-  localStorage.setItem('ironlog_cardio_type', type);
-  localStorage.setItem('ironlog_cardio_dur', mins);
-  // Build timestamp from key "year-month-day"
-  const parts = key.split('-');
-  const dateTs = new Date(parseInt(parts[0]), parseInt(parts[1]), parseInt(parts[2])).getTime();
-  cardioLog.push({date: dateTs, type, mins});
-  saveCardio();
-  renderCalendar();
-  // Re-select the same day so only that day's data shows
-  selectCalDay(key);
-}
-
-function editCardioEntry(idx) {
-  const c = cardioLog[idx];
-  if (!c) return;
-  const list = document.getElementById('calWorkoutList');
-  // Remove any existing edit form
-  list.querySelector('.cal-cardio-form')?.remove();
-  const form = document.createElement('div');
-  form.className = 'cal-cardio-form';
-  form.innerHTML = `
-    <div style="font-size:11px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">Edit Cardio</div>
-    <div class="cal-cardio-form-row">
-      <select class="cal-cardio-select" id="_editCardioType" onchange="onCardioTypeChange(this,'_editCardioCustomRow')">
-        ${buildTypeOptions(c.type)}
-      </select>
-      <div class="cal-mins-wheel">
-        <button class="cal-mins-wheel-btn" onclick="adjustCardioMins('_editCardioMinsVal',-10)"></button>
-        <span style="display:inline-flex;flex-direction:column;align-items:center;gap:1px;"><span class="cal-mins-wheel-val" id="_editCardioMinsVal">${c.mins || lastCardioDuration}</span><span style="font-size:9px;font-weight:700;color:var(--muted);letter-spacing:1px;display:block;text-align:center;">MIN</span></span>
-        <button class="cal-mins-wheel-btn" onclick="adjustCardioMins('_editCardioMinsVal',10)">+</button>
-      </div>
-    </div>
-    <div class="cal-cardio-custom-row" id="_editCardioCustomRow" style="display:none">
-      <input class="cal-cardio-custom-input" id="_editCardioCustomName" placeholder="Activity name&" type="text"/>
-      <button class="cal-cardio-custom-add" onclick="addCustomCardioType('_editCardioCustomName','_editCardioType','_editCardioCustomRow')">Add</button>
-    </div>
-    <div style="display:flex;gap:8px;">
-      <button class="cal-cardio-cancel-btn" style="flex:0 0 auto;" onclick="this.closest('.cal-cardio-form').remove()">Cancel</button>
-      <button class="cal-cardio-save-btn" style="flex:1;" onclick="saveEditCardio(${idx})">Save</button>
-    </div>`;
-  // Insert directly after the cardio item for this idx
-  const actionsEl = document.getElementById(`cal-cardio-actions-${idx}`);
-  const cardioItem = actionsEl ? actionsEl.closest('.cal-cardio-item') : null;
-  if (cardioItem) cardioItem.after(form);
-  else { const addBtn = list.querySelector('.cal-add-cardio-btn'); if (addBtn) list.insertBefore(form, addBtn); else list.appendChild(form); }
-  form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-}
-
-function saveEditCardio(idx) {
-  let type = document.getElementById('_editCardioType')?.value;
-  if (type === 'Other') {
-    const customVal = document.getElementById('_editCardioCustomName')?.value.trim();
-    if (customVal) { showToast('Tap "Add" to confirm activity name'); return; }
-  }
-  const mins = parseInt(document.getElementById('_editCardioMinsVal')?.textContent) || 0;
-  if (!type || mins <= 0) { showToast('Enter valid duration'); return; }
-  cardioLog[idx].type = type;
-  cardioLog[idx].mins = mins;
-  lastCardioType = type; lastCardioDuration = mins;
-  localStorage.setItem('ironlog_cardio_type', type);
-  localStorage.setItem('ironlog_cardio_dur', mins);
-  saveCardio();
-  renderCalendar();
-  if (selectedCalDay) selectCalDay(selectedCalDay);
-}
-
-function deleteCardioEntry(idx) {
-  if (idx < 0 || idx >= cardioLog.length) return;
-  cardioLog.splice(idx, 1);
-  saveCardio();
-  renderCalendar();
-  // Re-select the same day to show correct (possibly empty) state
-  if (selectedCalDay) selectCalDay(selectedCalDay);
-}
-
-function confirmDeleteCardio(idx) {
-  const c = cardioLog[idx];
-  if (!c) return;
-  const overlay = document.createElement('div');
-  overlay.className = 'delete-confirm-overlay';
-  overlay.innerHTML = `
-    <div class="delete-confirm-sheet">
-      <div class="delete-confirm-title">Delete Cardio ?</div>
-      <div class="delete-confirm-sub">"${c.type} — ${c.mins} min" will be removed.</div>
-      <div class="delete-confirm-btns">
-        <button class="btn-del-cancel" id="_cardioDelCancel">Cancel</button>
-        <button class="btn-del-yes-solid" id="_cardioDelConfirm">Delete</button>
-      </div>
-    </div>`;
-  document.body.appendChild(overlay);
-  overlay.querySelector('#_cardioDelCancel').onclick = () => overlay.remove();
-  overlay.querySelector('#_cardioDelConfirm').onclick = () => {
-    overlay.remove();
-    deleteCardioEntry(idx);
-  };
-}
 
 // showCalDay replaced above
 
@@ -19971,18 +19627,6 @@ function savePlanWorkout() {
   plannedWorkouts.push(plan); savePlanned();
   closePlanWorkoutModal(); renderCalendar();
   if (selectedCalDay) selectCalDay(selectedCalDay);
-}
-function completePlannedCardio(planId, key) {
-  const p = plannedWorkouts.find(x => x.planId === planId);
-  if (!p) return;
-  const parts = key.split('-');
-  const dateTs = new Date(parseInt(parts[0]), parseInt(parts[1]), parseInt(parts[2])).getTime();
-  cardioLog.push({ date: dateTs, type: p.activity || 'Cardio', mins: p.mins || 30 });
-  saveCardio();
-  plannedWorkouts = plannedWorkouts.filter(x => x.planId !== planId);
-  savePlanned();
-  renderCalendar();
-  selectCalDay(key);
 }
 
 function deletePlannedWorkout(planId) {
@@ -20422,6 +20066,21 @@ function _wAppNameSet() {
 }
 window._wAppNameSet = _wAppNameSet;
 
+// Home's START WORKOUT shows when there's anything to start: the user's own
+// (non-deleted) workouts, OR a brand workout (library / brand default) that
+// isn't hidden for them — so a brand-new user, or one who just did Delete
+// All Data → "Sync to brand library? YES", still gets it. Brand content off
+// (chose NO) + no own workouts → nothing to start → hidden.
+function _homeHasStartableWorkouts() {
+  const dn = JSON.parse(_LS.get('ironlog_deleted_tab_names') || '[]');
+  if ((workouts || []).some(w => !w._draft && !dn.includes(w.name))) return true;
+  if (_isBrandContentOff()) return false;
+  const isSuper = window._currentUserData?.role === 'super_admin';
+  const hid = new Set(isSuper ? [] : _getHiddenLibNames());
+  return [...(_libraryWorkouts || []), ...(_defaultWorkouts || [])].some(w => !hid.has((w.name || '').trim().toLowerCase()));
+}
+window._homeHasStartableWorkouts = _homeHasStartableWorkouts;
+
 // ── Super admin PUBLISHED / PENDING split (Workouts tab) ──
 // A workout counts as published when it was published to the brand the app is
 // currently running as. Tracked per name on every record carrying that name
@@ -20594,127 +20253,6 @@ function wtabCycleFilter(detId, dir) {
   detEl.style.maxHeight = detEl.scrollHeight + 300 + 'px';
 }
 
-function openPlanCardioModal(key) {
-  const [ky,km,kd] = key.split('-').map(Number);
-  const dateStr = new Date(ky, km, kd).toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'});
-  document.getElementById('planCardioOverlay')?.remove();
-  const defaultMins = lastCardioDuration || 30;
-  const showCustom = lastCardioType === 'Other' ? 'flex' : 'none';
-  const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay open';
-  overlay.id = 'planCardioOverlay';
-  overlay.style.cssText = 'align-items:flex-end;padding:0;';
-  overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
-  overlay.innerHTML = `<div class="modal-sheet" style="max-height:90dvh;">
-    <div class="modal-handle"></div>
-    <div class="modal-header">
-      <div class="modal-title">CARDIO</div>
-      <button class="modal-close" onclick="document.getElementById('planCardioOverlay').remove()">✕</button>
-    </div>
-    <div class="modal-body">
-      <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">${dateStr}</div>
-      <div class="cal-cardio-form" style="margin-bottom:0;">
-        <div class="cal-cardio-form-row">
-          <select class="cal-cardio-select" id="_planCardioType" onchange="onCardioTypeChange(this,'_planCardioCustomRow')">
-            ${buildTypeOptions(lastCardioType)}
-          </select>
-          <div class="cal-mins-wheel">
-            <button class="cal-mins-wheel-btn" onclick="adjustCardioMins('_planCardioMinsVal',-10)">&#8722;</button>
-            <span style="display:inline-flex;flex-direction:column;align-items:center;gap:1px;"><span class="cal-mins-wheel-val" id="_planCardioMinsVal">${defaultMins}</span><span style="font-size:9px;font-weight:700;color:var(--muted);letter-spacing:1px;display:block;text-align:center;">MIN</span></span>
-            <button class="cal-mins-wheel-btn" onclick="adjustCardioMins('_planCardioMinsVal',10)">+</button>
-          </div>
-        </div>
-        <div class="cal-cardio-custom-row" id="_planCardioCustomRow" style="display:${showCustom}">
-          <input class="cal-cardio-custom-input" id="_planCardioCustomName" placeholder="Activity name&hellip;" type="text"/>
-          <button class="cal-cardio-custom-add" onclick="addCustomCardioType('_planCardioCustomName','_planCardioType','_planCardioCustomRow')">Add</button>
-        </div>
-        <div class="cal-cardio-btn-row">
-          <button class="cal-cardio-cancel-btn" onclick="document.getElementById('planCardioOverlay').remove()">Cancel</button>
-          <button class="cal-cardio-save-btn" onclick="confirmPlanCardio('${key}')">Plan</button>
-        </div>
-      </div>
-    </div>
-  </div>`;
-  document.body.appendChild(overlay);
-}
-
-function confirmPlanCardio(key) {
-  const type = document.getElementById('_planCardioType')?.value || lastCardioType || 'Run';
-  if (type === 'Other') {
-    const customVal = document.getElementById('_planCardioCustomName')?.value.trim();
-    if (customVal) { showToast('Tap "Add" to confirm activity name'); return; }
-  }
-  const mins = parseInt(document.getElementById('_planCardioMinsVal')?.textContent) || 30;
-  const [ky,km,kd] = key.split('-').map(Number);
-  const plan = {
-    planId: 'cardio_' + Date.now(),
-    type: 'cardio',
-    activity: type,
-    mins,
-    date: new Date(ky, km, kd).getTime()
-  };
-  plannedWorkouts.push(plan);
-  savePlanned();
-  document.getElementById('planCardioOverlay')?.remove();
-  renderCalendar();
-}
-
-function editPlannedCardio(planId, actionsId) {
-  const p = plannedWorkouts.find(x => x.planId === planId);
-  if (!p) return;
-  // Close the actions panel
-  const actionsEl = document.getElementById(actionsId);
-  if (actionsEl) actionsEl.style.display = 'none';
-  const chev = document.getElementById(actionsId + '-chev');
-  if (chev) { chev.style.color = '#444'; chev.style.transform = ''; }
-  // Find the card and insert an edit form after it
-  const card = actionsEl ? actionsEl.closest('.cal-cardio-item') : null;
-  const list = document.getElementById('calWorkoutList');
-  list.querySelector('.cal-cardio-form')?.remove();
-  const form = document.createElement('div');
-  form.className = 'cal-cardio-form';
-  const showCustom = p.activity === 'Other' ? 'flex' : 'none';
-  form.innerHTML = `
-    <div style="font-size:11px;color:#7ec8e3;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;">Edit Planned Cardio</div>
-    <div class="cal-cardio-form-row">
-      <select class="cal-cardio-select" id="_editPlanCardioType" onchange="onCardioTypeChange(this,'_editPlanCardioCustomRow')">
-        ${buildTypeOptions(p.activity||'Run')}
-      </select>
-      <div class="cal-mins-wheel">
-        <button class="cal-mins-wheel-btn" onclick="adjustCardioMins('_editPlanCardioMinsVal',-10)">&#8722;</button>
-        <span style="display:inline-flex;flex-direction:column;align-items:center;gap:1px;"><span class="cal-mins-wheel-val" id="_editPlanCardioMinsVal">${p.mins||30}</span><span style="font-size:9px;font-weight:700;color:var(--muted);letter-spacing:1px;display:block;text-align:center;">MIN</span></span>
-        <button class="cal-mins-wheel-btn" onclick="adjustCardioMins('_editPlanCardioMinsVal',10)">+</button>
-      </div>
-    </div>
-    <div class="cal-cardio-custom-row" id="_editPlanCardioCustomRow" style="display:${showCustom}">
-      <input class="cal-cardio-custom-input" id="_editPlanCardioCustomName" placeholder="Activity name&" type="text"/>
-      <button class="cal-cardio-custom-add" onclick="addCustomCardioType('_editPlanCardioCustomName','_editPlanCardioType','_editPlanCardioCustomRow')">Add</button>
-    </div>
-    <div class="cal-cardio-btn-row">
-      <button class="cal-cardio-cancel-btn" onclick="this.closest('.cal-cardio-form').remove()">Cancel</button>
-      <button class="cal-cardio-save-btn" onclick="saveEditPlannedCardio('${planId}')">Save</button>
-    </div>`;
-  if (card) card.after(form);
-  else list.appendChild(form);
-  form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-}
-
-function saveEditPlannedCardio(planId) {
-  const p = plannedWorkouts.find(x => x.planId === planId);
-  if (!p) return;
-  let type = document.getElementById('_editPlanCardioType')?.value;
-  if (type === 'Other') {
-    const customVal = document.getElementById('_editPlanCardioCustomName')?.value.trim();
-    if (customVal) { showToast('Tap "Add" to confirm activity name'); return; }
-  }
-  const mins = parseInt(document.getElementById('_editPlanCardioMinsVal')?.textContent) || 0;
-  if (!type || mins <= 0) { showToast('Enter valid duration'); return; }
-  p.activity = type;
-  p.mins = mins;
-  savePlanned();
-  document.querySelector('.cal-cardio-form')?.remove();
-  if (selectedCalDay) selectCalDay(selectedCalDay);
-}
 
 function replacePlannedWorkout(planId, key) {
   window._replacePlanId = planId;
@@ -21021,7 +20559,6 @@ window.addEventListener('load', function() {
         <div style="font-family:'DM Sans';font-size:13px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;">FEATURES</div>
         <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;color:var(--text);font-weight:500;line-height:1.5;">
           <div style="display:flex;gap:10px;align-items:flex-start;"><span style="color:var(--accent);font-size:16px;line-height:1.3;">&</span><span>Track workouts with sets, reps & weight</span></div>
-          <div style="display:flex;gap:10px;align-items:flex-start;"><span style="color:var(--accent);font-size:16px;line-height:1.3;">&</span><span>Log cardio sessions & plan your week</span></div>
           <div style="display:flex;gap:10px;align-items:flex-start;"><span style="color:var(--accent);font-size:16px;line-height:1.3;">&</span><span>Visual progress charts & PR tracking</span></div>
           <div style="display:flex;gap:10px;align-items:flex-start;"><span style="color:var(--accent);font-size:16px;line-height:1.3;">&</span><span>Calendar planning & history</span></div>
           <div style="display:flex;gap:10px;align-items:flex-start;"><span style="color:var(--accent);font-size:16px;line-height:1.3;">&</span><span>All data stored locally on your device</span></div>
@@ -21732,7 +21269,6 @@ window._onAuthReady = (user) => {
   // Reload in-memory data from brand+uid-scoped localStorage keys
   workouts = JSON.parse(_LS.get('ironlog_workouts') || '[]');
   deletedWorkouts = JSON.parse(_LS.get('ironlog_deleted_workouts') || '[]');
-  cardioLog = JSON.parse(_LS.get('ironlog_cardio') || '[]');
 
   // One-time repair: an old _duplicateWorkout bug (now fixed) cloned a
   // workout's id onto its copy instead of generating a fresh one, so two (or
@@ -21768,6 +21304,7 @@ window._onAuthReady = (user) => {
 
   customExercises = JSON.parse(_LS.get('ironlog_custom_ex') || '[]');
   plannedWorkouts = (() => { try { return JSON.parse(_LS.get('ironlog_planned') || '[]') || []; } catch(e) { return []; } })();
+  _purgeLegacyCardioData();
 
   // Always land on Home — any in-progress workout from before the app was
   // closed is discarded, not restored or offered back.
@@ -21802,7 +21339,10 @@ window._onAuthReady = (user) => {
     // way so its confirm dialog is actually visible.
     if (typeof _checkImportWorkoutFromURL === 'function') _checkImportWorkoutFromURL();
   });
-  if (typeof loadLibrary === 'function') loadLibrary();
+  // Once the brand library arrives, re-check Home's START WORKOUT — a new
+  // user (or one right after Delete All Data) may only have brand workouts,
+  // which weren't loaded yet when Home first drew.
+  if (typeof loadLibrary === 'function') loadLibrary().then(() => { if (typeof renderTodayPlanCard === 'function') renderTodayPlanCard(); }, () => {});
 
   // Restore debug role if super_admin had one saved
   setTimeout(_restoreDebugRoleIfAny, 300);
@@ -21830,10 +21370,8 @@ window.syncToFirestore = function() {
   return window._fbSetDoc(ref, {
     workouts: workouts.filter(w => !w._draft),
     deletedWorkouts: deletedWorkouts,
-    cardioLog: cardioLog,
     customExercises: customExercises,
     plannedWorkouts: plannedWorkouts || [],
-    customCardioTypes: customCardioTypes || [],
     // Library/brand-default workouts this user deleted from their ALL list
     // (see _hardDeleteWorkoutNames) — hidden for them only.
     hiddenLibWorkouts: _getHiddenLibNames(),
@@ -21843,7 +21381,6 @@ window.syncToFirestore = function() {
     dataResetAt: _LS.get('ironlog_data_reset_at') || null,
     settings: {
       workoutWeekTarget: workoutWeekTarget,
-      cardioWeekTarget: cardioWeekTarget,
       lastTimerSecs: lastTimerSecs,
       miniChartRange: miniChartRange,
     },
@@ -21883,11 +21420,6 @@ window.loadFromFirestore = function(uid) {
       data.deletedWorkouts.filter(w => !existingIds.has(w.id)).forEach(w => deletedWorkouts.push(w));
       _LS.set('ironlog_deleted_workouts', JSON.stringify(deletedWorkouts));
     }
-    if (Array.isArray(data.cardioLog) && data.cardioLog.length > 0) {
-      const existingKeys = new Set(cardioLog.map(c => `${c.date}-${c.type}-${c.mins}`));
-      data.cardioLog.filter(c => !existingKeys.has(`${c.date}-${c.type}-${c.mins}`)).forEach(c => cardioLog.push(c));
-      _LS.set('ironlog_cardio', JSON.stringify(cardioLog));
-    }
     if (Array.isArray(data.customExercises) && data.customExercises.length > 0) {
       const existingNames = new Set(customExercises.map(e => e.name));
       data.customExercises.filter(e => !existingNames.has(e.name)).forEach(e => customExercises.push(e));
@@ -21895,7 +21427,8 @@ window.loadFromFirestore = function(uid) {
     }
     if (Array.isArray(data.plannedWorkouts)) {
       const existingPlanIds = new Set((plannedWorkouts||[]).map(p => p.planId));
-      data.plannedWorkouts.filter(p => !existingPlanIds.has(p.planId)).forEach(p => plannedWorkouts.push(p));
+      // Cardio plans are no longer supported — old cloud copies are dropped.
+      data.plannedWorkouts.filter(p => p.type !== 'cardio' && !existingPlanIds.has(p.planId)).forEach(p => plannedWorkouts.push(p));
       _LS.set('ironlog_planned', JSON.stringify(plannedWorkouts));
     }
     if (Array.isArray(data.hiddenLibWorkouts)) {
@@ -21904,7 +21437,6 @@ window.loadFromFirestore = function(uid) {
     if (data.settings) {
       const s = data.settings;
       if (s.workoutWeekTarget) { workoutWeekTarget = s.workoutWeekTarget; localStorage.setItem('ironlog_workout_target', s.workoutWeekTarget); }
-      if (s.cardioWeekTarget) { cardioWeekTarget = s.cardioWeekTarget; localStorage.setItem('ironlog_cardio_target', s.cardioWeekTarget); }
       if (s.lastTimerSecs) { lastTimerSecs = s.lastTimerSecs; localStorage.setItem('ironlog_last_timer', s.lastTimerSecs); }
       if (s.miniChartRange) { miniChartRange = s.miniChartRange; localStorage.setItem('ironlog_mini_range', s.miniChartRange); }
     }
@@ -24006,7 +23538,7 @@ function buildExerciseLibraryHtml(selectedMuscle) {
     // as the active workout's card circles (_exPickCircleHtml).
     const pickerCheck = _pickMode ? '' : (extraRight ? `<div style="display:flex;align-items:center;padding-right:8px;">${extraRight}</div>` : '');
     const _exld = (window._exLastDateMap && window._exLastDateMap.get(exName)) || 0;
-    return `<div style="display:flex;align-items:stretch;background:${isPickSelected ? 'color-mix(in srgb, var(--accent) 15%, var(--surface))' : 'var(--surface)'};border:1px solid #555;border-radius:var(--radius);margin-bottom:8px;overflow:hidden;">
+    return `<div style="display:flex;align-items:stretch;background:${isPickSelected ? 'color-mix(in srgb, var(--accent) 30%, var(--surface))' : 'var(--surface)'};${isPickSelected ? 'border:1px solid var(--accent);box-shadow:inset 0 0 0 1px var(--accent);' : 'border:1px solid #555;'}border-radius:var(--radius);margin-bottom:8px;overflow:hidden;">
       ${_pickMode ? _exPickCircleHtml(isPickSelected) : ''}
       ${thumbHtml}
       <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;padding:8px 0;">
@@ -27905,7 +27437,7 @@ function openRepsPopup(span, exId) {
         <button class="kg-pad-btn" onclick="repsEditorPress('9')">9</button>
         <button class="kg-pad-btn" style="opacity:0.15;pointer-events:none;"></button>
         <button class="kg-pad-btn" onclick="repsEditorPress('0')">0</button>
-        <button class="kg-pad-btn" onclick="repsEditorBack()">⌫</button>
+        <button class="kg-pad-btn" onclick="repsEditorBack()" style="font-size:18px;">⌫</button>
       </div>
       <div style="display:flex;gap:8px;">
         <button class="editor-action-btn editor-tap-btn" onclick="cancelRepsEditor()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:18px;font-weight:700;padding:0 11px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Cancel</button>
