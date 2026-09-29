@@ -24071,6 +24071,13 @@ function _pubEndDirectMode() {
 }
 window._pubCloseReview = _pubCloseReview;
 
+// Users get default values in published workouts, not the publisher's own
+// numbers: every set is 8 KG × 10 REPS (BW/BW+ becomes plain 8 KG). Only the
+// set count/order and each set's W/D type are kept.
+const PUBLISH_DEFAULT_KG = 8, PUBLISH_DEFAULT_REPS = 10;
+function _pubDefaultSets(sets) {
+  return (sets || []).map(s => ({ kg: PUBLISH_DEFAULT_KG, reps: PUBLISH_DEFAULT_REPS, done: false, ignored: !!s.ignored, setType: s.setType || '', bwExtra: null }));
+}
 function _pubConfirmPublish() {
   const data = window._pubReviewData;
   if (!data) return;
@@ -24105,7 +24112,7 @@ function _pubConfirmPublish() {
         name: e.name,
         muscle: def?.muscle || e.muscle || 'Mix',
         subMuscles: def?.subMuscles || e.subMuscles || [],
-        sets: (e.sets || []).map(s => ({ kg: s.kg || 0, reps: s.reps || 0, done: !!s.done, ignored: !!s.ignored, setType: s.setType || '', bwExtra: s.bwExtra ?? null })),
+        sets: _pubDefaultSets(e.sets),
         comment: e.comment || ''
       };
     });
@@ -24444,7 +24451,7 @@ function syncExploreToFirestore() {
     // w.photo is a raw data URL (still local) — upload it once here and store only
     // the resulting download URL in Firestore, same split exercise photos already use.
     const photoUrl = w.photo && window._uploadLibraryWorkoutPhoto ? await window._uploadLibraryWorkoutPhoto(id, w.photo) : null;
-    const data = { name: w.name, description: w.description || '', exercises: w.exercises || [], photo: photoUrl, createdBy: window._currentUser?.uid, createdAt: new Date().toISOString() };
+    const data = { name: w.name, description: w.description || '', exercises: (w.exercises || []).map(e => Array.isArray(e.sets) ? { ...e, sets: _pubDefaultSets(e.sets) } : e), photo: photoUrl, createdBy: window._currentUser?.uid, createdAt: new Date().toISOString() };
     return window._fbSetDoc(window._fbDoc(window._fbDb, 'library', brandId, 'workouts', id), data).then(() => {
       const idx = _libraryWorkouts.findIndex(x => x.id === w.id);
       if (idx !== -1) _libraryWorkouts[idx] = { ...data, id };
