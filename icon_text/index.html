@@ -5717,7 +5717,7 @@ function renderExercisesTab() {
             <div style="width:15px;min-height:96px;flex-shrink:0;"></div>
             <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;align-items:flex-end;padding:8px 15px 8px 0;">
               <div dir="auto" style="font-family:'DM Sans';font-size:17px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;">${_tn(ex.name)}</div>
-              ${_lcd ? `<div style="font-family:'DM Sans';font-size:11px;font-weight:600;color:var(--muted);margin-top:2px;text-align:right;">${fmtShort(_lcd)}</div>` : ''}
+              ${_lcd ? `<div style="font-family:'DM Sans';font-size:11px;font-weight:600;color:var(--muted);margin-top:2px;text-align:right;">Last Time: <span style="color:#ccc;">${new Date(_lcd).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</span></div>` : ''}
             </div>
                       </div>
         </div>`;
@@ -5743,7 +5743,7 @@ function renderExercisesTab() {
         <div style="width:15px;min-height:96px;flex-shrink:0;"></div>
         <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;align-items:flex-end;padding:8px 15px 8px 0;">
           <div dir="auto" style="font-family:'DM Sans';font-size:17px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;">${_tn(ex.name)}</div>
-          ${ex.lastDate ? `<div style="font-family:'DM Sans';font-size:11px;font-weight:600;color:var(--muted);margin-top:2px;text-align:right;">${fmtShort(ex.lastDate)}</div>` : ''}
+          ${ex.lastDate ? `<div style="font-family:'DM Sans';font-size:11px;font-weight:600;color:var(--muted);margin-top:2px;text-align:right;">Last Time: <span style="color:#ccc;">${new Date(ex.lastDate).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</span></div>` : ''}
         </div>
               </div>
     </div>`;
@@ -27449,6 +27449,10 @@ function openRepsPopup(span, exId) {
   // Slide open from bottom
   requestAnimationFrame(() => {
     const _sheet = document.getElementById('kg-editor-sheet');
+    // Never open still hidden by an earlier "set body weight" window (kgPadBW).
+    if (!document.getElementById('bwModalOverlay')?.classList.contains('open')) {
+      _sheet.style.visibility = ''; window._kgSheetHiddenForBW = false;
+    }
     if (_sheet.style.display === 'none') {
       _sheet.style.animation = 'none';
       _sheet.offsetHeight;
@@ -27706,6 +27710,12 @@ function openBWModal(prefill) {
 
 function closeBWModal() {
   document.getElementById('bwModalOverlay')?.classList.remove('open');
+  // Bring back the KG editor's keypad if kgPadBW hid it for this window.
+  if (window._kgSheetHiddenForBW) {
+    window._kgSheetHiddenForBW = false;
+    const sheet = document.getElementById('kg-editor-sheet');
+    if (sheet) sheet.style.visibility = '';
+  }
 }
 
 async function confirmBWModal() {
@@ -27714,7 +27724,10 @@ async function confirmBWModal() {
   if (!val || val <= 0) { showToast('Please enter a valid weight'); return; }
   _userBW = val;
   _updateBWMenuLabel();
+  // Opened from the KG editor's BW button — the user meant to turn BW on.
+  const fromKgEditor = !!window._kgSheetHiddenForBW;
   closeBWModal();
+  if (fromKgEditor && !_kgBWMode && document.getElementById('kgBWBtnInline')) kgPadBW();
   // Save to Firestore
   try {
     const user = window._fbAuth?.currentUser;
@@ -27730,7 +27743,14 @@ async function confirmBWModal() {
 }
 
 function kgPadBW() {
-  if (!_userBW) { openBWModal(); return; }
+  if (!_userBW) {
+    // No body weight yet: hide the keypad so it doesn't cover the BW window;
+    // closeBWModal shows it again.
+    const sheet = document.getElementById('kg-editor-sheet');
+    if (sheet) { sheet.style.visibility = 'hidden'; window._kgSheetHiddenForBW = true; }
+    openBWModal();
+    return;
+  }
   _kgBWMode = !_kgBWMode;
   window._kgEditorBWMode = _kgBWMode;
   const btn = document.getElementById('kgBWBtnInline');
@@ -28270,6 +28290,10 @@ closeInlineKgEditor(false);
   // Slide open from bottom
   requestAnimationFrame(() => {
     const _sheet = document.getElementById('kg-editor-sheet');
+    // Never open still hidden by an earlier "set body weight" window (kgPadBW).
+    if (!document.getElementById('bwModalOverlay')?.classList.contains('open')) {
+      _sheet.style.visibility = ''; window._kgSheetHiddenForBW = false;
+    }
     if (_sheet.style.display === 'none') {
       _sheet.style.animation = 'none';
       _sheet.offsetHeight;
@@ -30601,16 +30625,21 @@ function _renderTodayWeekPRStars() {
   // lifted 6px and drawn in front (z-index). Star box 104px + 8px + 24px
   // label; the group is nudged up 1px (see #today-pr-stars) so the side
   // stars' centers sit ~18px above the circle's center, labels ~55px below.
-  const star = (color, n, label, size, lift, z) => {
+  // Everything inside the circle is then scaled by S (0.95 = 5% smaller than
+  // the numbers above), keeping the same proportions.
+  const S = 0.95;
+  const px = v => +(v * S).toFixed(1);
+  const star = (color, n, label, baseSize, baseLift, z) => {
     const lit = n > 0;
-    return `<span style="position:relative;z-index:${z};width:81px;display:flex;flex-direction:column;align-items:center;gap:8px;">
-      <span style="position:relative;width:81px;height:104px;display:flex;align-items:center;justify-content:center;">
-        <span style="position:absolute;left:50%;top:50%;width:${size}px;height:${size}px;margin-left:${-size / 2}px;margin-top:${-size / 2 - lift}px;display:flex;align-items:center;justify-content:center;">
+    const size = px(baseSize), lift = px(baseLift);
+    return `<span style="position:relative;z-index:${z};width:${px(81)}px;display:flex;flex-direction:column;align-items:center;gap:${px(8)}px;">
+      <span style="position:relative;width:${px(81)}px;height:${px(104)}px;display:flex;align-items:center;justify-content:center;">
+        <span style="position:absolute;left:50%;top:50%;width:${size}px;height:${size}px;margin-left:${-size / 2}px;margin-top:${-size / 2 - lift + 8}px;display:flex;align-items:center;justify-content:center;">
           <svg class="today-pr-star-svg" data-lit-fill="${lit ? color : '#333'}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="#333" style="position:absolute;inset:0;transition:fill .5s ease;"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
-          <span class="today-pr-star-num" data-lit-color="${lit ? '#000' : '#777'}" style="position:relative;font-size:42px;font-weight:800;color:#777;line-height:1;transform:translateY(${(size * 3 / 68).toFixed(1)}px);transition:color .5s ease;">${n}</span>
+          <span class="today-pr-star-num" data-lit-color="${lit ? '#000' : '#777'}" style="position:relative;font-size:${px(42)}px;font-weight:800;color:#777;line-height:1;transform:translateY(${(size * 3 / 68).toFixed(1)}px);transition:color .5s ease;">${n}</span>
         </span>
       </span>
-      <span class="today-pr-star-label" data-lit-color="${lit ? color : '#555'}" style="font-size:20px;font-weight:700;color:#555;letter-spacing:.3px;line-height:24px;white-space:nowrap;transition:color .5s ease;">${label}</span>
+      <span class="today-pr-star-label" data-lit-color="${lit ? color : '#555'}" style="font-size:18px;font-weight:700;color:#555;letter-spacing:.3px;line-height:${px(24)}px;white-space:nowrap;transition:color .5s ease;">${label}</span>
     </span>`;
   };
   // BEST SET (middle) is drawn in front of the other two via z-index.
