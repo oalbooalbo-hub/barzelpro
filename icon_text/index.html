@@ -21208,27 +21208,26 @@ window._onAuthReady = (user) => {
   if (emailEl) emailEl.textContent = user.email || '';
   if (roleEl) { roleEl.textContent = roleLabels[role] || role; roleEl.style.color = color; }
 
-  // Show role-gated buttons
-  const adminBtn = document.getElementById('userMenuAdminBtn');
-  if (adminBtn && ['super_admin', 'ops_admin', 'brand_admin'].includes(role)) adminBtn.style.display = 'block';
-  const superBtn = document.getElementById('userMenuSuperBtn');
-  if (superBtn && role === 'super_admin') superBtn.style.display = 'block';
-  const brandLibBtn = document.getElementById('userMenuBrandLibBtn');
-  if (brandLibBtn && role === 'super_admin') brandLibBtn.style.display = 'block';
-  // View As Role — super_admin only
-  const viewAsBtn = document.getElementById('userMenuViewAsBtn');
-  if (viewAsBtn && role === 'super_admin') viewAsBtn.style.display = 'block';
-  const smBtn = document.getElementById('userMenuSiteManagerBtn');
-  if (smBtn && ['super_admin','brand_admin','site_manager'].includes(role)) {
-    smBtn.style.display = 'block';
-    checkPendingRequests();
-  }
-  const coachBtn = document.getElementById('userMenuCoachBtn');
-  if (coachBtn && ['super_admin','coach','site_manager'].includes(role)) coachBtn.style.display = 'block';
-  const findCoachBtn = document.getElementById('userMenuFindCoachBtn');
-  if (findCoachBtn && role === 'client') findCoachBtn.style.display = 'block';
-  const libBtn = document.getElementById('saveToLibraryBtn');
-  if (libBtn && ['super_admin', 'ops_admin', 'brand_admin', 'site_manager', 'coach'].includes(role)) libBtn.style.display = '';
+  // Role-gated buttons: set every one explicitly (shown OR hidden). Signing
+  // out doesn't reload the page, so a previous user's buttons (e.g. a super
+  // admin's, on a shared device) would otherwise stay visible for the next.
+  const _coachRoles = ['super_admin','coach','site_manager'];
+  if (window._coachMode && typeof exitCoachMode === 'function') exitCoachMode();
+  try { if (!_isRealSuperAdmin()) localStorage.removeItem(DEBUG_ROLE_KEY); } catch(e) {}
+  if (typeof _updateDebugBadge === 'function') _updateDebugBadge(null); // hides "Exit View Mode" + badge
+  const _menuBtn = (id, on, shown = 'block') => { const b = document.getElementById(id); if (b) b.style.display = on ? shown : 'none'; return b; };
+  _menuBtn('userMenuAdminBtn', ['super_admin', 'ops_admin', 'brand_admin'].includes(role));
+  _menuBtn('userMenuSuperBtn', role === 'super_admin');
+  _menuBtn('userMenuBrandLibBtn', role === 'super_admin');
+  _menuBtn('userMenuViewAsBtn', role === 'super_admin'); // View As Role — super_admin only
+  _menuBtn('userMenuExitViewBtn', false);
+  if (_menuBtn('userMenuSiteManagerBtn', ['super_admin','brand_admin','site_manager'].includes(role)) && ['super_admin','brand_admin','site_manager'].includes(role)) checkPendingRequests();
+  _menuBtn('userMenuCoachBtn', _coachRoles.includes(role));
+  // Coach Mode keeps its old start state for coach roles; only ever hidden here.
+  if (!_coachRoles.includes(role)) _menuBtn('userMenuCoachModeBtn', false);
+  _menuBtn('userMenuExitCoachModeBtn', false);
+  _menuBtn('userMenuFindCoachBtn', role === 'client');
+  _menuBtn('saveToLibraryBtn', ['super_admin', 'ops_admin', 'brand_admin', 'site_manager', 'coach'].includes(role), '');
 
   // ── EXPIRY WARNINGS ───────────────────────────────
   const warningDays = window._brandConfig?.expiryWarningDays || 7;
