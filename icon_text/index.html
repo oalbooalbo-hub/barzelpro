@@ -1129,6 +1129,7 @@ onAuthStateChanged(auth, async (user) => {
     _authNullGraceTimer = setTimeout(() => {
       window._currentUser = null;
       window._currentUserData = null;
+      if (window._refreshSyncIndicators) window._refreshSyncIndicators(); // drop the previous user's dot
       if (!document.getElementById('expiredScreen')?.style.display || document.getElementById('expiredScreen').style.display === 'none') {
         showAuthScreen();
       }
@@ -1532,6 +1533,14 @@ window._fbModuleReady = true;
       <!-- Export / Import — list rows, same look as the WORKOUT OPTIONS sheet
            (toggleWtabCardMenu): divider line, grey line icon, white label. -->
       <div>
+        <button onclick="runSyncToCloud()" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9"/><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/></svg>
+          <span style="display:flex;flex-direction:column;gap:2px;">
+            <span>Sync to Cloud</span>
+            <!-- "Last synced 2 min ago" / "Not synced yet" — see _refreshSyncIndicators -->
+            <span id="dataSyncStatus" style="font-size:12px;font-weight:500;color:#777;"></span>
+          </span>
+        </button>
         <button onclick="exportDataWithDialog()" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Download Backup
@@ -1550,7 +1559,6 @@ window._fbModuleReady = true;
           Delete All Data
         </button>
         <input type="file" id="importFileInput" accept=".json" style="display:none;" onchange="importData(this)">
-        <div style="font-size:11px;color:#555;margin-top:8px;text-align:center;">⚠️ This will merge imported data with your existing data</div>
       </div>
     </div>
   </div>
@@ -1634,7 +1642,7 @@ window._fbModuleReady = true;
 
   <div style="height:1px;background:#2a2a2a;margin:10px 0;"></div>
 
-  <button onclick="window._fbSignOut&&window._fbSignOut()" style="width:100%;background:transparent;border:none;border-radius:10px;color:#ff4747;font-family:'DM Sans';font-size:16px;font-weight:600;padding:14px 12px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;">
+  <button onclick="signOutWithSyncCheck()" style="width:100%;background:transparent;border:none;border-radius:10px;color:#ff4747;font-family:'DM Sans';font-size:16px;font-weight:600;padding:14px 12px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff4747" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
     Sign Out
   </button>
@@ -2269,7 +2277,8 @@ const _BRAND_SCOPED_KEYS = new Set([
   'ironlog_custom_ex','ironlog_planned',
   'ironlog_session','ironlog_session_start','ironlog_draft_id',
   'ironlog_deleted_tab_names','ironlog_hidden_ex','ironlog_hidden_lib_workouts',
-  'ironlog_brand_off','ironlog_data_reset_at'
+  'ironlog_brand_off','ironlog_data_reset_at',
+  'ironlog_unsynced_since','ironlog_last_synced'
 ]);
 
 const _LS = {
@@ -2295,14 +2304,41 @@ const _LS = {
     localStorage.setItem(key, v);
     // Also write to IndexedDB asynchronously
     _IDB.set(key, v);
+    if (window._onSyncedKeyWrite) window._onSyncedKeyWrite(k);
   },
   remove(k) {
     const key = this.key(k);
     localStorage.removeItem(key);
     _IDB.remove(key);
+    if (window._onSyncedKeyWrite) window._onSyncedKeyWrite(k);
   }
 };
 window._LS = _LS;
+
+// ── Cloud sync status ("are this device's changes in the cloud yet?") ─────
+// Any write to data the cloud copy holds (see syncToFirestore's payload)
+// marks this user's data unsynced; only a confirmed upload clears it — and
+// only if nothing changed while that upload was in flight (_syncDirtyVer).
+// Per user (both keys are uid-scoped), kept across restarts. Drives the
+// My Data status line, the Profile tab dot and the sign-out warning.
+const _SYNCED_DATA_KEYS = new Set(['ironlog_workouts','ironlog_deleted_workouts','ironlog_custom_ex','ironlog_planned','ironlog_hidden_lib_workouts','ironlog_brand_off']);
+let _syncDirtyVer = 0;
+window._onSyncedKeyWrite = k => { if (_SYNCED_DATA_KEYS.has(k)) _markUnsynced(); };
+function _markUnsynced() {
+  if (window._syncSuppressDirty) return;
+  _syncDirtyVer++;
+  if (!_LS.get('ironlog_unsynced_since')) _LS.set('ironlog_unsynced_since', String(Date.now()));
+  if (window._refreshSyncIndicators) window._refreshSyncIndicators();
+}
+// ver = _syncDirtyVer captured when the upload started (omit to force).
+function _markSynced(ver) {
+  if (ver !== undefined && ver !== _syncDirtyVer) return; // changed mid-upload
+  _LS.remove('ironlog_unsynced_since');
+  _LS.set('ironlog_last_synced', String(Date.now()));
+  if (window._refreshSyncIndicators) window._refreshSyncIndicators();
+}
+function _hasUnsyncedChanges() { return !!_LS.get('ironlog_unsynced_since'); }
+window._markUnsynced = _markUnsynced; window._markSynced = _markSynced; window._hasUnsyncedChanges = _hasUnsyncedChanges;
 
 // One-time-per-user recovery for the old brand-only (not uid-scoped) local
 // cache: before this fix, every signed-in user on a given brand shared the
@@ -5394,7 +5430,11 @@ function saveCustom() {
 function showToast(msg, opts) { /* toasts disabled */ }
 function fmt(ts) { return new Date(ts).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}); }
 function fmtShort(ts) { return new Date(ts).toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
-document.getElementById('dateBadgeText').textContent = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'}).toUpperCase();
+// "29 Sep" — day + always-3-letter month. (en-GB's short month is "Sept" on
+// newer browsers, so the month names are fixed here rather than locale-made.)
+const _MON3 = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function _dayMon(d) { d = d instanceof Date ? d : new Date(d); return `${d.getDate()} ${_MON3[d.getMonth()]}`; }
+document.getElementById('dateBadgeText').textContent = _dayMon(new Date()).toUpperCase();
 _updateSoundToggleUI();
 // Session/plan-card restoration now happens inside _onAuthReady, once real
 // (brand-scoped) data has actually loaded — see there. Running it here via a
@@ -5738,7 +5778,7 @@ function renderExercisesTab() {
             <div style="width:15px;min-height:96px;flex-shrink:0;"></div>
             <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;align-items:flex-end;padding:8px 15px 8px 0;">
               <div dir="auto" style="font-family:'DM Sans';font-size:17px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;">${_tn(ex.name)}</div>
-              ${_lcd ? `<div style="font-family:'DM Sans';font-size:11px;font-weight:600;color:var(--muted);margin-top:2px;text-align:right;">Last Time: <span style="color:#ccc;">${new Date(_lcd).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</span></div>` : ''}
+              ${_lcd ? `<div style="font-family:'DM Sans';font-size:11px;font-weight:600;color:rgba(255,255,255,0.55);margin-top:2px;text-align:right;">Last Time: ${_dayMon(new Date(_lcd))}</div>` : ''}
             </div>
                       </div>
         </div>`;
@@ -5764,7 +5804,7 @@ function renderExercisesTab() {
         <div style="width:15px;min-height:96px;flex-shrink:0;"></div>
         <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;align-items:flex-end;padding:8px 15px 8px 0;">
           <div dir="auto" style="font-family:'DM Sans';font-size:17px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;">${_tn(ex.name)}</div>
-          ${ex.lastDate ? `<div style="font-family:'DM Sans';font-size:11px;font-weight:600;color:var(--muted);margin-top:2px;text-align:right;">Last Time: <span style="color:#ccc;">${new Date(ex.lastDate).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</span></div>` : ''}
+          ${ex.lastDate ? `<div style="font-family:'DM Sans';font-size:11px;font-weight:600;color:rgba(255,255,255,0.55);margin-top:2px;text-align:right;">Last Time: ${_dayMon(new Date(ex.lastDate))}</div>` : ''}
         </div>
               </div>
     </div>`;
@@ -7451,7 +7491,7 @@ function openWeekSummary(weekStartStr) {
   const weekStart = new Date(weekStartStr);
   weekStart.setHours(0,0,0,0);
   const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate()+6); weekEnd.setHours(23,59,59,999);
-  const fmt = d => d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+  const fmt = d => _dayMon(d);
   
   // Collect workouts in this week
   const wkWorkouts = workouts.filter(w => {
@@ -8684,7 +8724,7 @@ function _exAllSessionsHtml(exName, withSelect) {
     }).join('<span style="color:#333;margin:0 4px;">·</span>');
     const head = `<div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-family:'DM Sans';font-size:12px;font-weight:700;color:#888;margin-bottom:6px;">
         <span dir="auto" style="flex:1;min-width:0;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.name}</span>
-        <span style="flex-shrink:0;white-space:nowrap;">${new Date(s.date).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</span>
+        <span style="flex-shrink:0;white-space:nowrap;">${_dayMon(new Date(s.date))}</span>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:4px;">${chips}</div>`;
     return withSelect
@@ -9286,7 +9326,7 @@ function openExtabExOverlay(exName, musclesOnly, instant, knownPhoto) {
           <div style="flex:1;min-width:0;">
             <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-family:'DM Sans';font-size:12px;font-weight:700;color:#888;margin-bottom:6px;">
               <span dir="auto" style="flex:1;min-width:0;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.name}</span>
-              <span style="flex-shrink:0;white-space:nowrap;">${new Date(s.date).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</span>
+              <span style="flex-shrink:0;white-space:nowrap;">${_dayMon(new Date(s.date))}</span>
             </div>
             <div style="display:flex;flex-wrap:wrap;gap:4px;">${chips}</div>
           </div>
@@ -10218,10 +10258,10 @@ function renderWorkoutsTab2() {
     el.innerHTML = _isPubPickMode
       ? `<div class="empty-state" style="margin-top:24px;"><span style="color:#fff;">You have no saved workouts to publish.</span></div>`
       : `<div class="empty-state" style="margin-top:24px;"><span style="color:#fff;">No workouts yet.</span></div>
-      <button onclick="startNewWorkout(true);" style="width:100%;margin-top:12px;background:transparent;border:1px dashed var(--border);border-radius:12px;color:var(--muted);font-family:'DM Sans';font-size:15px;font-weight:700;padding:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+      ${window._currentUserData?.role === 'super_admin' ? '' /* PENDING: create via the top bar's + only */ : `<button onclick="startNewWorkout(true);" style="width:100%;margin-top:12px;background:transparent;border:1px dashed var(--border);border-radius:12px;color:var(--muted);font-family:'DM Sans';font-size:15px;font-weight:700;padding:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
         <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         Create New Workout
-      </button>`;
+      </button>`}`;
     // Publish pick-mode's Cancel bar still needs to appear here — the normal
     // flow builds it much further below, past this early return.
     let _pubBarEmpty = document.getElementById('wtab-publish-bar');
@@ -10304,7 +10344,7 @@ function renderWorkoutsTab2() {
 
     const _wKey = (w.name||'').trim().toLowerCase();
     const _lastTs = _w2LastDateMap.get(_wKey) || 0;
-    const lastDate = _lastTs ? new Date(_lastTs).toLocaleDateString('en-GB',{day:'numeric',month:'short'}) : '';
+    const lastDate = _lastTs ? _dayMon(new Date(_lastTs)) : '';
     const workoutPhoto = _getWorkoutPhoto(w.name);
 
     // Action button
@@ -10376,8 +10416,8 @@ function renderWorkoutsTab2() {
             ${workoutPhoto ? `<img src="${workoutPhoto}" draggable="false" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.72);-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;pointer-events:none;">` : ''}
             ${_isDelPicked ? `<div style="position:absolute;inset:0;background:color-mix(in srgb, var(--accent) 30%, transparent);pointer-events:none;"></div>` : ''}
             <div style="position:absolute;bottom:0;left:0;right:0;padding:10px 14px 12px;pointer-events:none;text-align:right;">
-              ${lastDate ? `<div style="font-family:'DM Sans';font-size:11px;font-weight:600;color:rgba(255,255,255,0.55);margin-bottom:2px;">Last Time: ${lastDate}</div>` : ''}
               <div style="font-family:'DM Sans';font-size:20px;font-weight:900;color:#fff;line-height:1.2;${_nwDir}">${_nwHtml}</div>
+              ${lastDate ? `<div style="font-family:'DM Sans';font-size:11px;font-weight:600;color:rgba(255,255,255,0.55);margin-top:2px;">Last Time: ${lastDate}</div>` : ''}
             </div>
           </div>
           ${_isPlanStrengthMode
@@ -10637,8 +10677,19 @@ function _alignSelectAllCircle(headerBtn, rowCircle) {
   // animations around here only move things vertically or scale about the
   // center, which doesn't shift an element's horizontal center.
   const cx = el => { const r = el.getBoundingClientRect(); return r.left + r.width / 2; };
+  // A list mid-slide (e.g. the Exercises tab's sideways body-part switch)
+  // has its circles shifted by the animation's translateX — take that out so
+  // the header circle lines up with where they settle, not where they are now.
+  let slideX = 0;
+  for (let n = rowCircle.parentElement; n && n !== document.body; n = n.parentElement) {
+    const t = getComputedStyle(n).transform;
+    if (t && t !== 'none') {
+      const m = new DOMMatrixReadOnly(t);
+      if (m.a === 1 && m.b === 0 && m.c === 0 && m.d === 1) slideX += m.e; // pure translation only
+    }
+  }
   const cur = parseFloat(headerBtn.style.left) || 0;
-  const left = cx(rowCircle) - (cx(headerBtn) - cur);
+  const left = cx(rowCircle) - slideX - (cx(headerBtn) - cur);
   _selectAllLeftCache[headerBtn.id] = left;
   headerBtn.style.left = left + 'px';
 }
@@ -16453,6 +16504,7 @@ function openDataModal() {
   // Delete All Data — client users only.
   const _delAllBtn = document.getElementById('dataDeleteAllBtn');
   if (_delAllBtn) _delAllBtn.style.display = window._currentUserData?.role === 'super_admin' ? 'none' : 'flex';
+  _refreshSyncIndicators(); // "Last synced …" under Sync to Cloud
   document.getElementById('dataModalOverlay').classList.add('open');
 }
 
@@ -16517,6 +16569,183 @@ async function loadBrandLibraryForMe() {
 window.loadBrandLibraryForMe = loadBrandLibraryForMe;
 
 // ══════════════════════════════════════════════════════
+//  MY DATA → SYNC TO CLOUD
+//  Full-screen progress (same look as Delete All Data / brand library sync):
+//  connection check → prepare → upload (the whole userData doc — the same
+//  full overwrite syncToFirestore always does — plus body weight, which lives
+//  on the users/{uid} profile doc) → confirm → "Synced to cloud" ✓.
+//  "Synced" only once the cloud confirms; offline / no answer in 15s →
+//  "Couldn't reach the cloud" with Try again / Close. Photos stay on device.
+// ══════════════════════════════════════════════════════
+// ── Sync status indicators ────────────────────────────────────────────────
+//  • My Data → under "Sync to Cloud": "Last synced 2 min ago" (grey) or
+//    "Not synced yet" (orange).
+//  • Profile tab: small orange dot once changes have stayed unsynced for
+//    2+ minutes while online (not for brief gaps a background sync fixes).
+const SYNC_DOT_AFTER_MS = 2 * 60 * 1000;
+function _syncAgo(ts) {
+  const m = Math.floor((Date.now() - ts) / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return `${m} min ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h} h ago`;
+  const d = Math.floor(h / 24);
+  return `${d} day${d === 1 ? '' : 's'} ago`;
+}
+function _refreshSyncIndicators() {
+  const signedIn = !!window._currentUser;
+  const since = parseInt(_LS.get('ironlog_unsynced_since')) || 0;
+  const last = parseInt(_LS.get('ironlog_last_synced')) || 0;
+  const st = document.getElementById('dataSyncStatus');
+  if (st) {
+    if (!signedIn) { st.textContent = ''; }
+    else if (since) { st.textContent = navigator.onLine ? 'Not synced yet' : 'Not synced yet · offline'; st.style.color = '#ff8c42'; }
+    else if (last) { st.textContent = `Last synced ${_syncAgo(last)}`; st.style.color = '#777'; }
+    else { st.textContent = ''; }
+  }
+  const tab = document.getElementById('tab-profile-btn');
+  if (tab) {
+    let dot = document.getElementById('profileSyncDot');
+    const show = signedIn && since && navigator.onLine && (Date.now() - since >= SYNC_DOT_AFTER_MS);
+    if (show && !dot) {
+      if (getComputedStyle(tab).position === 'static') tab.style.position = 'relative';
+      dot = document.createElement('span');
+      dot.id = 'profileSyncDot';
+      dot.setAttribute('aria-label', 'Changes not synced to cloud');
+      dot.style.cssText = 'position:absolute;top:6px;left:calc(50% + 9px);width:8px;height:8px;border-radius:50%;background:#ff8c42;box-shadow:0 0 0 2px var(--bg);pointer-events:none;';
+      tab.appendChild(dot);
+    } else if (!show && dot) dot.remove();
+  }
+}
+window._refreshSyncIndicators = _refreshSyncIndicators;
+setInterval(_refreshSyncIndicators, 30000); // "N min ago" + the 2-minute dot
+window.addEventListener('online', _refreshSyncIndicators);
+window.addEventListener('offline', _refreshSyncIndicators);
+
+// Sync when the user leaves the app (switches apps, locks the phone, goes
+// home) — never while they're using it, so it can't be felt — and only if
+// there's something unsynced. Offline: syncToFirestore queues it as usual.
+// pagehide covers iOS closing the page, where visibilitychange can be skipped.
+function _syncOnLeave(e) {
+  if (document.visibilityState !== 'hidden' && e?.type !== 'pagehide') return;
+  if (!window._currentUser || !window.syncToFirestore || !_hasUnsyncedChanges()) return;
+  window.syncToFirestore();
+}
+document.addEventListener('visibilitychange', _syncOnLeave);
+window.addEventListener('pagehide', _syncOnLeave);
+
+// Profile → Sign Out: warn first if this device has changes the cloud
+// doesn't — they'd otherwise only exist on this device.
+function signOutWithSyncCheck() {
+  const doSignOut = () => { if (window._fbSignOut) window._fbSignOut(); };
+  if (!_hasUnsyncedChanges()) { doSignOut(); return; }
+  const overlay = document.createElement('div');
+  overlay.className = 'delete-confirm-overlay';
+  overlay.style.zIndex = '9000';
+  overlay.innerHTML = `
+    <div class="delete-confirm-sheet">
+      <div class="delete-confirm-title">Unsynced changes</div>
+      <div class="delete-confirm-sub" style="line-height:1.55;">Some changes on this device aren't in the cloud yet. If you sign out now, they'll only be on this device.</div>
+      <button id="_soSync" style="width:100%;margin:0 0 10px;background:var(--accent);border:1px solid var(--accent);border-radius:12px;color:#000;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;padding:14px;cursor:pointer;">SYNC NOW</button>
+      <div class="delete-confirm-btns">
+        <button class="btn-del-cancel" id="_soCancel">Cancel</button>
+        <button class="btn-del-cancel" id="_soAnyway" style="color:#ff4747;border-color:#ff474766;">Sign out anyway</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#_soCancel').onclick = () => overlay.remove();
+  overlay.querySelector('#_soAnyway').onclick = () => { overlay.remove(); doSignOut(); };
+  // Sync first; on success the "Synced to cloud" screen shows briefly, then signs out.
+  overlay.querySelector('#_soSync').onclick = () => { overlay.remove(); runSyncToCloud({ afterSuccess: doSignOut }); };
+}
+window.signOutWithSyncCheck = signOutWithSyncCheck;
+
+async function runSyncToCloud(opts) {
+  opts = opts || {};
+  const _sleep = ms => new Promise(r => setTimeout(r, ms));
+  let ov = document.getElementById('sync-cloud-overlay');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'sync-cloud-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:9500;background:#0a0a0a;display:flex;align-items:center;justify-content:center;padding:32px;box-sizing:border-box;';
+    document.body.appendChild(ov);
+  }
+  const box = inner => `<div style="width:100%;max-width:340px;text-align:center;font-family:'DM Sans',sans-serif;">${inner}</div>`;
+  ov.innerHTML = box(`
+    <div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:18px;">Syncing to cloud</div>
+    <div style="height:8px;background:#222;border-radius:4px;overflow:hidden;"><div id="sync-cloud-bar" style="height:100%;width:0;background:var(--accent);transition:width .5s ease;"></div></div>
+    <div id="sync-cloud-step" style="margin-top:14px;font-size:14px;color:#aaa;min-height:20px;"></div>
+    <div id="sync-cloud-hint" style="margin-top:6px;font-size:12px;color:#777;min-height:16px;"></div>`);
+  // Same "still working" hint as Delete All Data: any step still running
+  // after 3s says so, so a slow connection doesn't look frozen.
+  let _hintTimer = null;
+  const step = (pct, label) => {
+    const b = document.getElementById('sync-cloud-bar'); if (b) b.style.width = pct + '%';
+    const s = document.getElementById('sync-cloud-step'); if (s) s.textContent = label;
+    const h = document.getElementById('sync-cloud-hint'); if (h) h.textContent = '';
+    clearTimeout(_hintTimer);
+    if (pct < 100) _hintTimer = setTimeout(() => {
+      const h2 = document.getElementById('sync-cloud-hint'); if (h2) h2.textContent = 'Still working… slow connection';
+    }, 3000);
+  };
+  const atLeast = async (ms, p) => { const [r] = await Promise.all([p, _sleep(ms)]); return r; };
+  const fail = () => {
+    clearTimeout(_hintTimer);
+    ov.innerHTML = box(`
+      <div style="font-size:18px;font-weight:800;color:#ff4747;margin-bottom:10px;">Couldn't reach the cloud</div>
+      <div style="font-size:14px;color:#aaa;line-height:1.5;margin-bottom:22px;">Your data is safe on this device.</div>
+      <div style="display:flex;gap:10px;">
+        <button id="_syncCloudClose" style="flex:1;background:transparent;border:1px solid #555;border-radius:12px;color:#fff;font-size:15px;font-weight:600;padding:14px;cursor:pointer;">CLOSE</button>
+        <button id="_syncCloudRetry" style="flex:1;background:var(--accent);border:1px solid var(--accent);border-radius:12px;color:#000;font-size:15px;font-weight:700;padding:14px;cursor:pointer;">TRY AGAIN</button>
+      </div>`);
+    ov.querySelector('#_syncCloudClose').onclick = () => ov.remove();
+    ov.querySelector('#_syncCloudRetry').onclick = () => runSyncToCloud(opts);
+  };
+
+  // 1) Connection.
+  step(10, 'Checking connection…');
+  await _sleep(600);
+  if (!navigator.onLine || !window._currentUser || !window._fbDb || !window.syncToFirestore) { fail(); return; }
+  // 2) Prepare (anything waiting in memory is already what gets uploaded).
+  step(30, 'Preparing your data…');
+  await _sleep(600);
+  // 3) Upload — max 15s. syncToFirestore resolves true only once Firestore
+  //    has confirmed the write (false on any error).
+  step(60, 'Uploading to cloud…');
+  const _bw = (typeof _userBW !== 'undefined' && _userBW) ? _userBW : null;
+  const upload = Promise.all([
+    window.syncToFirestore(),
+    _bw && window._fbSetDoc && window._fbDoc
+      ? window._fbSetDoc(window._fbDoc(window._fbDb, 'users', window._currentUser.uid), { bodyWeight: _bw }, { merge: true }).then(() => true, () => false)
+      : Promise.resolve(true),
+  ]).then(([data, bw]) => data && bw);
+  const ok = await atLeast(900, Promise.race([upload, _sleep(15000).then(() => false)]));
+  if (!ok) { fail(); return; }
+  // 4) Confirm — everything queued while offline is now in the cloud too
+  //    (the queue only ever holds full syncs), so it's cleared.
+  step(90, 'Confirming…');
+  try { if (_IDB.ready) await _IDB.set(_OfflineQueue.QUEUE_KEY, []); } catch(e) {}
+  await _sleep(500);
+  step(100, '');
+  clearTimeout(_hintTimer);
+  _refreshSyncIndicators();
+  const _check = `<div style="display:flex;justify-content:center;margin-bottom:14px;"><svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>`;
+  if (opts.afterSuccess) {
+    // e.g. Sign out → SYNC NOW: show the result long enough to read, then continue.
+    ov.innerHTML = box(`${_check}<div style="font-size:30px;font-weight:900;color:#fff;line-height:1.2;">Synced to cloud</div>`);
+    await _sleep(1500);
+    ov.remove();
+    opts.afterSuccess();
+    return;
+  }
+  ov.innerHTML = box(`${_check}
+    <div style="font-size:30px;font-weight:900;color:#fff;line-height:1.2;margin-bottom:34px;">Synced to cloud</div>
+    <button id="_syncCloudDone" style="width:100%;background:var(--accent);border:1px solid var(--accent);border-radius:12px;color:#000;font-size:15px;font-weight:700;padding:14px;cursor:pointer;">CLOSE</button>`);
+  ov.querySelector('#_syncCloudDone').onclick = () => ov.remove();
+}
+window.runSyncToCloud = runSyncToCloud;
+
+// ══════════════════════════════════════════════════════
 //  MY DATA → DELETE ALL DATA (client users)
 //  Confirm (type DELETE; "Download backup first") → progress: cloud userData
 //  reset (+ reset marker, brand content off) → cloud files → this device →
@@ -16549,6 +16778,9 @@ function _wipeLocalUserData() {
       .catch(() => {});
   }
   if (typeof _invalidateExCache === 'function') _invalidateExCache();
+  // Only ever run once the cloud copy is empty too (Delete All Data, after the
+  // cloud reset; or another device's reset marker) — device = cloud now.
+  _markSynced();
 }
 window._wipeLocalUserData = _wipeLocalUserData;
 
@@ -16640,7 +16872,7 @@ async function _runDeleteAllData() {
       }),
       _sleep(15000).then(() => { throw new Error('The cloud didn\'t respond'); }),
     ]));
-    step(45, 'Deleting app photos…');
+    step(45, 'Deleting all data…');
     // 2) Cloud files (best effort — the data itself is already gone): max
     //    15s, then carry on regardless.
     await atLeast(700, withTimeout(window._deleteMyCloudFiles ? window._deleteMyCloudFiles() : Promise.resolve(0), 15000)
@@ -16665,6 +16897,7 @@ async function _runDeleteAllData() {
     _wipeLocalUserData();
     _LS.set('ironlog_data_reset_at', resetAt);
     _setBrandContentOff(true);
+    _markSynced(); // the cloud already has exactly this (empty + brand off)
   }));
   step(100, 'Done ✓');
   await _sleep(600);
@@ -21278,6 +21511,8 @@ window._onAuthReady = (user) => {
   _menuBtn('userMenuExitCoachModeBtn', false);
   _menuBtn('userMenuFindCoachBtn', role === 'client');
   _menuBtn('saveToLibraryBtn', ['super_admin', 'ops_admin', 'brand_admin', 'site_manager', 'coach'].includes(role), '');
+  // Sync status is per user — show this user's (not the previous one's).
+  if (window._refreshSyncIndicators) window._refreshSyncIndicators();
 
   // ── EXPIRY WARNINGS ───────────────────────────────
   const warningDays = window._brandConfig?.expiryWarningDays || 7;
@@ -21416,6 +21651,7 @@ window.syncToFirestore = function() {
   const uid = window._currentUser.uid;
   const brandId = window.BRAND_ID || 'default';
   const ref = window._fbDoc(window._fbDb, 'userData', brandId, 'users', uid);
+  const _ver = _syncDirtyVer; // what this upload covers (see _markSynced)
   return window._fbSetDoc(ref, {
     workouts: workouts.filter(w => !w._draft),
     deletedWorkouts: deletedWorkouts,
@@ -21434,7 +21670,7 @@ window.syncToFirestore = function() {
       miniChartRange: miniChartRange,
     },
     updatedAt: new Date().toISOString()
-  }).then(() => true)
+  }).then(() => { _markSynced(_ver); return true; })
     .catch(e => { console.warn('Firestore sync failed:', e.message); return false; });
 };
 
@@ -21445,6 +21681,16 @@ window.loadFromFirestore = function(uid) {
   return window._fbGetDoc(ref).then(snap => {
     if (!snap.exists()) return false;
     const data = snap.data();
+    // Writing what came FROM the cloud isn't an unsynced change — only
+    // things this device has that the cloud doesn't are (checked at the end).
+    window._syncSuppressDirty = true;
+    try { return _applyCloudUserData(data); } finally { window._syncSuppressDirty = false; }
+  }).catch(e => { window._syncSuppressDirty = false; console.warn('Firestore load failed:', e.message); return false; });
+};
+
+function _applyCloudUserData(data) {
+    const _k = s => (s || '').trim().toLowerCase();
+    let _localExtras = false;
     // "Delete All Data" was done (on another device, or before this device's
     // cache): this device's local data is stale — wipe it FIRST so the merges
     // below can't re-upload deleted workouts ("localOnly") to the cloud.
@@ -21453,6 +21699,11 @@ window.loadFromFirestore = function(uid) {
       _LS.set('ironlog_data_reset_at', data.dataResetAt);
     }
     if (typeof data.brandContentOff === 'boolean' && window._setBrandContentOff) window._setBrandContentOff(data.brandContentOff);
+    // After any reset wipe above, before the merge: the merge is skipped when
+    // the cloud has no workouts at all, but this device's own would still be
+    // unsynced.
+    const _cloudWIds = new Set((Array.isArray(data.workouts) ? data.workouts : []).map(w => w.id));
+    if (workouts.some(w => !w._draft && !_cloudWIds.has(w.id))) _localExtras = true;
     // Routed through _LS (brand+uid-scoped, dual-writes IndexedDB too) rather
     // than a hand-built brand-only key — this runs on every load, so keeping
     // a hand-built prefix here would keep re-seeding the old shared key this
@@ -21465,9 +21716,15 @@ window.loadFromFirestore = function(uid) {
       _LS.set('ironlog_workouts', JSON.stringify(workouts));
     }
     if (Array.isArray(data.deletedWorkouts)) {
+      const _cloudDelIds = new Set(data.deletedWorkouts.map(w => w.id));
+      if (deletedWorkouts.some(w => !_cloudDelIds.has(w.id))) _localExtras = true;
       const existingIds = new Set(deletedWorkouts.map(w => w.id));
       data.deletedWorkouts.filter(w => !existingIds.has(w.id)).forEach(w => deletedWorkouts.push(w));
       _LS.set('ironlog_deleted_workouts', JSON.stringify(deletedWorkouts));
+    }
+    if (Array.isArray(data.customExercises)) {
+      const _cloudExNames = new Set(data.customExercises.map(e => e.name));
+      if (customExercises.some(e => !_cloudExNames.has(e.name))) _localExtras = true;
     }
     if (Array.isArray(data.customExercises) && data.customExercises.length > 0) {
       const existingNames = new Set(customExercises.map(e => e.name));
@@ -21475,12 +21732,16 @@ window.loadFromFirestore = function(uid) {
       _LS.set('ironlog_custom_ex', JSON.stringify(customExercises));
     }
     if (Array.isArray(data.plannedWorkouts)) {
+      const _cloudPlanIds = new Set(data.plannedWorkouts.map(p => p.planId));
+      if ((plannedWorkouts || []).some(p => !_cloudPlanIds.has(p.planId))) _localExtras = true;
       const existingPlanIds = new Set((plannedWorkouts||[]).map(p => p.planId));
       // Cardio plans are no longer supported — old cloud copies are dropped.
       data.plannedWorkouts.filter(p => p.type !== 'cardio' && !existingPlanIds.has(p.planId)).forEach(p => plannedWorkouts.push(p));
       _LS.set('ironlog_planned', JSON.stringify(plannedWorkouts));
     }
     if (Array.isArray(data.hiddenLibWorkouts)) {
+      const _cloudHidden = new Set(data.hiddenLibWorkouts.map(_k));
+      if (_getHiddenLibNames().some(n => !_cloudHidden.has(_k(n)))) _localExtras = true;
       _setHiddenLibNames([..._getHiddenLibNames(), ...data.hiddenLibWorkouts]);
     }
     if (data.settings) {
@@ -21491,9 +21752,11 @@ window.loadFromFirestore = function(uid) {
     }
     if (typeof renderTodayWeekProgress === 'function') renderTodayWeekProgress();
     if (typeof renderTodayPlanCard === 'function') renderTodayPlanCard();
+    // This device has things the cloud doesn't → unsynced (flag set after
+    // the suppression above ends, via a microtask).
+    if (_localExtras) Promise.resolve().then(() => _markUnsynced());
     return true;
-  }).catch(e => { console.warn('Firestore load failed:', e.message); return false; });
-};
+}
 
 // ══════════════════════════════════════════════════════
 //  EXPORT + BULK INVITE
