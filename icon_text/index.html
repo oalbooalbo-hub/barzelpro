@@ -5744,6 +5744,12 @@ function _exSvgIcon(muscle, size) {
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="6.5" y1="6" x2="6.5" y2="18"/><line x1="17.5" y1="6" x2="17.5" y2="18"/><line x1="3.5" y1="9" x2="3.5" y2="15"/><line x1="20.5" y1="9" x2="20.5" y2="15"/><line x1="6.5" y1="12" x2="17.5" y2="12"/></svg>`;
 }
 
+// ✓ for the selected option in the clients' ALL / MY / APP filter lists
+// (Exercises + Workouts tabs). Unselected rows keep an invisible one so the
+// labels line up the same either way.
+function _viewCheckSvg(on) {
+  return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;stroke:var(--accent);visibility:${on ? 'visible' : 'hidden'};"><polyline points="20 6 9 17 4 12"/></svg>`;
+}
 function renderExercisesTab() {
   const el = document.getElementById('exercisesTabContent');
   if (!el) return;
@@ -6088,11 +6094,13 @@ function renderExercisesTab() {
     const _vLabels = { all: 'ALL', custom: 'MY EXERCISES', app: 'APP EXERCISES', coach: 'COACH' };
     const _vColor = v => v === 'coach' ? '#7ec8e3' : 'var(--accent)';
     const _customEmpty = !_customExes.length;
-    const _appEmpty = !_exAppExes.length;
-    const _pickViews = _hasCoach ? ['all', 'custom', 'app', 'coach'] : ['all', 'custom', 'app'];
+    const _pickViews = _hasCoach ? ['all', 'app', 'coach', 'custom'] : ['all', 'app', 'custom']; // MY last
+    // List: every option white; the selected one gets an accent ✓. Only an
+    // empty MY EXERCISES is shaded (APP is never shaded, even with brand
+    // content off). The label under the title (_vColor) stays accent.
     const _opts = _pickViews.map((v, i) => {
-      const _off = ((v === 'custom' && _customEmpty) || (v === 'app' && _appEmpty)) && _exTabView !== v;
-      return `<button ${_off ? 'disabled' : `onclick="_extabPickView('${v}')"`} style="width:100%;background:transparent;border:none;${i ? 'border-top:1px solid #2a2a2a;' : ''}color:${v === _exTabView ? _vColor(v) : '#fff'};font-family:'DM Sans';font-size:14px;font-weight:700;padding:14px 16px;text-align:left;cursor:${_off ? 'default' : 'pointer'};opacity:${_off ? '0.3' : '1'};-webkit-tap-highlight-color:transparent;">${_vLabels[v]}</button>`;
+      const _off = v === 'custom' && _customEmpty && _exTabView !== v;
+      return `<button ${_off ? 'disabled' : `onclick="_extabPickView('${v}')"`} style="width:100%;background:transparent;border:none;${i ? 'border-top:1px solid #2a2a2a;' : ''}color:#fff;font-family:'DM Sans';font-size:14px;font-weight:700;padding:14px 16px;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:${_off ? 'default' : 'pointer'};opacity:${_off ? '0.3' : '1'};-webkit-tap-highlight-color:transparent;"><span>${_vLabels[v]}</span>${_viewCheckSvg(v === _exTabView)}</button>`;
     }).join('');
     return `<div style="position:relative;display:flex;align-items:center;justify-content:center;min-height:34px;">
       <!-- Symmetric padding + chevron inside the right padding, so the label
@@ -10315,14 +10323,13 @@ function renderWorkoutsTab2() {
         const _appNames = _wAppNameSet();
         const _k = s => (s || '').trim().toLowerCase();
         const _customEmpty = !workouts.some(w => !w._draft && !_dtn.includes(w.name) && !_appNames.has(_k(w.name)));
-        const _hidLib = new Set(_getHiddenLibNames());
-        const _appEmpty = _libraryLoaded
-          && !workouts.some(w => !w._draft && !_dtn.includes(w.name) && _appNames.has(_k(w.name)))
-          && (_isBrandContentOff() || ![...(_libraryWorkouts || []), ...(_defaultWorkouts || [])].some(w => !_hidLib.has(_k(w.name))));
-        const _pickViews = _wHasCoach ? ['all', 'custom', 'app', 'coach'] : ['all', 'custom', 'app'];
+        const _pickViews = _wHasCoach ? ['all', 'app', 'coach', 'custom'] : ['all', 'app', 'custom']; // MY last
+        // List: every option white; the selected one gets an accent ✓. Only an
+        // empty MY WORKOUTS is shaded (APP is never shaded, even with brand
+        // content off). The label under the title (_vColor) stays accent.
         const _opts = _pickViews.map((v, i) => {
-          const _off = ((v === 'custom' && _customEmpty) || (v === 'app' && _appEmpty)) && _wTabView !== v;
-          return `<button ${_off ? 'disabled' : `onclick="_wtabPickView('${v}')"`} style="width:100%;background:transparent;border:none;${i ? 'border-top:1px solid #2a2a2a;' : ''}color:${v === _wTabView ? _vColor(v) : '#fff'};font-family:'DM Sans';font-size:14px;font-weight:700;padding:14px 16px;text-align:left;cursor:${_off ? 'default' : 'pointer'};opacity:${_off ? '0.3' : '1'};-webkit-tap-highlight-color:transparent;">${_vLabels[v]}</button>`;
+          const _off = v === 'custom' && _customEmpty && _wTabView !== v;
+          return `<button ${_off ? 'disabled' : `onclick="_wtabPickView('${v}')"`} style="width:100%;background:transparent;border:none;${i ? 'border-top:1px solid #2a2a2a;' : ''}color:#fff;font-family:'DM Sans';font-size:14px;font-weight:700;padding:14px 16px;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:${_off ? 'default' : 'pointer'};opacity:${_off ? '0.3' : '1'};-webkit-tap-highlight-color:transparent;"><span>${_vLabels[v]}</span>${_viewCheckSvg(v === _wTabView)}</button>`;
         }).join('');
         return `${_wTitleRowHtml}
     <div style="position:relative;display:flex;align-items:center;justify-content:center;min-height:34px;">
