@@ -3762,8 +3762,7 @@ function _todayCarouselGoTo(idx, instant) {
     d.style.background = i === idx ? 'var(--accent)' : 'rgba(255,255,255,0.25)';
   });
   if (idx === 1 && typeof _renderTodayWeekHeatmap === 'function') _renderTodayWeekHeatmap();
-  if (idx === 2 && typeof _renderTodayWeekPRStars === 'function') _renderTodayWeekPRStars();
-}
+  if (idx === 2 && typeof _renderTodayWeekPRStars === 'function') _renderTodayWeekPRStars();}
 window._todayCarouselGoTo = _todayCarouselGoTo;
 // The shared circle's page-3 offset is in px (one slide width) — re-apply it
 // if the screen width changes (rotation etc.).
@@ -10735,29 +10734,49 @@ function renderWorkoutsTab2() {
       // aren't in Firestore, so they're dimmed while selecting. Client users
       // (→ delete, hidden for them only): every row, defaults included.
       const _libSelectable = w => (_wSuperSplit ? !w._isDefault : true) && !_wtabNoDeleteMode;
+      // Today's planned app workout goes first (same as the user's own list).
+      if (_wtabTodayPlanName && !_isPlanStrengthMode) {
+        const _tpi = _allLibWs.findIndex(w => w.name === _wtabTodayPlanName);
+        if (_tpi > 0) _allLibWs.unshift(_allLibWs.splice(_tpi, 1)[0]);
+      }
       _libRowsHtml = _allLibWs.map(w => {
         const libPhoto = w.photo || _workoutDefaultPhoto;
         const safeId = (w.id || '').replace(/'/g, "\\'");
         const _idJs = JSON.stringify(w.id || '').replace(/"/g, '&quot;');
         const _sel = _libSelectable(w);
         const _picked = _isLibSelMode && _sel && window._wtabDeleteSelectedIds?.has(w.id);
-        const _lpAttrs = (_sel && !_isDeleteMode)
+        // Calendar → Plan Workout: app workouts are pickable too (selection
+        // key 'lib:<id>', see _wtabSaveStrengthPlan).
+        const _planKey = 'lib:' + (w.id || '');
+        const _planKeyJs = JSON.stringify(_planKey).replace(/"/g, '&quot;');
+        const _planPicked = _isPlanStrengthMode && _planSelIdx === _planKey;
+        const _isTodayPlannedLib = !_isPlanStrengthMode && !_isPubPickMode && !_isDeleteMode && !!_wtabTodayPlanName && w.name === _wtabTodayPlanName;
+        const _accent = _picked || _planPicked || _isTodayPlannedLib;
+        const _lpAttrs = (_sel && !_isDeleteMode && !_isPlanStrengthMode)
           ? ` ontouchstart="_wtabLPStart(${_idJs})" ontouchend="_wtabLPRelease()" ontouchmove="_wtabLPCancel()" onmousedown="_wtabLPStart(${_idJs})" onmouseup="_wtabLPRelease()" onmouseleave="_wtabLPCancel()"`
           : '';
-        const _tap = (_isLibSelMode && _sel) ? `_wtabToggleDeletePick(${_idJs})` : `openW2Sheet(null,'${safeId}')`;
+        const _tap = _isPlanStrengthMode ? `_wtabToggleStrengthPick(${_planKeyJs})`
+          : (_isLibSelMode && _sel) ? `_wtabToggleDeletePick(${_idJs})` : `openW2Sheet(null,'${safeId}')`;
         const _dimmed = _isLibSelMode && !_sel;
         return `<div data-wlibname="${(w.name||'').replace(/"/g,'&quot;')}" style="padding:5px 2px;${_dimmed ? 'opacity:0.25;pointer-events:none;' : ''}">
           <div style="position:relative;">
-            <div${_lpAttrs} oncontextmenu="return false;" style="position:relative;display:flex;border-radius:14px;overflow:hidden;aspect-ratio:21/9;background:#1a1a1a;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;${_picked ? 'border:1px solid var(--accent);' : 'border:1px solid #2a2a2a;'}">
-              ${_picked ? `<div style="position:absolute;inset:0;border:1px solid var(--accent);border-radius:13px;pointer-events:none;z-index:3;"></div>` : ''}
+            ${_isTodayPlannedLib ? `<span style="position:absolute;top:0;left:14px;transform:translateY(-50%);background:var(--bg);color:var(--accent);font-family:'DM Sans';font-size:10px;font-weight:800;letter-spacing:.4px;padding:0 6px;line-height:1.4;white-space:nowrap;z-index:4;">Today's Plan</span>` : ''}
+            <div${_lpAttrs} oncontextmenu="return false;" style="position:relative;display:flex;border-radius:14px;overflow:hidden;aspect-ratio:21/9;background:#1a1a1a;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;${_accent ? 'border:1px solid transparent;background-clip:padding-box;' : 'border:1px solid #2a2a2a;'}">
+              ${_accent ? `<div style="position:absolute;inset:0;border:2px solid var(--accent);border-radius:13px;pointer-events:none;z-index:3;"></div>` : ''}
               <div style="position:relative;width:80%;flex-shrink:0;overflow:hidden;cursor:pointer;" onclick="if(_wtabLPConsume(${_idJs}))return;${_tap}">
                 ${libPhoto ? `<img src="${libPhoto}" draggable="false" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.72);-webkit-touch-callout:none;pointer-events:none;">` : ''}
-                ${_picked ? `<div style="position:absolute;inset:0;background:color-mix(in srgb, var(--accent) 30%, transparent);pointer-events:none;"></div>` : ''}
+                ${(_picked || _planPicked) ? `<div style="position:absolute;inset:0;background:color-mix(in srgb, var(--accent) 30%, transparent);pointer-events:none;"></div>` : ''}
                 <div style="position:absolute;bottom:0;left:0;right:0;padding:10px 14px 12px;pointer-events:none;text-align:right;">
                   <div style="font-family:'DM Sans';font-size:20px;font-weight:900;color:#fff;line-height:1.2;">${w.name||'Workout'}</div>
                 </div>
               </div>
-              ${(_isLibSelMode && _sel)
+              ${_isPlanStrengthMode
+                ? `<button onclick="_wtabToggleStrengthPick(${_planKeyJs})" title="Select workout" style="width:20%;flex-shrink:0;background:linear-gradient(to right, #161616, #3a3a3a);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;">
+                    <span style="width:32px;height:32px;border-radius:50%;border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;background:${_planPicked ? 'var(--accent)' : 'transparent'};transition:background .15s;">
+                      ${_planPicked ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>` : ''}
+                    </span>
+                  </button>`
+              : (_isLibSelMode && _sel)
                 ? `<button onclick="_wtabToggleDeletePick(${_idJs})" title="Select workout" style="width:20%;flex-shrink:0;background:${_picked ? 'color-mix(in srgb, var(--accent) 30%, #161616)' : 'linear-gradient(to right, #161616, #3a3a3a)'};border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;">
                     <span class="wtab-del-circle" style="width:32px;height:32px;border-radius:50%;border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;background:${_picked ? 'var(--accent)' : 'transparent'};transition:background .15s;${_delJustEntered ? 'animation:tapPopScale .3s cubic-bezier(.175,.885,.32,1.275);' : ''}">
                       ${_picked ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>` : ''}
@@ -20264,14 +20283,18 @@ function _wtabSaveStrengthPlan() {
   const idx = window._planStrengthSelectedIdx;
   const psk = window._planStrengthKey;
   if (idx === null || idx === undefined || !psk) return;
-  const w = workouts[idx];
+  // idx: index into the user's own workouts, or 'lib:<id>' for an app
+  // (brand library / brand default) workout picked from the ALL/APP list.
+  const w = (typeof idx === 'string' && idx.startsWith('lib:'))
+    ? [...(_libraryWorkouts || []), ...(_defaultWorkouts || [])].find(x => x.id === idx.slice(4))
+    : workouts[idx];
   if (!w) return;
   const [_sy,_sm,_sd] = psk.split('-').map(Number);
   plannedWorkouts.push({
     planId: Date.now().toString(),
     name: w.name,
     date: new Date(_sy,_sm,_sd).getTime(),
-    exercises: w.exercises.map(e => ({name:e.name, muscle:e.muscle||'Chest'}))
+    exercises: (w.exercises || []).map(e => ({name:e.name, muscle:e.muscle||'Chest'}))
   });
   savePlanned();
   window._planStrengthKey = null;
@@ -31212,14 +31235,18 @@ const _PR_SATIN_DEFS = `<svg width="0" height="0" style="position:absolute;width
     <feColorMatrix in="n" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 -1.4 1"/>
   </filter>
 </defs></svg>`;
-const _PR_SATIN_SVG = `<path d="${_PR_SATIN_PATH}"/>
-  <g clip-path="url(#todayPrSatinClip)">
+const _PR_SATIN_OVERLAY = `<g clip-path="url(#todayPrSatinClip)">
     <rect x="0" y="0" width="24" height="24" fill="url(#todayPrSheen)"/>
     <rect x="0" y="0" width="24" height="24" fill="url(#todayPrFloor)"/>
     <rect x="0" y="0" width="24" height="24" filter="url(#todayPrBrush)" opacity=".07" style="mix-blend-mode:overlay"/>
     <path d="${_PR_SATIN_PATH}" fill="none" stroke="url(#todayPrBevel)" stroke-width="1.1"/>
   </g>
   <path d="${_PR_SATIN_PATH}" fill="none" stroke="#000" stroke-opacity=".35" stroke-width=".35"/>`;
+// Overlay strength 340% (chosen with a temporary slider): three full copies
+// of the overlay stacked plus a fourth at 40% (SVG opacity can't exceed 1).
+const _PR_SATIN_SVG = `<path d="${_PR_SATIN_PATH}"/>
+  ${_PR_SATIN_OVERLAY}${_PR_SATIN_OVERLAY}${_PR_SATIN_OVERLAY}
+  <g style="opacity:.4;">${_PR_SATIN_OVERLAY}</g>`;
 function _renderTodayWeekPRStars() {
   const mount = document.getElementById('today-pr-stars');
   if (!mount) return;
@@ -31252,7 +31279,11 @@ function _renderTodayWeekPRStars() {
     return `<span style="position:relative;z-index:${z};width:${px(81)}px;display:flex;flex-direction:column;align-items:center;gap:${px(8)}px;">
       <span style="position:relative;width:${px(81)}px;height:${px(104)}px;display:flex;align-items:center;justify-content:center;">
         <span style="position:absolute;left:50%;top:50%;width:${size}px;height:${size}px;margin-left:${-size / 2}px;margin-top:${-size / 2 - lift + 8}px;display:flex;align-items:center;justify-content:center;">
-          <svg class="today-pr-star-svg" data-lit-fill="${lit ? color : '#333'}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="#333" style="position:absolute;inset:0;overflow:visible;transition:fill .5s ease;filter:drop-shadow(0 ${(size * 0.025).toFixed(1)}px ${(size * 0.04).toFixed(1)}px rgba(0,0,0,.55));">${_PR_SATIN_SVG}</svg>
+          <svg class="today-pr-star-svg" data-lit-fill="${lit ? color : '#333'}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="#333" style="position:absolute;inset:0;overflow:visible;transition:fill .5s ease;filter:${z > 1
+              // BEST SET (in front): a wider, darker, softer shadow that falls
+              // onto the MAX / VOL pentagons on both sides.
+              ? `drop-shadow(${(-size * 0.07).toFixed(1)}px ${(size * 0.03).toFixed(1)}px ${(size * 0.09).toFixed(1)}px rgba(0,0,0,.95)) drop-shadow(${(size * 0.07).toFixed(1)}px ${(size * 0.03).toFixed(1)}px ${(size * 0.09).toFixed(1)}px rgba(0,0,0,.95))`
+              : `drop-shadow(0 ${(size * 0.025).toFixed(1)}px ${(size * 0.04).toFixed(1)}px rgba(0,0,0,.55))`};">${_PR_SATIN_SVG}</svg>
           <span class="today-pr-star-num" data-lit-color="${lit ? '#fff' : '#777'}" style="position:relative;font-size:${px(42)}px;font-weight:800;color:#777;line-height:1;text-shadow:0 1px 3px rgba(0,0,0,.55);transform:translateY(${(size * 3 / 68).toFixed(1)}px);transition:color .5s ease;">${n}</span>
         </span>
       </span>
