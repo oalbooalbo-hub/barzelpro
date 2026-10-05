@@ -3,7 +3,7 @@ window.BRAND_CONFIG = {
   name: 'icon_test_2',
   subtitle: 'icon_test_3',
   tagline: 'icon_test_4',
-  accentColor: '#47d1fa'
+  accentColor: '#7CD9D7'
 };
 
 // Small sound effects — add new ones here as they come up, referenced by key

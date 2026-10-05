@@ -359,10 +359,10 @@ body.desktop-mode .pages-wrap {
 .vol-target-values{display:flex;gap:10px;align-items:center;}
 .vol-target-prev{color:#ff8c42;font-weight:700;font-size:12px;}
 .vol-target-cur{color:var(--accent);font-weight:700;font-size:12px;}
-.vol-target-score{color:#a78bfa;font-weight:700;font-size:11px;}
+.vol-target-score{color:var(--pr-vol);font-weight:700;font-size:11px;}
 .vol-seg-blocks{display:flex;gap:3px;}
 .vol-seg-block{flex:1;height:8px;border-radius:2px;background:var(--surface2);transition:background .2s;}
-.vol-seg-block.filled{background:#a78bfa;}
+.vol-seg-block.filled{background:var(--pr-vol);}
 .vol-seg-block.exceeded{background:#4caf50;}
 .vol-seg-block.decreased{background:#ff4444;}
 /* Completed bar */
@@ -428,7 +428,7 @@ body.ex-tab-detail-open #ex-float-bar{display:none !important;}
 .imp-badge{font-size:10px;font-weight:700;border-radius:6px;padding:2px 8px;}
 .imp-badge-mini{font-size:9px;padding:2px 6px;}
 .imp-weight{background:rgba(232,255,71,.15);color:var(--accent);border:1px solid rgba(232,255,71,.35);}
-.imp-vol{background:rgba(255,140,66,.12);color:#ff8c42;border:1px solid rgba(255,140,66,.3);}
+.imp-vol{background:color-mix(in srgb, var(--pr-best) 12%, transparent);color:var(--pr-best);border:1px solid color-mix(in srgb, var(--pr-best) 30%, transparent);}
 .ex-complete-check{width:20px;height:20px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:10px;color:#000;font-weight:900;flex-shrink:0;}
 .ex-complete-summary{flex:1;font-size:12px;color:var(--muted);}
 .ex-complete-summary strong{color:var(--accent);}
@@ -469,7 +469,7 @@ body.ex-tab-detail-open #ex-float-bar{display:none !important;}
 
 /* ── ADD EXERCISE BUTTONS ──────────────────────── */
 .add-ex-row{display:flex;gap:8px;margin-bottom:10px;}
-.btn-add-exercise{flex:1;background:var(--surface);border:1px dashed #555;border-radius:var(--radius);color:var(--muted);font-family:'DM Sans';font-size:14px;font-weight:600;padding:19px 14px;cursor:pointer;transition:color .2s,border-color .2s;text-align:center;}
+.btn-add-exercise{flex:1;background:var(--surface);border:1px dashed #555;border-radius:var(--radius);color:#fff;font-family:'DM Sans';font-size:14px;font-weight:600;padding:19px 14px;cursor:pointer;transition:color .2s,border-color .2s;text-align:center;}
 .btn-add-exercise:hover{border-color:var(--accent);color:var(--accent);}
 .btn-add-exercise.new-workout{color:#ff9500;}
 #exerciseList:empty + .add-ex-row{position:fixed;top:calc(50% - 30px);left:50%;transform:translate(-50%,-50%);width:calc(min(430px,100vw) - 32px);margin-bottom:0;z-index:10;}
@@ -591,12 +591,12 @@ body.ex-tab-detail-open #ex-float-bar{display:none !important;}
 #prStarsInfoOverlay{background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none;}
 #prStarsSpotlight{position:fixed;z-index:245;display:none;border-radius:10px;box-shadow:0 0 0 9999px rgba(0,0,0,.85);pointer-events:none;}
 #prStarsSpotlight.open{display:block;}
-#workout-pr-stars.pr-stars-lit span[data-pr="0"] svg{fill:#e8ff47 !important;}
-#workout-pr-stars.pr-stars-lit span[data-pr="0"] > span:last-child{color:#e8ff47 !important;}
-#workout-pr-stars.pr-stars-lit span[data-pr="1"] svg{fill:#ff8c42 !important;}
-#workout-pr-stars.pr-stars-lit span[data-pr="1"] > span:last-child{color:#ff8c42 !important;}
-#workout-pr-stars.pr-stars-lit span[data-pr="2"] svg{fill:#a78bfa !important;}
-#workout-pr-stars.pr-stars-lit span[data-pr="2"] > span:last-child{color:#a78bfa !important;}
+#workout-pr-stars.pr-stars-lit span[data-pr="0"] svg{fill:var(--pr-max) !important;}
+#workout-pr-stars.pr-stars-lit span[data-pr="0"] > span:last-child{color:var(--pr-max) !important;}
+#workout-pr-stars.pr-stars-lit span[data-pr="1"] svg{fill:var(--pr-best) !important;}
+#workout-pr-stars.pr-stars-lit span[data-pr="1"] > span:last-child{color:var(--pr-best) !important;}
+#workout-pr-stars.pr-stars-lit span[data-pr="2"] svg{fill:var(--pr-vol) !important;}
+#workout-pr-stars.pr-stars-lit span[data-pr="2"] > span:last-child{color:var(--pr-vol) !important;}
 .modal-sheet{width:100%;max-width:430px;background:var(--surface);border-radius:20px 20px 0 0;border:1px solid var(--border);border-bottom:none;max-height:88vh;max-height:88dvh;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom);}
 #calendarOverlay{background:rgba(0,0,0,.5)!important;top:0!important;align-items:flex-start!important;}#calendarOverlay .modal-sheet{border-radius:20px;border-top:none;border-bottom:1px solid var(--border);animation:sheetDown .3s cubic-bezier(.34,1.56,.64,1);margin-top:0;max-height:100dvh;max-height:100vh;overflow:hidden;}@keyframes sheetDown{from{transform:translateY(-60px);opacity:0}to{transform:translateY(0);opacity:1}}
 @keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
@@ -800,6 +800,8 @@ body.ex-tab-detail-open #ex-float-bar{display:none !important;}
 .hsv-slider::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:#fff;border:3px solid #4a90d9;box-shadow:0 1px 4px rgba(0,0,0,.5);}
 </style>
 <script src="config.js"></script>
+<!-- Body-part + PR colours (BP_COLORS) — edit colors.js to change them app-wide. -->
+<script src="colors.js"></script>
 <script>
   // Apply BRAND_CONFIG to page metadata immediately after config.js loads
   (function() {
@@ -1157,7 +1159,22 @@ function showExpiredScreen(expiryDate, type) {
 function showAuthScreen() {
   document.getElementById('auth-screen')?.style && (document.getElementById('auth-screen').style.display = 'flex');
   document.getElementById('app-root')?.style && (document.getElementById('app-root').style.display = 'none');
+  window.toggleAuthPasswordVisible(false); // always starts hidden
 }
+// Eye button in the password box: show/hide the password. Keeps focus (the
+// button's mousedown is prevented), so typing/keyboard aren't interrupted.
+window.toggleAuthPasswordVisible = function (show) {
+  const inp = document.getElementById('auth-password');
+  const btn = document.getElementById('auth-password-eye');
+  if (!inp || !btn) return;
+  const visible = typeof show === 'boolean' ? show : inp.type === 'password';
+  inp.type = visible ? 'text' : 'password';
+  // Icon shows the CURRENT state (Android convention): crossed eye = hidden,
+  // open eye = visible.
+  const slash = btn.querySelector('.eye-slash');
+  if (slash) slash.style.display = visible ? 'none' : '';
+  btn.setAttribute('aria-label', visible ? 'Hide password' : 'Show password');
+};
 function hidAuthScreen() {
   document.getElementById('auth-screen')?.style && (document.getElementById('auth-screen').style.display = 'none');
   document.getElementById('app-root')?.style && (document.getElementById('app-root').style.display = '');
@@ -1202,25 +1219,31 @@ window._fbModuleReady = true;
 
     <!-- Tab toggle: Sign In / Sign Up -->
     <div style="display:flex;background:#141414;border:1px solid #2a2a2a;border-radius:12px;overflow:hidden;margin-bottom:24px;">
-      <button id="auth-tab-signin" onclick="switchAuthTab('signin')" style="flex:1;padding:12px;border:none;background:#e8ff47;color:#000;font-family:'DM Sans';font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;">Sign In</button>
+      <button id="auth-tab-signin" onclick="switchAuthTab('signin')" style="flex:1;padding:12px;border:none;background:var(--accent);color:#000;font-family:'DM Sans';font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;">Sign In</button>
       <button id="auth-tab-signup" onclick="switchAuthTab('signup')" style="flex:1;padding:12px;border:none;background:transparent;color:#666;font-family:'DM Sans';font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;">Sign Up</button>
     </div>
 
     <!-- Email/password form -->
     <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px;">
       <input id="auth-email" type="email" placeholder="Email" autocomplete="email" style="width:100%;background:#141414;border:1px solid #2a2a2a;border-radius:10px;color:#f0f0f0;font-family:'DM Sans';font-size:15px;padding:14px;outline:none;"/>
-      <input id="auth-password" type="password" placeholder="Password" autocomplete="current-password" style="width:100%;background:#141414;border:1px solid #2a2a2a;border-radius:10px;color:#f0f0f0;font-family:'DM Sans';font-size:15px;padding:14px;outline:none;"/>
+      <!-- Eye button inside the box shows/hides the password (sign in + sign up). -->
+      <div style="position:relative;">
+        <input id="auth-password" type="password" placeholder="Password" autocomplete="current-password" style="width:100%;background:#141414;border:1px solid #2a2a2a;border-radius:10px;color:#f0f0f0;font-family:'DM Sans';font-size:15px;padding:14px;padding-right:48px;outline:none;"/>
+        <button id="auth-password-eye" type="button" onmousedown="event.preventDefault()" onclick="toggleAuthPasswordVisible()" aria-label="Show password" style="position:absolute;top:0;right:0;height:100%;width:48px;background:transparent;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;color:#888;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/><line class="eye-slash" x1="2" y1="2" x2="22" y2="22"/></svg>
+        </button>
+      </div>
     </div>
 
     <!-- Error message -->
     <div id="auth-error" style="display:none;color:#ff4747;font-size:12px;font-weight:600;margin-bottom:12px;text-align:center;"></div>
 
     <!-- Main action button -->
-    <button id="auth-submit-btn" onclick="handleAuthSubmit()" style="width:100%;background:#e8ff47;border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:16px;font-weight:700;padding:16px;cursor:pointer;margin-bottom:12px;transition:all .2s;">Sign In</button>
+    <button id="auth-submit-btn" onclick="handleAuthSubmit()" style="width:100%;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:16px;font-weight:700;padding:16px;cursor:pointer;margin-bottom:12px;transition:all .2s;">Sign In</button>
 
     <!-- Forgot password (sign in only) -->
-    <div id="auth-forgot-wrap" style="text-align:center;margin-bottom:16px;">
-      <button onclick="handleForgotPassword()" style="background:transparent;border:none;color:#666;font-family:'DM Sans';font-size:12px;cursor:pointer;">Forgot password?</button>
+    <div id="auth-forgot-wrap" style="text-align:center;margin:8px 0 28px;">
+      <button onclick="handleForgotPassword()" style="background:transparent;border:none;color:#fff;font-family:'DM Sans';font-size:15px;cursor:pointer;padding:8px 12px;">Forgot password?</button>
     </div>
 
     <!-- Divider -->
@@ -1316,7 +1339,7 @@ window._fbModuleReady = true;
       <!-- Sits above the carousel track, not inside either slide, so it never
            moves or re-renders when swiping between the ring and the heatmap. -->
       <div style="font-family:'DM Sans';font-size:14px;font-weight:700;color:#ccc;letter-spacing:.5px;text-transform:uppercase;transform:translateY(-10px);">This Week</div>
-      <div id="today-carousel-track" style="display:flex;width:300%;align-self:flex-start;transform:translateX(0%);transition:transform .3s cubic-bezier(.2,.8,.3,1);">
+      <div id="today-carousel-track" style="position:relative;display:flex;width:300%;align-self:flex-start;transform:translateX(0%);transition:transform .3s cubic-bezier(.2,.8,.3,1);">
         <div id="today-carousel-slide-ring" onclick="openStrengthTargetSheet()" style="width:33.3333%;flex-shrink:0;display:flex;justify-content:center;cursor:pointer;position:relative;">
           <!-- Page-1-only sub-title under the shared "This Week" heading. Absolutely
                positioned in the ring's top margin so it adds no height to this
@@ -1352,28 +1375,30 @@ window._fbModuleReady = true;
         </div>
         <div id="today-carousel-slide-heatmap" style="width:33.3333%;flex-shrink:0;height:300px;position:relative;clip-path:inset(-10px 0 0 0);">
           <!-- Same page sub-title style as page 1's "Completed workouts". -->
-          <div style="position:absolute;top:-10px;left:0;right:0;text-align:center;font-family:'DM Sans';font-size:18px;font-weight:800;color:#fff;letter-spacing:.5px;text-transform:uppercase;line-height:1;pointer-events:none;">Total sets</div>
-          <!-- Pinned to the exact center of the 300px slide (not centered as a group
-               with the legend below) so this circle's center lands on the same spot
-               as the ring's on page 1. -->
-          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:272px;height:272px;border-radius:50%;border:5px solid var(--accent);box-sizing:border-box;display:flex;align-items:center;justify-content:center;">
-            <div style="position:absolute;inset:0;border-radius:50%;background:#000;"></div>
-            <div id="today-heatmap-mount" style="position:relative;z-index:1;"></div>
-          </div>
-          <div style="position:absolute;bottom:-2px;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:8px;">
-            <span style="font-family:'DM Sans';font-size:10px;font-weight:700;color:#888;">LESS</span>
-            <div style="width:200px;height:4px;border-radius:2px;background:linear-gradient(to right, #3a86ff 0%, #8338ec 40%, #ff006e 70%, #ff0000 100%);"></div>
-            <span style="font-family:'DM Sans';font-size:10px;font-weight:700;color:#888;">MORE</span>
-          </div>
+          <div style="position:absolute;top:-10px;left:0;right:0;text-align:center;font-family:'DM Sans';font-size:18px;font-weight:800;color:#fff;letter-spacing:.5px;text-transform:uppercase;line-height:1;pointer-events:none;">Sets progress</div>
+          <!-- This page's circle is the shared #today-circle-window below. -->
         </div>
         <div id="today-carousel-slide-prs" style="width:33.3333%;flex-shrink:0;height:300px;position:relative;clip-path:inset(-10px 0 0 0);">
           <!-- Same page sub-title style as pages 1 and 2. -->
           <div style="position:absolute;top:-10px;left:0;right:0;text-align:center;font-family:'DM Sans';font-size:18px;font-weight:800;color:#fff;letter-spacing:.5px;text-transform:uppercase;line-height:1;pointer-events:none;">New records</div>
-          <!-- Same center/size as the ring (page 1) and the black circle (page 2) —
-               pinned to the slide's exact center, not centered as a group with
-               anything else, same as those two. -->
-          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:272px;height:272px;border-radius:50%;border:5px solid var(--accent);background:#000;display:flex;align-items:center;justify-content:center;box-sizing:border-box;">
-            <div id="today-pr-stars" style="display:flex;gap:0;align-items:flex-start;justify-content:center;transform:translateY(-1px);"></div>
+          <!-- This page's circle is the shared #today-circle-window below. -->
+        </div>
+        <!-- Pages 2 and 3 share ONE circle: it sits over page 2's slot (same
+             center/size as page 1's ring) and slides in/out with page 2 from
+             page 1, but between pages 2 and 3 it stays put — _todayCarouselGoTo
+             cancels the track's movement for it — and only the strip inside
+             (heatmap | PR pentagons), clipped to the circle, slides. -->
+        <div id="today-circle-window" style="position:absolute;top:14px;left:calc(50% - 136px);width:272px;height:272px;border-radius:50%;border:5px solid var(--accent);background:#000;box-sizing:border-box;overflow:hidden;transition:transform .3s cubic-bezier(.2,.8,.3,1);">
+          <div id="today-circle-strip" style="display:flex;width:524px;height:100%;transition:transform .3s cubic-bezier(.2,.8,.3,1);">
+            <!-- Tapping page 2 (like page 1's ring) opens the weekly sets
+                 target sheet; the chevron is page 1's (same size/colour). -->
+            <div onclick="openSetsTargetSheet()" style="position:relative;width:262px;height:100%;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+              <div id="today-heatmap-mount" style="position:relative;z-index:1;"></div>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--accent);position:absolute;bottom:10px;left:50%;transform:translateX(-50%);z-index:2;pointer-events:none;"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div style="width:262px;height:100%;flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+              <div id="today-pr-stars" style="display:flex;gap:0;align-items:flex-start;justify-content:center;transform:translateY(-1px);"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -1526,7 +1551,7 @@ window._fbModuleReady = true;
       <div class="modal-title">📦 MY DATA</div>
       <button class="modal-close" onclick="closeDataModal()">✕</button>
     </div>
-    <div class="modal-body" style="padding-bottom:24px;">
+    <div class="modal-body" id="dataModalBody" style="padding-bottom:24px;">
       <!-- Stats row -->
       <div id="dataModalStats" style="display:flex;gap:8px;margin-bottom:20px;"></div>
 
@@ -1708,11 +1733,11 @@ window._fbModuleReady = true;
     </div>
     <div class="prog-acc-body" style="display:none;">
       <div id="bestprog-info" style="display:none;margin-bottom:8px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;font-family:'DM Sans';font-size:12px;color:var(--muted);line-height:1.8;font-weight:500;">
-        <div style="color:var(--text);font-size:12px;">Total number of new records (<svg width="16" height="16" viewBox="0 0 24 24" fill="#e8ff47" style="vertical-align:middle;"><polygon points="12,2 22,9.27 18.18,21.02 5.82,21.02 2,9.27"/></svg><svg width="16" height="16" viewBox="0 0 24 24" fill="#ff8c42" style="vertical-align:middle;"><polygon points="12,2 22,9.27 18.18,21.02 5.82,21.02 2,9.27"/></svg><svg width="16" height="16" viewBox="0 0 24 24" fill="#a78bfa" style="vertical-align:middle;"><polygon points="12,2 22,9.27 18.18,21.02 5.82,21.02 2,9.27"/></svg>) for each body part</div>
+        <div style="color:var(--text);font-size:12px;">Total number of new records (<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="color:var(--pr-max);vertical-align:middle;"><polygon points="12,2 22,9.27 18.18,21.02 5.82,21.02 2,9.27"/></svg><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="color:var(--pr-best);vertical-align:middle;"><polygon points="12,2 22,9.27 18.18,21.02 5.82,21.02 2,9.27"/></svg><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="color:var(--pr-vol);vertical-align:middle;"><polygon points="12,2 22,9.27 18.18,21.02 5.82,21.02 2,9.27"/></svg>) for each body part</div>
         <div style="border-top:1px solid var(--border);margin-top:6px;padding-top:6px;">
-          <div style="display:flex;gap:8px;align-items:baseline;"><span style="color:#e8ff47;font-weight:700;min-width:28px;">MAX</span><span style="color:#aaa;">— Heaviest weight lifted</span></div>
-          <div style="display:flex;gap:8px;align-items:baseline;"><span style="color:#ff8c42;font-weight:700;min-width:28px;">1RM</span><span style="color:#aaa;">— Estimated 1 Rep Max: kg × (1 + reps/30)</span></div>
-          <div style="display:flex;gap:8px;align-items:baseline;"><span style="color:#a78bfa;font-weight:700;min-width:28px;">VOL</span><span style="color:#aaa;">— Total volume: sum of kg × reps</span></div>
+          <div style="display:flex;gap:8px;align-items:baseline;"><span style="color:var(--pr-max);font-weight:700;min-width:28px;">MAX</span><span style="color:#aaa;">— Heaviest weight lifted</span></div>
+          <div style="display:flex;gap:8px;align-items:baseline;"><span style="color:var(--pr-best);font-weight:700;min-width:28px;">1RM</span><span style="color:#aaa;">— Estimated 1 Rep Max: kg × (1 + reps/30)</span></div>
+          <div style="display:flex;gap:8px;align-items:baseline;"><span style="color:var(--pr-vol);font-weight:700;min-width:28px;">VOL</span><span style="color:#aaa;">— Total volume: sum of kg × reps</span></div>
         </div>
       </div>
       <div class="chart-wrap"><canvas id="bestBodyPartChart"></canvas></div>
@@ -1733,12 +1758,12 @@ window._fbModuleReady = true;
     <div class="prog-acc-body" style="display:none;">
       <div id="exprog-info" style="display:none;margin-bottom:8px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;font-family:'DM Sans';font-size:12px;line-height:2;font-weight:500;">
         <div style="color:var(--text);font-size:12px;margin-bottom:4px;">Tracks your progress for a selected exercise over time. Choose a metric to visualize:</div>
-        <div style="display:flex;gap:8px;align-items:baseline;"><span style="color:#e8ff47;font-weight:700;min-width:28px;">MAX</span><span style="color:#555;min-width:12px;">—</span><span style="color:#aaa;">Heaviest weight lifted</span></div>
-        <div style="display:flex;gap:8px;align-items:baseline;"><span style="color:#ff8c42;font-weight:700;min-width:28px;">1RM</span><span style="color:#555;min-width:12px;">—</span><span style="color:#aaa;">Estimated 1 Rep Max: kg × (1 + reps/30)</span></div>
-        <div style="display:flex;gap:8px;align-items:baseline;"><span style="color:#a78bfa;font-weight:700;min-width:28px;">VOL</span><span style="color:#555;min-width:12px;">—</span><span style="color:#aaa;">Total volume: sum of kg × reps</span></div>
+        <div style="display:flex;gap:8px;align-items:baseline;"><span style="color:var(--pr-max);font-weight:700;min-width:28px;">MAX</span><span style="color:#555;min-width:12px;">—</span><span style="color:#aaa;">Heaviest weight lifted</span></div>
+        <div style="display:flex;gap:8px;align-items:baseline;"><span style="color:var(--pr-best);font-weight:700;min-width:28px;">1RM</span><span style="color:#555;min-width:12px;">—</span><span style="color:#aaa;">Estimated 1 Rep Max: kg × (1 + reps/30)</span></div>
+        <div style="display:flex;gap:8px;align-items:baseline;"><span style="color:var(--pr-vol);font-weight:700;min-width:28px;">VOL</span><span style="color:#555;min-width:12px;">—</span><span style="color:#aaa;">Total volume: sum of kg × reps</span></div>
       </div>
       <div id="exProgress-big-display" style="text-align:center;padding:4px 0 4px;">
-        <span id="exProgress-big-val" style="font-family:'Bebas Neue';font-size:22px;color:#a78bfa;letter-spacing:1px;"></span>
+        <span id="exProgress-big-val" style="font-family:'Bebas Neue';font-size:22px;color:var(--pr-vol);letter-spacing:1px;"></span>
         <span id="exProgress-big-pct" style="font-family:'DM Sans';font-size:14px;font-weight:700;margin-left:8px;"></span>
         <div id="exProgress-big-setparam" style="font-family:'DM Sans';font-size:12px;font-weight:600;color:var(--text);margin-top:2px;display:none;"></div>
       </div>
@@ -1774,7 +1799,7 @@ window._fbModuleReady = true;
         <div><span style="color:#fff;font-size:28px;font-weight:700;vertical-align:middle;">Σ</span><span style="color:var(--text);font-size:13px;font-weight:600;margin-left:6px;">(Sets × kg × Reps)</span></div>
       </div>
       <div id="volProgress-big-display" style="text-align:center;padding:4px 0 2px;">
-        <span id="volProgress-big-val" style="font-family:'Bebas Neue';font-size:22px;color:#a78bfa;letter-spacing:1px;"></span>
+        <span id="volProgress-big-val" style="font-family:'Bebas Neue';font-size:22px;color:var(--pr-vol);letter-spacing:1px;"></span>
         <span id="volProgress-big-pct" style="font-family:'DM Sans';font-size:14px;font-weight:700;margin-left:8px;"></span>
       </div>
       <div id="volProgressChart-wrap" class="chart-wrap"><canvas id="volProgressChart"></canvas></div>
@@ -1869,7 +1894,7 @@ window._fbModuleReady = true;
       <div id="heatmap-empty" style="display:none;text-align:center;padding:24px 0;font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.5px;">No data for this range</div>
       <div style="display:flex;align-items:center;gap:8px;padding:10px 16px 4px;justify-content:center;">
         <span style="font-family:'DM Sans';font-size:10px;font-weight:700;color:var(--muted);">LESS</span>
-        <div style="flex:1;max-width:140px;height:6px;border-radius:3px;background:linear-gradient(to right, #3a86ff 0%, #8338ec 40%, #ff006e 70%, #ff0000 100%);"></div>
+        <div style="flex:1;max-width:140px;height:6px;border-radius:3px;background:linear-gradient(to right, #5a1a1a 0%, #ff0000 100%);"></div>
         <span style="font-family:'DM Sans';font-size:10px;font-weight:700;color:var(--muted);">MORE</span>
       </div>
     </div>
@@ -1887,7 +1912,7 @@ window._fbModuleReady = true;
         <div style="color:var(--text);font-size:12px;margin-bottom:4px;">Workout history filtered by selected muscle group and time range.</div>
         <div style="display:flex;gap:8px;align-items:baseline;"><span style="color:#e8ff47;font-weight:700;width:64px;flex-shrink:0;">DATE</span><span style="color:#555;">—</span><span style="color:#aaa;">When the workout was performed</span></div>
         <div style="display:flex;gap:8px;align-items:baseline;"><span style="color:#7ec8e3;font-weight:700;width:64px;flex-shrink:0;">SETS</span><span style="color:#555;">—</span><span style="color:#aaa;">Number of completed sets</span></div>
-        <div style="display:flex;gap:8px;align-items:baseline;"><span style="color:#a78bfa;font-weight:700;width:64px;flex-shrink:0;">VOL</span><span style="color:#555;">—</span><span style="color:#aaa;">Total volume: sum of kg × reps</span></div>
+        <div style="display:flex;gap:8px;align-items:baseline;"><span style="color:var(--pr-vol);font-weight:700;width:64px;flex-shrink:0;">VOL</span><span style="color:#555;">—</span><span style="color:#aaa;">Total volume: sum of kg × reps</span></div>
       </div>
       <div id="prog-history-list" style="display:flex;flex-direction:column;gap:6px;padding:4px 0 8px;"></div>
       <div id="prog-history-empty" style="display:none;text-align:center;padding:20px 0;font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.5px;">NO DATA FOR THIS PERIOD</div>
@@ -1968,7 +1993,7 @@ window._fbModuleReady = true;
     </div>
   <!-- Fixed save button -->
   <div id="newExBottomBar" style="position:fixed;bottom:0;left:0;right:0;padding:46px 8px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(to bottom,transparent,var(--surface) 40%);z-index:10;max-width:calc(100vw);box-sizing:border-box;display:flex;gap:10px;">
-    <button id="newExSaveBtn" onclick="confirmNewEx()" style="flex:1;padding:18px;background:var(--accent);color:#000;border:none;border-radius:100px;font-family:'DM Sans';font-size:18px;font-weight:900;cursor:pointer;letter-spacing:.3px;-webkit-tap-highlight-color:transparent;transition:transform .15s;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">SAVE</button>
+    <button id="newExSaveBtn" onclick="confirmNewEx()" style="flex:1;padding:18px;background:#000;color:var(--accent);border:1px solid var(--accent);border-radius:100px;font-family:'DM Sans';font-size:18px;font-weight:900;cursor:pointer;letter-spacing:.3px;-webkit-tap-highlight-color:transparent;transition:transform .15s;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">SAVE</button>
   </div>
 </div>
 
@@ -2095,23 +2120,23 @@ window._fbModuleReady = true;
     <div class="modal-body">
       <div style="display:flex;flex-direction:column;gap:18px;padding:4px 0 8px;">
         <div style="display:flex;gap:12px;align-items:flex-start;">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="#e8ff47" style="flex-shrink:0;"><polygon points="12,2 22,9.27 18.18,21.02 5.82,21.02 2,9.27"/></svg>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" style="color:var(--pr-max);flex-shrink:0;"><polygon points="12,2 22,9.27 18.18,21.02 5.82,21.02 2,9.27"/></svg>
           <div>
-            <div style="font-family:'DM Sans';font-size:14px;font-weight:800;color:#e8ff47;letter-spacing:.5px;">MAX</div>
+            <div style="font-family:'DM Sans';font-size:14px;font-weight:800;color:var(--pr-max);letter-spacing:.5px;">MAX</div>
             <div style="font-family:'DM Sans';font-size:13px;font-weight:500;color:var(--muted);line-height:1.5;margin-top:2px;"><span style="color:#fff;">Heaviest weight</span> you've ever lifted in a single set.</div>
           </div>
         </div>
         <div style="display:flex;gap:12px;align-items:flex-start;">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="#ff8c42" style="flex-shrink:0;"><polygon points="12,2 22,9.27 18.18,21.02 5.82,21.02 2,9.27"/></svg>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" style="color:var(--pr-best);flex-shrink:0;"><polygon points="12,2 22,9.27 18.18,21.02 5.82,21.02 2,9.27"/></svg>
           <div>
-            <div style="font-family:'DM Sans';font-size:14px;font-weight:800;color:#ff8c42;letter-spacing:.5px;">BEST SET</div>
+            <div style="font-family:'DM Sans';font-size:14px;font-weight:800;color:var(--pr-best);letter-spacing:.5px;">BEST SET</div>
             <div style="font-family:'DM Sans';font-size:13px;font-weight:500;color:var(--muted);line-height:1.5;margin-top:2px;"><span style="color:#fff;">Your best set</span> for strength calculation.<br>Formula: max(weight × (1+reps/30))</div>
           </div>
         </div>
         <div style="display:flex;gap:12px;align-items:flex-start;">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="#a78bfa" style="flex-shrink:0;"><polygon points="12,2 22,9.27 18.18,21.02 5.82,21.02 2,9.27"/></svg>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" style="color:var(--pr-vol);flex-shrink:0;"><polygon points="12,2 22,9.27 18.18,21.02 5.82,21.02 2,9.27"/></svg>
           <div>
-            <div style="font-family:'DM Sans';font-size:14px;font-weight:800;color:#a78bfa;letter-spacing:.5px;">VOL</div>
+            <div style="font-family:'DM Sans';font-size:14px;font-weight:800;color:var(--pr-vol);letter-spacing:.5px;">VOL</div>
             <div style="font-family:'DM Sans';font-size:13px;font-weight:500;color:var(--muted);line-height:1.5;margin-top:2px;"><span style="color:#fff;">Total volume</span> lifted across all sets combined.</div>
           </div>
         </div>
@@ -2172,7 +2197,7 @@ var _libraryWorkouts = [];   // declared early — also assigned in the library 
 var _libraryLoaded = false;  // declared early — same reason
 
 // Muscle colors used throughout — declared here to avoid ReferenceError
-const PICKER_COLORS = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171', Mix:'#20d4c8' };
+const PICKER_COLORS = { ...BP_COLORS.muscles };
 
 // ══════════════════════════════════════════════════════
 //  INDEXEDDB + OFFLINE STORAGE LAYER
@@ -2278,7 +2303,8 @@ const _BRAND_SCOPED_KEYS = new Set([
   'ironlog_session','ironlog_session_start','ironlog_draft_id',
   'ironlog_deleted_tab_names','ironlog_hidden_ex','ironlog_hidden_lib_workouts',
   'ironlog_brand_off','ironlog_data_reset_at',
-  'ironlog_unsynced_since','ironlog_last_synced'
+  'ironlog_unsynced_since','ironlog_last_synced',
+  'ironlog_sets_targets'
 ]);
 
 const _LS = {
@@ -2321,7 +2347,7 @@ window._LS = _LS;
 // only if nothing changed while that upload was in flight (_syncDirtyVer).
 // Per user (both keys are uid-scoped), kept across restarts. Drives the
 // My Data status line, the Profile tab dot and the sign-out warning.
-const _SYNCED_DATA_KEYS = new Set(['ironlog_workouts','ironlog_deleted_workouts','ironlog_custom_ex','ironlog_planned','ironlog_hidden_lib_workouts','ironlog_brand_off']);
+const _SYNCED_DATA_KEYS = new Set(['ironlog_workouts','ironlog_deleted_workouts','ironlog_custom_ex','ironlog_planned','ironlog_hidden_lib_workouts','ironlog_brand_off','ironlog_sets_targets']);
 let _syncDirtyVer = 0;
 window._onSyncedKeyWrite = k => { if (_SYNCED_DATA_KEYS.has(k)) _markUnsynced(); };
 function _markUnsynced() {
@@ -2565,7 +2591,26 @@ let volumeChartInst, strengthChartInst, exHistMiniChartInst;
 let volumeRange = 'week', strengthRange = 'week', globalRange = 'week', strengthMuscle = 'Chest';
 let lastTimerSecs = (parseInt(localStorage.getItem('ironlog_timer_secs')) || 60);
 window.lastTimerSecs = lastTimerSecs;
-let workoutWeekTarget = parseInt(localStorage.getItem('ironlog_workout_target') || '3');
+// Weekly workouts target (Home page 1). 0 = "no target" (set by going below 1
+// in the target sheet) — so never read it with `|| 3`, which would turn a
+// deliberate 0 back into the default.
+// Default (nothing saved yet) is "no target".
+function _readWorkoutTarget() { const v = parseInt(localStorage.getItem('ironlog_workout_target')); return isNaN(v) ? 0 : v; }
+let workoutWeekTarget = _readWorkoutTarget();
+
+// Weekly sets target per body part (Home page 2 heatmap colours each muscle
+// area by its sets ÷ its body part's target). Per user, synced to the cloud
+// as settings.setsTargets. Default 12 sets per body part.
+const SETS_TARGET_PARTS = ['Chest', 'Back', 'Legs', 'Shoulders', 'Arms', 'Core'];
+const SETS_TARGET_DEFAULT = 12;
+function _getSetsTargets() {
+  let o = {};
+  try { o = JSON.parse(_LS.get('ironlog_sets_targets') || '{}') || {}; } catch (e) {}
+  const r = {};
+  SETS_TARGET_PARTS.forEach(p => { const v = parseInt(o[p]); r[p] = v > 0 ? v : SETS_TARGET_DEFAULT; });
+  return r;
+}
+function _saveSetsTargets(t) { _LS.set('ironlog_sets_targets', JSON.stringify(t)); }
 
 // ── AUTO-DRAFT SAVE ─────────────────────────────
 let _draftId = _LS.get('ironlog_draft_id') ? parseInt(_LS.get('ironlog_draft_id')) : null;
@@ -2761,7 +2806,7 @@ let miniChartDefaultOpen = false;
 let miniChartRange = localStorage.getItem('ironlog_mini_range') || '3M';
 
 function selectMiniGraph(cardId, which) {
-  const graphs = {wt:'#e8ff47', rm:'#ff8c42', vol:'#a78bfa'};
+  const graphs = {wt:BP_COLORS.pr.max, rm:BP_COLORS.pr.bestSet, vol:BP_COLORS.pr.vol};
   const labels = {wt:'Max Wt', rm:'1RM', vol:'Volume'};
   Object.keys(graphs).forEach(k => {
     const panel = document.getElementById(`mini-graph-${k}-${cardId}`);
@@ -3187,7 +3232,7 @@ function toggleTodayPlanDet() {
     if (det._calPlanMuscleFilter) {
       det._calPlanMuscleFilter = null;
       det.querySelectorAll('.ldet-ex-row').forEach(r => { r.style.opacity = ''; r.style.background = ''; });
-      const colors = ['#e8ff47','#7ec8e3','#ff8c42','#a78bfa','#34d399','#f87171','#20d4c8'];
+      const colors = BP_MUSCLE_LIST;
       const filterEl = det.dataset.filterid ? document.getElementById(det.dataset.filterid) : null;
       const labelEl = det.dataset.filterlabelid ? document.getElementById(det.dataset.filterlabelid) : null;
       if (filterEl) filterEl.dataset.idx = '0';
@@ -3327,7 +3372,8 @@ function _resetWeekProgressForReplay() {
 function renderTodayWeekProgress(withAnim) {
   const el = document.getElementById('today-week-progress');
   if (!el) return;
-  const target = workoutWeekTarget || parseInt(localStorage.getItem('ironlog_workout_target')) || 3;
+  const noTarget = workoutWeekTarget === 0;
+  const target = noTarget ? 0 : (workoutWeekTarget || _readWorkoutTarget() || 3);
   const now = new Date();
   const dayOfWeek = now.getDay(); // 0=Sun, matches calendar convention
   const weekStart = new Date(now);
@@ -3349,6 +3395,51 @@ function renderTodayWeekProgress(withAnim) {
   if (targetLblTextEl) targetLblTextEl.textContent = `OUT OF ${target}`;
   const goalRing = document.getElementById('today-progress-goal-ring');
   const ring = document.getElementById('today-progress-ring');
+  // No target: the "OUT OF n" text is removed so its row collapses to zero
+  // height and the number sits at the circle's exact center; the chevron
+  // (absolutely positioned under that row) gets extra top margin to keep its
+  // usual distance below the number. Restored for a real target.
+  const _chevEl = document.getElementById('today-progress-target-chev');
+  if (targetLblTextEl) targetLblTextEl.style.display = noTarget ? 'none' : '';
+  if (_chevEl) _chevEl.style.marginTop = noTarget ? '22px' : '2px';
+  const _innerGrp = document.getElementById('today-progress-center-inner');
+  if (_innerGrp) _innerGrp.style.gap = noTarget ? '0' : '';
+  if (goalRing) goalRing.style.display = noTarget ? 'none' : '';
+  if (noTarget) {
+    // No target: no progress — the inner segment ring is hidden and the outer
+    // ring is a full, static --accent circle (no fill animation, no goal-met
+    // sequence/sound). Number of workouts this week + the chevron stay.
+    const targetRowEl0 = document.getElementById('today-progress-target');
+    if (targetRowEl0) targetRowEl0.style.display = 'flex';
+    const outer0 = document.getElementById('today-progress-center-outer');
+    const inner0 = document.getElementById('today-progress-center-inner');
+    if (outer0) outer0.style.transform = 'none'; // number at the true center
+    if (inner0) inner0.style.transform = 'none';
+    if (goalRing) {
+      // Forget the goal-ring state so a target set later starts fresh (no
+      // stale "achieved" animation replaying).
+      goalRing._animToken = (goalRing._animToken || 0) + 1;
+      goalRing._animating = false;
+      goalRing.dataset.inited = '0';
+      goalRing.dataset.achieved = '0';
+    }
+    if (ring) {
+      ring.style.transition = 'none';
+      ring.style.willChange = '';
+      ring.setAttribute('stroke-dasharray', (2 * Math.PI * 117.86).toFixed(2));
+      ring.setAttribute('stroke-dashoffset', '0');
+      ring.style.stroke = 'var(--accent)';
+      ring.style.strokeOpacity = '1';
+    }
+    // The FIND A COACH button normally fades in after the ring's animation —
+    // reveal it here too (after the splash, same as the animated path).
+    if (withAnim && !window._splashGone) window._pendingCoachAnim = () => renderTodayWeekProgress(true);
+    else _fireCoachBtn();
+    el.style.display = 'flex';
+    const _dotsEl0 = document.getElementById('today-carousel-dots');
+    if (_dotsEl0) _dotsEl0.style.display = 'flex';
+    return;
+  }
   const goalAchieved = count >= target;
   // Once the weekly target is met, "OUT OF n >" no longer applies — hide the
   // whole row (text + chevron) instead of just clearing its text.
@@ -3632,14 +3723,28 @@ function _todayCarouselGoTo(idx, instant) {
   const track = document.getElementById('today-carousel-track');
   if (!track) return;
   window._todayCarouselIdx = idx;
+  // Read layout BEFORE any style writes: a read between the track's and the
+  // shared circle's transform changes would start their transitions on
+  // different frames (seen in Safari) and the "static" circle would drift.
+  const slideW = track.offsetWidth / TODAY_CAROUSEL_PAGES;
+  const win = document.getElementById('today-circle-window');
+  const strip = document.getElementById('today-circle-strip');
   if (instant) {
-    track.style.transition = 'none';
+    [track, win, strip].forEach(el => { if (el) el.style.transition = 'none'; });
     track.getBoundingClientRect(); // flush before restoring the transition below
   }
   // Each slide is (100/N)% of the N×-wide track, i.e. exactly one container
   // width — so translateX by idx * that percentage moves by idx slides.
   track.style.transform = `translateX(-${idx * (100 / TODAY_CAROUSEL_PAGES)}%)`;
-  if (instant) requestAnimationFrame(() => { track.style.transition = 'transform .3s cubic-bezier(.2,.8,.3,1)'; });
+  // Pages 2↔3 share one static circle (#today-circle-window): on page 3 it's
+  // pushed one slide right — exactly undoing the track's extra move, with
+  // the same timing — and only its inner strip slides (heatmap ↔ PRs).
+  if (win) win.style.transform = idx === 2 ? `translateX(${slideW}px)` : '';
+  if (strip) strip.style.transform = idx === 2 ? 'translateX(-262px)' : '';
+  if (instant) requestAnimationFrame(() => {
+    track.style.transition = 'transform .3s cubic-bezier(.2,.8,.3,1)';
+    [win, strip].forEach(el => { if (el) el.style.transition = 'transform .3s cubic-bezier(.2,.8,.3,1)'; });
+  });
   document.querySelectorAll('#today-carousel-dots .today-carousel-dot').forEach((d, i) => {
     d.style.background = i === idx ? 'var(--accent)' : 'rgba(255,255,255,0.25)';
   });
@@ -3647,6 +3752,9 @@ function _todayCarouselGoTo(idx, instant) {
   if (idx === 2 && typeof _renderTodayWeekPRStars === 'function') _renderTodayWeekPRStars();
 }
 window._todayCarouselGoTo = _todayCarouselGoTo;
+// The shared circle's page-3 offset is in px (one slide width) — re-apply it
+// if the screen width changes (rotation etc.).
+window.addEventListener('resize', () => { if (window._todayCarouselIdx === 2) _todayCarouselGoTo(2, true); });
 
 // Swipe handling scoped to the carousel box itself — this box sits below the
 // header and above the dots row by construction, so attaching the gesture
@@ -3769,7 +3877,7 @@ function openStrengthTargetSheet() {
   const overlay = document.getElementById('strength-target-overlay');
   if (!sheet) return;
   const val = document.getElementById('strength-target-val');
-  if (val) val.textContent = workoutWeekTarget;
+  if (val) val.textContent = workoutWeekTarget > 0 ? workoutWeekTarget : '–';
   renderWeekStatus();
   overlay.style.display = 'block';
   sheet.style.display = 'block';
@@ -3777,10 +3885,11 @@ function openStrengthTargetSheet() {
 }
 
 function _adjustStrengthTarget(delta, btn) {
-  const newVal = Math.max(1, Math.min(99, workoutWeekTarget + delta));
+  // Below 1 = "no target" (0), shown as "–"; + from there goes back to 1.
+  const newVal = Math.max(0, Math.min(99, workoutWeekTarget + delta));
   workoutWeekTarget = newVal;
   const val = document.getElementById('strength-target-val');
-  if (val) val.textContent = newVal;
+  if (val) val.textContent = newVal > 0 ? newVal : '–';
   if (btn) {
     btn.style.animation = 'none';
     requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -3798,7 +3907,7 @@ function closeStrengthTargetSheet(save) {
     renderTodayWeekProgress();
     if (window._currentUser && window.syncToFirestore) window.syncToFirestore();
   } else {
-    workoutWeekTarget = parseInt(localStorage.getItem('ironlog_workout_target')) || 3;
+    workoutWeekTarget = _readWorkoutTarget();
   }
   if (sheet.dataset.swipeClosing) {
     // Already slid off-screen by the swipe-down gesture (see
@@ -3818,6 +3927,59 @@ function closeStrengthTargetSheet(save) {
 }
 window.openStrengthTargetSheet = openStrengthTargetSheet;
 window.closeStrengthTargetSheet = closeStrengthTargetSheet;
+
+// ── Home page 2: weekly sets target per body part ──────────────────────────
+// Edits a working copy; SAVE stores it (per user, synced to the cloud with
+// the rest of the settings) and re-colours the heatmap. Closing any other
+// way (tap outside / swipe down) discards the edits.
+const SETS_TARGET_MIN = 1, SETS_TARGET_MAX = 50;
+function openSetsTargetSheet() {
+  const sheet = document.getElementById('sets-target-sheet');
+  const overlay = document.getElementById('sets-target-overlay');
+  const rows = document.getElementById('sets-target-rows');
+  if (!sheet || !rows) return;
+  window._setsTargetDraft = _getSetsTargets();
+  const btn = (part, d) => `<button onclick="event.stopPropagation();_adjustSetsTarget('${part}',${d},this)" style="width:44px;height:44px;border-radius:12px;border:1px solid var(--border);background:#333;color:var(--text);font-size:30px;font-weight:300;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;-webkit-tap-highlight-color:transparent;">${d < 0 ? '&minus;' : '+'}</button>`;
+  rows.innerHTML = SETS_TARGET_PARTS.map((p, i) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;${i ? 'border-top:1px solid #2a2a2a;' : ''}">
+      <span style="font-family:'DM Sans';font-size:17px;font-weight:700;color:var(--text);">${p}</span>
+      <div style="display:flex;align-items:center;">
+        ${btn(p, -1)}
+        <span id="sets-target-val-${p}" style="font-family:'DM Sans';font-size:26px;font-weight:800;color:var(--text);width:64px;text-align:center;">${window._setsTargetDraft[p]}</span>
+        ${btn(p, 1)}
+      </div>
+    </div>`).join('');
+  overlay.style.display = 'block';
+  sheet.style.display = 'block';
+  sheet.style.animation = 'sheetUp .25s ease';
+}
+function _adjustSetsTarget(part, delta, btn) {
+  const d = window._setsTargetDraft || (window._setsTargetDraft = _getSetsTargets());
+  d[part] = Math.max(SETS_TARGET_MIN, Math.min(SETS_TARGET_MAX, (d[part] || SETS_TARGET_DEFAULT) + delta));
+  const val = document.getElementById('sets-target-val-' + part);
+  if (val) val.textContent = d[part];
+  if (btn) {
+    btn.style.animation = 'none';
+    requestAnimationFrame(() => requestAnimationFrame(() => { btn.style.animation = 'tapPopScale .3s cubic-bezier(.175,.885,.32,1.275)'; }));
+  }
+}
+function closeSetsTargetSheet(save) {
+  const sheet = document.getElementById('sets-target-sheet');
+  const overlay = document.getElementById('sets-target-overlay');
+  if (!sheet) return;
+  if (save && window._setsTargetDraft) {
+    _saveSetsTargets(window._setsTargetDraft);
+    if (typeof _renderTodayWeekHeatmap === 'function') _renderTodayWeekHeatmap();
+    if (window._currentUser && window.syncToFirestore) window.syncToFirestore();
+  }
+  window._setsTargetDraft = null;
+  if (sheet.dataset.swipeClosing) { sheet.style.display = 'none'; overlay.style.display = 'none'; return; }
+  sheet.style.animation = 'sheetSlideDown .2s ease forwards';
+  setTimeout(() => { sheet.style.display = 'none'; sheet.style.animation = ''; overlay.style.display = 'none'; }, 220);
+}
+window.openSetsTargetSheet = openSetsTargetSheet;
+window.closeSetsTargetSheet = closeSetsTargetSheet;
+window._adjustSetsTarget = _adjustSetsTarget;
 
 function renderTodayPlanCard() {
   const cardEl = document.getElementById('today-plan-card');
@@ -4079,7 +4241,8 @@ function _startHeroNameEdit(el) {
       const _b1 = document.getElementById('nwf-name-next-btn');
       const _b2 = document.getElementById('nwf-bottom-next-btn');
       if (_b1) _b1.style.opacity = hasText ? '1' : '0.35';
-      if (_b2) { _b2.style.background = hasText ? 'var(--accent)' : '#444'; _b2.style.color = hasText ? '#000' : '#fff'; }
+      // No name yet → same black style, greyed out.
+      if (_b2) { _b2.style.background = '#000'; _b2.style.color = hasText ? 'var(--accent)' : '#666'; _b2.style.borderColor = hasText ? 'var(--accent)' : '#444'; }
     }
     clearTimeout(el._splitTimer);
     el._splitTimer = setTimeout(() => {
@@ -5130,7 +5293,7 @@ function _updateWorkoutProgress() {
       const lbl = ['MAX','BEST SET','VOL'][idx] || '';
       return `<span data-pr="${idx}" data-count="${n}" style="display:inline-flex;flex-direction:column;align-items:center;gap:2px;"><span style="position:relative;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;"><svg width="32" height="32" viewBox="0 0 24 24" fill="${f}"><polygon points="12,2 22,9.27 18.18,21.02 5.82,21.02 2,9.27"/></svg>${num}</span><span style="font-size:8px;font-weight:700;color:${lc};letter-spacing:.5px;line-height:11px;transform:translateY(1px);display:inline-block;">${lbl}</span></span>`;
     };
-    prStars.innerHTML = star('#e8ff47', weightPRs, 0) + star('#ff8c42', volPRs, 1) + star('#a78bfa', volumePRs, 2);
+    prStars.innerHTML = star(BP_COLORS.pr.max, weightPRs, 0) + star(BP_COLORS.pr.bestSet, volPRs, 1) + star(BP_COLORS.pr.vol, volumePRs, 2);
     const newSpans = prStars.querySelectorAll('span[data-pr]');
     const _animStar = (span, condition) => {
       if (!condition) return;
@@ -5448,7 +5611,7 @@ _updateSoundToggleUI();
 
 function displayMuscle(m) { if (m === "Shoulders") return "Shldr"; if (m === "Core") return "Core"; if (m === "Mix") return "Mix"; return m; }
 function getMuscleColor(m) {
-  const map = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171', Mix:'#20d4c8' };
+  const map = { ...BP_COLORS.muscles };
   return map[m] || 'var(--muted)';
 }
 
@@ -5582,7 +5745,7 @@ function renderExercisesTab() {
   });
 
   const MUSCLE_ORDER = ['Chest', 'Back', 'Legs', 'Shoulders', 'Arms', 'Core', 'Mix'];
-  const MUSCLE_COLORS = { Chest: '#e8ff47', Back: '#7ec8e3', Legs: '#ff8c42', Shoulders: '#a78bfa', Arms: '#34d399', Core: '#f87171', Mix: '#20d4c8' };
+  const MUSCLE_COLORS = { ...BP_COLORS.muscles };
   const MUSCLE_LABELS = { Chest: 'Chest', Back: 'Back', Legs: 'Legs', Shoulders: 'Shldr', Arms: 'Arms', Core: 'Core', Mix: 'Mix' };
 
   const byMuscle = {};
@@ -5690,8 +5853,8 @@ function renderExercisesTab() {
     const isPickSelected = _pickMode && _pickModeSelected.some(s => s.name === ex.name);
     const pickColor = PICKER_COLORS[ex.muscle] || '#888';
     const statsHtml = hasHistory ? `<div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;min-width:100px;">
-      ${bestWt !== null ? `<div style="display:flex;align-items:center;gap:4px;"><span style="font-size:10px;font-weight:700;color:#666;">MAX</span><span style="font-size:13px;font-weight:700;color:#e8ff47;">${bestWt}kg</span>${wtArrow}</div>` : ''}
-      ${bestRM !== null ? `<div style="display:flex;align-items:center;gap:4px;"><span style="font-size:10px;font-weight:700;color:#666;">1RM</span><span style="font-size:13px;font-weight:700;color:#ff8c42;">${bestRM}kg</span>${rmArrow}</div>` : ''}
+      ${bestWt !== null ? `<div style="display:flex;align-items:center;gap:4px;"><span style="font-size:10px;font-weight:700;color:#666;">MAX</span><span style="font-size:13px;font-weight:700;color:var(--pr-max);">${bestWt}kg</span>${wtArrow}</div>` : ''}
+      ${bestRM !== null ? `<div style="display:flex;align-items:center;gap:4px;"><span style="font-size:10px;font-weight:700;color:#666;">1RM</span><span style="font-size:13px;font-weight:700;color:var(--pr-best);">${bestRM}kg</span>${rmArrow}</div>` : ''}
     </div>` : '';
     const _mc = MUSCLE_COLORS[ex.muscle] || '#888';
 
@@ -5718,10 +5881,10 @@ function renderExercisesTab() {
           <button class="btn-hist has-data" onclick="openExHistoryByName('${ex.name}')">History</button>
         </div>
         <div class="ex-mini-chart-title" style="display:flex;align-items:center;justify-content:space-between;">Max Weight Progress</div>
-        <div id="extab-big-wt-${safeId}" style="font-family:'DM Sans';font-size:12px;font-weight:700;color:#e8ff47;padding:2px 0 4px;display:none;"></div>
+        <div id="extab-big-wt-${safeId}" style="font-family:'DM Sans';font-size:12px;font-weight:700;color:var(--pr-max);padding:2px 0 4px;display:none;"></div>
         <div class="ex-mini-chart-wrap"><canvas id="extab-canvas-${safeId}"></canvas></div>
         <div class="ex-mini-chart-title" style="margin-top:10px;">1RM Progress</div>
-        <div id="extab-big-vol-${safeId}" style="font-family:'DM Sans';font-size:12px;font-weight:700;color:#ff8c42;padding:2px 0 4px;display:none;"></div>
+        <div id="extab-big-vol-${safeId}" style="font-family:'DM Sans';font-size:12px;font-weight:700;color:var(--pr-best);padding:2px 0 4px;display:none;"></div>
         <div class="ex-mini-chart-wrap"><canvas id="extab-vol-canvas-${safeId}"></canvas></div>
         <div id="extab-range-pills-${safeId}" style="display:flex;gap:4px;margin:8px 0 0;">
           ${['1W','1M','3M','6M','1Y'].map(r=>`<button onclick="setExTabRange('${safeId}','${ex.name.replace(/'/g,"\\'")}','${r}')" id="extab-rpill-${r}-${safeId}" style="flex:1;padding:3px 0;border-radius:6px;border:1px solid ${r===miniChartRange?'var(--accent)':'var(--border)'};background:${r===miniChartRange?'rgba(232,255,71,.12)':'transparent'};color:${r===miniChartRange?'var(--accent)':'var(--muted)'};font-family:'DM Sans';font-size:10px;font-weight:700;cursor:pointer;">${r}</button>`).join('')}
@@ -6844,7 +7007,7 @@ function _renderNewExPills(selected) {
   const pillsEl = document.getElementById('newExMusclePills');
   if (!pillsEl) return;
   const muscles = ['Chest','Back','Legs','Shoulders','Arms','Core','Mix'];
-  const colors = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171', Mix:'#20d4c8' };
+  const colors = { ...BP_COLORS.muscles };
   const labels = { Chest:'Chst', Back:'Back', Legs:'Legs', Shoulders:'Shld', Arms:'Arms', Core:'Core', Mix:'Mix' };
   pillsEl.innerHTML = muscles.map(m => {
     const isSelected = m === selected;
@@ -6910,7 +7073,7 @@ const _COMP_SUBS = [
   {n:'Biceps',bp:'Arms'},{n:'Triceps',bp:'Arms'},{n:'Forearms',bp:'Arms'},
   {n:'Abs',bp:'Core'},{n:'Obliques',bp:'Core'},
 ];
-const _COMP_COLORS = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171' };
+const _COMP_COLORS = { ...BP_COLORS.muscles };
 // Canonical body-part order for any "MUSCLES" list spanning multiple body
 // parts (e.g. a Mix exercise, or a workout's combined muscle list) — items
 // are otherwise left in whatever order they were selected/stored in.
@@ -7501,7 +7664,8 @@ function openWeekSummary(weekStartStr) {
 
   const totalWorkouts = wkWorkouts.length;
 
-  const woAch = totalWorkouts >= (parseInt(localStorage.getItem('ironlog_workout_target'))||3);
+  const _woTarget = _readWorkoutTarget();
+  const woAch = _woTarget > 0 && totalWorkouts >= _woTarget; // no target → never "reached"
 
   // Sun -> Sat, one row per day: left column is the day name, right column lists
   // whatever workout(s) were logged on that day (or a dash if none).
@@ -8127,8 +8291,8 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
 
   // ── Progress chart pane (adapted verbatim from openExtabExOverlay's stats mode) ──
   let _progMetric = 'wt', _progRange = '1Y';
-  const _PC = { wt:{line:'#e8ff47',fill:'rgba(232,255,71,.08)'}, rm:{line:'#ff8c42',fill:'rgba(255,140,66,.08)'}, vol:{line:'#a78bfa',fill:'rgba(167,139,250,.08)'} };
-  const _mKeys = ['wt','rm','vol'], _mLabels = ['MAX','BEST SET','VOL'], _mColors = ['#e8ff47','#ff8c42','#a78bfa'];
+  const _PC = { wt:{line:BP_COLORS.pr.max,fill:bpAlpha(BP_COLORS.pr.max,.08)}, rm:{line:BP_COLORS.pr.bestSet,fill:bpAlpha(BP_COLORS.pr.bestSet,.08)}, vol:{line:BP_COLORS.pr.vol,fill:bpAlpha(BP_COLORS.pr.vol,.08)} };
+  const _mKeys = ['wt','rm','vol'], _mLabels = ['MAX','BEST SET','VOL'], _mColors = [BP_COLORS.pr.max,BP_COLORS.pr.bestSet,BP_COLORS.pr.vol];
   const progPane = document.createElement('div');
   progPane.id = 'ex-detail-stats-prog-pane';
   progPane.style.cssText = 'display:none;padding:2px 16px 0;';
@@ -9123,8 +9287,8 @@ function openExtabExOverlay(exName, musclesOnly, instant, knownPhoto) {
 
     // ── Progress chart pane ──────────────────────────────────────────────────
     let _progMetric = 'wt', _progRange = '1Y';
-    const _PC = { wt:{line:'#e8ff47',fill:'rgba(232,255,71,.08)'}, rm:{line:'#ff8c42',fill:'rgba(255,140,66,.08)'}, vol:{line:'#a78bfa',fill:'rgba(167,139,250,.08)'} };
-    const _mKeys = ['wt','rm','vol'], _mLabels = ['MAX','BEST SET','VOL'], _mColors = ['#e8ff47','#ff8c42','#a78bfa'];
+    const _PC = { wt:{line:BP_COLORS.pr.max,fill:bpAlpha(BP_COLORS.pr.max,.08)}, rm:{line:BP_COLORS.pr.bestSet,fill:bpAlpha(BP_COLORS.pr.bestSet,.08)}, vol:{line:BP_COLORS.pr.vol,fill:bpAlpha(BP_COLORS.pr.vol,.08)} };
+    const _mKeys = ['wt','rm','vol'], _mLabels = ['MAX','BEST SET','VOL'], _mColors = [BP_COLORS.pr.max,BP_COLORS.pr.bestSet,BP_COLORS.pr.vol];
     const progPane = document.createElement('div');
     progPane.id = 'extab-prog-pane';
     progPane.style.cssText = `display:${musclesOnly === 'stats' ? 'block' : 'none'};padding:8px 16px 0;`;
@@ -9733,23 +9897,23 @@ function renderExTabMiniChart(safeId, exName, root=document) {
   const c1=_gel('extab-vol-canvas-'+safeId);
   if(c1&&volPts.length){
     const _v1Min=Math.min(...volPts.map(p=>p.val)),_v1Max=Math.max(...volPts.map(p=>p.val)),_v1Pad=(_v1Max-_v1Min)*0.1||1;
-    const mopts1=Object.assign({},mopts('#ff8c42'),{scales:Object.assign({},mopts('#ff8c42').scales,{y:Object.assign({},mopts('#ff8c42').scales.y,{min:_v1Min-_v1Pad})})});
+    const mopts1=Object.assign({},mopts(BP_COLORS.pr.bestSet),{scales:Object.assign({},mopts(BP_COLORS.pr.bestSet).scales,{y:Object.assign({},mopts(BP_COLORS.pr.bestSet).scales.y,{min:_v1Min-_v1Pad})})});
     const _v1MaxVal=Math.max(...volPts.map(p=>p.val));const _v1MaxIdx=volPts.map(p=>p.val).lastIndexOf(_v1MaxVal);
-    c1._chartInst=new Chart(c1.getContext('2d'),{type:'line',data:{labels:volPts.map(p=>p.date),datasets:[{data:volPts.map(p=>p.val),borderColor:'#ff8c42',backgroundColor:'rgba(255,140,66,.08)',pointBackgroundColor:volPts.map((_,i)=>i===_v1MaxIdx?'#ff4444':i===volPts.length-1?'#fff':'#ff8c42'),pointRadius:volPts.map((_,i)=>i===_v1MaxIdx||i===volPts.length-1?4:2),tension:0,fill:true,borderWidth:1.5}]},options:mopts1,plugins:chevPlugin('#ff8c42','extabVolChev'+safeId)});
+    c1._chartInst=new Chart(c1.getContext('2d'),{type:'line',data:{labels:volPts.map(p=>p.date),datasets:[{data:volPts.map(p=>p.val),borderColor:BP_COLORS.pr.bestSet,backgroundColor:bpAlpha(BP_COLORS.pr.bestSet,.08),pointBackgroundColor:volPts.map((_,i)=>i===_v1MaxIdx?'#ff4444':i===volPts.length-1?'#fff':BP_COLORS.pr.bestSet),pointRadius:volPts.map((_,i)=>i===_v1MaxIdx||i===volPts.length-1?4:2),tension:0,fill:true,borderWidth:1.5}]},options:mopts1,plugins:chevPlugin(BP_COLORS.pr.bestSet,'extabVolChev'+safeId)});
   }
 
   const c3=_gel('extab-volprog-canvas-'+safeId);
   if(c3&&volumePts.length){
     const _v3Min=Math.min(...volumePts.map(p=>p.val)),_v3Max=Math.max(...volumePts.map(p=>p.val)),_v3Pad=(_v3Max-_v3Min)*0.1||1;
-    const mopts3=Object.assign({},mopts('#a78bfa'),{scales:Object.assign({},mopts('#a78bfa').scales,{y:Object.assign({},mopts('#a78bfa').scales.y,{min:_v3Min-_v3Pad})})});
+    const mopts3=Object.assign({},mopts(BP_COLORS.pr.vol),{scales:Object.assign({},mopts(BP_COLORS.pr.vol).scales,{y:Object.assign({},mopts(BP_COLORS.pr.vol).scales.y,{min:_v3Min-_v3Pad})})});
     const _v3MaxVal=Math.max(...volumePts.map(p=>p.val));const _v3MaxIdx=volumePts.map(p=>p.val).lastIndexOf(_v3MaxVal);
-    c3._chartInst=new Chart(c3.getContext('2d'),{type:'line',data:{labels:volumePts.map(p=>p.date),datasets:[{data:volumePts.map(p=>p.val),borderColor:'#a78bfa',backgroundColor:'rgba(167,139,250,.08)',pointBackgroundColor:volumePts.map((_,i)=>i===_v3MaxIdx?'#ff4444':i===volumePts.length-1?'#fff':'#a78bfa'),pointRadius:volumePts.map((_,i)=>i===_v3MaxIdx||i===volumePts.length-1?4:2),tension:0,fill:true,borderWidth:1.5}]},options:mopts3,plugins:chevPlugin('#a78bfa','extabVolProgChev'+safeId)});
+    c3._chartInst=new Chart(c3.getContext('2d'),{type:'line',data:{labels:volumePts.map(p=>p.date),datasets:[{data:volumePts.map(p=>p.val),borderColor:BP_COLORS.pr.vol,backgroundColor:bpAlpha(BP_COLORS.pr.vol,.08),pointBackgroundColor:volumePts.map((_,i)=>i===_v3MaxIdx?'#ff4444':i===volumePts.length-1?'#fff':BP_COLORS.pr.vol),pointRadius:volumePts.map((_,i)=>i===_v3MaxIdx||i===volumePts.length-1?4:2),tension:0,fill:true,borderWidth:1.5}]},options:mopts3,plugins:chevPlugin(BP_COLORS.pr.vol,'extabVolProgChev'+safeId)});
   }
 
   const c2=_gel('extab-canvas-'+safeId);
   if(c2&&weightPts.length){
     const _v2MaxVal=Math.max(...weightPts.map(p=>p.val));const _v2MaxIdx=weightPts.map(p=>p.val).lastIndexOf(_v2MaxVal);
-    c2._chartInst=new Chart(c2.getContext('2d'),{type:'line',data:{labels:weightPts.map(p=>p.date),datasets:[{data:weightPts.map(p=>p.val),borderColor:'#e8ff47',backgroundColor:'rgba(232,255,71,.08)',pointBackgroundColor:weightPts.map((_,i)=>i===_v2MaxIdx?'#ff4444':i===weightPts.length-1?'#fff':'#e8ff47'),pointRadius:weightPts.map((_,i)=>i===_v2MaxIdx||i===weightPts.length-1?4:2),tension:0,fill:true,borderWidth:1.5}]},options:mopts('#e8ff47'),plugins:chevPlugin('#e8ff47','extabWtChev'+safeId)});
+    c2._chartInst=new Chart(c2.getContext('2d'),{type:'line',data:{labels:weightPts.map(p=>p.date),datasets:[{data:weightPts.map(p=>p.val),borderColor:BP_COLORS.pr.max,backgroundColor:bpAlpha(BP_COLORS.pr.max,.08),pointBackgroundColor:weightPts.map((_,i)=>i===_v2MaxIdx?'#ff4444':i===weightPts.length-1?'#fff':BP_COLORS.pr.max),pointRadius:weightPts.map((_,i)=>i===_v2MaxIdx||i===weightPts.length-1?4:2),tension:0,fill:true,borderWidth:1.5}]},options:mopts(BP_COLORS.pr.max),plugins:chevPlugin(BP_COLORS.pr.max,'extabWtChev'+safeId)});
   }
 
   const allPts=volPts.length>=weightPts.length?volPts:weightPts;
@@ -10235,7 +10399,7 @@ function renderWorkoutsTab2() {
   // on top of (and hide) the Cancel/Save row below. Restored on every other render.
   const _tabsBarEl = document.querySelector('.tabs');
   if (_tabsBarEl) _tabsBarEl.style.display = (_isPlanStrengthMode || _isPubPickMode || _isDeleteMode) ? 'none' : '';
-  const MUSCLE_COLORS = {Chest:'#e8ff47',Back:'#7ec8e3',Legs:'#ff8c42',Shoulders:'#a78bfa',Arms:'#34d399',Core:'#f87171',Mix:'#20d4c8'};
+  const MUSCLE_COLORS = { ...BP_COLORS.muscles };
   // Today's planned workout (if any) gets an accent-colored card border below — this is
   // the only place that surfaces "planned for today" now; the home page no longer shows
   // a dedicated plan card/preview for it.
@@ -10410,9 +10574,13 @@ function renderWorkoutsTab2() {
 
     const cardInner = `
       <div style="position:relative;">
-        ${(!_isPlanStrengthMode && !_isPubPickMode && !_isDeleteMode && _isTodayPlanned) ? `<span style="position:absolute;top:0;left:14px;transform:translateY(-50%);background:var(--bg);color:var(--accent);font-family:'DM Sans';font-size:10px;font-weight:800;letter-spacing:.4px;padding:0 6px;line-height:1.4;white-space:nowrap;z-index:2;">Today's Plan</span>` : ''}
-        <div id="w2-card-border-${i}"${_wtabLPAttrs} oncontextmenu="return false;" style="position:relative;display:flex;border-radius:14px;overflow:hidden;aspect-ratio:21/9;background:#1a1a1a;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;${_showAccentBorder ? 'border:1px solid var(--accent);' : 'border:1px solid #2a2a2a;'}">
-            ${_showAccentBorder ? `<div style="position:absolute;inset:0;border:1px solid var(--accent);border-radius:13px;pointer-events:none;z-index:3;"></div>` : ''}
+        ${(!_isPlanStrengthMode && !_isPubPickMode && !_isDeleteMode && _isTodayPlanned) ? `<span style="position:absolute;top:0;left:14px;transform:translateY(-50%);background:var(--bg);color:var(--accent);font-family:'DM Sans';font-size:10px;font-weight:800;letter-spacing:.4px;padding:0 6px;line-height:1.4;white-space:nowrap;z-index:4;">Today's Plan</span>` : ''}
+        <div id="w2-card-border-${i}"${_wtabLPAttrs} oncontextmenu="return false;" style="position:relative;display:flex;border-radius:14px;overflow:hidden;aspect-ratio:21/9;background:#1a1a1a;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;${_showAccentBorder ? 'border:1px solid transparent;background-clip:padding-box;' : 'border:1px solid #2a2a2a;'}">
+            ${/* Accented (selected / Today's Plan): ONE continuous 2px frame on top
+               of the photo — the card's own 1px border goes transparent (size
+               unchanged). Two stacked 1px lines looked thinner on the rounded
+               corners, where each curve is anti-aliased separately. */ ''}
+            ${_showAccentBorder ? `<div style="position:absolute;inset:0;border:2px solid var(--accent);border-radius:13px;pointer-events:none;z-index:3;"></div>` : ''}
           <div id="w2-card-photo-${i}" style="position:relative;width:80%;flex-shrink:0;overflow:hidden;cursor:pointer;" onclick="${_wtabTapOnclick}">
             ${workoutPhoto ? `<img src="${workoutPhoto}" draggable="false" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.72);-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;pointer-events:none;">` : ''}
             ${_isDelPicked ? `<div style="position:absolute;inset:0;background:color-mix(in srgb, var(--accent) 30%, transparent);pointer-events:none;"></div>` : ''}
@@ -10880,7 +11048,7 @@ function renderWorkoutsTab() {
   const _mainListTitle = '';
 
   const BODY_ORDER = ['Chest','Back','Legs','Shoulders','Arms','Core','Mix'];
-  const colors = ['#e8ff47','#7ec8e3','#ff8c42','#a78bfa','#34d399','#f87171','#20d4c8'];
+  const colors = BP_MUSCLE_LIST;
   const _deletedTabNames = JSON.parse(_LS.get('ironlog_deleted_tab_names') || '[]');
   const _seen = new Set();
   const deduped = [...all].sort((a,b) => b.date - a.date).filter(w => {
@@ -10920,7 +11088,7 @@ function renderWorkoutsTab() {
       muscleCounts[m] = (muscleCounts[m]||0) + 1;
     });
     const muscleChips = Object.entries(muscleCounts).map(([m,c])=>`<button class="hcard-muscle-chip" data-muscle="${m}" onclick="event.stopPropagation();highlightLoadMuscle('wtab-ldet-${i}',this)">${displayMuscle(m)} <strong>${c}</strong></button>`).join('');
-    const _mcolors = {Chest:'#e8ff47',Back:'#7ec8e3',Legs:'#ff8c42',Shoulders:'#a78bfa',Arms:'#34d399',Core:'#f87171',Mix:'#20d4c8'};
+    const _mcolors = { ...BP_COLORS.muscles };
     const _BODY_ORDER = ['Chest','Back','Legs','Shoulders','Arms','Core','Mix'];
     const mfilterMuscles = ['All', ..._BODY_ORDER.filter(m => muscleCounts[m])];
     const mfilterRow = Object.keys(muscleCounts).length > 1
@@ -11170,7 +11338,7 @@ function applyTodayFilters() {
   // Show "X exercises done!" (or "All exercises done!" when no muscle filter is active)
   // at the bottom of the list when everything currently visible is completed.
   let emptyMsg = document.getElementById('today-filter-empty-msg');
-  const _mcolors = {Chest:'#e8ff47',Back:'#7ec8e3',Legs:'#ff8c42',Shoulders:'#a78bfa',Arms:'#34d399',Core:'#f87171',Mix:'#20d4c8'};
+  const _mcolors = { ...BP_COLORS.muscles };
   const _filterKey = _todayMuscleFilter || '__all__';
   const _allFilteredDone = (() => {
     const filtered = [...document.querySelectorAll('#exerciseList .exercise-card')]
@@ -11216,7 +11384,7 @@ function applyTodayFilters() {
 }
 
 function _updateAllExCircleColors() {
-  const _mc = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171', Mix:'#20d4c8' };
+  const _mc = { ...BP_COLORS.muscles };
   document.querySelectorAll('#exerciseList .exercise-card').forEach(card => {
     const color = _todayMuscleFilter ? (_mc[card.dataset.muscle] || '#888') : null;
     const circle = document.getElementById(`no-done-check-${card.id}`);
@@ -11328,7 +11496,7 @@ function updateTodayMuscleChips() {
     // Chips row — only shown when exercises have been added
     let _chipsRowHtml = '';
     if (_hasEx) {
-      const _mc = {Chest:'#e8ff47',Back:'#7ec8e3',Legs:'#ff8c42',Shoulders:'#a78bfa',Arms:'#34d399',Core:'#f87171',Mix:'#20d4c8'};
+      const _mc = { ...BP_COLORS.muscles };
       const _ma = {Chest:'Chest',Back:'Back',Legs:'Legs',Shoulders:'Shldr',Arms:'Arms',Core:'Core',Mix:'Mix'};
       const _bb = `display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:10px;padding:0 4px;width:72px;height:50px;flex-shrink:0;font-family:'DM Sans';cursor:pointer;transition:all .15s;`;
       const _allActive = !_todayMuscleFilter;
@@ -11352,7 +11520,7 @@ function updateTodayMuscleChips() {
     // Cancel / Save fixed at bottom
     const _nwfBar = document.getElementById('nwf-bottom-bar');
     if (_nwfBar) {
-      const _saveBtn = _hasEx ? `<button onclick="finishWorkout()" style="flex:1;padding:18px;background:var(--accent);color:#000;border:none;border-radius:100px;font-family:'DM Sans',sans-serif;font-size:18px;font-weight:900;cursor:pointer;letter-spacing:.3px;-webkit-tap-highlight-color:transparent;transition:transform .15s;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">SAVE</button>` : '';
+      const _saveBtn = _hasEx ? `<button onclick="finishWorkout()" style="flex:1;padding:18px;background:#000;color:var(--accent);border:1px solid var(--accent);border-radius:100px;font-family:'DM Sans',sans-serif;font-size:18px;font-weight:900;cursor:pointer;letter-spacing:.3px;-webkit-tap-highlight-color:transparent;transition:transform .15s;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">SAVE</button>` : '';
       _nwfBar.innerHTML = _saveBtn;
       _nwfBar.style.display = _hasEx ? 'flex' : 'none';
     }
@@ -11371,7 +11539,7 @@ function updateTodayMuscleChips() {
   const _nwfBarHide = document.getElementById('nwf-bottom-bar');
   if (_nwfBarHide) _nwfBarHide.style.display = 'none';
 
-  const muscleColors = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171',Mix:'#20d4c8' };
+  const muscleColors = { ...BP_COLORS.muscles };
   const counts = {};
   const remainCounts = {};
   const doneCounts = {};
@@ -11511,7 +11679,7 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
   header.className = 'ex-header';
   header.style.cssText = 'display:flex;align-items:stretch;padding:0;overflow:hidden;';
 
-  const muscleColors = { Chest: '#e8ff47', Back: '#7ec8e3', Legs: '#ff8c42', Shoulders: '#a78bfa', Arms: '#34d399', Core: '#f87171', Mix: '#20d4c8' };
+  const muscleColors = { ...BP_COLORS.muscles };
   const _exMuscle = ex.muscle || getAllExercises().find(x=>x.name===exLabel)?.muscle || customExercises.find(x=>x.name===exLabel)?.muscle || 'Other';
   card.dataset.muscle = _exMuscle;
   const muscleColor = muscleColors[_exMuscle] || '#888';
@@ -11678,22 +11846,22 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
           <td style="color:#aaa;font-size:14px;font-weight:700;letter-spacing:.3px;text-align:left;padding-bottom:8px;padding-left:12px;">Prev</td>
           <td style="color:#aaa;font-size:14px;font-weight:700;letter-spacing:.3px;text-align:right;padding-bottom:8px;">Diff</td>
         </tr>
-        <tr id="sp-info-all-${id}" style="display:none;"><td colspan="4" style="font-size:12px;color:var(--text);padding:3px 0 5px 0;line-height:1.8;border-top:1px solid var(--border);"><table style="border-collapse:collapse;"><tr><td style="color:#e8ff47;font-weight:700;padding-right:6px;white-space:nowrap;vertical-align:top;">MAX</td><td style="color:#fff;">— Heaviest weight lifted</td></tr><tr><td style="color:#ff8c42;font-weight:700;padding-right:6px;white-space:nowrap;vertical-align:top;">1RM</td><td style="color:#fff;">— Estimated 1 Rep Max: kg × (1 + reps/30)</td></tr><tr><td style="color:#a78bfa;font-weight:700;padding-right:6px;white-space:nowrap;vertical-align:top;">VOL</td><td style="color:#fff;">— Total volume: sum of kg × reps</td></tr><tr><td style="color:#FFD600;font-weight:700;padding-right:6px;white-space:nowrap;vertical-align:top;">B.Set</td><td style="color:#fff;">— Best set: weight × reps that gave highest 1RM</td></tr></table></td></tr>
+        <tr id="sp-info-all-${id}" style="display:none;"><td colspan="4" style="font-size:12px;color:var(--text);padding:3px 0 5px 0;line-height:1.8;border-top:1px solid var(--border);"><table style="border-collapse:collapse;"><tr><td style="color:var(--pr-max);font-weight:700;padding-right:6px;white-space:nowrap;vertical-align:top;">MAX</td><td style="color:#fff;">— Heaviest weight lifted</td></tr><tr><td style="color:var(--pr-best);font-weight:700;padding-right:6px;white-space:nowrap;vertical-align:top;">1RM</td><td style="color:#fff;">— Estimated 1 Rep Max: kg × (1 + reps/30)</td></tr><tr><td style="color:var(--pr-vol);font-weight:700;padding-right:6px;white-space:nowrap;vertical-align:top;">VOL</td><td style="color:#fff;">— Total volume: sum of kg × reps</td></tr><tr><td style="color:#FFD600;font-weight:700;padding-right:6px;white-space:nowrap;vertical-align:top;">B.Set</td><td style="color:#fff;">— Best set: weight × reps that gave highest 1RM</td></tr></table></td></tr>
         <tr style="border-top:1px solid var(--border);">
-          <td style="color:#e8ff47;font-size:18px;font-weight:700;padding:8px 0;">MAX</td>
-          <td id="vol-maxwt-${id}" style="color:#e8ff47;font-size:18px;font-weight:700;text-align:right;padding:8px 0;"></td>
+          <td style="color:var(--pr-max);font-size:18px;font-weight:700;padding:8px 0;">MAX</td>
+          <td id="vol-maxwt-${id}" style="color:var(--pr-max);font-size:18px;font-weight:700;text-align:right;padding:8px 0;"></td>
           <td id="vol-maxwt-prev-${id}" style="color:#aaa;font-size:18px;font-weight:700;text-align:left;padding:8px 0 8px 12px;"></td>
           <td id="vol-maxwt-diff-${id}" style="font-size:18px;font-weight:700;text-align:right;padding:8px 0;"></td>
         </tr>
         <tr style="border-top:1px solid var(--border);">
-          <td style="color:#ff8c42;font-size:18px;font-weight:700;padding:8px 0;">1RM</td>
-          <td id="vol-score-${id}" style="color:#ff8c42;font-size:18px;font-weight:700;text-align:right;padding:8px 0;"></td>
+          <td style="color:var(--pr-best);font-size:18px;font-weight:700;padding:8px 0;">1RM</td>
+          <td id="vol-score-${id}" style="color:var(--pr-best);font-size:18px;font-weight:700;text-align:right;padding:8px 0;"></td>
           <td id="vol-score-prev-${id}" style="color:#aaa;font-size:18px;font-weight:700;text-align:left;padding:8px 0 8px 12px;"></td>
           <td id="vol-score-diff-${id}" style="font-size:18px;font-weight:700;text-align:right;padding:8px 0;"></td>
         </tr>
         <tr style="border-top:1px solid var(--border);">
-          <td style="color:#a78bfa;font-size:18px;font-weight:700;padding:8px 0;">VOL</td>
-          <td id="vol-volume-${id}" style="color:#a78bfa;font-size:18px;font-weight:700;text-align:right;padding:8px 0;"></td>
+          <td style="color:var(--pr-vol);font-size:18px;font-weight:700;padding:8px 0;">VOL</td>
+          <td id="vol-volume-${id}" style="color:var(--pr-vol);font-size:18px;font-weight:700;text-align:right;padding:8px 0;"></td>
           <td id="vol-volume-prev-${id}" style="color:#aaa;font-size:18px;font-weight:700;text-align:left;padding:8px 0 8px 12px;"></td>
           <td id="vol-volume-diff-${id}" style="font-size:18px;font-weight:700;text-align:right;padding:8px 0;"></td>
         </tr>
@@ -11720,13 +11888,13 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
         <span style="position:absolute;top:-9px;left:12px;background:var(--bg);padding:0 5px;font-size:12px;font-weight:700;color:var(--accent);letter-spacing:.3px;pointer-events:none;">Graph</span>
       <div id="mini-chart-inner-${id}" style="display:none;">
         <div id="mini-graph-pills-${id}" style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:8px;">
-          <div onclick="selectMiniGraph('${id}','wt')" id="mini-gpill-wt-${id}" style="flex:1;text-align:center;padding:6px 4px;cursor:pointer;font-family:'DM Sans';font-size:11px;font-weight:700;color:#e8ff47;border-bottom:2px solid #e8ff47;transition:all .15s;">MAX</div>
+          <div onclick="selectMiniGraph('${id}','wt')" id="mini-gpill-wt-${id}" style="flex:1;text-align:center;padding:6px 4px;cursor:pointer;font-family:'DM Sans';font-size:11px;font-weight:700;color:var(--pr-max);border-bottom:2px solid var(--pr-max);transition:all .15s;">MAX</div>
           <div onclick="selectMiniGraph('${id}','rm')" id="mini-gpill-rm-${id}" style="flex:1;text-align:center;padding:6px 4px;cursor:pointer;font-family:'DM Sans';font-size:11px;font-weight:700;color:#444;border-bottom:2px solid transparent;transition:all .15s;">1RM</div>
           <div onclick="selectMiniGraph('${id}','vol')" id="mini-gpill-vol-${id}" style="flex:1;text-align:center;padding:6px 4px;cursor:pointer;font-family:'DM Sans';font-size:11px;font-weight:700;color:#444;border-bottom:2px solid transparent;transition:all .15s;">VOL</div>
         </div>
         <!-- Max Weight chart -->
         <div id="mini-graph-wt-${id}" style="position:relative;">
-          <div id="mini-big-wt-${id}" style="font-family:'DM Sans';font-size:12px;font-weight:700;color:#e8ff47;padding:2px 0 4px;display:none;"></div>
+          <div id="mini-big-wt-${id}" style="font-family:'DM Sans';font-size:12px;font-weight:700;color:var(--pr-max);padding:2px 0 4px;display:none;"></div>
           <div class="ex-mini-chart-wrap" style="position:relative;">
             <canvas id="mini-canvas-${id}"></canvas>
           </div>
@@ -11735,12 +11903,12 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
         <div id="mini-nodata-${id}" style="display:none;text-align:center;padding:20px 0 8px;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.5px;">NO DATA FOR THIS PERIOD</div>
         <!-- 1RM chart -->
         <div id="mini-graph-rm-${id}" style="display:none;">
-          <div id="mini-big-vol-${id}" style="font-family:'DM Sans';font-size:12px;font-weight:700;color:#ff8c42;padding:2px 0 4px;display:none;"></div>
+          <div id="mini-big-vol-${id}" style="font-family:'DM Sans';font-size:12px;font-weight:700;color:var(--pr-best);padding:2px 0 4px;display:none;"></div>
           <div class="ex-mini-chart-wrap"><canvas id="mini-vol-canvas-${id}"></canvas></div>
         </div>
         <!-- Volume chart -->
         <div id="mini-graph-vol-${id}" style="display:none;">
-          <div id="mini-big-volprog-${id}" style="font-family:'DM Sans';font-size:12px;font-weight:700;color:#a78bfa;padding:2px 0 4px;display:none;"></div>
+          <div id="mini-big-volprog-${id}" style="font-family:'DM Sans';font-size:12px;font-weight:700;color:var(--pr-vol);padding:2px 0 4px;display:none;"></div>
           <div class="ex-mini-chart-wrap"><canvas id="mini-volprog-canvas-${id}"></canvas></div>
         </div>
         <!-- Range pills above Select Day -->
@@ -11954,8 +12122,8 @@ function onMiniScrub(cardId, idx) {
     const wMax = Math.max(...d.weightPts.map(p=>p.val));
     const wMaxIdx = d.weightPts.map(p=>p.val).lastIndexOf(wMax);
     wInst.data.datasets[0].pointRadius = d.weightPts.map((_,j) => j===i||j===wMaxIdx ? 4 : 2);
-    wInst.data.datasets[0].pointBackgroundColor = d.weightPts.map((_,j) => j===i ? '#fff' : j===wMaxIdx ? '#ff4444' : '#e8ff47');
-    wInst.data.datasets[0].pointBorderColor = d.weightPts.map((_,j) => '#e8ff47');
+    wInst.data.datasets[0].pointBackgroundColor = d.weightPts.map((_,j) => j===i ? '#fff' : j===wMaxIdx ? '#ff4444' : BP_COLORS.pr.max);
+    wInst.data.datasets[0].pointBorderColor = d.weightPts.map((_,j) => BP_COLORS.pr.max);
     wInst.update('none');
   }
 
@@ -11966,8 +12134,8 @@ function onMiniScrub(cardId, idx) {
     const vMax = Math.max(...d.volPts.map(p=>p.val));
     const vMaxIdx = d.volPts.map(p=>p.val).lastIndexOf(vMax);
     vInst.data.datasets[0].pointRadius = d.volPts.map((_,j) => j===i||j===vMaxIdx ? 4 : 2);
-    vInst.data.datasets[0].pointBackgroundColor = d.volPts.map((_,j) => j===i ? '#fff' : j===vMaxIdx ? '#ff4444' : '#ff8c42');
-    vInst.data.datasets[0].pointBorderColor = d.volPts.map((_,j) => '#ff8c42');
+    vInst.data.datasets[0].pointBackgroundColor = d.volPts.map((_,j) => j===i ? '#fff' : j===vMaxIdx ? '#ff4444' : BP_COLORS.pr.bestSet);
+    vInst.data.datasets[0].pointBorderColor = d.volPts.map((_,j) => BP_COLORS.pr.bestSet);
     vInst.update('none');
   }
 
@@ -11978,8 +12146,8 @@ function onMiniScrub(cardId, idx) {
     const vpMax = Math.max(...(d.volumePts||[]).map(p=>p.val));
     const vpMaxIdx = (d.volumePts||[]).map(p=>p.val).lastIndexOf(vpMax);
     vpInst.data.datasets[0].pointRadius = (d.volumePts||[]).map((_,j) => j===i||j===vpMaxIdx ? 4 : 2);
-    vpInst.data.datasets[0].pointBackgroundColor = (d.volumePts||[]).map((_,j) => j===i ? '#fff' : j===vpMaxIdx ? '#ff4444' : '#a78bfa');
-    vpInst.data.datasets[0].pointBorderColor = (d.volumePts||[]).map((_,j) => '#a78bfa');
+    vpInst.data.datasets[0].pointBackgroundColor = (d.volumePts||[]).map((_,j) => j===i ? '#fff' : j===vpMaxIdx ? '#ff4444' : BP_COLORS.pr.vol);
+    vpInst.data.datasets[0].pointBorderColor = (d.volumePts||[]).map((_,j) => BP_COLORS.pr.vol);
     vpInst.update('none');
   }
 
@@ -12116,9 +12284,9 @@ function renderMiniChart(cardId, exName) {
       if (weightPts.length >= 2) {
         c1._chartInst = new Chart(c1.getContext('2d'), {
           type:'line',
-          data:{labels:weightPts.map(p=>p.date),datasets:[{data:weightPts.map(p=>p.val),borderColor:'#e8ff47',backgroundColor:'rgba(232,255,71,.08)',pointBackgroundColor:'#e8ff47',tension:0,fill:true,borderWidth:1.5,pointRadius:2}]},
+          data:{labels:weightPts.map(p=>p.date),datasets:[{data:weightPts.map(p=>p.val),borderColor:BP_COLORS.pr.max,backgroundColor:bpAlpha(BP_COLORS.pr.max,.08),pointBackgroundColor:BP_COLORS.pr.max,tension:0,fill:true,borderWidth:1.5,pointRadius:2}]},
           options: {responsive:true,maintainAspectRatio:false,layout:{padding:{top:28}},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{ticks:{color:'#555',font:{size:9}},grid:{display:false}},y:{ticks:{color:'#555',font:{size:9}},grid:{color:'#1e1e1e'}}}},
-          plugins:[{id:'wtPointLabel',afterDraw(chart){const ctx=chart.ctx;const ds=chart.data.datasets[0];const meta=chart.getDatasetMeta(0);const sel=chart._selectedIdx;meta.data.forEach((pt,idx)=>{const r=ds.pointRadius?.[idx]??ds.pointRadius;if(r<5)return;ctx.save();const chevSize=7;ctx.strokeStyle='#e8ff47';ctx.lineWidth=1.5;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(pt.x-chevSize/2,pt.y-r-8);ctx.lineTo(pt.x,pt.y-r-4);ctx.lineTo(pt.x+chevSize/2,pt.y-r-8);ctx.stroke();ctx.restore();});}}]
+          plugins:[{id:'wtPointLabel',afterDraw(chart){const ctx=chart.ctx;const ds=chart.data.datasets[0];const meta=chart.getDatasetMeta(0);const sel=chart._selectedIdx;meta.data.forEach((pt,idx)=>{const r=ds.pointRadius?.[idx]??ds.pointRadius;if(r<5)return;ctx.save();const chevSize=7;ctx.strokeStyle=BP_COLORS.pr.max;ctx.lineWidth=1.5;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(pt.x-chevSize/2,pt.y-r-8);ctx.lineTo(pt.x,pt.y-r-4);ctx.lineTo(pt.x+chevSize/2,pt.y-r-8);ctx.stroke();ctx.restore();});}}]
         });
       }
     }
@@ -12131,7 +12299,7 @@ function renderMiniChart(cardId, exName) {
         const volChartOpts2=Object.assign({},volChartOpts,{scales:Object.assign({},volChartOpts.scales,{y:Object.assign({},volChartOpts.scales.y,{min:_mv2Min-_mv2Pad})})});
         c2._chartInst = new Chart(c2.getContext('2d'), {
           type:'line',
-          data:{labels:volPts.map(p=>p.date),datasets:[{data:volPts.map(p=>p.val),borderColor:'#ff8c42',backgroundColor:'rgba(255,140,66,.08)',pointBackgroundColor:'#ff8c42',pointRadius:2,tension:0,fill:true,borderWidth:1.5}]},
+          data:{labels:volPts.map(p=>p.date),datasets:[{data:volPts.map(p=>p.val),borderColor:BP_COLORS.pr.bestSet,backgroundColor:bpAlpha(BP_COLORS.pr.bestSet,.08),pointBackgroundColor:BP_COLORS.pr.bestSet,pointRadius:2,tension:0,fill:true,borderWidth:1.5}]},
           options: volChartOpts2,
           plugins:[]
         });
@@ -12143,9 +12311,9 @@ function renderMiniChart(cardId, exName) {
       if (volumePts.length >= 2) {
         c3._chartInst = new Chart(c3.getContext('2d'), {
           type:'line',
-          data:{labels:volumePts.map(p=>p.date),datasets:[{data:volumePts.map(p=>p.val),borderColor:'#a78bfa',backgroundColor:'rgba(167,139,250,.08)',pointBackgroundColor:'#a78bfa',tension:0,fill:true,borderWidth:1.5,pointRadius:2}]},
+          data:{labels:volumePts.map(p=>p.date),datasets:[{data:volumePts.map(p=>p.val),borderColor:BP_COLORS.pr.vol,backgroundColor:bpAlpha(BP_COLORS.pr.vol,.08),pointBackgroundColor:BP_COLORS.pr.vol,tension:0,fill:true,borderWidth:1.5,pointRadius:2}]},
           options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:28}},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{ticks:{color:'#555',font:{size:9}},grid:{display:false}},y:{ticks:{color:'#555',font:{size:9}},grid:{color:'#1e1e1e'}}}},
-          plugins:[{id:'volProgBarLabels',afterDraw(chart){const ctx=chart.ctx;const sel=chart._selectedIdx;chart.data.datasets.forEach((ds,i)=>{chart.getDatasetMeta(i).data.forEach((bar,idx)=>{if(idx!==sel)return;const val=ds.data[idx];if(!val)return;ctx.save();const chevSize=7;ctx.strokeStyle='#a78bfa';ctx.lineWidth=1.5;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(bar.x-chevSize/2,bar.y-8);ctx.lineTo(bar.x,bar.y-4);ctx.lineTo(bar.x+chevSize/2,bar.y-8);ctx.stroke();ctx.restore();});});}}]
+          plugins:[{id:'volProgBarLabels',afterDraw(chart){const ctx=chart.ctx;const sel=chart._selectedIdx;chart.data.datasets.forEach((ds,i)=>{chart.getDatasetMeta(i).data.forEach((bar,idx)=>{if(idx!==sel)return;const val=ds.data[idx];if(!val)return;ctx.save();const chevSize=7;ctx.strokeStyle=BP_COLORS.pr.vol;ctx.lineWidth=1.5;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(bar.x-chevSize/2,bar.y-8);ctx.lineTo(bar.x,bar.y-4);ctx.lineTo(bar.x+chevSize/2,bar.y-8);ctx.stroke();ctx.restore();});});}}]
         });
       }
     }
@@ -12277,9 +12445,9 @@ function refreshCardMiniCharts(cardId) {
       const chartOpts = {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{ticks:{color:'#555',font:{size:9}},grid:{display:false}},y:{ticks:{color:'#555',font:{size:9}},grid:{color:'#1e1e1e'}}}};
       c1._chartInst = new Chart(c1.getContext('2d'), {
         type:'line',
-        data:{labels:wPts.map(p=>p.date),datasets:[{data:wPts.map(p=>p.val),borderColor:'#e8ff47',backgroundColor:'rgba(232,255,71,.08)',pointBackgroundColor:'#e8ff47',tension:0,fill:true,borderWidth:1.5,pointRadius:2}]},
+        data:{labels:wPts.map(p=>p.date),datasets:[{data:wPts.map(p=>p.val),borderColor:BP_COLORS.pr.max,backgroundColor:bpAlpha(BP_COLORS.pr.max,.08),pointBackgroundColor:BP_COLORS.pr.max,tension:0,fill:true,borderWidth:1.5,pointRadius:2}]},
         options: {responsive:true,maintainAspectRatio:false,layout:{padding:{top:28}},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{ticks:{color:'#555',font:{size:9}},grid:{display:false}},y:{ticks:{color:'#555',font:{size:9}},grid:{color:'#1e1e1e'}}}},
-        plugins:[{id:'wtPointLabel',afterDraw(chart){const ctx=chart.ctx;const ds=chart.data.datasets[0];const meta=chart.getDatasetMeta(0);const sel=chart._selectedIdx;meta.data.forEach((pt,idx)=>{const r=ds.pointRadius?.[idx]??ds.pointRadius;if(r<5)return;ctx.save();const chevSize=7;ctx.strokeStyle='#e8ff47';ctx.lineWidth=1.5;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(pt.x-chevSize/2,pt.y-r-8);ctx.lineTo(pt.x,pt.y-r-4);ctx.lineTo(pt.x+chevSize/2,pt.y-r-8);ctx.stroke();ctx.restore();});}}]
+        plugins:[{id:'wtPointLabel',afterDraw(chart){const ctx=chart.ctx;const ds=chart.data.datasets[0];const meta=chart.getDatasetMeta(0);const sel=chart._selectedIdx;meta.data.forEach((pt,idx)=>{const r=ds.pointRadius?.[idx]??ds.pointRadius;if(r<5)return;ctx.save();const chevSize=7;ctx.strokeStyle=BP_COLORS.pr.max;ctx.lineWidth=1.5;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(pt.x-chevSize/2,pt.y-r-8);ctx.lineTo(pt.x,pt.y-r-4);ctx.lineTo(pt.x+chevSize/2,pt.y-r-8);ctx.stroke();ctx.restore();});}}]
       });
     }
   }
@@ -12298,9 +12466,9 @@ function refreshCardMiniCharts(cardId) {
       const volChartOpts2b=Object.assign({},volChartOpts,{scales:Object.assign({},volChartOpts.scales,{y:Object.assign({},volChartOpts.scales.y,{min:_vc2Min-_vc2Pad})})});
       c2._chartInst = new Chart(c2.getContext('2d'), {
         type:'line',
-        data:{labels:vPts.map(p=>p.date),datasets:[{data:vPts.map(p=>p.val),borderColor:'#ff8c42',backgroundColor:'rgba(255,140,66,.08)',pointBackgroundColor:vPts.map((_,i)=>i===vPts.length-1?'#fff':'#ff8c42'),pointRadius:vPts.map((_,i)=>i===vPts.length-1?3:2),tension:0,fill:true,borderWidth:1.5}]},
+        data:{labels:vPts.map(p=>p.date),datasets:[{data:vPts.map(p=>p.val),borderColor:BP_COLORS.pr.bestSet,backgroundColor:bpAlpha(BP_COLORS.pr.bestSet,.08),pointBackgroundColor:vPts.map((_,i)=>i===vPts.length-1?'#fff':BP_COLORS.pr.bestSet),pointRadius:vPts.map((_,i)=>i===vPts.length-1?3:2),tension:0,fill:true,borderWidth:1.5}]},
         options: volChartOpts2b,
-        plugins:[{id:'volBarLabels',afterDraw(chart){const ctx=chart.ctx;const sel=chart._selectedIdx;chart.data.datasets.forEach((ds,i)=>{chart.getDatasetMeta(i).data.forEach((bar,idx)=>{if(idx!==sel)return;const val=ds.data[idx];if(!val)return;ctx.save();const chevSize=7;ctx.strokeStyle='#ff8c42';ctx.lineWidth=1.5;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(bar.x-chevSize/2,bar.y-8);ctx.lineTo(bar.x,bar.y-4);ctx.lineTo(bar.x+chevSize/2,bar.y-8);ctx.stroke();ctx.restore();});});}}]
+        plugins:[{id:'volBarLabels',afterDraw(chart){const ctx=chart.ctx;const sel=chart._selectedIdx;chart.data.datasets.forEach((ds,i)=>{chart.getDatasetMeta(i).data.forEach((bar,idx)=>{if(idx!==sel)return;const val=ds.data[idx];if(!val)return;ctx.save();const chevSize=7;ctx.strokeStyle=BP_COLORS.pr.bestSet;ctx.lineWidth=1.5;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(bar.x-chevSize/2,bar.y-8);ctx.lineTo(bar.x,bar.y-4);ctx.lineTo(bar.x+chevSize/2,bar.y-8);ctx.stroke();ctx.restore();});});}}]
       });
     }
   }
@@ -12316,7 +12484,7 @@ function refreshCardMiniCharts(cardId) {
     } else if (!c3._chartInst && vpPts.length >= 1) {
       c3._chartInst = new Chart(c3.getContext('2d'), {
         type:'line',
-        data:{labels:vpPts.map(p=>p.date),datasets:[{data:vpPts.map(p=>p.val),borderColor:'#a78bfa',backgroundColor:'rgba(167,139,250,.08)',pointBackgroundColor:'#a78bfa',tension:0,fill:true,borderWidth:1.5,pointRadius:2}]},
+        data:{labels:vpPts.map(p=>p.date),datasets:[{data:vpPts.map(p=>p.val),borderColor:BP_COLORS.pr.vol,backgroundColor:bpAlpha(BP_COLORS.pr.vol,.08),pointBackgroundColor:BP_COLORS.pr.vol,tension:0,fill:true,borderWidth:1.5,pointRadius:2}]},
         options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:28}},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{ticks:{color:'#555',font:{size:9}},grid:{display:false}},y:{ticks:{color:'#555',font:{size:9}},grid:{color:'#1e1e1e'}}}},
         plugins:[]
       });
@@ -13114,7 +13282,9 @@ function _refreshExPRSlots(id) {
   }
 
   const exName = card.dataset.exname;
-  const svgStarImp = (color, size=20) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="${color}" xmlns="http://www.w3.org/2000/svg"><polygon points="12,2 22,9.27 18.18,21.02 5.82,21.02 2,9.27"/></svg>`;
+  // kind (max|best|vol) marks which PR this is — the finish-workout save reads it
+  // back (not the colour, which is configurable in colors.js).
+  const svgStarImp = (color, size=20, kind='') => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="${color}"${kind ? ` data-pr-kind="${kind}"` : ''} xmlns="http://www.w3.org/2000/svg"><polygon points="12,2 22,9.27 18.18,21.02 5.82,21.02 2,9.27"/></svg>`;
   let hasWeightImp = false, hasVolImp = false, hasVolumeImp = false;
   if (exName) {
     let prevMx = 0, prevVol = 0, prevVolKgReps = 0;
@@ -13165,16 +13335,16 @@ function _refreshExPRSlots(id) {
   const indic = document.getElementById(`imp-indicator-${id}`);
   if (indic) {
     indic.innerHTML =
-      `<span style="width:22px;display:inline-flex;justify-content:center;">${hasWeightImp ? svgStarImp('#e8ff47') : ''}</span>` +
-      `<span style="width:22px;display:inline-flex;justify-content:center;">${hasVolImp    ? svgStarImp('#ff8c42') : ''}</span>` +
-      `<span style="width:22px;display:inline-flex;justify-content:center;">${hasVolumeImp ? svgStarImp('#a78bfa') : ''}</span>`;
+      `<span style="width:22px;display:inline-flex;justify-content:center;">${hasWeightImp ? svgStarImp(BP_COLORS.pr.max, 20, 'max') : ''}</span>` +
+      `<span style="width:22px;display:inline-flex;justify-content:center;">${hasVolImp    ? svgStarImp(BP_COLORS.pr.bestSet, 20, 'best') : ''}</span>` +
+      `<span style="width:22px;display:inline-flex;justify-content:center;">${hasVolumeImp ? svgStarImp(BP_COLORS.pr.vol, 20, 'vol') : ''}</span>`;
   }
   const prSlotWt  = document.getElementById(`pr-slot-wt-${id}`);
   const prSlotVol = document.getElementById(`pr-slot-vol-${id}`);
   const prSlotVl  = document.getElementById(`pr-slot-vl-${id}`);
-  if (prSlotWt)  prSlotWt.innerHTML  = hasWeightImp ? svgStarImp('#e8ff47') : '';
-  if (prSlotVol) prSlotVol.innerHTML = hasVolImp    ? svgStarImp('#ff8c42') : '';
-  if (prSlotVl)  prSlotVl.innerHTML  = hasVolumeImp ? svgStarImp('#a78bfa') : '';
+  if (prSlotWt)  prSlotWt.innerHTML  = hasWeightImp ? svgStarImp(BP_COLORS.pr.max, 20, 'max') : '';
+  if (prSlotVol) prSlotVol.innerHTML = hasVolImp    ? svgStarImp(BP_COLORS.pr.bestSet, 20, 'best') : '';
+  if (prSlotVl)  prSlotVl.innerHTML  = hasVolumeImp ? svgStarImp(BP_COLORS.pr.vol, 20, 'vol') : '';
 }
 window._refreshExPRSlots = _refreshExPRSlots;
 
@@ -14686,9 +14856,9 @@ function finishWorkoutFull() {
     const comment = document.getElementById(`comment-${card.id}`)?.value?.trim()||'';
     // Read PR stars already computed in Today tab from imp-indicator
     const indic = document.getElementById(`imp-indicator-${card.id}`);
-    const hasPRwt = indic?.querySelector('svg[fill="#e8ff47"]') !== null;
-    const hasPRvol = indic?.querySelector('svg[fill="#ff8c42"]') !== null;
-    const hasPRvolume = indic?.querySelector('svg[fill="#a78bfa"]') !== null;
+    const hasPRwt = indic?.querySelector('svg[data-pr-kind="max"]') !== null;
+    const hasPRvol = indic?.querySelector('svg[data-pr-kind="best"]') !== null;
+    const hasPRvolume = indic?.querySelector('svg[data-pr-kind="vol"]') !== null;
     exercises.push({name:card.dataset.exname||'Exercise', muscle:card.dataset.exmuscle||'Chest', ..._subsField(card), sets, comment, hasPRwt, hasPRvol, hasPRvolume});
   });
 
@@ -15067,6 +15237,7 @@ _initSwipeDownToClose('calendarOverlay', closeCalendar, 'calBody');
 document.addEventListener('DOMContentLoaded', () => {
   _initSwipeDownToClose('workoutPhotoModalOverlay', _backToWorkoutNameStep);
   _initSwipeDownToClose('strength-target-sheet', () => closeStrengthTargetSheet(false));
+  _initSwipeDownToClose('sets-target-sheet', () => closeSetsTargetSheet(false));
   // The "..." menu sheets — workout hero menu, and the exercise-detail menu
   // (shared by both the in-workout "..." and the Exercises-tab one).
   _initSwipeDownToClose('workout-menu-sheet', closeWorkoutMenu);
@@ -15081,6 +15252,7 @@ document.addEventListener('DOMContentLoaded', () => {
   _initSwipeDownToClose('share-qr-modal', closeShareQR);
   // Profile → Body Weight modal.
   _initSwipeDownToClose('bwModalOverlay', closeBWModal);
+  _initSwipeDownToClose('dataModalOverlay', closeDataModal, 'dataModalBody'); // Profile → My Data
   // Active workout → Share workout QR page.
   _initSwipeDownToClose('workout-share-qr-modal', closeWorkoutShareQR);
 });
@@ -15234,7 +15406,7 @@ function confirmSave() {
     if (el) el.remove();
   };
   if (hasStars) {
-    const starTypes = [{ label: 'MAX', color: '#e8ff47' },{ label: 'BEST SET', color: '#ff8c42' },{ label: 'VOL', color: '#a78bfa' }];
+    const starTypes = [{ label: 'MAX', color: BP_COLORS.pr.max },{ label: 'BEST SET', color: BP_COLORS.pr.bestSet },{ label: 'VOL', color: BP_COLORS.pr.vol }];
     const starsRow = starTypes.map((t, ti) => { const count = allStars.filter(s => s.label === t.label).length; if (!count) return ''; return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;animation:starPop .8s cubic-bezier(.175,.885,.32,1.275) both;animation-delay:${ti * 0.25}s;"><div style="position:relative;width:72px;height:72px;display:flex;align-items:center;justify-content:center;">${svgStar(t.color, 72)}<span style="position:absolute;font-family:'Bebas Neue';font-size:26px;color:#000;line-height:1;margin-top:5px;">${count}</span></div><span style="font-size:12px;font-weight:700;color:${t.color};letter-spacing:.5px;text-transform:uppercase;">${t.label}</span></div>`; }).join('');
     cel.innerHTML = `<style>@keyframes celFadeIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}@keyframes starPop{0%{opacity:0;transform:scale(0) rotate(-20deg)}60%{transform:scale(1.2) rotate(5deg)}100%{opacity:1;transform:scale(1) rotate(0deg)}}</style><div style="display:flex;flex-direction:column;align-items:center;padding-top:23px;">${_brandLogoHtml(38)}</div><div style="display:flex;flex-direction:column;align-items:center;gap:24px;"><div style="font-family:'Bebas Neue';font-size:48px;letter-spacing:3px;color:#fff;text-align:center;line-height:1;">GREAT JOB</div><div style="display:flex;gap:32px;justify-content:center;align-items:flex-end;">${starsRow}</div><div style="font-size:16px;color:#7ec8e3;font-weight:600;"><span style="display:inline-flex;align-items:center;gap:6px;vertical-align:middle;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7ec8e3" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="7" x2="12" y2="12"/><line x1="12" y1="12" x2="15" y2="14"/></svg> ${_durStr}</span></div></div>${_celBtnHtml}`;
   } else {
@@ -15756,7 +15928,7 @@ function toggleLoadDetail(id, btn) {
       const wIdx = id.replace('wtab-ldet-', '');
       const canvas = document.getElementById('wtab-chart-' + wIdx);
       const chartInst = canvas ? Chart.getChart(canvas) : null;
-      const colors = ['#e8ff47','#7ec8e3','#ff8c42','#a78bfa','#34d399','#f87171','#20d4c8'];
+      const colors = BP_MUSCLE_LIST;
       if (chartInst) { chartInst.data.datasets[0].backgroundColor = colors.map(c=>c+'99'); chartInst.data.datasets[0].borderColor = colors; chartInst.update('none'); }
       const labelWrap = document.getElementById('wtab-xlabels-' + wIdx);
       if (labelWrap) { labelWrap.querySelectorAll('span').forEach((s,si) => { s.style.color = chartInst && chartInst.data.datasets[0].data[si] > 0 ? colors[si] : '#444'; }); }
@@ -15765,7 +15937,7 @@ function toggleLoadDetail(id, btn) {
     if (el._calPlanMuscleFilter) {
       el._calPlanMuscleFilter = null;
       el.querySelectorAll('.ldet-ex-row').forEach(r => { r.style.opacity = ''; r.style.background = ''; });
-      const colors = ['#e8ff47','#7ec8e3','#ff8c42','#a78bfa','#34d399','#f87171','#20d4c8'];
+      const colors = BP_MUSCLE_LIST;
       const filterEl = el.dataset.filterid ? document.getElementById(el.dataset.filterid) : null;
       const labelEl = el.dataset.filterlabelid ? document.getElementById(el.dataset.filterlabelid) : null;
       if (filterEl) filterEl.dataset.idx = '0';
@@ -15952,16 +16124,16 @@ function renderHistory() {
       if(weightPR) weightPRCount++;
       if(volPR) volPRCount++;
       if(volumePR) volumePRCount++;
-      const weightSlot = `<span data-pr="${weightPR?'max':''}" style="width:16px;display:inline-flex;justify-content:center;">${weightPR?svgStar(w._draft?'#666':'#e8ff47'):''}</span>`;
-      const volSlot = `<span data-pr="${volPR?'1rm':''}" style="width:16px;display:inline-flex;justify-content:center;">${volPR?svgStar(w._draft?'#666':'#ff8c42'):''}</span>`;
-      const volumeSlot = `<span data-pr="${volumePR?'vol':''}" style="width:16px;display:inline-flex;justify-content:center;">${volumePR?svgStar(w._draft?'#666':'#a78bfa'):''}</span>`;
+      const weightSlot = `<span data-pr="${weightPR?'max':''}" style="width:16px;display:inline-flex;justify-content:center;">${weightPR?svgStar(w._draft?'#666':BP_COLORS.pr.max):''}</span>`;
+      const volSlot = `<span data-pr="${volPR?'1rm':''}" style="width:16px;display:inline-flex;justify-content:center;">${volPR?svgStar(w._draft?'#666':BP_COLORS.pr.bestSet):''}</span>`;
+      const volumeSlot = `<span data-pr="${volumePR?'vol':''}" style="width:16px;display:inline-flex;justify-content:center;">${volumePR?svgStar(w._draft?'#666':BP_COLORS.pr.vol):''}</span>`;
       const doneSetsArr = e.sets.filter(s=>s.done&&!s.ignored);
       const maxKgVal = doneSetsArr.length ? parseFloat(Math.max(0,...doneSetsArr.map(s=>s.kg)).toFixed(2)) : 0;
       const irmVal = doneSetsArr.length ? parseFloat(Math.max(...doneSetsArr.map(s=>s.kg*(1+s.reps/30))).toFixed(2)) : 0;
       const bestSet = doneSetsArr.length ? doneSetsArr.reduce((a,s)=>s.kg*(1+s.reps/30)>=a.kg*(1+a.reps/30)?s:a, doneSetsArr[0]) : null;
       const statsLine = doneSetsArr.length ? `<div style="display:flex;flex-direction:column;gap:1px;margin-top:4px;">
-        ${maxKgVal>0?`<div style="display:flex;gap:6px;font-size:11px;font-weight:700;"><span style="color:${weightPR?'#e8ff47':'var(--muted)'};width:28px;">MAX</span><span style="color:#fff;">${maxKgVal}kg</span></div>`:''}
-        ${irmVal>0?`<div style="display:flex;gap:6px;font-size:11px;font-weight:700;"><span style="color:${volPR?'#ff8c42':'var(--muted)'};width:28px;">1RM</span><span style="color:#fff;">${bestSet?(bestSet.kg+'kg×'+bestSet.reps):''}</span></div>`:''}
+        ${maxKgVal>0?`<div style="display:flex;gap:6px;font-size:11px;font-weight:700;"><span style="color:${weightPR?BP_COLORS.pr.max:'var(--muted)'};width:28px;">MAX</span><span style="color:#fff;">${maxKgVal}kg</span></div>`:''}
+        ${irmVal>0?`<div style="display:flex;gap:6px;font-size:11px;font-weight:700;"><span style="color:${volPR?BP_COLORS.pr.bestSet:'var(--muted)'};width:28px;">1RM</span><span style="color:#fff;">${bestSet?(bestSet.kg+'kg×'+bestSet.reps):''}</span></div>`:''}
       </div>` : '';
       const noDone = doneSetsArr.length === 0;
       const prFlags = [weightPR?'max':'', volPR?'1rm':'', volumePR?'vol':''].filter(Boolean).join(' ');
@@ -15987,9 +16159,9 @@ function renderHistory() {
     const prSummary = (weightPRCount > 0 || volPRCount > 0 || volumePRCount > 0) ? `
       <div style="display:flex;align-items:center;padding:5px 14px 6px;border-top:1px solid var(--border);gap:0;">
         <span style="font-size:10px;font-weight:700;color:${w._draft?'#666':'var(--muted)'};letter-spacing:.5px;margin-right:8px;flex-shrink:0;">PROGRESS</span>
-        ${weightPRCount>0?'<span onclick="event.stopPropagation();filterHistoryByPR('+wi+',\'max\')" data-pr="max" class="hcard-pr-chip" style="display:inline-flex;align-items:center;width:72px;gap:3px;font-size:11px;font-weight:700;cursor:pointer;border-radius:5px;padding:2px 4px;color:'+(w._draft?'#666':'#e8ff47')+'"><span style=\"min-width:18px;text-align:right\">'+weightPRCount+'</span>'+svgStar(w._draft?'#666':'#e8ff47')+'<span>MAX</span></span>':''}
-        ${volPRCount>0?'<span onclick="event.stopPropagation();filterHistoryByPR('+wi+',\'1rm\')" data-pr="1rm" class="hcard-pr-chip" style="display:inline-flex;align-items:center;width:72px;gap:3px;font-size:11px;font-weight:700;cursor:pointer;border-radius:5px;padding:2px 4px;color:'+(w._draft?'#666':'#ff8c42')+'"><span style=\"min-width:18px;text-align:right\">'+volPRCount+'</span>'+svgStar(w._draft?'#666':'#ff8c42')+'<span>1RM</span></span>':''}
-        ${volumePRCount>0?'<span onclick="event.stopPropagation();filterHistoryByPR('+wi+',\'vol\')" data-pr="vol" class="hcard-pr-chip" style="display:inline-flex;align-items:center;width:64px;gap:3px;font-size:11px;font-weight:700;cursor:pointer;border-radius:5px;padding:2px 4px;color:'+(w._draft?'#666':'#a78bfa')+'"><span style=\"min-width:18px;text-align:right\">'+volumePRCount+'</span>'+svgStar(w._draft?'#666':'#a78bfa')+'<span>VOL</span></span>':''}
+        ${weightPRCount>0?'<span onclick="event.stopPropagation();filterHistoryByPR('+wi+',\'max\')" data-pr="max" class="hcard-pr-chip" style="display:inline-flex;align-items:center;width:72px;gap:3px;font-size:11px;font-weight:700;cursor:pointer;border-radius:5px;padding:2px 4px;color:'+(w._draft?'#666':BP_COLORS.pr.max)+'"><span style=\"min-width:18px;text-align:right\">'+weightPRCount+'</span>'+svgStar(w._draft?'#666':BP_COLORS.pr.max)+'<span>MAX</span></span>':''}
+        ${volPRCount>0?'<span onclick="event.stopPropagation();filterHistoryByPR('+wi+',\'1rm\')" data-pr="1rm" class="hcard-pr-chip" style="display:inline-flex;align-items:center;width:72px;gap:3px;font-size:11px;font-weight:700;cursor:pointer;border-radius:5px;padding:2px 4px;color:'+(w._draft?'#666':BP_COLORS.pr.bestSet)+'"><span style=\"min-width:18px;text-align:right\">'+volPRCount+'</span>'+svgStar(w._draft?'#666':BP_COLORS.pr.bestSet)+'<span>1RM</span></span>':''}
+        ${volumePRCount>0?'<span onclick="event.stopPropagation();filterHistoryByPR('+wi+',\'vol\')" data-pr="vol" class="hcard-pr-chip" style="display:inline-flex;align-items:center;width:64px;gap:3px;font-size:11px;font-weight:700;cursor:pointer;border-radius:5px;padding:2px 4px;color:'+(w._draft?'#666':BP_COLORS.pr.vol)+'"><span style=\"min-width:18px;text-align:right\">'+volumePRCount+'</span>'+svgStar(w._draft?'#666':BP_COLORS.pr.vol)+'<span>VOL</span></span>':''}
       </div>` : '';
     const draftColor = w._draft ? 'color:#888' : '';
     return `<div class="history-card" id="hcard-${wi}">
@@ -16020,7 +16192,7 @@ function renderHistory() {
         </div>
         ${(()=>{
           const MUSCLE_ORDER = ['Chest','Back','Legs','Shoulders','Arms','Core','Mix'];
-          const muscleColors = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171',Mix:'#20d4c8' };
+          const muscleColors = { ...BP_COLORS.muscles };
           const volByMuscle = {};
           w.exercises.forEach(e => {
             const m = e.muscle || getAllExercises().find(x=>x.name===e.name||x.label===e.name)?.muscle || 'Other';
@@ -16081,7 +16253,7 @@ function toggleHcardExHistory(id, exName) {
       return `<tr>
         <td style="padding:5px 8px 5px 0;font-size:11px;color:var(--muted);white-space:nowrap;vertical-align:top;">${dateStr}</td>
         <td style="padding:5px 0;font-size:11px;color:var(--text);line-height:1.6;">${setsStr}</td>
-        <td style="padding:5px 0 5px 8px;font-size:11px;color:#e8ff47;font-weight:700;white-space:nowrap;text-align:right;vertical-align:top;">${maxKg}kg</td>
+        <td style="padding:5px 0 5px 8px;font-size:11px;color:var(--pr-max);font-weight:700;white-space:nowrap;text-align:right;vertical-align:top;">${maxKg}kg</td>
       </tr>`;
     }).join('');
     el.innerHTML = `
@@ -16763,7 +16935,8 @@ function _wipeLocalUserData() {
   workouts = []; deletedWorkouts = []; customExercises = []; plannedWorkouts = [];
   ['ironlog_workouts','ironlog_deleted_workouts','ironlog_custom_ex','ironlog_planned',
    'ironlog_session','ironlog_session_start','ironlog_draft_id',
-   'ironlog_deleted_tab_names','ironlog_hidden_ex','ironlog_hidden_lib_workouts'].forEach(k => { try { _LS.remove(k); } catch(e) {} });
+   'ironlog_deleted_tab_names','ironlog_hidden_ex','ironlog_hidden_lib_workouts',
+   'ironlog_sets_targets'].forEach(k => { try { _LS.remove(k); } catch(e) {} });
   try {
     Object.keys(localStorage)
       .filter(k => /^ironlog_(workout_photo_|workout_video_|workout_video_broken_|ex_photo_|ex_video_broken_)/.test(k))
@@ -16772,7 +16945,7 @@ function _wipeLocalUserData() {
       .forEach(k => localStorage.removeItem(k));
   } catch(e) {}
   _purgeLegacyCardioData();
-  workoutWeekTarget = 3; lastTimerSecs = 60; miniChartRange = '3M';
+  workoutWeekTarget = 0; lastTimerSecs = 60; // 0 = "no target" (the default) miniChartRange = '3M';
   if (window.localforage) {
     window.localforage.keys()
       .then(keys => Promise.all(keys.filter(k => /^ironlog_(ex_photo_|workout_photo_)/.test(k)).map(k => window.localforage.removeItem(k))))
@@ -17128,6 +17301,7 @@ function exportData(merged = false) {
       hiddenExercises: [],
       settings: {
         workoutWeekTarget: workoutWeekTarget,
+        setsTargets: _getSetsTargets(),
         lastTimerSecs: lastTimerSecs,
         miniChartRange: miniChartRange,
       }
@@ -17153,6 +17327,7 @@ function exportData(merged = false) {
     hiddenExercises: JSON.parse(_LS.get('ironlog_hidden_ex') || '[]'),
     settings: {
       workoutWeekTarget: workoutWeekTarget,
+      setsTargets: _getSetsTargets(),
       lastTimerSecs: lastTimerSecs,
       miniChartRange: miniChartRange,
     }
@@ -17224,7 +17399,8 @@ function importData(input) {
       // Restore settings (only if not already set locally)
       if (data.settings) {
         const s = data.settings;
-        if (s.workoutWeekTarget) { workoutWeekTarget = s.workoutWeekTarget; localStorage.setItem('ironlog_workout_target', s.workoutWeekTarget); }
+        if (typeof s.workoutWeekTarget === 'number' && s.workoutWeekTarget >= 0) { workoutWeekTarget = s.workoutWeekTarget; localStorage.setItem('ironlog_workout_target', s.workoutWeekTarget); }
+        if (s.setsTargets && typeof s.setsTargets === 'object') _saveSetsTargets({ ..._getSetsTargets(), ...s.setsTargets });
         if (s.lastTimerSecs)     { lastTimerSecs     = s.lastTimerSecs;     localStorage.setItem('ironlog_last_timer',     s.lastTimerSecs); }
         if (s.miniChartRange)    { miniChartRange    = s.miniChartRange;    localStorage.setItem('ironlog_mini_range',     s.miniChartRange); }
       }
@@ -18107,7 +18283,7 @@ function renderVolumeChart() {
   const minVal = Math.min(...displayData);
   const maxVal = Math.max(...displayData);
   const allSame = minVal === maxVal && minVal > 0;
-  const colors = ['#e8ff47','#7ec8e3','#ff8c42','#a78bfa','#34d399','#f87171','#20d4c8'];
+  const colors = BP_MUSCLE_LIST;
   const yAxisOpts = { display: false, ticks: { color: '#666', font: { size: 9 }, stepSize: useAbsolute ? 1 : undefined, callback: v => useAbsolute ? v : v + '%' }, grid: { display: false }, afterFit: axis => { axis.width = 0; } };
   if (volumeChartInst) volumeChartInst.destroy();
   volumeChartInst = new Chart(document.getElementById('volumeChart').getContext('2d'), {
@@ -18244,10 +18420,10 @@ function _computeBodyPartExPRs(allW, base, metric) {
 
 function renderBestBodyPartChart() {
   const BODY_ORDER = ['Chest','Back','Legs','Shoulders','Arms','Core','Mix'];
-  const colors = ['#e8ff47','#7ec8e3','#ff8c42','#a78bfa','#34d399','#f87171','#20d4c8'];
+  const colors = BP_MUSCLE_LIST;
   const metricLabels = { max: 'PERSONAL RECORDS', '1rm': 'PERSONAL RECORDS', vol: 'PERSONAL RECORDS' };
-  const metricColor = { max: '#e8ff47', '1rm': '#ff8c42', vol: '#a78bfa' };
-  const accentColor = metricColor[bestBodyPartMetric] || '#e8ff47';
+  const metricColor = { max: BP_COLORS.pr.max, '1rm': BP_COLORS.pr.bestSet, vol: BP_COLORS.pr.vol };
+  const accentColor = metricColor[bestBodyPartMetric] || BP_COLORS.pr.max;
 
   // Update title
   const titleEl = document.getElementById('bestBodyPartChartTitle');
@@ -18257,9 +18433,9 @@ function renderBestBodyPartChart() {
   const pillsEl = document.getElementById('bestBodyPartMetricPills');
   if (pillsEl) {
     const metrics = [
-      { id: 'max', label: 'MAX', color: '#e8ff47' },
-      { id: '1rm', label: '1RM', color: '#ff8c42' },
-      { id: 'vol', label: 'VOL', color: '#a78bfa' },
+      { id: 'max', label: 'MAX', color: BP_COLORS.pr.max },
+      { id: '1rm', label: '1RM', color: BP_COLORS.pr.bestSet },
+      { id: 'vol', label: 'VOL', color: BP_COLORS.pr.vol },
     ];
     pillsEl.innerHTML = metrics.map(m => {
       const active = m.id === bestBodyPartMetric;
@@ -18454,7 +18630,7 @@ function renderBestBodyPartChart() {
   const exPRs = _computeBodyPartExPRs(allW, base, bestBodyPartMetric);
 
   // Render body part scrollbar
-  const muscleColors2 = {Chest:'#e8ff47',Back:'#7ec8e3',Legs:'#ff8c42',Shoulders:'#a78bfa',Arms:'#34d399',Core:'#f87171',Mix:'#20d4c8'};
+  const muscleColors2 = { ...BP_COLORS.muscles };
   const musclesWithPRs = BODY_ORDER.filter(m => Object.values(exPRs).some(d=>d.muscle===m));
   if (!bestBodyPartMuscle || !musclesWithPRs.includes(bestBodyPartMuscle)) bestBodyPartMuscle = musclesWithPRs[0] || null;
   const listEl = document.getElementById('bestBodyPartExList');
@@ -18476,9 +18652,9 @@ function setBestBodyPartMuscle(muscle) {
 
 function renderBestBodyPartExList(exPRs, listEl) {
   if (!listEl || !bestBodyPartMuscle) return;
-  const metricColor = {max:'#e8ff47','1rm':'#ff8c42',vol:'#a78bfa'};
-  const muscleColors2 = {Chest:'#e8ff47',Back:'#7ec8e3',Legs:'#ff8c42',Shoulders:'#a78bfa',Arms:'#34d399',Core:'#f87171',Mix:'#20d4c8'};
-  const col = metricColor[bestBodyPartMetric] || '#e8ff47';
+  const metricColor = {max:BP_COLORS.pr.max,'1rm':BP_COLORS.pr.bestSet,vol:BP_COLORS.pr.vol};
+  const muscleColors2 = { ...BP_COLORS.muscles };
+  const col = metricColor[bestBodyPartMetric] || BP_COLORS.pr.max;
   const muscleCol = muscleColors2[bestBodyPartMuscle] || col;
   const filtered = Object.entries(exPRs).filter(([,d])=>d.muscle===bestBodyPartMuscle).sort((a,b)=>b[1].count-a[1].count);
   const header = `<div style="padding:8px 4px 4px;font-family:'DM Sans';font-size:10px;font-weight:700;letter-spacing:.8px;color:${muscleCol};text-transform:uppercase;">${displayMuscle(bestBodyPartMuscle)}</div>`;
@@ -18508,7 +18684,7 @@ function onStrengthScrub(idx) {
   if (strengthChartInst) {
     strengthChartInst._selectedIdx = i;
     strengthChartInst.data.datasets[0].pointRadius = pts.map((_,j) => j===i ? 5 : 2);
-    strengthChartInst.data.datasets[0].pointBackgroundColor = pts.map((_,j) => j===i ? '#fff' : '#ff8c42');
+    strengthChartInst.data.datasets[0].pointBackgroundColor = pts.map((_,j) => j===i ? '#fff' : BP_COLORS.pr.bestSet);
     strengthChartInst.update('none');
   }
   // #7: date on LEFT
@@ -18579,9 +18755,9 @@ function renderStrengthChart() {
       labels: volPts.map(p=>p.date),
       datasets: [{
         data: volPts.map(p=>p.val),
-        borderColor: '#ff8c42',
+        borderColor: BP_COLORS.pr.bestSet,
         backgroundColor: 'rgba(255,140,66,.08)',
-        pointBackgroundColor: volPts.map((_,i) => i===volPts.length-1 ? '#fff' : '#ff8c42'),
+        pointBackgroundColor: volPts.map((_,i) => i===volPts.length-1 ? '#fff' : BP_COLORS.pr.bestSet),
         pointRadius: volPts.map((_,i) => i===volPts.length-1 ? 3 : 2),
         tension:0, fill: true, borderWidth: 1.5
       }]
@@ -18596,7 +18772,7 @@ function renderStrengthChart() {
           min: _strMin - _strPad,
           ticks: { color: '#555', font: { size: 9 } },
           grid: { color: '#1a1a1a' },
-          title: { display: true, text: yUnit, color: '#ff8c4299', font: { size: 9 } }
+          title: { display: true, text: yUnit, color: bpAlpha(BP_COLORS.pr.bestSet,0.6), font: { size: 9 } }
         }
       }
     },
@@ -18613,7 +18789,7 @@ function renderStrengthChart() {
           if (r != null && r < 5) return;
           ctx.save();
           const s = 7;
-          ctx.strokeStyle = '#ff8c42';
+          ctx.strokeStyle = BP_COLORS.pr.bestSet;
           ctx.lineWidth = 1.5;
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
@@ -18665,8 +18841,8 @@ function onVolProgressScrub(idx) {
   if (!pts.length) return;
   if (volProgressChartInst) {
     volProgressChartInst._selectedIdx = i;
-    const _vpc = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171', Mix:'#20d4c8' };
-    const _c = _vpc[volProgressMuscle] || '#a78bfa';
+    const _vpc = { ...BP_COLORS.muscles };
+    const _c = _vpc[volProgressMuscle] || BP_COLORS.pr.vol;
     const _vpMx = Math.max(...pts.map(p=>p.val));
     const _vpMxIdx = pts.map(p=>p.val).lastIndexOf(_vpMx);
     volProgressChartInst.data.datasets[0].pointRadius = pts.map((_,j) => j===i||j===_vpMxIdx ? 4 : 2);
@@ -18713,7 +18889,7 @@ function onVolProgressScrub(idx) {
 }
 
 // ── EXERCISE PROGRESS CHART ─────────────────────────────────
-const _EX_MUSCLE_COLORS = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171', Mix:'#20d4c8' };
+const _EX_MUSCLE_COLORS = { ...BP_COLORS.muscles };
 const _EX_MUSCLES = ['Chest','Back','Legs','Shoulders','Arms','Core','Mix'];
 const _EX_MUSCLE_LABELS = { Chest:'Chest', Back:'Back', Legs:'Legs', Shoulders:'Shldr', Arms:'Arms', Core:'Abs', Mix:'Mix' };
 
@@ -18773,7 +18949,7 @@ function renderExProgressExPills() {
   if (!el) return;
   const exList = _getExercisesForMuscle(exProgressMuscle);
   if (!exList.length) { el.innerHTML = '<span style="font-size:11px;color:var(--muted);padding:4px 0;">No exercises recorded</span>'; return; }
-  const color = _EX_MUSCLE_COLORS[exProgressMuscle] || '#a78bfa';
+  const color = _EX_MUSCLE_COLORS[exProgressMuscle] || BP_COLORS.pr.vol;
   const counts = _getExerciseUsageCounts(exProgressMuscle);
   const sorted = [...exList].sort((a, b) => {
     const ca = counts[a] || 0, cb = counts[b] || 0;
@@ -18797,11 +18973,11 @@ function setExProgressMetric(metric) {
 function renderExProgressMetricPills() {
   const el = document.getElementById('exProgressMetricPills');
   if (!el) return;
-  const color = _EX_MUSCLE_COLORS[exProgressMuscle] || '#a78bfa';
+  const color = _EX_MUSCLE_COLORS[exProgressMuscle] || BP_COLORS.pr.vol;
   const metrics = [
-    { id: 'max', label: 'MAX', color: '#e8ff47' },
-    { id: '1rm', label: '1RM', color: '#ff8c42' },
-    { id: 'vol', label: 'VOL', color: '#a78bfa' },
+    { id: 'max', label: 'MAX', color: BP_COLORS.pr.max },
+    { id: '1rm', label: '1RM', color: BP_COLORS.pr.bestSet },
+    { id: 'vol', label: 'VOL', color: BP_COLORS.pr.vol },
   ];
   el.innerHTML = metrics.map(m => {
     const active = m.id === exProgressMetric;
@@ -18813,7 +18989,7 @@ function renderExProgressChart() {
   renderExProgressMusclePills();
   renderExProgressMetricPills();
   renderExProgressExPills();
-  const color = { max:'#e8ff47', '1rm':'#ff8c42', vol:'#a78bfa' }[exProgressMetric] || '#a78bfa';
+  const color = { max:BP_COLORS.pr.max, '1rm':BP_COLORS.pr.bestSet, vol:BP_COLORS.pr.vol }[exProgressMetric] || BP_COLORS.pr.vol;
   const wrap = document.getElementById('exProgressChart-wrap');
   const empty = document.getElementById('exProgressChart-empty');
   const bigVal = document.getElementById('exProgress-big-val');
@@ -18950,7 +19126,7 @@ function onExProgressScrub(idx) {
   const pts = window._exProgressPts;
   const unit = window._exProgressUnit;
   if (!pts || !pts.length) return;
-  const color = { max:'#e8ff47', '1rm':'#ff8c42', vol:'#a78bfa' }[exProgressMetric] || '#a78bfa';
+  const color = { max:BP_COLORS.pr.max, '1rm':BP_COLORS.pr.bestSet, vol:BP_COLORS.pr.vol }[exProgressMetric] || BP_COLORS.pr.vol;
 
   // Update chart highlight
   if (exProgressChartInst) {
@@ -19034,7 +19210,7 @@ function renderVolumeProgressChart() {
   const _pillsAlways = document.getElementById('volProgressMusclePills');
   if (_pillsAlways) {
     const _pm = ['Chest','Back','Legs','Shoulders','Arms','Core','Mix'];
-    const _pc = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171', Mix:'#20d4c8' };
+    const _pc = { ...BP_COLORS.muscles };
     const _pl = { Chest:'Chest', Back:'Back', Legs:'Legs', Shoulders:'Shldr', Arms:'Arms', Core:'Abs', Mix:'Mix' };
     _pillsAlways.innerHTML = _pm.map(m => `<div onclick="setVolProgressMuscle2('${m}')" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${m===volProgressMuscle?_pc[m]:'#444'};border-bottom:2px solid ${m===volProgressMuscle?_pc[m]:'transparent'};transition:all .15s;">${_pl[m]}</div>`).join('');
   }
@@ -19049,10 +19225,10 @@ function renderVolumeProgressChart() {
     const bp = document.getElementById('volProgress-big-pct');
     const bigDisp = document.getElementById('volProgress-big-display');
     if (bigDisp) bigDisp.style.display = '';
-    if (bv) { bv.textContent = '--'; const _vpc0c = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171',Mix:'#20d4c8' }; bv.style.color = _vpc0c[volProgressMuscle] || '#a78bfa'; }
+    if (bv) { bv.textContent = '--'; const _vpc0c = { ...BP_COLORS.muscles }; bv.style.color = _vpc0c[volProgressMuscle] || BP_COLORS.pr.vol; }
     if (bp) { bp.textContent = 'No data'; bp.style.color = 'var(--muted)'; }
-    const _vpc0 = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171',Mix:'#20d4c8' };
-    const _vpc0Color = _vpc0[volProgressMuscle] || '#a78bfa';
+    const _vpc0 = { ...BP_COLORS.muscles };
+    const _vpc0Color = _vpc0[volProgressMuscle] || BP_COLORS.pr.vol;
     const emptyLabels = globalRange === 'week'
       ? ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
       : globalRange === 'month'
@@ -19083,11 +19259,11 @@ function renderVolumeProgressChart() {
   const bigDispShow = document.getElementById('volProgress-big-display');
   if (bigDispShow) bigDispShow.style.display = '';
   const bigValColorEl = document.getElementById('volProgress-big-val');
-  if (bigValColorEl) { const _vpc2 = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171',Mix:'#20d4c8' }; bigValColorEl.style.color = _vpc2[volProgressMuscle] || '#a78bfa'; }
+  if (bigValColorEl) { const _vpc2 = { ...BP_COLORS.muscles }; bigValColorEl.style.color = _vpc2[volProgressMuscle] || BP_COLORS.pr.vol; }
   if (wrap) wrap.style.display = '';
   if (volProgressChartInst) volProgressChartInst.destroy();
-  const _vpColors = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171',Mix:'#20d4c8' };
-  const _vpColor = _vpColors[volProgressMuscle] || '#a78bfa';
+  const _vpColors = { ...BP_COLORS.muscles };
+  const _vpColor = _vpColors[volProgressMuscle] || BP_COLORS.pr.vol;
   const _vpColorFade = _vpColor + '80';
   const _vpMaxVal = rawPts.length ? Math.max(...rawPts.map(p=>p.val)) : 0;
   const _vpMaxIdx = rawPts.map(p=>p.val).lastIndexOf(_vpMaxVal);
@@ -19402,7 +19578,7 @@ function renderCalendar() {
 
     // After Saturday (dayOfWeek===6), insert badge column cell for this week
     if (dayOfWeek === 6) {
-      const wAch = wkWorkouts >= workoutWeekTarget;
+      const wAch = workoutWeekTarget > 0 && wkWorkouts >= workoutWeekTarget;
       const wkStartKey1 = weekStart.toDateString();
       html += `<div class="cal-badge-col" style="cursor:pointer;" onclick="openWeekSummary('${wkStartKey1}')">
         <span class="cal-target-badge cal-target-badge-workout${weekStart > today ? ' cal-target-badge-future' : ''}">${chevSVG}</span>
@@ -19415,7 +19591,7 @@ function renderCalendar() {
     const lastDate = new Date(calYear, calMonth, daysInMonth);
     const weekStart2 = new Date(lastDate); weekStart2.setDate(lastDate.getDate()-lastDayOfWeek);
     const wkWOsLast  = weeklyWorkouts.get(weekStart2.toDateString())||0;
-    const wAchL = wkWOsLast >= workoutWeekTarget;
+    const wAchL = workoutWeekTarget > 0 && wkWOsLast >= workoutWeekTarget;
     // Fill remaining day cells with the start of next month
     const nextMonthRef = new Date(calYear, calMonth+1, 1);
     const nextY = nextMonthRef.getFullYear(), nextM = nextMonthRef.getMonth();
@@ -19525,7 +19701,7 @@ function renderCalDayContent(key, ws) {
     });
     // Show existing plans
     const BODY_ORDER_C = ['Chest','Back','Legs','Shoulders','Arms','Core','Mix'];
-    const COLORS_C = ['#e8ff47','#7ec8e3','#ff8c42','#a78bfa','#34d399','#f87171','#20d4c8'];
+    const COLORS_C = BP_MUSCLE_LIST;
     let _dayStrengthPlan = null;
     planned.forEach((p, pi) => {
       // Strength-planned workouts no longer render the rich Workouts-tab-style card
@@ -19543,7 +19719,7 @@ function renderCalDayContent(key, ws) {
           <button onclick="event.stopPropagation();deletePlannedWorkout('${_dayStrengthPlan.planId}')" style="background:transparent;border:none;color:#555;cursor:pointer;padding:6px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M3 5h14M8 5V3h4v2M5 5l1 11a1 1 0 001 1h6a1 1 0 001-1l1-11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><line x1="8" y1="9" x2="8" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="12" y1="9" x2="12" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
         </div>`
       : (realWs.length > 0 ? '' : `<div style="display:flex;gap:8px;margin-top:8px;">
-      <button ${!isPlannable ? 'disabled' : `onclick="planStrengthFromCal('${key}')"`} style="background:transparent;border:1px dashed ${isPlannable?'var(--accent)':'rgba(255,255,255,.1)'};border-radius:10px;color:${isPlannable?'var(--accent)':'#444'};font-family:'DM Sans';font-size:20px;font-weight:600;cursor:${isPlannable?'pointer':'default'};padding:10px;flex:1;text-align:center;${!isPlannable?'pointer-events:none;':''}">+ Plan Workout</button>
+      <button ${!isPlannable ? 'disabled' : `onclick="planStrengthFromCal('${key}')"`} style="background:transparent;border:1px dashed ${isPlannable?'var(--accent)':'rgba(255,255,255,.1)'};border-radius:10px;color:${isPlannable?'var(--accent)':'#444'};font-family:'DM Sans';font-size:20px;font-weight:600;cursor:${isPlannable?'pointer':'default'};height:56px;box-sizing:border-box;padding:0 10px;line-height:1;display:flex;align-items:center;justify-content:center;flex:1;text-align:center;${!isPlannable?'pointer-events:none;':''}">+ Plan Workout</button>
     </div>`);
   }
   // No "+ Plan Workout" prompt when the day already has a completed workout logged
@@ -19601,9 +19777,9 @@ function renderCalDayWorkouts(ws) {
       if(weightPR) weightPRCount++;
       if(volPR) volPRCount++;
       if(volumePR) volumePRCount++;
-      const weightSlot = `<span data-pr="${weightPR?'max':''}" style="width:16px;display:inline-flex;justify-content:center;">${weightPR?svgStar(w._draft?'#666':'#e8ff47'):''}</span>`;
-      const volSlot = `<span data-pr="${volPR?'1rm':''}" style="width:16px;display:inline-flex;justify-content:center;">${volPR?svgStar(w._draft?'#666':'#ff8c42'):''}</span>`;
-      const volumeSlot = `<span data-pr="${volumePR?'vol':''}" style="width:16px;display:inline-flex;justify-content:center;">${volumePR?svgStar(w._draft?'#666':'#a78bfa'):''}</span>`;
+      const weightSlot = `<span data-pr="${weightPR?'max':''}" style="width:16px;display:inline-flex;justify-content:center;">${weightPR?svgStar(w._draft?'#666':BP_COLORS.pr.max):''}</span>`;
+      const volSlot = `<span data-pr="${volPR?'1rm':''}" style="width:16px;display:inline-flex;justify-content:center;">${volPR?svgStar(w._draft?'#666':BP_COLORS.pr.bestSet):''}</span>`;
+      const volumeSlot = `<span data-pr="${volumePR?'vol':''}" style="width:16px;display:inline-flex;justify-content:center;">${volumePR?svgStar(w._draft?'#666':BP_COLORS.pr.vol):''}</span>`;
       const doneSetsArr = e.sets.filter(s=>s.done&&!s.ignored);
       const noDone = doneSetsArr.length === 0;
       const prFlags = [weightPR?'max':'', volPR?'1rm':'', volumePR?'vol':''].filter(Boolean).join(' ');
@@ -19627,9 +19803,9 @@ function renderCalDayWorkouts(ws) {
     const prSummary = (weightPRCount > 0 || volPRCount > 0 || volumePRCount > 0) ? `
       <div style="display:flex;align-items:center;padding:5px 14px 6px;border-top:1px solid var(--border);gap:0;">
         
-        ${weightPRCount>0?'<span onclick="event.stopPropagation();filterCalByPR('+wi+',\'max\')" data-pr="max" class="hcard-pr-chip" style="display:inline-flex;align-items:center;width:72px;gap:3px;font-size:11px;font-weight:700;cursor:pointer;border-radius:5px;padding:2px 4px;color:'+(w._draft?'#666':'#e8ff47')+'"><span style=\"min-width:18px;text-align:right\">'+weightPRCount+'</span>'+svgStar(w._draft?'#666':'#e8ff47')+'<span>MAX</span></span>':''}
-        ${volPRCount>0?'<span onclick="event.stopPropagation();filterCalByPR('+wi+',\'1rm\')" data-pr="1rm" class="hcard-pr-chip" style="display:inline-flex;align-items:center;width:72px;gap:3px;font-size:11px;font-weight:700;cursor:pointer;border-radius:5px;padding:2px 4px;color:'+(w._draft?'#666':'#ff8c42')+'"><span style=\"min-width:18px;text-align:right\">'+volPRCount+'</span>'+svgStar(w._draft?'#666':'#ff8c42')+'<span>1RM</span></span>':''}
-        ${volumePRCount>0?'<span onclick="event.stopPropagation();filterCalByPR('+wi+',\'vol\')" data-pr="vol" class="hcard-pr-chip" style="display:inline-flex;align-items:center;width:64px;gap:3px;font-size:11px;font-weight:700;cursor:pointer;border-radius:5px;padding:2px 4px;color:'+(w._draft?'#666':'#a78bfa')+'"><span style=\"min-width:18px;text-align:right\">'+volumePRCount+'</span>'+svgStar(w._draft?'#666':'#a78bfa')+'<span>VOL</span></span>':''}
+        ${weightPRCount>0?'<span onclick="event.stopPropagation();filterCalByPR('+wi+',\'max\')" data-pr="max" class="hcard-pr-chip" style="display:inline-flex;align-items:center;width:72px;gap:3px;font-size:11px;font-weight:700;cursor:pointer;border-radius:5px;padding:2px 4px;color:'+(w._draft?'#666':BP_COLORS.pr.max)+'"><span style=\"min-width:18px;text-align:right\">'+weightPRCount+'</span>'+svgStar(w._draft?'#666':BP_COLORS.pr.max)+'<span>MAX</span></span>':''}
+        ${volPRCount>0?'<span onclick="event.stopPropagation();filterCalByPR('+wi+',\'1rm\')" data-pr="1rm" class="hcard-pr-chip" style="display:inline-flex;align-items:center;width:72px;gap:3px;font-size:11px;font-weight:700;cursor:pointer;border-radius:5px;padding:2px 4px;color:'+(w._draft?'#666':BP_COLORS.pr.bestSet)+'"><span style=\"min-width:18px;text-align:right\">'+volPRCount+'</span>'+svgStar(w._draft?'#666':BP_COLORS.pr.bestSet)+'<span>1RM</span></span>':''}
+        ${volumePRCount>0?'<span onclick="event.stopPropagation();filterCalByPR('+wi+',\'vol\')" data-pr="vol" class="hcard-pr-chip" style="display:inline-flex;align-items:center;width:64px;gap:3px;font-size:11px;font-weight:700;cursor:pointer;border-radius:5px;padding:2px 4px;color:'+(w._draft?'#666':BP_COLORS.pr.vol)+'"><span style=\"min-width:18px;text-align:right\">'+volumePRCount+'</span>'+svgStar(w._draft?'#666':BP_COLORS.pr.vol)+'<span>VOL</span></span>':''}
       </div>` : '';
 
     const isFinished = !w._draft && !w._template;
@@ -19657,7 +19833,7 @@ function renderCalDayWorkouts(ws) {
         </div>
         ${(()=>{
           const MUSCLE_ORDER = ['Chest','Back','Legs','Shoulders','Arms','Core','Mix'];
-          const muscleColors = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171',Mix:'#20d4c8' };
+          const muscleColors = { ...BP_COLORS.muscles };
           const setsByMuscle = {};
           w.exercises.forEach(e => {
             const m = e.muscle || getAllExercises().find(x=>x.name===e.name||x.label===e.name)?.muscle || 'Other';
@@ -20459,9 +20635,9 @@ function wtabCycleFilter(detId, dir) {
   filterEl.dataset.idx = idx;
 
   const muscle = muscles[idx];
-  const mcolors = {Chest:'#e8ff47',Back:'#7ec8e3',Legs:'#ff8c42',Shoulders:'#a78bfa',Arms:'#34d399',Core:'#f87171',Mix:'#20d4c8'};
+  const mcolors = { ...BP_COLORS.muscles };
   const BODY_ORDER = ['Chest','Back','Legs','Shoulders','Arms','Core','Mix'];
-  const colors = ['#e8ff47','#7ec8e3','#ff8c42','#a78bfa','#34d399','#f87171','#20d4c8'];
+  const colors = BP_MUSCLE_LIST;
   const mc = muscle === 'All' ? null : (mcolors[muscle] || '#aaa');
 
   labelEl.textContent = muscle === 'All' ? 'ALL' : displayMuscle(muscle).toUpperCase();
@@ -20536,8 +20712,8 @@ function calPlanCycleFilter(detId, dir) {
   if (!filterEl || !labelEl) return;
 
   const BODY_ORDER = ['Chest','Back','Legs','Shoulders','Arms','Core','Mix'];
-  const COLORS = ['#e8ff47','#7ec8e3','#ff8c42','#a78bfa','#34d399','#f87171','#20d4c8'];
-  const mcolors = {Chest:'#e8ff47',Back:'#7ec8e3',Legs:'#ff8c42',Shoulders:'#a78bfa',Arms:'#34d399',Core:'#f87171',Mix:'#20d4c8'};
+  const COLORS = BP_MUSCLE_LIST;
+  const mcolors = { ...BP_COLORS.muscles };
 
   const muscles = JSON.parse(filterEl.dataset.muscles || '["All"]');
   let idx = parseInt(filterEl.dataset.idx || '0');
@@ -20656,7 +20832,7 @@ window.addEventListener('load', function() {
         onfocus="_simpleFieldKbdFocus('workoutNameModalInput',true)" onblur="_simpleFieldKbdFocus('workoutNameModalInput',false)"/>
       <div style="display:flex;gap:10px;margin-top:auto;">
         <button id="workoutNameCancelBtn" onclick="cancelWorkoutNameModal()" style="flex:1;background:transparent;border:1px solid #555;border-radius:10px;color:#fff;font-family:'DM Sans';font-size:16px;font-weight:700;padding:14px;cursor:pointer;">CANCEL</button>
-        <button id="workoutNameSaveBtn" onclick="confirmWorkoutNameModal()" disabled style="flex:1;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'DM Sans';font-size:16px;font-weight:700;padding:14px;cursor:not-allowed;opacity:0.4;">NEXT</button>
+        <button id="workoutNameSaveBtn" onclick="confirmWorkoutNameModal()" disabled style="flex:1;background:#000;border:1px solid var(--accent);border-radius:10px;color:var(--accent);font-family:'DM Sans';font-size:16px;font-weight:700;padding:14px;cursor:not-allowed;opacity:0.4;">NEXT</button>
       </div>
     </div>
   </div>
@@ -20721,7 +20897,7 @@ window.addEventListener('load', function() {
     </div>
   </div>
   <div id="nwf-bottom-btns" style="flex-shrink:0;padding:16px 16px calc(env(safe-area-inset-bottom,0px) + 16px);display:flex;gap:10px;background:#0a0a0a;">
-    <button id="nwf-bottom-next-btn" onclick="_proceedFromNwfNamePage()" style="flex:1;padding:18px;background:var(--accent);color:#000;border:none;border-radius:100px;font-family:'DM Sans',sans-serif;font-size:18px;font-weight:900;cursor:pointer;letter-spacing:.3px;-webkit-tap-highlight-color:transparent;transition:transform .15s;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">NEXT</button>
+    <button id="nwf-bottom-next-btn" onclick="_proceedFromNwfNamePage()" style="flex:1;padding:18px;background:#000;color:var(--accent);border:1px solid var(--accent);border-radius:100px;font-family:'DM Sans',sans-serif;font-size:18px;font-weight:900;cursor:pointer;letter-spacing:.3px;-webkit-tap-highlight-color:transparent;transition:transform .15s;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">NEXT</button>
   </div>
 </div>
 
@@ -21360,9 +21536,9 @@ function _brandLogoHtml(height = 40) {
 function switchAuthTab(tab) {
   _authTab = tab;
   const isSignIn = tab === 'signin';
-  document.getElementById('auth-tab-signin').style.background = isSignIn ? '#e8ff47' : 'transparent';
+  document.getElementById('auth-tab-signin').style.background = isSignIn ? 'var(--accent)' : 'transparent';
   document.getElementById('auth-tab-signin').style.color = isSignIn ? '#000' : '#666';
-  document.getElementById('auth-tab-signup').style.background = isSignIn ? 'transparent' : '#e8ff47';
+  document.getElementById('auth-tab-signup').style.background = isSignIn ? 'transparent' : 'var(--accent)';
   document.getElementById('auth-tab-signup').style.color = isSignIn ? '#666' : '#000';
   document.getElementById('auth-submit-btn').textContent = isSignIn ? 'Sign In' : 'Create Account';
   document.getElementById('auth-forgot-wrap').style.display = isSignIn ? '' : 'none';
@@ -21667,6 +21843,7 @@ window.syncToFirestore = function() {
     dataResetAt: _LS.get('ironlog_data_reset_at') || null,
     settings: {
       workoutWeekTarget: workoutWeekTarget,
+      setsTargets: _getSetsTargets(),
       lastTimerSecs: lastTimerSecs,
       miniChartRange: miniChartRange,
     },
@@ -21747,7 +21924,8 @@ function _applyCloudUserData(data) {
     }
     if (data.settings) {
       const s = data.settings;
-      if (s.workoutWeekTarget) { workoutWeekTarget = s.workoutWeekTarget; localStorage.setItem('ironlog_workout_target', s.workoutWeekTarget); }
+      if (typeof s.workoutWeekTarget === 'number' && s.workoutWeekTarget >= 0) { workoutWeekTarget = s.workoutWeekTarget; localStorage.setItem('ironlog_workout_target', s.workoutWeekTarget); }
+      if (s.setsTargets && typeof s.setsTargets === 'object') _saveSetsTargets({ ..._getSetsTargets(), ...s.setsTargets });
       if (s.lastTimerSecs) { lastTimerSecs = s.lastTimerSecs; localStorage.setItem('ironlog_last_timer', s.lastTimerSecs); }
       if (s.miniChartRange) { miniChartRange = s.miniChartRange; localStorage.setItem('ironlog_mini_range', s.miniChartRange); }
     }
@@ -23433,7 +23611,7 @@ function viewClientData(clientId, clientName) {
       document.getElementById('clientViewerHistory').innerHTML = '<div style="text-align:center;padding:40px;color:#555;font-size:13px;">No workouts recorded yet.</div>';
       return;
     }
-    const muscleColors = { Chest:'#e8ff47',Back:'#7ec8e3',Legs:'#ff8c42',Shoulders:'#a78bfa',Arms:'#34d399',Core:'#f87171',Mix:'#20d4c8' };
+    const muscleColors = { ...BP_COLORS.muscles };
     document.getElementById('clientViewerHistory').innerHTML = wkts.map(w => {
       const date = new Date(w.date).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
       const sets = w.exercises.reduce((a,e)=>a+(e.sets||[]).filter(s=>s.done&&!s.ignored).length,0);
@@ -23827,7 +24005,7 @@ function loadLibrary() {
 }
 
 function buildExerciseLibraryHtml(selectedMuscle) {
-  const MUSCLE_COLORS = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171', Mix:'#20d4c8' };
+  const MUSCLE_COLORS = { ...BP_COLORS.muscles };
   const canEdit = canEditLibrary();
 
   if (!_libraryLoaded) {
@@ -23935,7 +24113,7 @@ function renderWorkoutLibraryList() {
     el.innerHTML = '<div class="empty-state"><span style="color:var(--muted);">No workouts in library yet.</span></div>';
     return;
   }
-  const _mcolors = {Chest:'#e8ff47',Back:'#7ec8e3',Legs:'#ff8c42',Shoulders:'#a78bfa',Arms:'#34d399',Core:'#f87171',Mix:'#20d4c8'};
+  const _mcolors = { ...BP_COLORS.muscles };
   const _BODY_ORDER = ['Chest','Back','Legs','Shoulders','Arms','Core','Mix'];
   const _colors = _BODY_ORDER.map(m => _mcolors[m]);
 
@@ -24058,7 +24236,7 @@ function libCycleFilter(idx, dir) {
   i = (i + dir + muscles.length) % muscles.length;
   filterEl.dataset.idx = i;
   const selected = muscles[i];
-  const colors = {Chest:'#e8ff47',Back:'#7ec8e3',Legs:'#ff8c42',Shoulders:'#a78bfa',Arms:'#34d399',Core:'#f87171',Mix:'#20d4c8'};
+  const colors = { ...BP_COLORS.muscles };
   labelEl.textContent = selected === 'All' ? 'ALL' : selected.toUpperCase();
   labelEl.style.color = selected === 'All' ? '#fff' : (colors[selected]||'#fff');
   if (detEl) detEl.querySelectorAll('.ldet-ex-row').forEach(r => {
@@ -25668,7 +25846,7 @@ function _renderCoachExercisesTab(el) {
     exToggleBar.style.display = '';
   }
   const MUSCLE_ORDER = ['Chest','Back','Legs','Shoulders','Arms','Core','Mix'];
-  const MUSCLE_COLORS = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171', Mix:'#20d4c8' };
+  const MUSCLE_COLORS = { ...BP_COLORS.muscles };
   const MUSCLE_LABELS = { Chest:'Chest', Back:'Back', Legs:'Legs', Shoulders:'Shldr', Arms:'Arms', Core:'Abs', Mix:'Mix' };
   if (!window._exTabMuscle) window._exTabMuscle = MUSCLE_ORDER[0];
   const selected = window._exTabMuscle;
@@ -25839,7 +26017,7 @@ function _renderCoachWorkoutsTab(el, toggleBar) {
   const coachWkts = _coachWorkouts || [];
 
   const MUSCLE_ORDER = ['Chest','Back','Legs','Shoulders','Arms','Core','Mix'];
-  const _mcolors = {Chest:'#e8ff47',Back:'#7ec8e3',Legs:'#ff8c42',Shoulders:'#a78bfa',Arms:'#34d399',Core:'#f87171',Mix:'#20d4c8'};
+  const _mcolors = { ...BP_COLORS.muscles };
   const usedMuscles = new Set();
   coachWkts.forEach(w => (w.exercises||[]).forEach(e => { if (e.muscle) usedMuscles.add(e.muscle); }));
 
@@ -25949,7 +26127,7 @@ function _renderCoachWorkoutsTab(el, toggleBar) {
 
   // Render muscle bar charts — exact match to non-coach
   setTimeout(() => {
-    const _cwColors = ['#e8ff47','#7ec8e3','#ff8c42','#a78bfa','#34d399','#f87171','#20d4c8'];
+    const _cwColors = BP_MUSCLE_LIST;
     const _cwOrder = ['Chest','Back','Legs','Shoulders','Arms','Core','Mix'];
     const _cwAbbr = {Chest:'CH',Back:'BA',Legs:'LE',Shoulders:'SH',Arms:'AR',Core:'AB',Mix:'CP'};
     filtered.forEach(w => {
@@ -26000,7 +26178,7 @@ function cwCycleFilter(wid, dir) {
   idx = (idx + dir + muscles.length) % muscles.length;
   filterEl.dataset.idx = idx;
   const selected = muscles[idx];
-  const colors = {Chest:'#e8ff47',Back:'#7ec8e3',Legs:'#ff8c42',Shoulders:'#a78bfa',Arms:'#34d399',Core:'#f87171',Mix:'#20d4c8'};
+  const colors = { ...BP_COLORS.muscles };
   labelEl.textContent = selected === 'All' ? 'ALL' : selected.toUpperCase();
   labelEl.style.color = selected === 'All' ? '#fff' : (colors[selected]||'#fff');
   // Filter exercise rows
@@ -26681,6 +26859,16 @@ function deleteCoachWorkout(id) {
 </div>
 
 <!-- Strength target sheet — body-level -->
+<!-- Home page 2 → weekly sets target per body part (same look as the
+     strength target sheet below). Rows are built by openSetsTargetSheet. -->
+<div id="sets-target-overlay" onclick="closeSetsTargetSheet(false)" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);z-index:8999;"></div>
+<div id="sets-target-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;z-index:9000;background:#1a1a1a;border-top:1px solid #2a2a2a;border-radius:20px 20px 0 0;padding:12px 20px calc(28px + env(safe-area-inset-bottom,0px));box-sizing:border-box;">
+  <div style="width:36px;height:4px;border-radius:2px;background:#444;margin:0 auto 18px;"></div>
+  <div style="font-family:'DM Sans';font-size:18px;font-weight:800;color:var(--text);text-align:center;letter-spacing:.3px;">MY WEEKLY TARGET</div>
+  <div style="font-family:'DM Sans';font-size:12px;font-weight:600;color:#ccc;text-align:center;letter-spacing:.5px;margin:6px 0 18px;">SETS / WEEK PER BODY PART</div>
+  <div id="sets-target-rows" style="display:flex;flex-direction:column;margin-bottom:24px;"></div>
+  <button onclick="closeSetsTargetSheet(true)" style="width:100%;padding:18px;background:var(--accent);color:#000;border:none;border-radius:100px;font-family:'DM Sans';font-size:18px;font-weight:900;cursor:pointer;letter-spacing:.3px;-webkit-tap-highlight-color:transparent;transition:transform .15s;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">SAVE</button>
+</div>
 <div id="strength-target-overlay" onclick="closeStrengthTargetSheet()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);z-index:8999;"></div>
 <div id="strength-target-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;z-index:9000;background:#1a1a1a;border-top:1px solid #2a2a2a;border-radius:20px 20px 0 0;padding:12px 20px calc(28px + env(safe-area-inset-bottom,0px));box-sizing:border-box;">
   <div style="width:36px;height:4px;border-radius:2px;background:#444;margin:0 auto 18px;"></div>
@@ -27544,12 +27732,12 @@ function renderProgHistory() {
       const maxKgVal = doneSetsArr.length ? parseFloat(Math.max(0,...doneSetsArr.map(s=>s.kg)).toFixed(2)) : 0;
       const irmVal = doneSetsArr.length ? parseFloat(Math.max(...doneSetsArr.map(s=>s.kg*(1+s.reps/30))).toFixed(2)) : 0;
       const bestSet = doneSetsArr.length ? doneSetsArr.reduce((a,s)=>s.kg*(1+s.reps/30)>=a.kg*(1+a.reps/30)?s:a,doneSetsArr[0]) : null;
-      const weightSlot = `<span style="width:16px;display:inline-flex;justify-content:center;">${weightPR?svgStar('#e8ff47'):''}</span>`;
-      const volSlot = `<span style="width:16px;display:inline-flex;justify-content:center;">${volPR?svgStar('#ff8c42'):''}</span>`;
-      const volumeSlot = `<span style="width:16px;display:inline-flex;justify-content:center;">${volumePR?svgStar('#a78bfa'):''}</span>`;
+      const weightSlot = `<span style="width:16px;display:inline-flex;justify-content:center;">${weightPR?svgStar(BP_COLORS.pr.max):''}</span>`;
+      const volSlot = `<span style="width:16px;display:inline-flex;justify-content:center;">${volPR?svgStar(BP_COLORS.pr.bestSet):''}</span>`;
+      const volumeSlot = `<span style="width:16px;display:inline-flex;justify-content:center;">${volumePR?svgStar(BP_COLORS.pr.vol):''}</span>`;
       const statsLine = doneSetsArr.length ? `<div style="display:flex;flex-direction:column;gap:1px;margin-top:4px;">
-        ${maxKgVal>0?`<div style="display:flex;gap:6px;font-size:11px;font-weight:700;"><span style="color:${weightPR?'#e8ff47':'var(--muted)'};width:28px;">MAX</span><span style="color:#fff;">${maxKgVal}kg</span></div>`:''}
-        ${irmVal>0?`<div style="display:flex;gap:6px;font-size:11px;font-weight:700;"><span style="color:${volPR?'#ff8c42':'var(--muted)'};width:28px;">1RM</span><span style="color:#fff;">${bestSet?(bestSet.kg+'kg×'+bestSet.reps):''}</span></div>`:''}
+        ${maxKgVal>0?`<div style="display:flex;gap:6px;font-size:11px;font-weight:700;"><span style="color:${weightPR?BP_COLORS.pr.max:'var(--muted)'};width:28px;">MAX</span><span style="color:#fff;">${maxKgVal}kg</span></div>`:''}
+        ${irmVal>0?`<div style="display:flex;gap:6px;font-size:11px;font-weight:700;"><span style="color:${volPR?BP_COLORS.pr.bestSet:'var(--muted)'};width:28px;">1RM</span><span style="color:#fff;">${bestSet?(bestSet.kg+'kg×'+bestSet.reps):''}</span></div>`:''}
       </div>` : '';
       const noDone2 = doneSetsArr.length === 0;
       return `<div class="hcard-ex-item">
@@ -27571,9 +27759,9 @@ function renderProgHistory() {
     const prSummary = (weightPRCount>0||volPRCount>0||volumePRCount>0) ? `
       <div style="display:flex;align-items:center;padding:5px 14px 6px;border-top:1px solid var(--border);gap:0;">
         <span style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.5px;margin-right:8px;flex-shrink:0;">PROGRESS</span>
-        ${weightPRCount>0?`<span style="display:inline-flex;align-items:center;width:72px;gap:3px;font-size:11px;font-weight:700;border-radius:5px;padding:2px 4px;color:#e8ff47;"><span style="min-width:18px;text-align:right">${weightPRCount}</span>${svgStar('#e8ff47')}<span>MAX</span></span>`:''}
-        ${volPRCount>0?`<span style="display:inline-flex;align-items:center;width:72px;gap:3px;font-size:11px;font-weight:700;border-radius:5px;padding:2px 4px;color:#ff8c42;"><span style="min-width:18px;text-align:right">${volPRCount}</span>${svgStar('#ff8c42')}<span>1RM</span></span>`:''}
-        ${volumePRCount>0?`<span style="display:inline-flex;align-items:center;width:64px;gap:3px;font-size:11px;font-weight:700;border-radius:5px;padding:2px 4px;color:#a78bfa;"><span style="min-width:18px;text-align:right">${volumePRCount}</span>${svgStar('#a78bfa')}<span>VOL</span></span>`:''}
+        ${weightPRCount>0?`<span style="display:inline-flex;align-items:center;width:72px;gap:3px;font-size:11px;font-weight:700;border-radius:5px;padding:2px 4px;color:var(--pr-max);"><span style="min-width:18px;text-align:right">${weightPRCount}</span>${svgStar(BP_COLORS.pr.max)}<span>MAX</span></span>`:''}
+        ${volPRCount>0?`<span style="display:inline-flex;align-items:center;width:72px;gap:3px;font-size:11px;font-weight:700;border-radius:5px;padding:2px 4px;color:var(--pr-best);"><span style="min-width:18px;text-align:right">${volPRCount}</span>${svgStar(BP_COLORS.pr.bestSet)}<span>1RM</span></span>`:''}
+        ${volumePRCount>0?`<span style="display:inline-flex;align-items:center;width:64px;gap:3px;font-size:11px;font-weight:700;border-radius:5px;padding:2px 4px;color:var(--pr-vol);"><span style="min-width:18px;text-align:right">${volumePRCount}</span>${svgStar(BP_COLORS.pr.vol)}<span>VOL</span></span>`:''}
       </div>` : '';
 
     const counts = {};
@@ -27601,7 +27789,7 @@ function renderProgHistory() {
         </div>
         ${(()=>{
           const MUSCLE_ORDER2 = ['Chest','Back','Legs','Shoulders','Arms','Core','Mix'];
-          const muscleColors2 = { Chest:'#e8ff47', Back:'#7ec8e3', Legs:'#ff8c42', Shoulders:'#a78bfa', Arms:'#34d399', Core:'#f87171', Mix:'#20d4c8' };
+          const muscleColors2 = { ...BP_COLORS.muscles };
           const volByMuscle = {};
           w.exercises.forEach(e => {
             const m = e.muscle || 'Other';
@@ -30747,15 +30935,7 @@ window.shareWorkoutQRLink = shareWorkoutQRLink;
 window.closeWorkoutShareQR = closeWorkoutShareQR;
 
 // ── W2 Workout Preview Bottom Sheet ──────────────────────────────────────────
-const W2_MUSCLE_COLORS = {
-  Chest:     '#e8ff47',
-  Back:      '#7ec8e3',
-  Legs:      '#ff8c42',
-  Shoulders: '#a78bfa',
-  Arms:      '#34d399',
-  Core:      '#f87171',
-  Mix:  '#20d4c8',
-};
+const W2_MUSCLE_COLORS = { ...BP_COLORS.muscles };
 const W2_BODY_IDS = {
   'Chest': ["bf-chest-upper-l0","bf-chest-upper-r0","bf-chest-lower-l0","bf-chest-lower-r0"],
   'Back': ["bb-upper-back-l0","bb-upper-back-l1","bb-upper-back-l2","bb-upper-back-r0","bb-upper-back-r1","bb-upper-back-r2","bb-lower-back-l1","bb-lower-back-r0","bb-trapezius-l0","bb-trapezius-r0"],
@@ -30796,10 +30976,10 @@ function _resolveExRegionIds(exDef) {
 
 // Body-grey (untrained, matches the face's own #383838) for t=0, otherwise a
 // 4-stop blue→purple→pink→red gradient across the worked range. t is 0..1.
+// Dark red (fewest sets) → red (busiest muscle). 0 sets is a separate plain
+// grey (see _redHeatColor) so "trained a little" never looks like "not trained".
 const _HEAT_GRADIENT_STOPS = [
-  [0.0, [58, 134, 255]],   // #3a86ff
-  [0.4, [131, 56, 236]],   // #8338ec
-  [0.7, [255, 0, 110]],    // #ff006e
+  [0.0, [90, 26, 26]],     // #5a1a1a
   [1.0, [255, 0, 0]],      // #ff0000
 ];
 function _redHeatColor(t) {
@@ -30824,7 +31004,15 @@ function _redHeatColor(t) {
 // region in its neutral grey first and stashes the real heat color on the
 // element instead of applying it, so the caller can reveal it later via
 // _animateMuscleHeatmapColors once the carousel slide itself has settled.
-function _buildMuscleHeatmapDiagram(regionVal, animate) {
+// targets (optional, Home page 2): { Chest: 12, … } — each muscle area is then
+// coloured by its sets ÷ its body part's target (full red at/over target)
+// instead of relative to the busiest area (Progress tab).
+const _REGION_BODY_PART = (() => {
+  const m = {};
+  ['Chest', 'Back', 'Legs', 'Shoulders', 'Arms', 'Core'].forEach(bp => (W2_BODY_IDS[bp] || []).forEach(id => { if (!m[id]) m[id] = bp; }));
+  return m;
+})();
+function _buildMuscleHeatmapDiagram(regionVal, animate, targets) {
   const w2Src = document.getElementById('w2-body-container');
   if (!w2Src) return null;
   const bc = w2Src.cloneNode(true);
@@ -30843,7 +31031,8 @@ function _buildMuscleHeatmapDiagram(regionVal, animate) {
     const el = bc.querySelector('#heatmap-' + id);
     if (!el) return;
     const v = regionVal[id] || 0;
-    const t = maxVal > 0 ? v / maxVal : 0;
+    const tgt = targets ? (targets[_REGION_BODY_PART[id]] || SETS_TARGET_DEFAULT) : 0;
+    const t = targets ? (v > 0 ? Math.min(1, v / tgt) : 0) : (maxVal > 0 ? v / maxVal : 0);
     const color = _redHeatColor(t);
     if (animate) {
       el.style.transition = 'fill .5s ease';
@@ -30907,7 +31096,7 @@ function _renderTodayWeekHeatmap() {
     });
   });
   mount.innerHTML = '';
-  const diagram = _buildMuscleHeatmapDiagram(regionVal, true);
+  const diagram = _buildMuscleHeatmapDiagram(regionVal, true, _getSetsTargets());
   if (diagram) mount.appendChild(diagram);
   // Size/position are plain, manually-tuned constants (not fit to the
   // circle) — the wrapper's flex centering keeps it centered on the circle
@@ -30923,6 +31112,50 @@ window._renderTodayWeekHeatmap = _renderTodayWeekHeatmap;
 // _computeBodyPartExPRs (the same chronological "was this actually a PR at the
 // time" pass that powers Profile > Progress > Personal Records) instead of
 // re-deriving PR detection, since past workouts don't store PR flags themselves.
+// Satin-metal look for the Home page-3 PR pentagons (modelled on a reference
+// badge): rounded corners, a soft diagonal sheen from the upper right, darker
+// toward the bottom, a barely-visible brushed texture, a bevel edge (light
+// along the top edges, dark along the bottom) and a soft drop shadow (on the
+// <svg>). All layers are white/black at low opacity drawn OVER the coloured
+// base shape, so any colour from colors.js — and the lit-colour fade-in,
+// which animates the <svg>'s fill — work unchanged.
+const _PR_SATIN_PATH = (() => {
+  const P = [[12, 2], [22, 9.27], [18.18, 21.02], [5.82, 21.02], [2, 9.27]], r = 1.8;
+  const pt = (a, b) => { const dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy); return [+(a[0] + dx / l * r).toFixed(2), +(a[1] + dy / l * r).toFixed(2)]; };
+  let d = '';
+  P.forEach((p, i) => {
+    const a = pt(p, P[(i + P.length - 1) % P.length]), b = pt(p, P[(i + 1) % P.length]);
+    d += `${i ? 'L' : 'M'}${a[0]},${a[1]} Q${p[0]},${p[1]} ${b[0]},${b[1]} `;
+  });
+  return d + 'Z';
+})();
+const _PR_SATIN_DEFS = `<svg width="0" height="0" style="position:absolute;width:0;height:0;" aria-hidden="true"><defs>
+  <clipPath id="todayPrSatinClip" clipPathUnits="userSpaceOnUse"><path d="${_PR_SATIN_PATH}"/></clipPath>
+  <linearGradient id="todayPrSheen" x1="1" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#fff" stop-opacity=".08"/><stop offset=".32" stop-color="#fff" stop-opacity=".26"/>
+    <stop offset=".5" stop-color="#fff" stop-opacity=".04"/><stop offset=".75" stop-color="#000" stop-opacity=".12"/>
+    <stop offset="1" stop-color="#000" stop-opacity=".32"/>
+  </linearGradient>
+  <linearGradient id="todayPrFloor" x1="0" y1="0" x2="0" y2="1">
+    <stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".22"/>
+  </linearGradient>
+  <linearGradient id="todayPrBevel" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".45" stop-color="#fff" stop-opacity=".12"/>
+    <stop offset=".6" stop-color="#000" stop-opacity=".1"/><stop offset="1" stop-color="#000" stop-opacity=".45"/>
+  </linearGradient>
+  <filter id="todayPrBrush" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.06 1.4" numOctaves="2" seed="4" result="n"/>
+    <feColorMatrix in="n" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 -1.4 1"/>
+  </filter>
+</defs></svg>`;
+const _PR_SATIN_SVG = `<path d="${_PR_SATIN_PATH}"/>
+  <g clip-path="url(#todayPrSatinClip)">
+    <rect x="0" y="0" width="24" height="24" fill="url(#todayPrSheen)"/>
+    <rect x="0" y="0" width="24" height="24" fill="url(#todayPrFloor)"/>
+    <rect x="0" y="0" width="24" height="24" filter="url(#todayPrBrush)" opacity=".07" style="mix-blend-mode:overlay"/>
+    <path d="${_PR_SATIN_PATH}" fill="none" stroke="url(#todayPrBevel)" stroke-width="1.1"/>
+  </g>
+  <path d="${_PR_SATIN_PATH}" fill="none" stroke="#000" stroke-opacity=".35" stroke-width=".35"/>`;
 function _renderTodayWeekPRStars() {
   const mount = document.getElementById('today-pr-stars');
   if (!mount) return;
@@ -30955,15 +31188,16 @@ function _renderTodayWeekPRStars() {
     return `<span style="position:relative;z-index:${z};width:${px(81)}px;display:flex;flex-direction:column;align-items:center;gap:${px(8)}px;">
       <span style="position:relative;width:${px(81)}px;height:${px(104)}px;display:flex;align-items:center;justify-content:center;">
         <span style="position:absolute;left:50%;top:50%;width:${size}px;height:${size}px;margin-left:${-size / 2}px;margin-top:${-size / 2 - lift + 8}px;display:flex;align-items:center;justify-content:center;">
-          <svg class="today-pr-star-svg" data-lit-fill="${lit ? color : '#333'}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="#333" style="position:absolute;inset:0;transition:fill .5s ease;"><polygon points="12,2 22,9.27 18.18,21.02 5.82,21.02 2,9.27"/></svg>
-          <span class="today-pr-star-num" data-lit-color="${lit ? '#000' : '#777'}" style="position:relative;font-size:${px(42)}px;font-weight:800;color:#777;line-height:1;transform:translateY(${(size * 3 / 68).toFixed(1)}px);transition:color .5s ease;">${n}</span>
+          <svg class="today-pr-star-svg" data-lit-fill="${lit ? color : '#333'}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="#333" style="position:absolute;inset:0;overflow:visible;transition:fill .5s ease;filter:drop-shadow(0 ${(size * 0.025).toFixed(1)}px ${(size * 0.04).toFixed(1)}px rgba(0,0,0,.55));">${_PR_SATIN_SVG}</svg>
+          <span class="today-pr-star-num" data-lit-color="${lit ? '#fff' : '#777'}" style="position:relative;font-size:${px(42)}px;font-weight:800;color:#777;line-height:1;text-shadow:0 1px 3px rgba(0,0,0,.55);transform:translateY(${(size * 3 / 68).toFixed(1)}px);transition:color .5s ease;">${n}</span>
         </span>
       </span>
       <span class="today-pr-star-label" data-lit-color="${lit ? color : '#555'}" style="font-size:18px;font-weight:700;color:#555;letter-spacing:.3px;line-height:${px(24)}px;white-space:nowrap;transition:color .5s ease;">${label}</span>
     </span>`;
   };
   // BEST SET (middle) is drawn in front of the other two via z-index.
-  mount.innerHTML = star('#e8ff47', maxN, 'MAX', 106, 0, 1) + star('#ff8c42', bestSetN, 'BEST SET', 126, 6, 2) + star('#a78bfa', volN, 'VOL', 106, 0, 1);
+  // _PR_SATIN_DEFS: shared clip/gradients/texture for the satin pentagons.
+  mount.innerHTML = _PR_SATIN_DEFS + star(BP_COLORS.pr.max, maxN, 'MAX', 106, 0, 1) + star(BP_COLORS.pr.bestSet, bestSetN, 'BEST SET', 126, 6, 2) + star(BP_COLORS.pr.vol, volN, 'VOL', 106, 0, 1);
   clearTimeout(window._todayPRStarsColorTimer);
   window._todayPRStarsColorTimer = setTimeout(() => _animateTodayPRStars(mount), TODAY_CAROUSEL_COLOR_DELAY);
 }
@@ -31079,7 +31313,7 @@ function _w2BuildExerciseList(workout) {
     if (el) el.innerHTML = '';
     return;
   }
-  const W2_EX_COLORS = {Chest:'#e8ff47',Back:'#7ec8e3',Legs:'#ff8c42',Shoulders:'#a78bfa',Arms:'#34d399',Core:'#f87171',Mix:'#20d4c8',Other:'#888'};
+  const W2_EX_COLORS = { ...BP_COLORS.muscles, Other:'#888' };
   let html = ``;
   workout.exercises.forEach((ex, i) => {
     const muscle = ex.muscle || getAllExercises().find(x=>x.name===ex.name||x.label===ex.name)?.muscle || 'Other';
