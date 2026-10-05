@@ -1340,38 +1340,12 @@ window._fbModuleReady = true;
            moves or re-renders when swiping between the ring and the heatmap. -->
       <div style="font-family:'DM Sans';font-size:14px;font-weight:700;color:#ccc;letter-spacing:.5px;text-transform:uppercase;transform:translateY(-10px);">This Week</div>
       <div id="today-carousel-track" style="position:relative;display:flex;width:300%;align-self:flex-start;transform:translateX(0%);transition:transform .3s cubic-bezier(.2,.8,.3,1);">
-        <div id="today-carousel-slide-ring" onclick="openStrengthTargetSheet()" style="width:33.3333%;flex-shrink:0;display:flex;justify-content:center;cursor:pointer;position:relative;">
+        <div id="today-carousel-slide-ring" onclick="openStrengthTargetSheet()" style="width:33.3333%;flex-shrink:0;height:300px;cursor:pointer;position:relative;">
           <!-- Page-1-only sub-title under the shared "This Week" heading. Absolutely
                positioned in the ring's top margin so it adds no height to this
                slide (pages 2/3 are sized to the same 300px and must not shift). -->
           <div style="position:absolute;top:-10px;left:0;right:0;text-align:center;font-family:'DM Sans';font-size:18px;font-weight:800;color:#fff;letter-spacing:.5px;text-transform:uppercase;line-height:1;pointer-events:none;">Total Workouts</div>
-          <!-- Below the ring, in the ~19px margin under its outer edge (like the
-               heatmap legend on page 2) so it adds no height to the slide. -->
-          <div style="position:relative;width:300px;height:300px;">
-            <svg width="300" height="300" viewBox="0 0 300 300" style="display:block;">
-              <!-- Fills black behind the whole ring (track + progress arc), not just
-                   its interior — radius covers the track's outer edge
-                   (117.86 + 25.71/2 ≈ 130.7), matching pages 2/3's circle background. -->
-              <circle cx="150" cy="150" r="131" fill="#000"/>
-              <circle cx="150" cy="150" r="117.86" fill="none" stroke="#1e1e1e" stroke-width="25.71"/>
-              <circle id="today-progress-ring" cx="150" cy="150" r="117.86" fill="none" stroke="#999" stroke-opacity="0.55" stroke-width="25.71" stroke-linecap="round" stroke-dasharray="740.52" stroke-dashoffset="740.52" transform="rotate(-90 150 150)" style="stroke:var(--accent);stroke-opacity:1;transition:stroke-dashoffset .6s ease,stroke .4s ease,stroke-opacity .4s ease;"/>
-              <g id="today-progress-goal-ring" transform="rotate(-90 150 150)"></g>
-            </svg>
-            <!-- Sizes/offsets matched to the design mock (measured vs. the ring's
-                 center): number ≈17px above center, "OUT OF n" ≈27px below, the
-                 chevron ≈53px below. translateY(-4px) (outer) sets that balance;
-                 renderTodayWeekProgress drops it to 'none' once the goal is met
-                 and the row under the number hides, so the number re-centers. -->
-            <div id="today-progress-center-outer" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;transform:translateY(-4px);">
-              <div id="today-progress-center-inner" style="display:flex;flex-direction:column;align-items:center;gap:3.5px;">
-                <span id="today-progress-count" style="font-family:'DM Sans';font-size:60px;font-weight:700;color:var(--text);line-height:1;">0</span>
-                <!-- Down-chevron (--accent) directly below "OUT OF n". Absolutely
-                     positioned so it adds no height to the centered group, and it
-                     lives inside this row, so it hides with it once the goal is met. -->
-                <span id="today-progress-target" style="position:relative;font-family:'DM Sans';font-size:18px;font-weight:500;color:#fff;letter-spacing:.3px;display:flex;align-items:center;justify-content:center;"><span id="today-progress-target-text">OUT OF 3</span><svg id="today-progress-target-chev" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--accent);position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:2px;"><polyline points="6 9 12 15 18 9"/></svg></span>
-              </div>
-            </div>
-          </div>
+          <!-- This page's ring is the shared #today-circle-window below. -->
         </div>
         <div id="today-carousel-slide-heatmap" style="width:33.3333%;flex-shrink:0;height:300px;position:relative;clip-path:inset(-10px 0 0 0);">
           <!-- Same page sub-title style as page 1's "Completed workouts". -->
@@ -1383,21 +1357,56 @@ window._fbModuleReady = true;
           <div style="position:absolute;top:-10px;left:0;right:0;text-align:center;font-family:'DM Sans';font-size:18px;font-weight:800;color:#fff;letter-spacing:.5px;text-transform:uppercase;line-height:1;pointer-events:none;">New records</div>
           <!-- This page's circle is the shared #today-circle-window below. -->
         </div>
-        <!-- Pages 2 and 3 share ONE circle: it sits over page 2's slot (same
-             center/size as page 1's ring) and slides in/out with page 2 from
-             page 1, but between pages 2 and 3 it stays put — _todayCarouselGoTo
-             cancels the track's movement for it — and only the strip inside
-             (heatmap | PR pentagons), clipped to the circle, slides. -->
-        <div id="today-circle-window" style="position:absolute;top:14px;left:calc(50% - 136px);width:272px;height:272px;border-radius:50%;border:5px solid var(--accent);background:#000;box-sizing:border-box;overflow:hidden;transition:transform .3s cubic-bezier(.2,.8,.3,1);">
-          <div id="today-circle-strip" style="display:flex;width:524px;height:100%;transition:transform .3s cubic-bezier(.2,.8,.3,1);">
-            <!-- Tapping page 2 (like page 1's ring) opens the weekly sets
-                 target sheet; the chevron is page 1's (same size/colour). -->
-            <div onclick="openSetsTargetSheet()" style="position:relative;width:262px;height:100%;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;">
-              <div id="today-heatmap-mount" style="position:relative;z-index:1;"></div>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--accent);position:absolute;bottom:10px;left:50%;transform:translateX(-50%);z-index:2;pointer-events:none;"><polyline points="6 9 12 15 18 9"/></svg>
-            </div>
-            <div style="width:262px;height:100%;flex-shrink:0;display:flex;align-items:center;justify-content:center;">
-              <div id="today-pr-stars" style="display:flex;gap:0;align-items:flex-start;justify-content:center;transform:translateY(-1px);"></div>
+        <!-- ONE circle for all three pages. It sits over page 1's slot and
+             _todayCarouselGoTo cancels the track's movement for it, so it never
+             moves on screen. Its ring morphs (_todayRingMorph): page 1 = the
+             thick progress ring (dark track + accent progress arc), pages 2/3 =
+             the thin solid accent ring — radius/thickness animate with the
+             slide while a full-accent layer fades in over the track/progress.
+             Inside, a 3-pane strip (page 1 count/goal segments | heatmap | PR
+             pentagons), clipped to the ring's inner edge, slides between pages. -->
+        <div id="today-circle-window" style="position:absolute;top:0;left:calc(100% / 6 - 150px);width:300px;height:300px;transition:transform .3s cubic-bezier(.2,.8,.3,1);">
+          <svg width="300" height="300" viewBox="0 0 300 300" style="position:absolute;inset:0;display:block;">
+            <!-- Black behind the whole ring (covers page 1's outer edge ≈130.7). -->
+            <circle cx="150" cy="150" r="131" fill="#000"/>
+            <circle id="today-ring-track" cx="150" cy="150" r="117.86" fill="none" stroke="#1e1e1e" stroke-width="25.71"/>
+            <!-- pathLength keeps renderTodayWeekProgress's dash maths (740.52 =
+                 the page-1 circumference) valid at any morphed radius. -->
+            <circle id="today-progress-ring" pathLength="740.52" cx="150" cy="150" r="117.86" fill="none" stroke="#999" stroke-opacity="0.55" stroke-width="25.71" stroke-linecap="round" stroke-dasharray="740.52" stroke-dashoffset="740.52" transform="rotate(-90 150 150)" style="stroke:var(--accent);stroke-opacity:1;transition:stroke-dashoffset .6s ease,stroke .4s ease,stroke-opacity .4s ease;"/>
+            <circle id="today-ring-full" cx="150" cy="150" r="117.86" fill="none" stroke-width="25.71" style="stroke:var(--accent);opacity:0;"/>
+          </svg>
+          <div id="today-circle-clip" style="position:absolute;inset:0;clip-path:circle(105px at 150px 150px);-webkit-clip-path:circle(105px at 150px 150px);">
+            <div id="today-circle-strip" style="display:flex;width:900px;height:300px;transition:transform .3s cubic-bezier(.2,.8,.3,1);">
+              <!-- Page 1: weekly goal segments + count / OUT OF n / chevron. -->
+              <div onclick="openStrengthTargetSheet()" style="position:relative;width:300px;height:300px;flex-shrink:0;cursor:pointer;">
+                <svg width="300" height="300" viewBox="0 0 300 300" style="position:absolute;inset:0;display:block;">
+                  <g id="today-progress-goal-ring" transform="rotate(-90 150 150)"></g>
+                </svg>
+                <!-- Sizes/offsets matched to the design mock (measured vs. the ring's
+                     center): number ≈17px above center, "OUT OF n" ≈27px below, the
+                     chevron ≈53px below. translateY(-4px) (outer) sets that balance;
+                     renderTodayWeekProgress drops it to 'none' once the goal is met
+                     and the row under the number hides, so the number re-centers. -->
+                <div id="today-progress-center-outer" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;transform:translateY(-4px);">
+                  <div id="today-progress-center-inner" style="display:flex;flex-direction:column;align-items:center;gap:3.5px;">
+                    <span id="today-progress-count" style="font-family:'DM Sans';font-size:60px;font-weight:700;color:var(--text);line-height:1;">0</span>
+                    <!-- Down-chevron (--accent) directly below "OUT OF n". Absolutely
+                         positioned so it adds no height to the centered group, and it
+                         lives inside this row, so it hides with it once the goal is met. -->
+                    <span id="today-progress-target" style="position:relative;font-family:'DM Sans';font-size:18px;font-weight:500;color:#fff;letter-spacing:.3px;display:flex;align-items:center;justify-content:center;"><span id="today-progress-target-text">OUT OF 3</span><svg id="today-progress-target-chev" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--accent);position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:2px;"><polyline points="6 9 12 15 18 9"/></svg></span>
+                  </div>
+                </div>
+              </div>
+              <!-- Page 2: tapping opens the weekly sets target sheet; the chevron
+                   is page 1's (same size/colour). -->
+              <div onclick="openSetsTargetSheet()" style="position:relative;width:300px;height:300px;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+                <div id="today-heatmap-mount" style="position:relative;z-index:1;"></div>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--accent);position:absolute;bottom:29px;left:50%;transform:translateX(-50%);z-index:2;pointer-events:none;"><polyline points="6 9 12 15 18 9"/></svg>
+              </div>
+              <!-- Page 3: PR pentagons. -->
+              <div style="width:300px;height:300px;flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+                <div id="today-pr-stars" style="display:flex;gap:0;align-items:flex-start;justify-content:center;transform:translateY(-1px);"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -3739,8 +3748,12 @@ function _todayCarouselGoTo(idx, instant) {
   // Pages 2↔3 share one static circle (#today-circle-window): on page 3 it's
   // pushed one slide right — exactly undoing the track's extra move, with
   // the same timing — and only its inner strip slides (heatmap ↔ PRs).
-  if (win) win.style.transform = idx === 2 ? `translateX(${slideW}px)` : '';
-  if (strip) strip.style.transform = idx === 2 ? 'translateX(-262px)' : '';
+  // (Now: ONE circle for all pages — pushed idx slides right, exactly undoing
+  // the track's move, so it never moves on screen; the inner strip shows the
+  // idx-th 300px pane, and the ring morphs thick (page 1) ↔ thin (2/3).)
+  if (win) win.style.transform = idx ? `translateX(${idx * slideW}px)` : '';
+  if (strip) strip.style.transform = idx ? `translateX(-${idx * 300}px)` : '';
+  _todayRingMorphTo(idx === 0 ? 0 : 1, instant);
   if (instant) requestAnimationFrame(() => {
     track.style.transition = 'transform .3s cubic-bezier(.2,.8,.3,1)';
     [win, strip].forEach(el => { if (el) el.style.transition = 'transform .3s cubic-bezier(.2,.8,.3,1)'; });
@@ -3754,7 +3767,51 @@ function _todayCarouselGoTo(idx, instant) {
 window._todayCarouselGoTo = _todayCarouselGoTo;
 // The shared circle's page-3 offset is in px (one slide width) — re-apply it
 // if the screen width changes (rotation etc.).
-window.addEventListener('resize', () => { if (window._todayCarouselIdx === 2) _todayCarouselGoTo(2, true); });
+window.addEventListener('resize', () => { if (window._todayCarouselIdx > 0) _todayCarouselGoTo(window._todayCarouselIdx, true); });
+
+// ── Shared ring morph: m = 0 → page 1's thick progress ring, m = 1 → pages
+// 2/3's thin solid accent ring. Radius/thickness interpolate (outer edge
+// 130.7 → 136, thickness 25.71 → 5), a full-accent layer fades in over the
+// track + progress arc (colour blend), and the inner content's clip follows
+// the ring's inner edge (105 → 131) so sliding content never crosses it.
+// Tweened per frame with the track's own easing/duration, so it stays in
+// step with the slide.
+const _RING_A = { r: 117.86, w: 25.71 }, _RING_B = { r: 133.5, w: 5 };
+window._todayRingM = 0;
+function _todayRingMorph(m) {
+  window._todayRingM = m;
+  const r = _RING_A.r + (_RING_B.r - _RING_A.r) * m;
+  const w = _RING_A.w + (_RING_B.w - _RING_A.w) * m;
+  ['today-ring-track', 'today-progress-ring', 'today-ring-full'].forEach(id => {
+    const c = document.getElementById(id);
+    if (c) { c.setAttribute('r', r.toFixed(2)); c.setAttribute('stroke-width', w.toFixed(2)); }
+  });
+  const full = document.getElementById('today-ring-full');
+  if (full) full.style.opacity = m.toFixed(3);
+  const clip = document.getElementById('today-circle-clip');
+  if (clip) { const v = `circle(${(r - w / 2).toFixed(2)}px at 150px 150px)`; clip.style.clipPath = v; clip.style.webkitClipPath = v; }
+}
+// cubic-bezier(.2,.8,.3,1) — same curve as the track's CSS transition.
+function _todayRingEase(t) {
+  const x1 = .2, y1 = .8, x2 = .3, y2 = 1;
+  const bx = s => 3 * (1 - s) * (1 - s) * s * x1 + 3 * (1 - s) * s * s * x2 + s * s * s;
+  const by = s => 3 * (1 - s) * (1 - s) * s * y1 + 3 * (1 - s) * s * s * y2 + s * s * s;
+  let lo = 0, hi = 1, s = t;
+  for (let i = 0; i < 24; i++) { s = (lo + hi) / 2; if (bx(s) < t) lo = s; else hi = s; }
+  return by(s);
+}
+function _todayRingMorphTo(target, instant) {
+  cancelAnimationFrame(window._todayRingRaf);
+  const from = window._todayRingM;
+  if (instant || from === target) { _todayRingMorph(target); return; }
+  const t0 = performance.now(), dur = 300;
+  const step = now => {
+    const p = Math.min(1, (now - t0) / dur);
+    _todayRingMorph(from + (target - from) * _todayRingEase(p));
+    if (p < 1) window._todayRingRaf = requestAnimationFrame(step);
+  };
+  window._todayRingRaf = requestAnimationFrame(step);
+}
 
 // Swipe handling scoped to the carousel box itself — this box sits below the
 // header and above the dots row by construction, so attaching the gesture
@@ -31066,7 +31123,7 @@ function _animateMuscleHeatmapColors(mount) {
 // Manually-tuned size for the Home carousel's heatmap diagram — a plain
 // multiplier on the diagram's natural rendered size, not fit to any
 // container. Adjust this single number to resize it.
-const TODAY_HEATMAP_SCALE = 1.1;
+const TODAY_HEATMAP_SCALE = 1.013; // figures ≈233px tall (20px shorter than at 1.1)
 const TODAY_HEATMAP_OFFSET_Y = -10; // px, negative = up
 // Home carousel's track takes 300ms to slide (see #today-carousel-track's
 // own `transition: transform .3s`) — wait for that to finish, plus a small
