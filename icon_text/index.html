@@ -2053,10 +2053,10 @@ window._fbModuleReady = true;
   <div class="modal-sheet" style="padding:4px 20px 32px;border-radius:20px;border:1px solid var(--border);margin-bottom:20vh;">
     <div class="modal-handle"></div>
     <div class="modal-title" style="margin-top:24px;margin-bottom:6px;">BODY WEIGHT</div>
-    <div style="font-size:13px;color:var(--muted);margin-bottom:18px;">Used in BW+ exercises. Synced across devices.</div>
+    <div style="font-size:13px;color:#A0A0A0;margin-bottom:18px;">Used in BW+ exercises.</div>
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
       <input id="bwInput" type="number" min="1" max="300" step="0.5" placeholder="e.g. 80" style="flex:1;background:#1a1a1a;border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans';font-size:22px;font-weight:700;padding:12px 14px;box-sizing:border-box;outline:none;text-align:center;" onkeydown="if(event.key==='Enter')confirmBWModal()"/>
-      <span style="font-family:'Bebas Neue';font-size:28px;color:var(--muted);">kg</span>
+      <span style="font-family:'Bebas Neue';font-size:28px;color:#ccc;">kg</span>
     </div>
     <div style="display:flex;gap:10px;">
       <button onclick="closeBWModal()" style="flex:1;background:transparent;border:1px solid #555;border-radius:10px;color:#fff;font-family:'DM Sans';font-size:18px;font-weight:700;padding:12px;cursor:pointer;">CANCEL</button>
@@ -3819,29 +3819,58 @@ function _todayRingMorphTo(target, instant) {
 (function _initTodayCarouselSwipe() {
   const zone = document.getElementById('today-week-progress');
   if (!zone) return;
-  let _tx = 0, _ty = 0, _moved = false;
+  let _tx = 0, _ty = 0, _t0 = 0, _moved = false, _tapMoved = false, _tapHandledAt = 0;
   zone.addEventListener('touchstart', e => {
     if (e.touches.length !== 1) return;
     _tx = e.touches[0].clientX;
     _ty = e.touches[0].clientY;
+    _t0 = Date.now();
     _moved = false;
+    _tapMoved = false;
+    _tapHandledAt = 0;
   }, { passive: true });
   zone.addEventListener('touchmove', e => {
     if (!e.touches.length) return;
-    if (Math.abs(e.touches[0].clientX - _tx) > 8) _moved = true;
+    const mx = Math.abs(e.touches[0].clientX - _tx), my = Math.abs(e.touches[0].clientY - _ty);
+    if (mx > 8) _moved = true;
+    if (mx > 10 || my > 10) _tapMoved = true;
   }, { passive: true });
   zone.addEventListener('touchend', e => {
-    if (!_moved) return;
-    const dx = e.changedTouches[0].clientX - _tx;
-    const dy = e.changedTouches[0].clientY - _ty;
+    const t = e.changedTouches[0];
+    if (!_moved) {
+      // Tap inside the circle → run the current page's action straight from
+      // the touch, instead of waiting for the browser's synthesized click:
+      // right after a swipe (Android Chrome and iOS Safari alike) that click
+      // was sometimes dropped, so the first tap did nothing. The whole disc
+      // (ring included) is the target, whatever sits under the finger.
+      if (_tapMoved || Date.now() - _t0 > 600) return;
+      const win = document.getElementById('today-circle-window');
+      if (!win) return;
+      const r = win.getBoundingClientRect(); // includes the page-offset transform
+      const k = r.width / 300; // 300 = the circle's SVG box
+      const dx = t.clientX - (r.left + r.width / 2), dy = t.clientY - (r.top + r.height / 2);
+      if (Math.hypot(dx, dy) > 136 * k) return; // 136 = the ring's outer edge (pages 2/3)
+      const action = [window.openStrengthTargetSheet, window.openSetsTargetSheet][window._todayCarouselIdx];
+      if (typeof action !== 'function') return;
+      _tapHandledAt = Date.now();
+      action();
+      return;
+    }
+    const dx = t.clientX - _tx;
+    const dy = t.clientY - _ty;
     if (Math.abs(dx) < 40 || Math.abs(dy) > Math.abs(dx)) return;
     _todayCarouselGoTo(window._todayCarouselIdx + (dx < 0 ? 1 : -1));
   }, { passive: true });
   // A drag that ends inside the ring slide would otherwise still fire its
   // onclick (openStrengthTargetSheet) once the finger lifts — swallow that
-  // click whenever the gesture just completed was a swipe, not a tap.
+  // click whenever the gesture just completed was a swipe, not a tap. Also
+  // swallow the native click that follows a tap already handled in touchend
+  // above, so the sheet doesn't open twice.
   zone.addEventListener('click', e => {
-    if (_moved) { e.stopPropagation(); e.preventDefault(); }
+    if (_moved || (_tapHandledAt && Date.now() - _tapHandledAt < 800)) {
+      _tapHandledAt = 0;
+      e.stopPropagation(); e.preventDefault();
+    }
   }, true);
 })();
 
@@ -6099,7 +6128,7 @@ function renderExercisesTab() {
     // content off). The label under the title (_vColor) stays accent.
     const _opts = _pickViews.map((v, i) => {
       const _off = v === 'custom' && _customEmpty && _exTabView !== v;
-      return `<button ${_off ? 'disabled' : `onclick="_extabPickView('${v}')"`} style="width:100%;background:transparent;border:none;${i ? 'border-top:1px solid #2a2a2a;' : ''}color:#fff;font-family:'DM Sans';font-size:14px;font-weight:700;padding:14px 16px;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:${_off ? 'default' : 'pointer'};opacity:${_off ? '0.3' : '1'};-webkit-tap-highlight-color:transparent;"><span>${_vLabels[v]}</span>${_viewCheckSvg(v === _exTabView)}</button>`;
+      return `<button ${_off ? 'disabled' : `onclick="_extabPickView('${v}')"`} style="width:100%;background:transparent;border:none;${i ? 'border-top:1px solid #2a2a2a;' : ''}color:#fff;font-family:'DM Sans';font-size:14px;font-weight:700;padding:14px 16px;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:${_off ? 'default' : 'pointer'};opacity:${_off ? '0.3' : '1'};-webkit-tap-highlight-color:transparent;"><span style="white-space:nowrap;">${_vLabels[v]}</span>${_viewCheckSvg(v === _exTabView)}</button>`;
     }).join('');
     return `<div style="position:relative;display:flex;align-items:center;justify-content:center;min-height:34px;">
       <!-- Symmetric padding + chevron inside the right padding, so the label
@@ -6108,7 +6137,7 @@ function renderExercisesTab() {
         ${_vLabels[_exTabView] || 'ALL'}
         <svg id="extab-view-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="${_exDelMode ? 'visibility:hidden;' : ''}position:absolute;right:6px;top:50%;margin-top:-6px;transition:transform .2s;"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
-      <div id="extab-view-menu" style="display:none;position:absolute;top:100%;left:50%;transform:translateX(-50%);min-width:160px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;overflow:hidden;z-index:600;box-shadow:0 8px 24px rgba(0,0,0,.5);">${_opts}</div>
+      <div id="extab-view-menu" style="display:none;position:absolute;top:100%;left:50%;transform:translateX(-50%);min-width:160px;width:max-content;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;overflow:hidden;z-index:600;box-shadow:0 8px 24px rgba(0,0,0,.5);">${_opts}</div>
       <button id="ex-add-btn" onclick="openNewExModal(window._exTabMuscle||'Chest')" ${_exDelMode ? 'tabindex="-1" aria-hidden="true" ' : ''}style="${_exDelMode ? 'visibility:hidden;pointer-events:none;' : ''}position:absolute;right:0;top:50%;transform:translateY(-50%);padding:4px 8px 4px 12px;border:none;background:transparent;color:${_exTabView==='custom'?'var(--accent)':'#555'};cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;"><svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></button>
     </div>`;
   })();
@@ -10328,7 +10357,7 @@ function renderWorkoutsTab2() {
         // content off). The label under the title (_vColor) stays accent.
         const _opts = _pickViews.map((v, i) => {
           const _off = v === 'custom' && _customEmpty && _wTabView !== v;
-          return `<button ${_off ? 'disabled' : `onclick="_wtabPickView('${v}')"`} style="width:100%;background:transparent;border:none;${i ? 'border-top:1px solid #2a2a2a;' : ''}color:#fff;font-family:'DM Sans';font-size:14px;font-weight:700;padding:14px 16px;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:${_off ? 'default' : 'pointer'};opacity:${_off ? '0.3' : '1'};-webkit-tap-highlight-color:transparent;"><span>${_vLabels[v]}</span>${_viewCheckSvg(v === _wTabView)}</button>`;
+          return `<button ${_off ? 'disabled' : `onclick="_wtabPickView('${v}')"`} style="width:100%;background:transparent;border:none;${i ? 'border-top:1px solid #2a2a2a;' : ''}color:#fff;font-family:'DM Sans';font-size:14px;font-weight:700;padding:14px 16px;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:${_off ? 'default' : 'pointer'};opacity:${_off ? '0.3' : '1'};-webkit-tap-highlight-color:transparent;"><span style="white-space:nowrap;">${_vLabels[v]}</span>${_viewCheckSvg(v === _wTabView)}</button>`;
         }).join('');
         return `${_wTitleRowHtml}
     <div style="position:relative;display:flex;align-items:center;justify-content:center;min-height:34px;">
@@ -10339,7 +10368,7 @@ function renderWorkoutsTab2() {
         ${_vLabels[_wTabView] || 'ALL'}
         <svg id="wtab-view-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="${_isDeleteMode ? 'visibility:hidden;' : ''}position:absolute;right:6px;top:50%;margin-top:-6px;transition:transform .2s;"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
-      <div id="wtab-view-menu" style="display:none;position:absolute;top:100%;left:50%;transform:translateX(-50%);min-width:160px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;overflow:hidden;z-index:600;box-shadow:0 8px 24px rgba(0,0,0,.5);">${_opts}</div>
+      <div id="wtab-view-menu" style="display:none;position:absolute;top:100%;left:50%;transform:translateX(-50%);min-width:160px;width:max-content;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;overflow:hidden;z-index:600;box-shadow:0 8px 24px rgba(0,0,0,.5);">${_opts}</div>
       ${window._planStrengthKey ? '' : `<button id="w2-add-btn" onclick="startNewWorkout(true)" ${_isDeleteMode ? 'tabindex="-1" aria-hidden="true" ' : ''}style="${_isDeleteMode ? 'visibility:hidden;pointer-events:none;' : ''}position:absolute;right:0;top:50%;transform:translateY(-50%);padding:4px 8px 4px 12px;border:none;background:transparent;color:${_wTabView==='custom'?'var(--accent)':'#555'};cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;"><svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></button>`}
     </div>`;
       })()
@@ -31276,18 +31305,22 @@ function _renderTodayWeekPRStars() {
   const star = (color, n, label, baseSize, baseLift, z) => {
     const lit = n > 0;
     const size = px(baseSize), lift = px(baseLift);
-    return `<span style="position:relative;z-index:${z};width:${px(81)}px;display:flex;flex-direction:column;align-items:center;gap:${px(8)}px;">
-      <span style="position:relative;width:${px(81)}px;height:${px(104)}px;display:flex;align-items:center;justify-content:center;">
+    // The z-index sits on the star box, not the column, so no column forms its
+    // own stacking context — that lets every label (z-index 3) sit above ALL
+    // the pentagons and their drop-shadows (BEST SET's shadow spills sideways
+    // and down onto the MAX / VOL labels otherwise).
+    return `<span style="position:relative;width:${px(81)}px;display:flex;flex-direction:column;align-items:center;gap:${px(8)}px;">
+      <span style="position:relative;z-index:${z};width:${px(81)}px;height:${px(104)}px;display:flex;align-items:center;justify-content:center;">
         <span style="position:absolute;left:50%;top:50%;width:${size}px;height:${size}px;margin-left:${-size / 2}px;margin-top:${-size / 2 - lift + 8}px;display:flex;align-items:center;justify-content:center;">
           <svg class="today-pr-star-svg" data-lit-fill="${lit ? color : '#333'}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="#333" style="position:absolute;inset:0;overflow:visible;transition:fill .5s ease;filter:${z > 1
               // BEST SET (in front): a wider, darker, softer shadow that falls
               // onto the MAX / VOL pentagons on both sides.
               ? `drop-shadow(${(-size * 0.07).toFixed(1)}px ${(size * 0.03).toFixed(1)}px ${(size * 0.09).toFixed(1)}px rgba(0,0,0,.95)) drop-shadow(${(size * 0.07).toFixed(1)}px ${(size * 0.03).toFixed(1)}px ${(size * 0.09).toFixed(1)}px rgba(0,0,0,.95))`
               : `drop-shadow(0 ${(size * 0.025).toFixed(1)}px ${(size * 0.04).toFixed(1)}px rgba(0,0,0,.55))`};">${_PR_SATIN_SVG}</svg>
-          <span class="today-pr-star-num" data-lit-color="${lit ? '#fff' : '#777'}" style="position:relative;font-size:${px(42)}px;font-weight:800;color:#777;line-height:1;text-shadow:0 1px 3px rgba(0,0,0,.55);transform:translateY(${(size * 3 / 68).toFixed(1)}px);transition:color .5s ease;">${n}</span>
+          <span class="today-pr-star-num" data-lit-color="${lit ? '#fff' : '#777'}" style="position:relative;font-size:${px(42)}px;font-weight:800;color:#777;line-height:1;text-shadow:0 0 4px rgba(0,0,0,.6);transform:translateY(${(size * 3 / 68).toFixed(1)}px);transition:color .5s ease;">${n}</span>
         </span>
       </span>
-      <span class="today-pr-star-label" data-lit-color="${lit ? color : '#555'}" style="font-size:18px;font-weight:700;color:#555;letter-spacing:.3px;line-height:${px(24)}px;white-space:nowrap;transition:color .5s ease;">${label}</span>
+      <span class="today-pr-star-label" data-lit-color="${lit ? color : '#555'}" style="position:relative;z-index:3;font-family:'DM Sans',sans-serif;font-size:18px;font-weight:700;font-synthesis:none;-webkit-font-smoothing:antialiased;color:#555;letter-spacing:.3px;line-height:${px(24)}px;white-space:nowrap;transition:color .5s ease;">${label}</span>
     </span>`;
   };
   // BEST SET (middle) is drawn in front of the other two via z-index.
