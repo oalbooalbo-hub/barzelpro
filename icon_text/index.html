@@ -1399,12 +1399,15 @@ window._fbModuleReady = true;
               </div>
               <!-- Page 2: tapping opens the weekly sets target sheet; the chevron
                    is page 1's (same size/colour). -->
-              <div onclick="openSetsTargetSheet()" style="position:relative;width:300px;height:300px;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+              <!-- Pages 2/3 are their own GPU layers (will-change) so what
+                   _todayCarouselWarmUp draws ahead of time is kept and reused
+                   by the first swipe instead of being drawn mid-slide. -->
+              <div id="today-circle-pane-sets" onclick="openSetsTargetSheet()" style="position:relative;width:300px;height:300px;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;will-change:transform;">
                 <div id="today-heatmap-mount" style="position:relative;z-index:1;"></div>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--accent);position:absolute;bottom:29px;left:50%;transform:translateX(-50%);z-index:2;pointer-events:none;"><polyline points="6 9 12 15 18 9"/></svg>
               </div>
               <!-- Page 3: PR pentagons. -->
-              <div style="width:300px;height:300px;flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+              <div id="today-circle-pane-prs" style="width:300px;height:300px;flex-shrink:0;display:flex;align-items:center;justify-content:center;will-change:transform;">
                 <div id="today-pr-stars" style="display:flex;gap:0;align-items:flex-start;justify-content:center;transform:translateY(-1px);"></div>
               </div>
             </div>
@@ -3383,6 +3386,8 @@ function renderTodayWeekProgress(withAnim) {
   if (!el) return;
   // Build carousel page 2's diagram ahead of time, on idle (not on swipe).
   if (typeof _prebuildTodayWeekHeatmap === 'function') _prebuildTodayWeekHeatmap();
+  // Same for page 3's PR pentagons.
+  if (typeof _prebuildTodayWeekPRStars === 'function') _prebuildTodayWeekPRStars();
   const noTarget = workoutWeekTarget === 0;
   const target = noTarget ? 0 : (workoutWeekTarget || _readWorkoutTarget() || 3);
   const now = new Date();
@@ -3766,8 +3771,49 @@ function _todayCarouselGoTo(idx, instant) {
   // Page 2's diagram is prebuilt (see _prebuildTodayWeekHeatmap) — only its
   // color reveal runs here, so the slide's first frames stay light.
   if (idx === 1 && typeof _showTodayWeekHeatmap === 'function') _showTodayWeekHeatmap();
-  if (idx === 2 && typeof _renderTodayWeekPRStars === 'function') _renderTodayWeekPRStars();}
+  // Page 3 is prebuilt too (see _prebuildTodayWeekPRStars).
+  if (idx === 2 && typeof _showTodayWeekPRStars === 'function') _showTodayWeekPRStars();}
 window._todayCarouselGoTo = _todayCarouselGoTo;
+
+// Performance (low-end phones): pages 2/3 sit outside the circle's clip while
+// page 1 shows, so the browser never draws them until the first swipe — then
+// draws hundreds of diagram paths / the filtered PR pentagons mid-slide (the
+// "first swipe lags, second is smooth"). The browser also throws those
+// drawings away whenever Home is hidden (tab switch) or the app goes to the
+// background. This slips both panes into the circle for two frames at 1%
+// opacity (invisible; transform + opacity only, so their own layers — see
+// will-change on #today-circle-pane-sets/-prs — are drawn and then kept), then
+// puts them back. Run after the background prebuilds (app start / Home
+// re-render, incl. returning to the Home tab) and when the app comes back.
+function _todayCarouselWarmUp() {
+  if (window._todayWarmUpPending) { _scheduleTodayCarouselWarmUp(); return; } // a pane may have been rebuilt since
+  if (window._todayCarouselIdx !== 0) return; // already swiped — nothing left to pre-draw
+  const page = document.getElementById('page-log');
+  const start = document.getElementById('today-start-screen');
+  const box = document.getElementById('today-week-progress');
+  if (!page || !page.classList.contains('active') || !start || start.style.display === 'none' || !box || box.style.display === 'none') return;
+  const panes = [['today-circle-pane-sets', 300], ['today-circle-pane-prs', 600]]
+    .map(([id, off]) => [document.getElementById(id), off]).filter(p => p[0]);
+  if (!panes.length) return;
+  window._todayWarmUpPending = true;
+  panes.forEach(([el, off]) => { el.style.transform = `translateX(-${off}px)`; el.style.opacity = '0.01'; el.style.pointerEvents = 'none'; });
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    panes.forEach(([el]) => { el.style.transform = ''; el.style.opacity = ''; el.style.pointerEvents = ''; });
+    window._todayWarmUpPending = false;
+  }));
+}
+// Debounced, so the page-2 and page-3 prebuilds (separate idle callbacks)
+// share one warm-up.
+function _scheduleTodayCarouselWarmUp(delay) {
+  clearTimeout(window._todayWarmUpTimer);
+  window._todayWarmUpTimer = setTimeout(_todayCarouselWarmUp, delay || 50);
+}
+window._todayCarouselWarmUp = _todayCarouselWarmUp;
+window._scheduleTodayCarouselWarmUp = _scheduleTodayCarouselWarmUp;
+document.addEventListener('visibilitychange', () => {
+  // Let the resumed page paint its first frame before pre-drawing.
+  if (document.visibilityState === 'visible') _scheduleTodayCarouselWarmUp(300);
+});
 // The shared circle's page-3 offset is in px (one slide width) — re-apply it
 // if the screen width changes (rotation etc.).
 window.addEventListener('resize', () => { if (window._todayCarouselIdx > 0) _todayCarouselGoTo(window._todayCarouselIdx, true); });
@@ -31269,11 +31315,15 @@ function _prebuildTodayWeekHeatmap() {
     window._todayHeatmapPrebuildPending = false;
     // Already showing page 2 → a rebuilt (grey) diagram must reveal at once.
     if (_buildTodayWeekHeatmap() && window._todayCarouselIdx === 1) _revealTodayHeatmapColorsNextFrame(document.getElementById('today-heatmap-mount'));
+    // Pre-draw it too (also on Home re-shows where nothing was rebuilt — the
+    // browser dropped the drawing while Home was hidden).
+    if (typeof _scheduleTodayCarouselWarmUp === 'function') _scheduleTodayCarouselWarmUp();
   };
   if (window._todayHeatmapPrebuildPending) return;
   window._todayHeatmapPrebuildPending = true;
-  if (typeof requestIdleCallback === 'function') requestIdleCallback(run, { timeout: 1000 });
-  else setTimeout(run, 300); // iOS Safari has no requestIdleCallback
+  // Short deadlines so it's ready before a quick first swipe.
+  if (typeof requestIdleCallback === 'function') requestIdleCallback(run, { timeout: 300 });
+  else setTimeout(run, 150); // iOS Safari has no requestIdleCallback
 }
 // Swipe to page 2: no rebuild during the slide — grey the prebuilt regions
 // instantly (no transition), then once the slide has settled re-check the
@@ -31350,9 +31400,17 @@ const _PR_SATIN_OVERLAY = `<g clip-path="url(#todayPrSatinClip)">
 const _PR_SATIN_SVG = `<path d="${_PR_SATIN_PATH}"/>
   ${_PR_SATIN_OVERLAY}${_PR_SATIN_OVERLAY}${_PR_SATIN_OVERLAY}
   <g style="opacity:.4;">${_PR_SATIN_OVERLAY}</g>`;
-function _renderTodayWeekPRStars() {
+// Performance (low-end phones), same scheme as page 2's heatmap: the PR
+// recount (3 passes over the whole history) and the satin pentagons (heavy
+// SVG filters) are NOT rebuilt when swiping to page 3 any more — they're built
+// ahead of time on idle (_prebuildTodayWeekPRStars, from every Home
+// re-render), and only when the counts/colors changed (mount.dataset.sig).
+// The swipe (_showTodayWeekPRStars) just greys them and re-lights them once
+// the slide has settled. Returns true when it (re)built the pentagons, which
+// then start grey/unlit.
+function _buildTodayWeekPRStars() {
   const mount = document.getElementById('today-pr-stars');
-  if (!mount) return;
+  if (!mount) return false;
   const now = new Date();
   const weekStart = new Date(now); weekStart.setDate(now.getDate() - now.getDay()); weekStart.setHours(0, 0, 0, 0);
   const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate() + 6); weekEnd.setHours(23, 59, 59, 999);
@@ -31360,6 +31418,8 @@ function _renderTodayWeekPRStars() {
   const base = allW.filter(w => { const d = new Date(w.date); return d >= weekStart && d <= weekEnd; });
   const countFor = (metric) => Object.values(_computeBodyPartExPRs(allW, base, metric)).reduce((a, e) => a + e.count, 0);
   const maxN = countFor('max'), bestSetN = countFor('1rm'), volN = countFor('vol');
+  const sig = JSON.stringify([maxN, bestSetN, volN, BP_COLORS.pr]);
+  if (sig === mount.dataset.sig && mount.firstChild) return false; // up to date
   // Unlike the in-workout star() (which hides the number and shows a bare grey
   // star at 0), this always shows the count — 0 included — colored grey only
   // when it's 0.
@@ -31400,15 +31460,66 @@ function _renderTodayWeekPRStars() {
   // BEST SET (middle) is drawn in front of the other two via z-index.
   // _PR_SATIN_DEFS: shared clip/gradients/texture for the satin pentagons.
   mount.innerHTML = _PR_SATIN_DEFS + star(BP_COLORS.pr.max, maxN, 'MAX', 106, 0, 1) + star(BP_COLORS.pr.bestSet, bestSetN, 'BEST SET', 126, 6, 2) + star(BP_COLORS.pr.vol, volN, 'VOL', 106, 0, 1);
+  mount.dataset.sig = sig;
+  return true;
+}
+// Rebuild if needed, then light up after the slide settles.
+function _renderTodayWeekPRStars() {
+  const mount = document.getElementById('today-pr-stars');
+  if (!mount || !_buildTodayWeekPRStars()) return;
   clearTimeout(window._todayPRStarsColorTimer);
   window._todayPRStarsColorTimer = setTimeout(() => _animateTodayPRStars(mount), TODAY_CAROUSEL_COLOR_DELAY);
 }
 window._renderTodayWeekPRStars = _renderTodayWeekPRStars;
+// Called from renderTodayWeekProgress (every Home re-render): builds page 3
+// in the background, off the swipe's critical path.
+function _prebuildTodayWeekPRStars() {
+  const run = () => {
+    window._todayPRStarsPrebuildPending = false;
+    // Already showing page 3 → rebuilt (unlit) pentagons must light up at once.
+    if (_buildTodayWeekPRStars() && window._todayCarouselIdx === 2) {
+      const mount = document.getElementById('today-pr-stars');
+      requestAnimationFrame(() => requestAnimationFrame(() => _animateTodayPRStars(mount)));
+    }
+    // Pre-draw it too (see _todayCarouselWarmUp).
+    if (typeof _scheduleTodayCarouselWarmUp === 'function') _scheduleTodayCarouselWarmUp();
+  };
+  if (window._todayPRStarsPrebuildPending) return;
+  window._todayPRStarsPrebuildPending = true;
+  // Short deadlines so it's ready before a quick first swipe.
+  if (typeof requestIdleCallback === 'function') requestIdleCallback(run, { timeout: 300 });
+  else setTimeout(run, 150); // iOS Safari has no requestIdleCallback
+}
+// Swipe to page 3: no rebuild during the slide — reset the prebuilt pentagons
+// to unlit instantly (no transition), then once the slide has settled re-check
+// the counts (rebuilds only if they changed) and light them up.
+function _showTodayWeekPRStars() {
+  const mount = document.getElementById('today-pr-stars');
+  if (!mount) return;
+  clearTimeout(window._todayPRStarsColorTimer);
+  if (!mount.firstChild) _buildTodayWeekPRStars(); // not prebuilt yet (first ever swipe)
+  else {
+    mount.querySelectorAll('.today-pr-star-svg').forEach(el => { el.style.transition = 'none'; el.setAttribute('fill', '#333'); });
+    mount.querySelectorAll('.today-pr-star-num').forEach(el => { el.style.transition = 'none'; el.style.color = '#777'; });
+    mount.querySelectorAll('.today-pr-star-label').forEach(el => { el.style.transition = 'none'; el.style.color = '#555'; });
+  }
+  window._todayPRStarsColorTimer = setTimeout(() => {
+    // Just-rebuilt pentagons need a painted unlit frame first, or the color
+    // transitions have no starting value and would just snap in.
+    if (_buildTodayWeekPRStars()) requestAnimationFrame(() => requestAnimationFrame(() => _animateTodayPRStars(mount)));
+    else _animateTodayPRStars(mount);
+  }, TODAY_CAROUSEL_COLOR_DELAY);
+}
+window._showTodayWeekPRStars = _showTodayWeekPRStars;
+window._prebuildTodayWeekPRStars = _prebuildTodayWeekPRStars;
 
+// Lights the pentagons/numbers/labels up. Each transition is (re)set in the
+// same style change as its color, so it animates even after
+// _showTodayWeekPRStars switched it off for the instant unlit reset.
 function _animateTodayPRStars(mount) {
   if (!mount) return;
-  mount.querySelectorAll('.today-pr-star-svg').forEach(el => el.setAttribute('fill', el.dataset.litFill));
-  mount.querySelectorAll('.today-pr-star-num, .today-pr-star-label').forEach(el => { el.style.color = el.dataset.litColor; });
+  mount.querySelectorAll('.today-pr-star-svg').forEach(el => { el.style.transition = 'fill .5s ease'; el.setAttribute('fill', el.dataset.litFill); });
+  mount.querySelectorAll('.today-pr-star-num, .today-pr-star-label').forEach(el => { el.style.transition = 'color .5s ease'; el.style.color = el.dataset.litColor; });
 }
 
 function renderMuscleHeatmap() {
