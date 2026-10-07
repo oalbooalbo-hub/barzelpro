@@ -1339,7 +1339,7 @@ window._fbModuleReady = true;
       <!-- Sits above the carousel track, not inside either slide, so it never
            moves or re-renders when swiping between the ring and the heatmap. -->
       <div style="font-family:'DM Sans';font-size:14px;font-weight:700;color:#ccc;letter-spacing:.5px;text-transform:uppercase;transform:translateY(-10px);">This Week</div>
-      <div id="today-carousel-track" style="position:relative;display:flex;width:300%;align-self:flex-start;transform:translateX(0%);transition:transform .3s cubic-bezier(.2,.8,.3,1);">
+      <div id="today-carousel-track" style="position:relative;display:flex;width:300%;align-self:flex-start;transform:translateX(0%);transition:transform .3s cubic-bezier(.2,.8,.3,1);will-change:transform;">
         <div id="today-carousel-slide-ring" onclick="openStrengthTargetSheet()" style="width:33.3333%;flex-shrink:0;height:300px;cursor:pointer;position:relative;">
           <!-- Page-1-only sub-title under the shared "This Week" heading. Absolutely
                positioned in the ring's top margin so it adds no height to this
@@ -1365,7 +1365,7 @@ window._fbModuleReady = true;
              slide while a full-accent layer fades in over the track/progress.
              Inside, a 3-pane strip (page 1 count/goal segments | heatmap | PR
              pentagons), clipped to the ring's inner edge, slides between pages. -->
-        <div id="today-circle-window" style="position:absolute;top:0;left:calc(100% / 6 - 150px);width:300px;height:300px;transition:transform .3s cubic-bezier(.2,.8,.3,1);">
+        <div id="today-circle-window" style="position:absolute;top:0;left:calc(100% / 6 - 150px);width:300px;height:300px;transition:transform .3s cubic-bezier(.2,.8,.3,1);will-change:transform;">
           <svg width="300" height="300" viewBox="0 0 300 300" style="position:absolute;inset:0;display:block;">
             <!-- Black behind the whole ring (covers page 1's outer edge ≈130.7). -->
             <circle cx="150" cy="150" r="131" fill="#000"/>
@@ -1376,7 +1376,7 @@ window._fbModuleReady = true;
             <circle id="today-ring-full" cx="150" cy="150" r="117.86" fill="none" stroke-width="25.71" style="stroke:var(--accent);opacity:0;"/>
           </svg>
           <div id="today-circle-clip" style="position:absolute;inset:0;clip-path:circle(105px at 150px 150px);-webkit-clip-path:circle(105px at 150px 150px);">
-            <div id="today-circle-strip" style="display:flex;width:900px;height:300px;transition:transform .3s cubic-bezier(.2,.8,.3,1);">
+            <div id="today-circle-strip" style="display:flex;width:900px;height:300px;transition:transform .3s cubic-bezier(.2,.8,.3,1);will-change:transform;">
               <!-- Page 1: weekly goal segments + count / OUT OF n / chevron. -->
               <div onclick="openStrengthTargetSheet()" style="position:relative;width:300px;height:300px;flex-shrink:0;cursor:pointer;">
                 <svg width="300" height="300" viewBox="0 0 300 300" style="position:absolute;inset:0;display:block;">
@@ -3381,6 +3381,8 @@ function _resetWeekProgressForReplay() {
 function renderTodayWeekProgress(withAnim) {
   const el = document.getElementById('today-week-progress');
   if (!el) return;
+  // Build carousel page 2's diagram ahead of time, on idle (not on swipe).
+  if (typeof _prebuildTodayWeekHeatmap === 'function') _prebuildTodayWeekHeatmap();
   const noTarget = workoutWeekTarget === 0;
   const target = noTarget ? 0 : (workoutWeekTarget || _readWorkoutTarget() || 3);
   const now = new Date();
@@ -3761,7 +3763,9 @@ function _todayCarouselGoTo(idx, instant) {
   document.querySelectorAll('#today-carousel-dots .today-carousel-dot').forEach((d, i) => {
     d.style.background = i === idx ? 'var(--accent)' : 'rgba(255,255,255,0.25)';
   });
-  if (idx === 1 && typeof _renderTodayWeekHeatmap === 'function') _renderTodayWeekHeatmap();
+  // Page 2's diagram is prebuilt (see _prebuildTodayWeekHeatmap) — only its
+  // color reveal runs here, so the slide's first frames stay light.
+  if (idx === 1 && typeof _showTodayWeekHeatmap === 'function') _showTodayWeekHeatmap();
   if (idx === 2 && typeof _renderTodayWeekPRStars === 'function') _renderTodayWeekPRStars();}
 window._todayCarouselGoTo = _todayCarouselGoTo;
 // The shared circle's page-3 offset is in px (one slide width) — re-apply it
@@ -3852,6 +3856,10 @@ function _todayRingMorphTo(target, instant) {
       if (Math.hypot(dx, dy) > 136 * k) return; // 136 = the ring's outer edge (pages 2/3)
       const action = [window.openStrengthTargetSheet, window.openSetsTargetSheet][window._todayCarouselIdx];
       if (typeof action !== 'function') return;
+      // Cancel the browser's own click for this touch: it would land a moment
+      // later on the sheet's backdrop (now under the finger) and close the
+      // sheet straight away — the open/close "blink".
+      if (e.cancelable) e.preventDefault();
       _tapHandledAt = Date.now();
       action();
       return;
@@ -3860,7 +3868,7 @@ function _todayRingMorphTo(target, instant) {
     const dy = t.clientY - _ty;
     if (Math.abs(dx) < 40 || Math.abs(dy) > Math.abs(dx)) return;
     _todayCarouselGoTo(window._todayCarouselIdx + (dx < 0 ? 1 : -1));
-  }, { passive: true });
+  }, { passive: false }); // non-passive so a handled tap can preventDefault
   // A drag that ends inside the ring slide would otherwise still fire its
   // onclick (openStrengthTargetSheet) once the finger lifts — swallow that
   // click whenever the gesture just completed was a swipe, not a tap. Also
@@ -31192,9 +31200,18 @@ const TODAY_CAROUSEL_COLOR_DELAY = 350;
 // Home carousel's page 2 — same diagram/gradient as renderMuscleHeatmap below,
 // but scoped to the current calendar week (Sun-Sat) instead of the Progress
 // tab's selectable date range, matching the ring's own "this week" window.
-function _renderTodayWeekHeatmap() {
+// Performance (low-end phones): building the diagram (cloning the whole body
+// SVG) is heavy, so it is NOT done when swiping to page 2 any more — that work
+// landed on the slide's first frames and made it stutter. Instead it's built
+// ahead of time, on idle, whenever Home re-renders (_prebuildTodayWeekHeatmap),
+// and only when this week's data/targets actually changed (mount.dataset.sig).
+// The swipe itself (_showTodayWeekHeatmap) just greys the existing regions and
+// re-reveals their colors once the slide has settled.
+// Returns true when it (re)built the diagram — which then starts grey, real
+// colors stashed on each region (see _buildMuscleHeatmapDiagram's animate).
+function _buildTodayWeekHeatmap() {
   const mount = document.getElementById('today-heatmap-mount');
-  if (!mount) return;
+  if (!mount) return false;
   const now = new Date();
   const weekStart = new Date(now); weekStart.setDate(now.getDate() - now.getDay()); weekStart.setHours(0, 0, 0, 0);
   const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate() + 6); weekEnd.setHours(23, 59, 59, 999);
@@ -31211,17 +31228,74 @@ function _renderTodayWeekHeatmap() {
       _resolveExRegionIds(exDef).forEach(id => { regionVal[id] = (regionVal[id] || 0) + ds.length; });
     });
   });
+  const targets = _getSetsTargets();
+  const sig = JSON.stringify([regionVal, targets]);
+  if (sig === mount.dataset.sig && mount.firstChild) return false; // up to date
   mount.innerHTML = '';
-  const diagram = _buildMuscleHeatmapDiagram(regionVal, true, _getSetsTargets());
+  const diagram = _buildMuscleHeatmapDiagram(regionVal, true, targets);
   if (diagram) mount.appendChild(diagram);
+  mount.dataset.sig = sig;
   // Size/position are plain, manually-tuned constants (not fit to the
   // circle) — the wrapper's flex centering keeps it centered on the circle
   // regardless of these values. Adjust TODAY_HEATMAP_SCALE/OFFSET_Y directly.
   mount.style.transformOrigin = 'center center';
   mount.style.transform = `translateY(${TODAY_HEATMAP_OFFSET_Y}px) scale(${TODAY_HEATMAP_SCALE})`;
-  clearTimeout(window._todayHeatmapColorTimer);
-  window._todayHeatmapColorTimer = setTimeout(() => _animateMuscleHeatmapColors(mount), TODAY_CAROUSEL_COLOR_DELAY);
+  return true;
 }
+// Fades every region from grey to its stashed heat color. The transition is
+// (re)set in the same style change as the fill, so it animates even after
+// _showTodayWeekHeatmap switched it off for the instant grey reset.
+function _revealTodayHeatmapColors(mount) {
+  if (!mount) return;
+  mount.querySelectorAll('[data-heat-color]').forEach(el => {
+    el.style.transition = 'fill .5s ease';
+    el.setAttribute('fill', el.dataset.heatColor);
+  });
+}
+function _revealTodayHeatmapColorsNextFrame(mount) {
+  requestAnimationFrame(() => requestAnimationFrame(() => _revealTodayHeatmapColors(mount)));
+}
+// Data changed (e.g. sets targets saved): rebuild if needed, then reveal.
+function _renderTodayWeekHeatmap() {
+  const mount = document.getElementById('today-heatmap-mount');
+  if (!mount || !_buildTodayWeekHeatmap()) return;
+  clearTimeout(window._todayHeatmapColorTimer);
+  window._todayHeatmapColorTimer = setTimeout(() => _revealTodayHeatmapColors(mount), TODAY_CAROUSEL_COLOR_DELAY);
+}
+// Called from renderTodayWeekProgress (every Home re-render): builds page 2's
+// diagram in the background, off the swipe's critical path.
+function _prebuildTodayWeekHeatmap() {
+  const run = () => {
+    window._todayHeatmapPrebuildPending = false;
+    // Already showing page 2 → a rebuilt (grey) diagram must reveal at once.
+    if (_buildTodayWeekHeatmap() && window._todayCarouselIdx === 1) _revealTodayHeatmapColorsNextFrame(document.getElementById('today-heatmap-mount'));
+  };
+  if (window._todayHeatmapPrebuildPending) return;
+  window._todayHeatmapPrebuildPending = true;
+  if (typeof requestIdleCallback === 'function') requestIdleCallback(run, { timeout: 1000 });
+  else setTimeout(run, 300); // iOS Safari has no requestIdleCallback
+}
+// Swipe to page 2: no rebuild during the slide — grey the prebuilt regions
+// instantly (no transition), then once the slide has settled re-check the
+// data (rebuilds only if it changed) and fade the colors in.
+function _showTodayWeekHeatmap() {
+  const mount = document.getElementById('today-heatmap-mount');
+  if (!mount) return;
+  clearTimeout(window._todayHeatmapColorTimer);
+  if (!mount.firstChild) _buildTodayWeekHeatmap(); // not prebuilt yet (first ever swipe)
+  else {
+    const grey = _redHeatColor(0);
+    mount.querySelectorAll('[data-heat-color]').forEach(el => { el.style.transition = 'none'; el.setAttribute('fill', grey); });
+  }
+  window._todayHeatmapColorTimer = setTimeout(() => {
+    // A just-rebuilt diagram needs a painted grey frame first, or its fill
+    // transition has no starting value and the colors would just snap in.
+    if (_buildTodayWeekHeatmap()) _revealTodayHeatmapColorsNextFrame(mount);
+    else _revealTodayHeatmapColors(mount);
+  }, TODAY_CAROUSEL_COLOR_DELAY);
+}
+window._showTodayWeekHeatmap = _showTodayWeekHeatmap;
+window._prebuildTodayWeekHeatmap = _prebuildTodayWeekHeatmap;
 window._renderTodayWeekHeatmap = _renderTodayWeekHeatmap;
 
 // Home carousel's page 3 — this week's PR stars (MAX / BEST SET / VOL), reusing
