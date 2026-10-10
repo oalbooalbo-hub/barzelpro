@@ -245,6 +245,10 @@ body.desktop-mode .pages-wrap {
 .set-num{font-size:14px;color:#aaa;font-weight:700;width:28px;height:28px;border-radius:50%;border:1.5px solid #555;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;-webkit-tap-highlight-color:transparent;background:#1a1a1a;position:relative;z-index:1;}
 .kg-pad-btn{background:#141414;border:1px solid #2a2a2a;border-radius:10px;color:var(--text);font-family:'DM Sans';font-size:22px;font-weight:700;padding:14px 0;cursor:pointer;transition:transform .1s ease-out;height:56px;box-sizing:border-box;}
 .kg-pad-btn:active{transform:scale(.92);transition:none;}
+/* Statistics box top-left X — centred with margin-top, not translateY, so the
+   :active scale below doesn't knock it out of position. */
+#ex-detail-stats-close{position:absolute;left:3px;top:50%;margin-top:-22px;width:44px;height:44px;padding:0;background:transparent;border:none;color:#aaa;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:30;-webkit-tap-highlight-color:transparent;transition:transform .1s ease-out;}
+#ex-detail-stats-close:active{transform:scale(.92);transition:none;}
 /* select_animation_skill — shared tap micro-interaction for every other
    button in the KG/REP inline editors (BW toggle, sign toggle, quick-add,
    Cancel/Prev/Done, REP +/- delta): instant shrink on press, animated
@@ -2359,7 +2363,7 @@ window._LS = _LS;
 // only if nothing changed while that upload was in flight (_syncDirtyVer).
 // Per user (both keys are uid-scoped), kept across restarts. Drives the
 // My Data status line, the Profile tab dot and the sign-out warning.
-const _SYNCED_DATA_KEYS = new Set(['ironlog_workouts','ironlog_deleted_workouts','ironlog_custom_ex','ironlog_planned','ironlog_hidden_lib_workouts','ironlog_brand_off','ironlog_sets_targets']);
+const _SYNCED_DATA_KEYS = new Set(['ironlog_workouts','ironlog_deleted_workouts','ironlog_removed_workout_ids','ironlog_custom_ex','ironlog_planned','ironlog_hidden_lib_workouts','ironlog_brand_off','ironlog_sets_targets']);
 let _syncDirtyVer = 0;
 window._onSyncedKeyWrite = k => { if (_SYNCED_DATA_KEYS.has(k)) _markUnsynced(); };
 function _markUnsynced() {
@@ -5428,7 +5432,7 @@ function _updateWorkoutProgress() {
     const star = (color, n, idx) => {
       const f   = n > 0 ? color : '#333';
       const lc  = n > 0 ? color : '#444';
-      const num = n > 0 ? `<span style="position:absolute;font-size:14px;font-weight:500;color:#000;line-height:1;transform:translateY(1px);">${n}</span>` : '';
+      const num = n > 0 ? `<span style="position:absolute;font-family:'DM Sans';font-size:18px;font-weight:800;color:#000;line-height:1;transform:translateY(1px);">${n}</span>` : '';
       const lbl = ['MAX','BEST SET','VOL'][idx] || '';
       return `<span data-pr="${idx}" data-count="${n}" style="display:inline-flex;flex-direction:column;align-items:center;gap:2px;"><span style="position:relative;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;"><svg width="32" height="32" viewBox="0 0 24 24" fill="${f}"><polygon points="12,2 22,9.27 18.18,21.02 5.82,21.02 2,9.27"/></svg>${num}</span><span style="font-size:8px;font-weight:700;color:${lc};letter-spacing:.5px;line-height:11px;transform:translateY(1px);display:inline-block;">${lbl}</span></span>`;
     };
@@ -5724,6 +5728,38 @@ function clearSession() {
 
 function save() { _LS.set('ironlog_workouts', JSON.stringify(workouts)); _invalidateExCache(); }
 function saveDeleted() { _LS.set('ironlog_deleted_workouts', JSON.stringify(deletedWorkouts)); }
+
+// ── Cloud-merge safety for saved workouts ──────────────────────────────────
+// _applyCloudUserData used to let the cloud's copy of every workout win, so an
+// edit/delete this device hadn't uploaded yet (or a stale second device) put
+// old data back — e.g. a deleted exercise session reappearing.
+// • _touchWorkout(w): stamps w._modAt on every edit of a saved workout; the
+//   merge keeps whichever copy (local / cloud) was changed last.
+// • Removed-workout ids (synced, union of all devices): workouts removed for
+//   good (last session deleted, permanently deleted from the recycle bin,
+//   bulk clears) — dropped by the merge wherever they come from.
+function _touchWorkout(w) { if (w) w._modAt = Date.now(); }
+function _getRemovedWorkoutIds() {
+  try { const a = JSON.parse(_LS.get('ironlog_removed_workout_ids') || '[]'); return Array.isArray(a) ? a : []; } catch(e) { return []; }
+}
+function _setRemovedWorkoutIds(list) { _LS.set('ironlog_removed_workout_ids', JSON.stringify(list)); }
+function _addRemovedWorkoutIds(ids) {
+  const list = _getRemovedWorkoutIds();
+  const have = new Set(list.map(r => r.id));
+  const at = Date.now();
+  let added = false;
+  (ids || []).forEach(id => { if (id != null && !have.has(id)) { have.add(id); list.push({ id, at }); added = true; } });
+  if (added) _setRemovedWorkoutIds(list);
+}
+// A backup import deliberately brings workouts back — un-remove their ids.
+function _unremoveWorkoutIds(ids) {
+  const drop = new Set(ids || []);
+  const list = _getRemovedWorkoutIds();
+  const next = list.filter(r => !drop.has(r.id));
+  if (next.length !== list.length) _setRemovedWorkoutIds(next);
+}
+window._touchWorkout = _touchWorkout;
+window._addRemovedWorkoutIds = _addRemovedWorkoutIds;
 function saveCustom() {
   try { _LS.set('ironlog_custom_ex', JSON.stringify(customExercises)); }
   catch(e) { _migratePhotosToIDB(); try { _LS.set('ironlog_custom_ex', JSON.stringify(customExercises)); } catch(_) {} }
@@ -6546,7 +6582,7 @@ function confirmRenameEx() {
     customExercises.push({ name: trimmed, label: trimmed, muscle, custom: true });
   }
   saveCustom();
-  workouts.forEach(w => w.exercises.forEach(e => { if (e.name === oldName) { e.name = trimmed; e.label = trimmed; } }));
+  workouts.forEach(w => w.exercises.forEach(e => { if (e.name === oldName) { e.name = trimmed; e.label = trimmed; _touchWorkout(w); } }));
   save();
   renderExercisesTab();
 }
@@ -6626,7 +6662,7 @@ function _exDeleteNames(names) {
     const subs = _exDefSubMuscles(name);
     if (!subs.length) return;
     workouts.forEach(w => (w.exercises || []).forEach(e => {
-      if (e.name === name && !(Array.isArray(e.subMuscles) && e.subMuscles.length)) { e.subMuscles = [...subs]; wChanged = true; }
+      if (e.name === name && !(Array.isArray(e.subMuscles) && e.subMuscles.length)) { e.subMuscles = [...subs]; wChanged = true; _touchWorkout(w); }
     }));
   });
   if (wChanged) save();
@@ -7629,7 +7665,7 @@ function confirmNewEx() {
       customExercises.push({ name, muscle, compoundMuscles, subMuscles, ...(videoUrl ? { videoUrl } : {}) });
     }
     // Update workouts that reference the old name
-    workouts.forEach(w => w.exercises?.forEach(e => { if (e.name === oldName) e.name = name; }));
+    workouts.forEach(w => w.exercises?.forEach(e => { if (e.name === oldName) { e.name = name; _touchWorkout(w); } }));
     save();
     saveCustom();
     // Reset modal title/button
@@ -8976,6 +9012,19 @@ function _toggleExDetailStats() {
   // value label (progBigVal, position:relative) can paint over it instead of under.
   periodWrap.style.zIndex = '30';
   titleRow.appendChild(periodWrap);
+  // Top-left X — closes Statistics exactly like re-tapping the float bar's Stats.
+  // Its 18px icon's left edge sits 16px in, mirroring periodWrap's right:16px.
+  const closeBtn = document.createElement('button');
+  closeBtn.id = 'ex-detail-stats-close';
+  closeBtn.setAttribute('aria-label', 'Close statistics');
+  closeBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>';
+  closeBtn.onclick = (e) => {
+    e.stopPropagation();
+    if (section.classList.contains('closing')) return;
+    _toggleExDetailStats();
+    setTimeout(() => { if (window._exFloatCardId) _updateExFloatBar(window._exFloatCardId); }, 400);
+  };
+  titleRow.appendChild(closeBtn);
   statsBox.appendChild(titleRow);
   statsBox.appendChild(panesContainer);
   section.appendChild(statsBox);
@@ -9205,8 +9254,12 @@ function _extabDeleteSessions(exName, keys) {
   byW.forEach((eis, wi) => {
     const w = workouts[wi];
     eis.sort((a, b) => b - a).forEach(ei => w.exercises.splice(ei, 1));
+    _touchWorkout(w); // newer than any cloud copy — the merge keeps this one
     if (!w.exercises.length && !w._template) emptyW.push(wi);
   });
+  // Emptied workouts are removed for good — recorded so no cloud copy or
+  // other device brings them back (see _applyCloudUserData).
+  _addRemovedWorkoutIds(emptyW.map(wi => workouts[wi].id));
   emptyW.sort((a, b) => b - a).forEach(wi => workouts.splice(wi, 1));
   save();
   if (window._currentUser && window.syncToFirestore) window.syncToFirestore();
@@ -14448,8 +14501,15 @@ function startTimer(id) {
   if (window._startTimerFill) window._startTimerFill(id);
   if (window._updateTimerDot) window._updateTimerDot('running');
   if (window._showTimerPlus30) window._showTimerPlus30(id, true);
-  t.interval = setInterval(() => {
-    t.remaining = Math.max(0, t.remaining - 1);
+  // Derive remaining from the wall clock (startedAt/remainingAtStart, also reset
+  // by timerAdd30) instead of decrementing per tick — Android throttles and iOS
+  // freezes setInterval while the app is in the background, so a per-tick
+  // countdown fell behind the (clock-based) Stop-button fill. _resyncRunningTimers
+  // calls t.tick() on return to the foreground to catch up immediately.
+  t.tick = () => {
+    if (!t.running) return;
+    const elapsed = (Date.now() - t.startedAt) / 1000;
+    t.remaining = Math.max(0, Math.ceil(t.remainingAtStart - elapsed - 0.001));
     updateTimerDisplay(id);
     if (t.remaining <= 0) {
       clearInterval(t.interval); t.running = false;
@@ -14477,8 +14537,23 @@ function startTimer(id) {
         chevBtn.classList.add('timer-done');
       }
     }
-  }, 1000);
+  };
+  t.interval = setInterval(t.tick, 1000);
 }
+
+function _resyncRunningTimers() {
+  if (document.visibilityState !== 'visible') return;
+  Object.values(_timers).forEach(t => { if (t && t.running && t.tick) t.tick(); });
+  // The fill's rAF loop may have been dropped while hidden — restart it.
+  if (window._startTimerFill) {
+    const runId = Object.keys(_timers).find(k => _timers[k]?.running);
+    if (runId) window._startTimerFill(runId);
+  }
+}
+document.addEventListener('visibilitychange', _resyncRunningTimers);
+// iOS can restore the page from bfcache / resume without visibilitychange.
+window.addEventListener('pageshow', _resyncRunningTimers);
+window.addEventListener('focus', _resyncRunningTimers);
 
 function autoStartTimer(exId, clickedBtn) {
   // Only trigger if the set was just marked done (not unmarked)
@@ -15215,6 +15290,7 @@ function saveWorkoutToList() {
     existing.name = name;
     existing.exercises = exercises;
     existing.description = description;
+    _touchWorkout(existing);
     window._editingWorkoutIdx = undefined;
     // Edited → back to PENDING (super admin) until published again.
     _wMarkUnpublished(_prevName);
@@ -15573,7 +15649,7 @@ function confirmSave() {
   };
   if (hasStars) {
     const starTypes = [{ label: 'MAX', color: BP_COLORS.pr.max },{ label: 'BEST SET', color: BP_COLORS.pr.bestSet },{ label: 'VOL', color: BP_COLORS.pr.vol }];
-    const starsRow = starTypes.map((t, ti) => { const count = allStars.filter(s => s.label === t.label).length; if (!count) return ''; return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;animation:starPop .8s cubic-bezier(.175,.885,.32,1.275) both;animation-delay:${ti * 0.25}s;"><div style="position:relative;width:72px;height:72px;display:flex;align-items:center;justify-content:center;">${svgStar(t.color, 72)}<span style="position:absolute;font-family:'Bebas Neue';font-size:26px;color:#000;line-height:1;margin-top:5px;">${count}</span></div><span style="font-size:12px;font-weight:700;color:${t.color};letter-spacing:.5px;text-transform:uppercase;">${t.label}</span></div>`; }).join('');
+    const starsRow = starTypes.map((t, ti) => { const count = allStars.filter(s => s.label === t.label).length; if (!count) return ''; return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;animation:starPop .8s cubic-bezier(.175,.885,.32,1.275) both;animation-delay:${ti * 0.25}s;"><div style="position:relative;width:72px;height:72px;display:flex;align-items:center;justify-content:center;">${svgStar(t.color, 72)}<span style="position:absolute;font-family:'DM Sans';font-size:34px;font-weight:800;color:#000;line-height:1;margin-top:5px;">${count}</span></div><span style="font-size:12px;font-weight:700;color:${t.color};letter-spacing:.5px;text-transform:uppercase;">${t.label}</span></div>`; }).join('');
     cel.innerHTML = `<style>@keyframes celFadeIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}@keyframes starPop{0%{opacity:0;transform:scale(0) rotate(-20deg)}60%{transform:scale(1.2) rotate(5deg)}100%{opacity:1;transform:scale(1) rotate(0deg)}}</style><div style="display:flex;flex-direction:column;align-items:center;padding-top:23px;">${_brandLogoHtml(38)}</div><div style="display:flex;flex-direction:column;align-items:center;gap:24px;"><div style="font-family:'Bebas Neue';font-size:48px;letter-spacing:3px;color:#fff;text-align:center;line-height:1;">GREAT JOB</div><div style="display:flex;gap:32px;justify-content:center;align-items:flex-end;">${starsRow}</div><div style="font-size:16px;color:#7ec8e3;font-weight:600;"><span style="display:inline-flex;align-items:center;gap:6px;vertical-align:middle;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7ec8e3" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="7" x2="12" y2="12"/><line x1="12" y1="12" x2="15" y2="14"/></svg> ${_durStr}</span></div></div>${_celBtnHtml}`;
   } else {
     cel.innerHTML = `<style>@keyframes celFadeIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
@@ -16629,6 +16705,7 @@ function saveEditHistory() {
   const wi = _editingWorkoutIdx;
   if (wi === null || !workouts[wi]) return;
   const w = workouts[wi];
+  _touchWorkout(w);
   // Save name
   w.name = document.getElementById('edit-wname').value.trim() || w.name;
   // Save duration
@@ -16749,6 +16826,8 @@ function clearAllHistory() {
       const existingTemplateNames = new Set(toKeep.filter(w => w._template).map(w => (w.name||'').trim().toLowerCase()));
       // Also remove matching workouts from recycle bin
       const toTrashIds = new Set(toTrash.map(w => w.id));
+      // Permanently deleted — recorded so the cloud merge doesn't restore them.
+      _addRemovedWorkoutIds(toTrash.filter(w => !w._draft).map(w => w.id));
       deletedWorkouts = deletedWorkouts.filter(dw => !toTrashIds.has(dw.id));
       const newTemplates = [];
       const seen = new Set(existingTemplateNames);
@@ -16768,6 +16847,8 @@ function clearAllHistory() {
       let _deletedTabNames = JSON.parse(_LS.get('ironlog_deleted_tab_names') || '[]');
       _allNames.forEach(n => { if (!_deletedTabNames.includes(n)) _deletedTabNames.push(n); });
       _LS.set('ironlog_deleted_tab_names', JSON.stringify(_deletedTabNames));
+      // Templates + recycle bin deleted for good — recorded for the cloud merge.
+      _addRemovedWorkoutIds([...workouts.filter(w => w._template), ...deletedWorkouts].map(w => w.id));
       workouts = workouts.filter(w => !w._template);
       deletedWorkouts = [];
       saveDeleted();
@@ -16817,6 +16898,7 @@ function clearAllTrash() {
   overlay.querySelector('#_clrTrConfirm').onclick = () => {
     overlay.remove();
     const count = deletedWorkouts.length;
+    _addRemovedWorkoutIds(deletedWorkouts.map(w => w.id)); // deleted forever — on every device
     deletedWorkouts = [];
     saveDeleted(); renderTrash();
   };
@@ -17099,7 +17181,7 @@ window.runSyncToCloud = runSyncToCloud;
 function _wipeLocalUserData() {
   try { if (typeof resetWorkoutState === 'function') resetWorkoutState(); } catch(e) {}
   workouts = []; deletedWorkouts = []; customExercises = []; plannedWorkouts = [];
-  ['ironlog_workouts','ironlog_deleted_workouts','ironlog_custom_ex','ironlog_planned',
+  ['ironlog_workouts','ironlog_deleted_workouts','ironlog_removed_workout_ids','ironlog_custom_ex','ironlog_planned',
    'ironlog_session','ironlog_session_start','ironlog_draft_id',
    'ironlog_deleted_tab_names','ironlog_hidden_ex','ironlog_hidden_lib_workouts',
    'ironlog_sets_targets'].forEach(k => { try { _LS.remove(k); } catch(e) {} });
@@ -17417,6 +17499,7 @@ function exportDataWithDialog() {
           // Merge previous backup INTO current data (add back anything missing)
           if (Array.isArray(prev.workouts)) {
             const ids = new Set(workouts.map(w => w.id));
+            _unremoveWorkoutIds(prev.workouts.map(w => w.id)); // restoring a backup is deliberate
             prev.workouts.filter(w => !ids.has(w.id)).forEach(w => workouts.push(w));
           }
           if (Array.isArray(prev.deletedWorkouts)) {
@@ -17520,6 +17603,7 @@ function importData(input) {
       // Merge workouts (avoid duplicates by id)
       if (Array.isArray(data.workouts)) {
         const existingIds = new Set(workouts.map(w => w.id));
+        _unremoveWorkoutIds(data.workouts.map(w => w.id)); // importing a backup is deliberate
         const newW = data.workouts.filter(w => !existingIds.has(w.id));
         workouts.push(...newW);
         // Un-hide every imported workout's name from the Workouts tab's
@@ -17672,6 +17756,7 @@ function bulkTrashAction(action) {
     overlay.querySelector('#_bDelCancel').onclick = () => overlay.remove();
     overlay.querySelector('#_bDelConfirm').onclick = () => {
       overlay.remove();
+      _addRemovedWorkoutIds(indices.map(i => deletedWorkouts[i]?.id)); // deleted forever — on every device
       indices.forEach(i => deletedWorkouts.splice(i, 1));
       saveDeleted(); _trashSelected.clear(); renderTrash();
     };
@@ -17679,6 +17764,7 @@ function bulkTrashAction(action) {
     indices.forEach(i => {
       const w = deletedWorkouts[i];
       delete w._deletedAt;
+      _touchWorkout(w);
       const wDate = new Date(w.date).getTime();
       const pos = workouts.findIndex(e => new Date(e.date).getTime() <= wDate);
       if (pos === -1) workouts.push(w); else workouts.splice(pos, 0, w);
@@ -20586,6 +20672,7 @@ function _repairDuplicateWorkoutIds() {
     let newId = Date.now();
     while (knownIds.has(newId)) newId++;
     w.id = newId;
+    _touchWorkout(w);
     knownIds.add(newId);
     changed = true;
   });
@@ -20642,6 +20729,8 @@ function _hardDeleteWorkoutNames(names) {
       .map(w => (w.name || '').trim().toLowerCase()).filter(k => keys.has(k));
     if (libKeys.length) _setHiddenLibNames([..._getHiddenLibNames(), ...libKeys]);
   }
+  // Deleted for good — recorded so the cloud merge doesn't restore them.
+  _addRemovedWorkoutIds(workouts.filter(w => w._template && keys.has((w.name || '').trim().toLowerCase())).map(w => w.id));
   workouts = workouts.filter(w => !(w._template && keys.has((w.name || '').trim().toLowerCase())));
   // Leftover history mustn't carry the published state over to a re-created
   // workout with the same name.
@@ -20704,13 +20793,14 @@ function _wMarkPublished(name, brandId) {
     if ((w.name || '').trim().toLowerCase() !== k) return;
     const cur = Array.isArray(w._publishedBrands) ? w._publishedBrands : (w._libSourceId ? [window.BRAND_ID || 'default'] : []);
     w._publishedBrands = cur.includes(brandId) ? cur : [...cur, brandId];
+    _touchWorkout(w);
   });
 }
 // Any create/edit/rename/delete — back to PENDING until published again.
 function _wMarkUnpublished(name) {
   const k = (name || '').trim().toLowerCase();
   if (!k) return;
-  workouts.forEach(w => { if ((w.name || '').trim().toLowerCase() === k) w._publishedBrands = []; });
+  workouts.forEach(w => { if ((w.name || '').trim().toLowerCase() === k) { w._publishedBrands = []; _touchWorkout(w); } });
 }
 // Photo add/replace/remove on an existing workout counts as an edit too.
 function _wPhotoEdited(...names) {
@@ -22002,6 +22092,8 @@ window.syncToFirestore = function() {
   return window._fbSetDoc(ref, {
     workouts: workouts.filter(w => !w._draft),
     deletedWorkouts: deletedWorkouts,
+    // Workouts removed for good — see _addRemovedWorkoutIds / _applyCloudUserData.
+    removedWorkoutIds: _getRemovedWorkoutIds(),
     customExercises: customExercises,
     plannedWorkouts: plannedWorkouts || [],
     // Library/brand-default workouts this user deleted from their ALL list
@@ -22050,8 +22142,19 @@ function _applyCloudUserData(data) {
     // After any reset wipe above, before the merge: the merge is skipped when
     // the cloud has no workouts at all, but this device's own would still be
     // unsynced.
+    // Removed-for-good workout ids: union of this device's and the cloud's
+    // (any device may have removed one). Done before the workout merge so
+    // nothing on the list survives it — from either side.
+    const _localRemoved = _getRemovedWorkoutIds();
+    const _cloudRemoved = Array.isArray(data.removedWorkoutIds) ? data.removedWorkoutIds : [];
+    const _cloudRemovedIds = new Set(_cloudRemoved.map(r => r.id));
+    if (_localRemoved.some(r => !_cloudRemovedIds.has(r.id))) _localExtras = true;
+    const _removedIdSet = new Set(_localRemoved.map(r => r.id));
+    const _mergedRemoved = [..._localRemoved, ..._cloudRemoved.filter(r => r && !_removedIdSet.has(r.id))];
+    _mergedRemoved.forEach(r => _removedIdSet.add(r.id));
+    if (_mergedRemoved.length !== _localRemoved.length) _setRemovedWorkoutIds(_mergedRemoved);
     const _cloudWIds = new Set((Array.isArray(data.workouts) ? data.workouts : []).map(w => w.id));
-    if (workouts.some(w => !w._draft && !_cloudWIds.has(w.id))) _localExtras = true;
+    if (workouts.some(w => !w._draft && !_removedIdSet.has(w.id) && !_cloudWIds.has(w.id))) _localExtras = true;
     // Routed through _LS (brand+uid-scoped, dual-writes IndexedDB too) rather
     // than a hand-built brand-only key — this runs on every load, so keeping
     // a hand-built prefix here would keep re-seeding the old shared key this
@@ -22059,8 +22162,20 @@ function _applyCloudUserData(data) {
     if (Array.isArray(data.workouts) && data.workouts.length > 0) {
       const localDrafts = workouts.filter(w => w._draft);
       const cloudIds = new Set(data.workouts.map(w => w.id));
+      const localById = new Map(workouts.filter(w => !w._draft).map(w => [w.id, w]));
+      // Same workout on both sides: keep the copy changed last (_modAt, set by
+      // _touchWorkout). No stamp on either side / a tie → the cloud's, as
+      // before. A newer local copy still needs uploading.
+      const merged = data.workouts.map(cw => {
+        const lw = localById.get(cw.id);
+        if (lw && (lw._modAt || 0) > (cw._modAt || 0)) { _localExtras = true; return lw; }
+        return cw;
+      });
       const localOnly = workouts.filter(w => !w._draft && !cloudIds.has(w.id));
-      workouts = [...data.workouts, ...localOnly, ...localDrafts];
+      workouts = [...merged, ...localOnly, ...localDrafts].filter(w => w._draft || !_removedIdSet.has(w.id));
+      _LS.set('ironlog_workouts', JSON.stringify(workouts));
+    } else if (_removedIdSet.size && workouts.some(w => !w._draft && _removedIdSet.has(w.id))) {
+      workouts = workouts.filter(w => w._draft || !_removedIdSet.has(w.id));
       _LS.set('ironlog_workouts', JSON.stringify(workouts));
     }
     if (Array.isArray(data.deletedWorkouts)) {
@@ -22068,6 +22183,8 @@ function _applyCloudUserData(data) {
       if (deletedWorkouts.some(w => !_cloudDelIds.has(w.id))) _localExtras = true;
       const existingIds = new Set(deletedWorkouts.map(w => w.id));
       data.deletedWorkouts.filter(w => !existingIds.has(w.id)).forEach(w => deletedWorkouts.push(w));
+      // Permanently deleted from the recycle bin (on any device) — stays gone.
+      deletedWorkouts = deletedWorkouts.filter(w => !_removedIdSet.has(w.id));
       _LS.set('ironlog_deleted_workouts', JSON.stringify(deletedWorkouts));
     }
     if (Array.isArray(data.customExercises)) {
@@ -22103,7 +22220,13 @@ function _applyCloudUserData(data) {
     if (typeof renderTodayPlanCard === 'function') renderTodayPlanCard();
     // This device has things the cloud doesn't → unsynced (flag set after
     // the suppression above ends, via a microtask).
-    if (_localExtras) Promise.resolve().then(() => _markUnsynced());
+    // Upload the merged result right away, so the cloud catches up with this
+    // device's newer edits/removals before another device can read the stale
+    // copy (the merge above is newest-wins, so the result is safe to upload).
+    if (_localExtras) Promise.resolve().then(() => {
+      _markUnsynced();
+      if (window._currentUser && window.syncToFirestore) window.syncToFirestore();
+    });
     return true;
 }
 
@@ -24420,8 +24543,18 @@ function libCycleFilter(idx, dir) {
 // thinner hand-rolled routine that only carried over exercise name+muscle and
 // dropped sets, notes, description and video link entirely.
 function loadLibraryWorkout(id) {
+  const idx = _adoptLibWorkout(id);
+  if (idx < 0) return;
+  _wtabLoadWorkout(idx);
+}
+
+// Copies a library / brand-default workout into `workouts` (or refreshes the
+// copy made on an earlier use) and returns its index, -1 if not found. Used
+// by loadLibraryWorkout and by the info sheet's ⋯ menu, whose Share / Edit /
+// Duplicate / Schedule actions all work on a `workouts` index.
+function _adoptLibWorkout(id) {
   const w = _libraryWorkouts.find(x=>x.id===id) || (_defaultWorkouts||[]).find(x=>x.id===id);
-  if (!w) return;
+  if (!w) return -1;
 
   // Hero photo / video-link button are read on demand, by workout name, from
   // these same ambient localStorage keys everywhere else in the app (see
@@ -24449,12 +24582,25 @@ function loadLibraryWorkout(id) {
     workouts.unshift({ id: Date.now(), name: w.name, date: Date.now(), exercises, description: w.description || '', _template: true, _libSourceId: id });
     idx = 0;
   } else {
-    workouts[idx] = { ...workouts[idx], name: w.name, exercises, description: w.description || '' };
+    workouts[idx] = { ...workouts[idx], name: w.name, exercises, description: w.description || '', _modAt: Date.now() };
   }
   save();
   if (window._currentUser && window.syncToFirestore) window.syncToFirestore();
-  _wtabLoadWorkout(idx);
+  return idx;
 }
+
+// Info sheet ⋯ on a not-yet-used library / brand workout: adopt it into
+// `workouts` first, then run the same action a personal workout's menu does.
+function _libWorkoutMenuAction(action, libId) {
+  const idx = _adoptLibWorkout(libId);
+  if (idx < 0) return;
+  window._w2SheetIdx = idx;
+  if (action === 'share') openWtabShareQR(idx);
+  else if (action === 'edit') { closeW2Sheet(); editWorkoutFromTab(idx); }
+  else if (action === 'duplicate') { closeW2Sheet(); _duplicateWorkout(idx); }
+  else if (action === 'schedule') openWtabCalendarPlan(idx);
+}
+window._libWorkoutMenuAction = _libWorkoutMenuAction;
 
 window._exploreExLocalPending = false;
 window._exploreExLocalItems = [];
@@ -24881,6 +25027,7 @@ function _unpublishWorkoutNames(names, onDone) {
     workouts.forEach(w => {
       if (!keys.has(_norm(w.name))) return;
       w._publishedBrands = Array.isArray(w._publishedBrands) ? w._publishedBrands.filter(b => b !== brandId) : [];
+      _touchWorkout(w);
     });
     save();
     if (window._currentUser && window.syncToFirestore) window.syncToFirestore();
@@ -27599,12 +27746,21 @@ function toggleWtabCardMenu(idx) {
       Unpublish
     </button>` : '';
   if (_libW) {
-    // Nothing to offer — drop the overlay/sheet just built above, or the
-    // full-screen overlay would be left blocking every tap.
-    if (!_unpubBtn && !_libDelBtn) { closeWtabMenu(); return; }
+    // Same options as a personal workout — each adopts the library copy into
+    // `workouts` first (_libWorkoutMenuAction), exactly as starting it does.
+    const _lid = JSON.stringify(_libW.id).replace(/"/g, '&quot;');
+    const _libOpt = (action, label, icon) => `
+    <button onclick="closeWtabMenu();_libWorkoutMenuAction('${action}',${_lid})" style="width:100%;background:transparent;border:none;border-top:1px solid #2a2a2a;color:#fff;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${icon}</svg>
+      ${label}
+    </button>`;
     sheet.innerHTML = `
     <div style="width:36px;height:3px;background:#555;border-radius:2px;margin:12px auto 4px;"></div>
     <div style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#888;letter-spacing:.8px;text-align:center;padding:6px 0 12px;">WORKOUT OPTIONS</div>
+    ${_libOpt('share', 'Share', '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>')}
+    ${_libOpt('edit', 'Edit Workout', '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>')}
+    ${_libOpt('duplicate', 'Duplicate Workout', '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>')}
+    ${_libOpt('schedule', 'Schedule in Calendar', '<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>')}
     ${_unpubBtn}${_libDelBtn}`;
     overlay.style.display = 'block';
     sheet.style.animation = 'none';
@@ -30436,6 +30592,7 @@ function deleteExerciseHistory() {
       if (w._draft || w._template || !w.exercises) return;
       if (w.exercises.some(e => e.name === name)) {
         w.exercises = w.exercises.filter(e => e.name !== name);
+        _touchWorkout(w);
       }
     });
     save();
@@ -30636,6 +30793,7 @@ function _w2ApplyNameChange() {
       localStorage.removeItem(`ironlog_workout_photo_${oldName}`);
     }
     w.name = newName;
+    _touchWorkout(w);
     if (w._libSourceId) w._libEdited = true; // renamed app workout → MY WORKOUTS
     _wMarkUnpublished(oldName);
     _wMarkUnpublished(newName);
@@ -31920,11 +32078,10 @@ function openW2Sheet(idx, libId) {
   const _startBtn = document.getElementById('w2-sheet-start-btn');
   if (_startBtn) _startBtn.style.display = window._w2FromSession ? 'none' : '';
   const _w2MenuBtn = document.getElementById('w2-sheet-menu-btn');
-  // Library preview menu: super admin → Unpublish (never for brand-default
-  // workouts — those live in brand_library.json, not Firestore); client
-  // users → Delete (hidden for them only), defaults included.
-  const _libMenuOk = _libW && (window._currentUserData?.role === 'super_admin' ? !_libW._isDefault : true);
-  if (_w2MenuBtn) _w2MenuBtn.style.visibility = (window._w2FromSession || (_libW && !_libMenuOk)) ? 'hidden' : '';
+  // Library preview menu: Share / Edit / Duplicate / Schedule for everyone,
+  // plus Unpublish (super admin, non-default) or Delete (client users) — so
+  // the ⋯ button always has something to show (see toggleWtabCardMenu).
+  if (_w2MenuBtn) _w2MenuBtn.style.visibility = window._w2FromSession ? 'hidden' : '';
   const exSection = document.getElementById('w2-exercises-section');
   if (exSection) exSection.style.display = window._w2FromSession ? 'none' : '';
 
