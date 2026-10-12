@@ -249,6 +249,12 @@ body.desktop-mode .pages-wrap {
    :active scale below doesn't knock it out of position. */
 #ex-detail-stats-close{position:absolute;left:3px;top:50%;margin-top:-22px;width:44px;height:44px;padding:0;background:transparent;border:none;color:#aaa;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:30;-webkit-tap-highlight-color:transparent;transition:transform .1s ease-out;}
 #ex-detail-stats-close:active{transform:scale(.92);transition:none;}
+/* Branding → Coach list off (no FIND A COACH button): lift the Home carousel
+   (box, plan card, dots — together) 30px. Base offsets are the inline
+   translateY(-20px) / 0 / 5px on those elements. */
+#today-start-screen.coach-hidden #today-week-progress{transform:translateY(-50px)!important;}
+#today-start-screen.coach-hidden #today-plan-card{transform:translateY(-30px);}
+#today-start-screen.coach-hidden #today-carousel-dots{transform:translateY(-25px)!important;}
 /* select_animation_skill — shared tap micro-interaction for every other
    button in the KG/REP inline editors (BW toggle, sign toggle, quick-add,
    Cancel/Prev/Done, REP +/- delta): instant shrink on press, animated
@@ -952,13 +958,17 @@ async function loadBrandConfig() {
   } catch(e) {
     console.warn('Brand config load failed:', e.message);
     window._brandConfig = BRAND_DEFAULTS;
-    applyBrandConfig(BRAND_DEFAULTS);
+    // keepCached: offline / failed load must not re-show a Coach list the
+    // brand has turned off — leave the last-known (cached) value in place.
+    applyBrandConfig(BRAND_DEFAULTS, { keepCached: true });
   }
 }
 
-function applyBrandConfig(cfg) {
+function applyBrandConfig(cfg, opts) {
   const accent = cfg.accentColor || BRAND_DEFAULTS.accentColor;
   document.documentElement.style.setProperty('--accent', accent);
+  // Admin Panel → Branding → Coach list: missing field = on (default).
+  if (!opts?.keepCached && window._setCoachListEnabled) window._setCoachListEnabled(cfg.coachListEnabled !== false);
 }
 // This lives in a <script type="module"> block, which doesn't leak top-level
 // declarations to window the way classic scripts do — export it explicitly so
@@ -1344,31 +1354,33 @@ window._fbModuleReady = true;
            moves or re-renders when swiping between the ring and the heatmap. -->
       <div style="font-family:'DM Sans';font-size:14px;font-weight:700;color:#ccc;letter-spacing:.5px;text-transform:uppercase;transform:translateY(-10px);">This Week</div>
       <div id="today-carousel-track" style="position:relative;display:flex;width:300%;align-self:flex-start;transform:translateX(0%);transition:transform .3s cubic-bezier(.2,.8,.3,1);will-change:transform;">
-        <div id="today-carousel-slide-ring" onclick="openStrengthTargetSheet()" style="width:33.3333%;flex-shrink:0;height:300px;cursor:pointer;position:relative;">
-          <!-- Page-1-only sub-title under the shared "This Week" heading. Absolutely
-               positioned in the ring's top margin so it adds no height to this
-               slide (pages 2/3 are sized to the same 300px and must not shift). -->
-          <div style="position:absolute;top:-10px;left:0;right:0;text-align:center;font-family:'DM Sans';font-size:18px;font-weight:800;color:#fff;letter-spacing:.5px;text-transform:uppercase;line-height:1;pointer-events:none;">Total Workouts</div>
-          <!-- This page's ring is the shared #today-circle-window below. -->
-        </div>
-        <div id="today-carousel-slide-heatmap" style="width:33.3333%;flex-shrink:0;height:300px;position:relative;clip-path:inset(-10px 0 0 0);">
-          <!-- Same page sub-title style as page 1's "Completed workouts". -->
-          <div style="position:absolute;top:-10px;left:0;right:0;text-align:center;font-family:'DM Sans';font-size:18px;font-weight:800;color:#fff;letter-spacing:.5px;text-transform:uppercase;line-height:1;pointer-events:none;">Sets progress</div>
-          <!-- This page's circle is the shared #today-circle-window below. -->
-        </div>
+        <!-- Page order: 1 = PR pentagons, 2 = body-part heatmap, 3 = total
+             workouts (thick progress ring) — see TODAY_RING_PAGE. -->
         <div id="today-carousel-slide-prs" style="width:33.3333%;flex-shrink:0;height:300px;position:relative;clip-path:inset(-10px 0 0 0);">
-          <!-- Same page sub-title style as pages 1 and 2. -->
+          <!-- Page sub-title under the shared "This Week" heading. Absolutely
+               positioned in the circle's top margin so it adds no height to this
+               slide (all three are sized to the same 300px and must not shift). -->
           <div style="position:absolute;top:-10px;left:0;right:0;text-align:center;font-family:'DM Sans';font-size:18px;font-weight:800;color:#fff;letter-spacing:.5px;text-transform:uppercase;line-height:1;pointer-events:none;">New records</div>
           <!-- This page's circle is the shared #today-circle-window below. -->
         </div>
+        <div id="today-carousel-slide-heatmap" style="width:33.3333%;flex-shrink:0;height:300px;position:relative;clip-path:inset(-10px 0 0 0);">
+          <!-- Same page sub-title style as page 1's "New records". -->
+          <div style="position:absolute;top:-10px;left:0;right:0;text-align:center;font-family:'DM Sans';font-size:18px;font-weight:800;color:#fff;letter-spacing:.5px;text-transform:uppercase;line-height:1;pointer-events:none;">Sets progress</div>
+          <!-- This page's circle is the shared #today-circle-window below. -->
+        </div>
+        <div id="today-carousel-slide-ring" onclick="openStrengthTargetSheet()" style="width:33.3333%;flex-shrink:0;height:300px;cursor:pointer;position:relative;">
+          <!-- Same page sub-title style as pages 1 and 2. -->
+          <div style="position:absolute;top:-10px;left:0;right:0;text-align:center;font-family:'DM Sans';font-size:18px;font-weight:800;color:#fff;letter-spacing:.5px;text-transform:uppercase;line-height:1;pointer-events:none;">Total Workouts</div>
+          <!-- This page's ring is the shared #today-circle-window below. -->
+        </div>
         <!-- ONE circle for all three pages. It sits over page 1's slot and
              _todayCarouselGoTo cancels the track's movement for it, so it never
-             moves on screen. Its ring morphs (_todayRingMorph): page 1 = the
-             thick progress ring (dark track + accent progress arc), pages 2/3 =
+             moves on screen. Its ring morphs (_todayRingMorph): page 3 = the
+             thick progress ring (dark track + accent progress arc), pages 1/2 =
              the thin solid accent ring — radius/thickness animate with the
              slide while a full-accent layer fades in over the track/progress.
-             Inside, a 3-pane strip (page 1 count/goal segments | heatmap | PR
-             pentagons), clipped to the ring's inner edge, slides between pages. -->
+             Inside, a 3-pane strip (PR pentagons | heatmap | page 3 count/goal
+             segments), clipped to the ring's inner edge, slides between pages. -->
         <div id="today-circle-window" style="position:absolute;top:0;left:calc(100% / 6 - 150px);width:300px;height:300px;transition:transform .3s cubic-bezier(.2,.8,.3,1);will-change:transform;">
           <svg width="300" height="300" viewBox="0 0 300 300" style="position:absolute;inset:0;display:block;">
             <!-- Black behind the whole ring (covers page 1's outer edge ≈130.7). -->
@@ -1381,7 +1393,19 @@ window._fbModuleReady = true;
           </svg>
           <div id="today-circle-clip" style="position:absolute;inset:0;clip-path:circle(105px at 150px 150px);-webkit-clip-path:circle(105px at 150px 150px);">
             <div id="today-circle-strip" style="display:flex;width:900px;height:300px;transition:transform .3s cubic-bezier(.2,.8,.3,1);will-change:transform;">
-              <!-- Page 1: weekly goal segments + count / OUT OF n / chevron. -->
+              <!-- Page 1: PR pentagons. Panes 1/2 are their own GPU layers
+                   (will-change) so what _todayCarouselWarmUp draws ahead of
+                   time is kept and reused instead of being drawn mid-slide. -->
+              <div id="today-circle-pane-prs" style="width:300px;height:300px;flex-shrink:0;display:flex;align-items:center;justify-content:center;will-change:transform;">
+                <div id="today-pr-stars" style="display:flex;gap:0;align-items:flex-start;justify-content:center;transform:translateY(-1px);"></div>
+              </div>
+              <!-- Page 2: tapping opens the weekly sets target sheet; the chevron
+                   is page 3's (same size/colour). -->
+              <div id="today-circle-pane-sets" onclick="openSetsTargetSheet()" style="position:relative;width:300px;height:300px;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;will-change:transform;">
+                <div id="today-heatmap-mount" style="position:relative;z-index:1;"></div>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--accent);position:absolute;bottom:29px;left:50%;transform:translateX(-50%);z-index:2;pointer-events:none;"><polyline points="6 9 12 15 18 9"/></svg>
+              </div>
+              <!-- Page 3: weekly goal segments + count / OUT OF n / chevron. -->
               <div onclick="openStrengthTargetSheet()" style="position:relative;width:300px;height:300px;flex-shrink:0;cursor:pointer;">
                 <svg width="300" height="300" viewBox="0 0 300 300" style="position:absolute;inset:0;display:block;">
                   <g id="today-progress-goal-ring" transform="rotate(-90 150 150)"></g>
@@ -1401,19 +1425,6 @@ window._fbModuleReady = true;
                   </div>
                 </div>
               </div>
-              <!-- Page 2: tapping opens the weekly sets target sheet; the chevron
-                   is page 1's (same size/colour). -->
-              <!-- Pages 2/3 are their own GPU layers (will-change) so what
-                   _todayCarouselWarmUp draws ahead of time is kept and reused
-                   by the first swipe instead of being drawn mid-slide. -->
-              <div id="today-circle-pane-sets" onclick="openSetsTargetSheet()" style="position:relative;width:300px;height:300px;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;will-change:transform;">
-                <div id="today-heatmap-mount" style="position:relative;z-index:1;"></div>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--accent);position:absolute;bottom:29px;left:50%;transform:translateX(-50%);z-index:2;pointer-events:none;"><polyline points="6 9 12 15 18 9"/></svg>
-              </div>
-              <!-- Page 3: PR pentagons. -->
-              <div id="today-circle-pane-prs" style="width:300px;height:300px;flex-shrink:0;display:flex;align-items:center;justify-content:center;will-change:transform;">
-                <div id="today-pr-stars" style="display:flex;gap:0;align-items:flex-start;justify-content:center;transform:translateY(-1px);"></div>
-              </div>
             </div>
           </div>
         </div>
@@ -1425,9 +1436,30 @@ window._fbModuleReady = true;
       <span class="today-carousel-dot" onclick="_todayCarouselGoTo(1)" style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.25);cursor:pointer;transition:background .2s ease;"></span>
       <span class="today-carousel-dot" onclick="_todayCarouselGoTo(2)" style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.25);cursor:pointer;transition:background .2s ease;"></span>
     </div>
-    <div style="width:100%;max-width:380px;margin-top:20px;">
+    <div id="today-coach-wrap" style="width:100%;max-width:380px;margin-top:20px;">
       <button id="today-coach-btn" onclick="openCoachesGallery()" style="width:100%;height:55px;display:flex;align-items:center;justify-content:center;background:transparent;color:#ccc;border:1px solid #ccc;border-radius:26px;font-family:'DM Sans';font-size:16px;letter-spacing:0;cursor:pointer;box-sizing:border-box;line-height:1;font-weight:700;opacity:0;transform:translateY(24px);">FIND A COACH</button>
     </div>
+    <script>
+      // Admin Panel → Branding → "Coach list" (brand-wide, brands/{id}.coachListEnabled,
+      // default on). applyBrandConfig calls this with the Firestore value; the last
+      // value is cached so the button never flashes in on boot and stays right offline.
+      function _setCoachListEnabled(on) {
+        try { localStorage.setItem('bp_coach_list_enabled', on ? '1' : '0'); } catch (e) {}
+        const wrap = document.getElementById('today-coach-wrap');
+        if (wrap) wrap.style.display = on ? '' : 'none';
+        document.getElementById('today-start-screen')?.classList.toggle('coach-hidden', !on);
+        if (!on && typeof closeCoachesGallery === 'function') closeCoachesGallery();
+      }
+      function _isCoachListEnabled() {
+        try { return localStorage.getItem('bp_coach_list_enabled') !== '0'; } catch (e) { return true; }
+      }
+      window._setCoachListEnabled = _setCoachListEnabled;
+      window._isCoachListEnabled = _isCoachListEnabled;
+      if (!_isCoachListEnabled()) {
+        document.getElementById('today-coach-wrap').style.display = 'none';
+        document.getElementById('today-start-screen').classList.add('coach-hidden');
+      }
+    </script>
     <div id="today-load-btn-wrap" style="width:100%;max-width:380px;display:none;">
       <button onclick="window._isNewWorkoutFlow=false;window._loadFromToday=true;loadOrSwitchWorkouts()" style="width:100%;height:100px;display:flex;align-items:center;justify-content:center;background:var(--accent);color:#000;border:1px solid var(--accent);border-radius:26px;font-family:'DM Sans';font-size:22px;letter-spacing:0;cursor:pointer;box-sizing:border-box;line-height:1;font-weight:700;">START WORKOUT</button>
     </div>
@@ -3734,10 +3766,11 @@ function _fireCoachBtn() {
 }
 window.renderTodayWeekProgress = renderTodayWeekProgress;
 
-// ── Home carousel: page 0 = weekly ring, page 1 = this-week muscle heatmap,
-// page 2 = this-week PR stars ──
+// ── Home carousel: page 0 = this-week PR stars, page 1 = this-week muscle
+// heatmap, page 2 = weekly ring (TODAY_RING_PAGE — the only thick-ring page) ──
 window._todayCarouselIdx = 0;
 const TODAY_CAROUSEL_PAGES = 3;
+const TODAY_PRS_PAGE = 0, TODAY_HEATMAP_PAGE = 1, TODAY_RING_PAGE = 2;
 function _todayCarouselGoTo(idx, instant) {
   idx = Math.max(0, Math.min(TODAY_CAROUSEL_PAGES - 1, idx));
   const track = document.getElementById('today-carousel-track');
@@ -3761,10 +3794,10 @@ function _todayCarouselGoTo(idx, instant) {
   // the same timing — and only its inner strip slides (heatmap ↔ PRs).
   // (Now: ONE circle for all pages — pushed idx slides right, exactly undoing
   // the track's move, so it never moves on screen; the inner strip shows the
-  // idx-th 300px pane, and the ring morphs thick (page 1) ↔ thin (2/3).)
+  // idx-th 300px pane, and the ring morphs thick (TODAY_RING_PAGE) ↔ thin.)
   if (win) win.style.transform = idx ? `translateX(${idx * slideW}px)` : '';
   if (strip) strip.style.transform = idx ? `translateX(-${idx * 300}px)` : '';
-  _todayRingMorphTo(idx === 0 ? 0 : 1, instant);
+  _todayRingMorphTo(idx === TODAY_RING_PAGE ? 0 : 1, instant);
   if (instant) requestAnimationFrame(() => {
     track.style.transition = 'transform .3s cubic-bezier(.2,.8,.3,1)';
     [win, strip].forEach(el => { if (el) el.style.transition = 'transform .3s cubic-bezier(.2,.8,.3,1)'; });
@@ -3772,11 +3805,11 @@ function _todayCarouselGoTo(idx, instant) {
   document.querySelectorAll('#today-carousel-dots .today-carousel-dot').forEach((d, i) => {
     d.style.background = i === idx ? 'var(--accent)' : 'rgba(255,255,255,0.25)';
   });
-  // Page 2's diagram is prebuilt (see _prebuildTodayWeekHeatmap) — only its
+  // The heatmap diagram is prebuilt (see _prebuildTodayWeekHeatmap) — only its
   // color reveal runs here, so the slide's first frames stay light.
-  if (idx === 1 && typeof _showTodayWeekHeatmap === 'function') _showTodayWeekHeatmap();
-  // Page 3 is prebuilt too (see _prebuildTodayWeekPRStars).
-  if (idx === 2 && typeof _showTodayWeekPRStars === 'function') _showTodayWeekPRStars();}
+  if (idx === TODAY_HEATMAP_PAGE && typeof _showTodayWeekHeatmap === 'function') _showTodayWeekHeatmap();
+  // The PR pentagons are prebuilt too (see _prebuildTodayWeekPRStars).
+  if (idx === TODAY_PRS_PAGE && typeof _showTodayWeekPRStars === 'function') _showTodayWeekPRStars();}
 window._todayCarouselGoTo = _todayCarouselGoTo;
 
 // Performance (low-end phones): pages 2/3 sit outside the circle's clip while
@@ -3796,7 +3829,9 @@ function _todayCarouselWarmUp() {
   const start = document.getElementById('today-start-screen');
   const box = document.getElementById('today-week-progress');
   if (!page || !page.classList.contains('active') || !start || start.style.display === 'none' || !box || box.style.display === 'none') return;
-  const panes = [['today-circle-pane-sets', 300], ['today-circle-pane-prs', 600]]
+  // Page 1 (PRs) is the one on screen here; the heatmap (page 2) is the heavy
+  // pane still to pre-draw. Page 3's ring pane is light and isn't included.
+  const panes = [['today-circle-pane-sets', 300]]
     .map(([id, off]) => [document.getElementById(id), off]).filter(p => p[0]);
   if (!panes.length) return;
   window._todayWarmUpPending = true;
@@ -3822,8 +3857,8 @@ document.addEventListener('visibilitychange', () => {
 // if the screen width changes (rotation etc.).
 window.addEventListener('resize', () => { if (window._todayCarouselIdx > 0) _todayCarouselGoTo(window._todayCarouselIdx, true); });
 
-// ── Shared ring morph: m = 0 → page 1's thick progress ring, m = 1 → pages
-// 2/3's thin solid accent ring. Radius/thickness interpolate (outer edge
+// ── Shared ring morph: m = 0 → the ring page's (TODAY_RING_PAGE) thick
+// progress ring, m = 1 → the other pages' thin solid accent ring. Radius/thickness interpolate (outer edge
 // 130.7 → 136, thickness 25.71 → 5), a full-accent layer fades in over the
 // track + progress arc (colour blend), and the inner content's clip follows
 // the ring's inner edge (105 → 131) so sliding content never crosses it.
@@ -3844,6 +3879,9 @@ function _todayRingMorph(m) {
   const clip = document.getElementById('today-circle-clip');
   if (clip) { const v = `circle(${(r - w / 2).toFixed(2)}px at 150px 150px)`; clip.style.clipPath = v; clip.style.webkitClipPath = v; }
 }
+// The carousel opens on page 1 (PRs), a thin-ring page — the SVG markup is
+// drawn thick, so start it thin.
+_todayRingMorph(TODAY_RING_PAGE === 0 ? 0 : 1);
 // cubic-bezier(.2,.8,.3,1) — same curve as the track's CSS transition.
 function _todayRingEase(t) {
   const x1 = .2, y1 = .8, x2 = .3, y2 = 1;
@@ -3903,8 +3941,8 @@ function _todayRingMorphTo(target, instant) {
       const r = win.getBoundingClientRect(); // includes the page-offset transform
       const k = r.width / 300; // 300 = the circle's SVG box
       const dx = t.clientX - (r.left + r.width / 2), dy = t.clientY - (r.top + r.height / 2);
-      if (Math.hypot(dx, dy) > 136 * k) return; // 136 = the ring's outer edge (pages 2/3)
-      const action = [window.openStrengthTargetSheet, window.openSetsTargetSheet][window._todayCarouselIdx];
+      if (Math.hypot(dx, dy) > 136 * k) return; // 136 = the ring's outer edge (thin-ring pages)
+      const action = [null, window.openSetsTargetSheet, window.openStrengthTargetSheet][window._todayCarouselIdx];
       if (typeof action !== 'function') return;
       // Cancel the browser's own click for this touch: it would land a moment
       // later on the sheet's backdrop (now under the finger) and close the
@@ -21748,6 +21786,19 @@ document.getElementById("installBtn").addEventListener("click", async () => {
           <button onclick="saveAdminBrandAccent()" style="flex:2;background:#a78bfa22;border:1px solid #a78bfa55;border-radius:10px;color:#a78bfa;font-family:'DM Sans';font-size:14px;font-weight:700;padding:13px;cursor:pointer;">Save Accent Color</button>
         </div>
       </div>
+      <!-- Coach list: brand-wide on/off for the Home "FIND A COACH" button and the
+           coaches gallery. Same switch look as Profile → App Sound; saves on tap. -->
+      <div style="background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:16px;margin-top:12px;">
+        <div style="font-family:'Bebas Neue';font-size:14px;letter-spacing:1px;color:#555;margin-bottom:6px;">COACH LIST</div>
+        <div style="font-size:12px;color:#555;line-height:1.6;margin-bottom:10px;">Shows the "Find a Coach" button on the Home page for every user of this brand.</div>
+        <button onclick="toggleAdminCoachList()" style="width:100%;background:transparent;border:none;border-radius:10px;color:#fff;font-family:'DM Sans';font-size:16px;font-weight:600;padding:10px 0;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
+          <span style="flex:1;">Coach list</span>
+          <span id="adminCoachListSwitch" style="width:44px;height:24px;border-radius:12px;background:#333;position:relative;display:inline-block;flex-shrink:0;transition:background .2s;">
+            <span id="adminCoachListKnob" style="position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s;"></span>
+          </span>
+        </button>
+        <div id="adminCoachListSaveMsg" style="display:none;font-size:12px;font-weight:600;margin-top:8px;"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -22630,8 +22681,40 @@ function switchAdminTab(tab) {
     if (swatch) swatch.style.background = current;
     const msg = document.getElementById('adminAccentSaveMsg');
     if (msg) msg.style.display = 'none';
+    _updateAdminCoachListUI(window._brandConfig?.coachListEnabled !== false);
+    const cmsg = document.getElementById('adminCoachListSaveMsg');
+    if (cmsg) cmsg.style.display = 'none';
   }
 }
+
+// ── Admin Panel → Branding → Coach list (brand-wide, brands/{id}.coachListEnabled) ──
+function _updateAdminCoachListUI(on) {
+  const track = document.getElementById('adminCoachListSwitch');
+  const knob = document.getElementById('adminCoachListKnob');
+  if (track) track.style.background = on ? 'var(--accent)' : '#333';
+  if (knob) knob.style.transform = on ? 'translateX(20px)' : '';
+}
+function toggleAdminCoachList() {
+  const msg = document.getElementById('adminCoachListSaveMsg');
+  if (window._coachListSaving) return;
+  if (!window._fbDb || !window._fbDoc || !window._fbSetDoc) {
+    if (msg) { msg.style.display = 'block'; msg.style.color = '#ff4747'; msg.textContent = 'Not connected — try again in a moment'; }
+    return;
+  }
+  const next = window._brandConfig?.coachListEnabled === false; // off → on, on/unset → off
+  _updateAdminCoachListUI(next); // flip right away; reverted below if the save fails
+  window._coachListSaving = true;
+  const ref = window._fbDoc(window._fbDb, 'brands', window.BRAND_ID);
+  window._fbSetDoc(ref, { coachListEnabled: next }, { merge: true }).then(() => {
+    window._brandConfig = { ...(window._brandConfig || {}), coachListEnabled: next };
+    if (window._setCoachListEnabled) window._setCoachListEnabled(next);
+    if (msg) { msg.style.display = 'block'; msg.style.color = '#34d399'; msg.textContent = next ? 'Saved — Find a Coach is visible to all users' : 'Saved — Find a Coach is hidden for all users'; }
+  }).catch(e => {
+    _updateAdminCoachListUI(!next);
+    if (msg) { msg.style.display = 'block'; msg.style.color = '#ff4747'; msg.textContent = 'Save failed: ' + e.message; }
+  }).finally(() => { window._coachListSaving = false; });
+}
+window.toggleAdminCoachList = toggleAdminCoachList;
 
 function setAdminAccentDefault() {
   const def = '#47d1fa';
@@ -24001,6 +24084,7 @@ async function _loadCoachGalleryData(gender) {
   }
 }
 function openCoachesGallery() {
+  if (window._isCoachListEnabled && !window._isCoachListEnabled()) return; // Branding → Coach list off
   document.getElementById('coachesOverlay').style.display = 'block';
   switchCoachesFilter('all');
 }
@@ -31471,8 +31555,8 @@ function _renderTodayWeekHeatmap() {
 function _prebuildTodayWeekHeatmap() {
   const run = () => {
     window._todayHeatmapPrebuildPending = false;
-    // Already showing page 2 → a rebuilt (grey) diagram must reveal at once.
-    if (_buildTodayWeekHeatmap() && window._todayCarouselIdx === 1) _revealTodayHeatmapColorsNextFrame(document.getElementById('today-heatmap-mount'));
+    // Already showing the heatmap page → a rebuilt (grey) diagram must reveal at once.
+    if (_buildTodayWeekHeatmap() && window._todayCarouselIdx === TODAY_HEATMAP_PAGE) _revealTodayHeatmapColorsNextFrame(document.getElementById('today-heatmap-mount'));
     // Pre-draw it too (also on Home re-shows where nothing was rebuilt — the
     // browser dropped the drawing while Home was hidden).
     if (typeof _scheduleTodayCarouselWarmUp === 'function') _scheduleTodayCarouselWarmUp();
@@ -31634,8 +31718,9 @@ window._renderTodayWeekPRStars = _renderTodayWeekPRStars;
 function _prebuildTodayWeekPRStars() {
   const run = () => {
     window._todayPRStarsPrebuildPending = false;
-    // Already showing page 3 → rebuilt (unlit) pentagons must light up at once.
-    if (_buildTodayWeekPRStars() && window._todayCarouselIdx === 2) {
+    // Already showing the PR page (the default page 1) → rebuilt (unlit)
+    // pentagons must light up at once.
+    if (_buildTodayWeekPRStars() && window._todayCarouselIdx === TODAY_PRS_PAGE) {
       const mount = document.getElementById('today-pr-stars');
       requestAnimationFrame(() => requestAnimationFrame(() => _animateTodayPRStars(mount)));
     }
