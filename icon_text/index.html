@@ -240,9 +240,11 @@ body.desktop-mode .pages-wrap {
 #ex-detail-stats-close{position:absolute;left:3px;top:50%;margin-top:-22px;width:44px;height:44px;padding:0;background:transparent;border:none;color:#aaa;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:30;-webkit-tap-highlight-color:transparent;transition:transform .1s ease-out;}
 #ex-detail-stats-close:active{transform:scale(.92);transition:none;}
 #ex-detail-bestset{padding:6px 2px 4px;min-height:26px;align-items:baseline;justify-content:center;gap:6px;font-family:'DM Sans';white-space:nowrap;}
+/* Body map mode: SAVE & DONE moved into the box, top-right — right edge in line with the name (box's 16px right padding). */
+.ex-detail-bodymap #ex-detail-finish-btn{position:absolute!important;top:4px;right:16px;z-index:3;}
 /* Hidden while Statistics is open — same moment/way as the SAVE & DONE button above it (visibility, so nothing shifts). */
 body.ex-detail-stats-open #ex-detail-bestset{visibility:hidden;}
-#ex-detail-bestset .bs-label{font-size:13px;font-weight:600;color:var(--pr-best);}
+#ex-detail-bestset .bs-label{font-size:13px;font-weight:600;color:#ccc;}
 #ex-detail-bestset .bs-val{font-size:20px;font-weight:800;color:var(--pr-best);}
 #ex-detail-bestset .bs-unit{font-size:15px;font-weight:400;}
 #ex-detail-bestset .bs-new{background:var(--pr-best);color:#000;font-size:11px;font-weight:900;letter-spacing:.5px;padding:2px 6px;border-radius:4px;}
@@ -12887,8 +12889,8 @@ function _enterExUpdateMode(id) {
   btn.style.pointerEvents = 'none';
   btn.style.cursor = 'default';
   const spans = btn.querySelectorAll('span');
-  if (spans[0]) { spans[0].style.color = '#555'; spans[0].textContent = 'UPDATE'; }
-  if (spans[1]) { spans[1].style.color = '#555'; spans[1].textContent = 'EXERCISE'; spans[1].style.display = ''; }
+  if (spans[0]) { spans[0].style.color = '#555'; spans[0].textContent = 'SAVE & DONE'; }
+  if (spans[1]) { spans[1].style.color = '#555'; spans[1].style.display = 'none'; }
 }
 
 function _exitExUpdateMode() {
@@ -27308,9 +27310,9 @@ function deleteCoachWorkout(id) {
       </div>
       <!-- FINISH + exercise name — below image -->
       <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 2px 4px;gap:8px;">
-        <button id="ex-detail-finish-btn" onclick="markExDetailDone()" style="position:relative;background:#000;border:1px solid var(--accent);border-radius:8px;padding:0;width:120px;height:46px;box-sizing:border-box;cursor:pointer;-webkit-tap-highlight-color:transparent;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;">
-          <!-- One line "SAVE & DONE" (fixed 46px height); the second span only shows in
-               update mode ("UPDATE" / "EXERCISE", see _enterExUpdateMode). -->
+        <button id="ex-detail-finish-btn" onclick="markExDetailDone()" style="position:relative;background:#000;border:1px solid var(--accent);border-radius:23px;padding:0;width:120px;height:46px;box-sizing:border-box;cursor:pointer;-webkit-tap-highlight-color:transparent;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;">
+          <!-- One line "SAVE & DONE" (fixed 46px height), also in update mode
+               (_enterExUpdateMode); the second span is unused and stays hidden. -->
           <span style="color:var(--accent);font-family:'DM Sans';font-size:13px;font-weight:900;letter-spacing:.5px;white-space:nowrap;">SAVE &amp; DONE</span>
           <span style="display:none;color:var(--accent);font-family:'DM Sans';font-size:10px;font-weight:700;letter-spacing:.3px;">EXERCISE</span>
           <!-- Creating/editing a workout repurposes this button into CLOSE (see
@@ -30353,9 +30355,11 @@ function _renderExDetailBestSet(animate) {
   const u = t => `<span class="bs-unit">${t}</span>`;
   const wt = best.bwExtra != null ? (best.bwExtra > 0 ? `BW+${fn(best.bwExtra)}${u(' Kg')}` : 'BW') : `${fn(best.kg)}${u(' Kg')}`;
   el.innerHTML = (isNew ? `<span class="bs-new${animate && !wasNew ? ' pop' : ''}">NEW</span>` : '')
-    + `<span class="bs-label">Best set</span><span class="bs-val">${wt}${u(' × ')}${best.reps}${u(' Rep')}</span>`;
+    + `<span class="bs-label">Your Best Set</span><span class="bs-val">${wt}${u(' × ')}${best.reps}${u(' Rep')}</span>`;
 }
 window._renderExDetailBestSet = _renderExDetailBestSet;
+
+function _stopClickBubble(e) { e.stopPropagation(); }
 
 // ctx: 'session' (opened from an active workout), 'edit' (creating/editing a
 // workout) or 'extab' (Exercises tab). Omitted → keeps the current one (e.g.
@@ -30370,10 +30374,17 @@ function _loadExDetailPhoto(exName, ctx) {
   if (titleNoPhotoEl) titleNoPhotoEl.textContent = exName;
   if (!wrap || !imgEl) return;
   if (ctx) wrap.dataset.ctx = ctx;
+  // Body map mode moves SAVE & DONE into the box (top-right) — put it back in
+  // its own row, in front of the title, before the box is dropped.
+  const finBtn = document.getElementById('ex-detail-finish-btn');
+  const finRow = titleEl?.parentElement;
+  if (finBtn && finRow && finBtn.closest('.ex-detail-bodymap')) {
+    finRow.insertBefore(finBtn, titleEl);
+    finBtn.removeEventListener('click', _stopClickBubble);
+  }
   wrap.querySelector('.ex-detail-bodymap')?.remove();
   if (titleEl) titleEl.style.display = '';
-  // FINISH row (FINISH + title): centered in body map mode, where the title is hidden.
-  if (titleEl?.parentElement) titleEl.parentElement.style.justifyContent = 'space-between';
+  if (finRow) finRow.style.display = 'flex';
   _renderExDetailBestSet(false); // shows only in body map mode (checked inside)
   const chevronBtn = document.getElementById('ex-detail-photo-chevron')?.parentElement;
   if (chevronBtn) chevronBtn.style.display = 'flex';
@@ -30395,23 +30406,28 @@ function _loadExDetailPhoto(exName, ctx) {
     // active workout list cards' .ex-name (but 24px / 900, like the title
     // beside FINISH) — wraps instead of ellipsis,
     // growing upward. Not class="ex-name": that class is how cards are looked up.
-    nameEl.style.cssText = "flex:1;min-width:0;align-self:flex-end;font-family:'DM Sans';font-size:24px;font-weight:900;letter-spacing:0;line-height:1.2;color:var(--text);text-align:right;word-break:break-word;";
+    nameEl.style.cssText = "max-width:100%;font-family:'DM Sans';font-size:24px;font-weight:900;letter-spacing:0;line-height:1.2;color:var(--text);text-align:right;word-break:break-word;";
     nameEl.textContent = exName;
-    bm.appendChild(nameEl);
-    // Video link → the Exercises tab's PLAY badge (openExtabExOverlay), in the
-    // top-right corner 4px in; same link lookup and broken-link handling.
+    // Right column, bottom-aligned: [PLAY] stacked right above the name.
+    const nameCol = document.createElement('div');
+    // max-height keeps a long name below SAVE & DONE (4px top + 46px + 6px gap).
+    nameCol.style.cssText = 'flex:1;min-width:0;align-self:flex-end;max-height:calc(100% - 56px);overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-end;gap:2px;';
+    nameCol.appendChild(nameEl);
+    bm.appendChild(nameCol);
+    // Video link → the Exercises tab's PLAY badge (openExtabExOverlay), right
+    // above the name; same link lookup and broken-link handling.
     const _exLib = typeof _exLibDef === 'function' ? _exLibDef(exName) : null;
     const _exDef = getAllExercises().find(x => x.name === exName || x.label === exName) || _exLib;
     const videoUrl = _exDef?.videoUrl || customExercises.find(e => e.name === exName)?.videoUrl || _exLib?.videoUrl || '';
     if (videoUrl && localStorage.getItem(`ironlog_ex_video_broken_${exName}`) !== '1') {
       const pb = document.createElement('div');
       pb.className = 'ex-detail-bodymap-play';
-      // right:12px + 4px padding = 16px, the box's right padding, so PLAY's
-      // right edge lines up with the name's.
-      pb.style.cssText = 'position:absolute;top:0;right:12px;display:flex;align-items:center;gap:5px;padding:4px;cursor:pointer;z-index:2;-webkit-tap-highlight-color:transparent;';
+      // No right padding (only vertical, for the tap area), so PLAY's right
+      // edge lines up with the name's.
+      pb.style.cssText = 'position:relative;display:flex;align-items:center;gap:5px;padding:4px 0;cursor:pointer;z-index:2;-webkit-tap-highlight-color:transparent;';
       pb.onclick = (e) => { e.stopPropagation(); window.open(videoUrl, '_blank'); };
       pb.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="var(--accent)" stroke="none"><polygon points="5,3 19,12 5,21"/></svg><span style="font-family:\'DM Sans\';font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.5px;margin-right:-.5px;">PLAY</span>';
-      bm.appendChild(pb);
+      nameCol.insertBefore(pb, nameEl);
       if (window._checkVideoLinkReachable) {
         window._checkVideoLinkReachable(videoUrl).then(ok => {
           if (ok) { localStorage.removeItem(`ironlog_ex_video_broken_${exName}`); return; }
@@ -30420,9 +30436,16 @@ function _loadExDetailPhoto(exName, ctx) {
         });
       }
     }
+    // SAVE & DONE → the box's top-right corner (placed by CSS:
+    // .ex-detail-bodymap #ex-detail-finish-btn); its own row is then empty and
+    // hidden. Its taps mustn't reach the box's own tap (muscles/stats toggle).
+    if (finBtn) {
+      bm.appendChild(finBtn);
+      finBtn.addEventListener('click', _stopClickBubble);
+    }
+    if (finRow) finRow.style.display = 'none';
     imgEl.parentElement.insertBefore(bm, imgEl);
     if (titleEl) titleEl.style.display = 'none';
-    if (titleEl?.parentElement) titleEl.parentElement.style.justifyContent = 'center';
     if (chevronBtn) chevronBtn.style.display = 'none'; // no chevron in this mode
     wrap.style.display = 'block';
     if (noPhotoWrap) noPhotoWrap.style.display = 'none';
