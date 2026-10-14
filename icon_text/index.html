@@ -239,9 +239,11 @@ body.desktop-mode .pages-wrap {
    :active scale below doesn't knock it out of position. */
 #ex-detail-stats-close{position:absolute;left:3px;top:50%;margin-top:-22px;width:44px;height:44px;padding:0;background:transparent;border:none;color:#aaa;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:30;-webkit-tap-highlight-color:transparent;transition:transform .1s ease-out;}
 #ex-detail-stats-close:active{transform:scale(.92);transition:none;}
-#ex-detail-bestset{flex:1;min-width:0;margin-right:16px;align-items:baseline;justify-content:flex-end;gap:6px;font-family:'DM Sans';white-space:nowrap;}
-#ex-detail-bestset .bs-label{font-size:13px;font-weight:600;color:#888;}
-#ex-detail-bestset .bs-val{font-size:20px;font-weight:800;color:var(--text);}
+#ex-detail-bestset{padding:6px 2px 4px;min-height:26px;align-items:baseline;justify-content:center;gap:6px;font-family:'DM Sans';white-space:nowrap;}
+/* Hidden while Statistics is open — same moment/way as the SAVE & DONE button above it (visibility, so nothing shifts). */
+body.ex-detail-stats-open #ex-detail-bestset{visibility:hidden;}
+#ex-detail-bestset .bs-label{font-size:13px;font-weight:600;color:var(--pr-best);}
+#ex-detail-bestset .bs-val{font-size:20px;font-weight:800;color:var(--pr-best);}
 #ex-detail-bestset .bs-unit{font-size:15px;font-weight:400;}
 #ex-detail-bestset .bs-new{background:var(--pr-best);color:#000;font-size:11px;font-weight:900;letter-spacing:.5px;padding:2px 6px;border-radius:4px;}
 #ex-detail-bestset .bs-new.pop{animation:exBestSetNewPop .5s cubic-bezier(.2,.8,.3,1.3) both;}
@@ -8633,6 +8635,16 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
   progXAxisRow.appendChild(selectedDayEl);
   const chartCard = document.createElement('div');
   chartCard.style.cssText = 'background:#161616;border-radius:14px;padding:12px 0 25px;margin-top:8px;';
+  // Body map mode only (the Statistics box is taller there — see
+  // _toggleExDetailStats): the chart grows so the chart card's bottom sits 8px
+  // above the box's bottom border. Never below its normal 125px.
+  const _fitProgChartToBox = () => {
+    const box = document.getElementById('ex-detail-stats-box');
+    if (!box || !box.dataset.bodyMap || !chartCard.isConnected || progCanvasWrap.style.display === 'none' || progPane.style.display === 'none') return;
+    const borderBottom = box.getBoundingClientRect().bottom - 1;
+    const h = progCanvasWrap.offsetHeight + (borderBottom - 8 - chartCard.getBoundingClientRect().bottom);
+    progCanvasWrap.style.height = Math.max(125, Math.round(h)) + 'px';
+  };
   chartCard.appendChild(progBigVal);
   chartCard.appendChild(progNoData);
   chartCard.appendChild(progCanvasWrap);
@@ -8766,6 +8778,9 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
     progCanvasWrap.style.display = hasData ? '' : 'none';
     progScrubWrap.style.display = hasData ? 'block' : 'none';
     if (!hasData) { progBigVal.style.display = 'none'; selectedDayEl.style.display = 'none'; return; }
+    // After this render's layout settles (big value shown etc.) — Chart.js is
+    // responsive, so it follows the new height on its own.
+    requestAnimationFrame(_fitProgChartToBox);
     const {line, fill} = _PC[_progMetric];
     const _minVal = Math.min(...pts.map(p => p.val));
     const _maxVal = Math.max(...pts.map(p => p.val));
@@ -8896,6 +8911,7 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
   panesContainer.appendChild(sessionsPane);
   const _swipeAC = new AbortController();
   panesContainer._swipeAC = _swipeAC;
+  panesContainer._fitProgChart = _fitProgChartToBox; // re-fit once the box is laid out (_toggleExDetailStats)
   let _tx = 0, _ty = 0, _swipeBlocked = false;
   panesContainer.addEventListener('touchstart', e => {
     _tx = e.touches[0].clientX;
@@ -9061,6 +9077,16 @@ function _toggleExDetailStats() {
   section.style.opacity = '0';
   overlayBody?.appendChild(section);
 
+  // Body map mode: SAVE & DONE and the best-set line are hidden while Stats is
+  // open, so the box grows up into their space — its "Statistics" label (which
+  // straddles the top border, 9px above it) sits 8px below the body map image.
+  const _bmTapWrap = document.querySelector('#ex-detail-photo-wrap .ex-detail-bodymap')?.parentElement;
+  if (_bmTapWrap) {
+    const _targetTop = _bmTapWrap.getBoundingClientRect().bottom + 8 + 9;
+    const _shift = statsBox.getBoundingClientRect().top - _targetTop;
+    if (_shift > 0) statsBox.style.marginTop = (6 - _shift) + 'px';
+  }
+
   const floatBarRect = document.getElementById('ex-float-bar')?.getBoundingClientRect();
   if (floatBarRect) {
     const boxTop = statsBox.getBoundingClientRect().top;
@@ -9071,6 +9097,24 @@ function _toggleExDetailStats() {
   dots.style.marginTop = 'auto';
   dots.style.transform = 'translateY(35px)';
   statsBox.appendChild(dots);
+  // Body map mode: give the panes the box's bottom padding and the dots' row
+  // (the dots are drawn below the border anyway), so the PROGRESS chart can
+  // reach 8px above the border (_fitProgChartToBox). Dots stay where they were
+  // drawn; YOUR BEST / sessions get that space back as bottom padding, so they
+  // look unchanged.
+  if (_bmTapWrap) {
+    statsBox.dataset.bodyMap = '1';
+    const _dotsH = dots.offsetHeight;
+    statsBox.style.paddingBottom = '0';
+    dots.style.marginBottom = -_dotsH + 'px';
+    dots.style.transform = `translateY(${25 - _dotsH}px)`;
+    ['ex-detail-stats-table-pane', 'ex-detail-stats-sessions-pane'].forEach(id => {
+      const p = document.getElementById(id);
+      if (p) p.style.paddingBottom = (parseFloat(getComputedStyle(p).paddingBottom) || 0) + 10 + _dotsH + 'px';
+    });
+    // In case PROGRESS is the page already showing (its first render ran before the box existed).
+    requestAnimationFrame(() => panesContainer._fitProgChart?.());
+  }
 
   // Slide up 48px + fade in — same enter transition as _toggleExDetailMuscles/openShareQR().
   section.style.transform  = 'translateY(48px)';
@@ -12844,7 +12888,7 @@ function _enterExUpdateMode(id) {
   btn.style.cursor = 'default';
   const spans = btn.querySelectorAll('span');
   if (spans[0]) { spans[0].style.color = '#555'; spans[0].textContent = 'UPDATE'; }
-  if (spans[1]) { spans[1].style.color = '#555'; spans[1].textContent = 'EXERCISE'; }
+  if (spans[1]) { spans[1].style.color = '#555'; spans[1].textContent = 'EXERCISE'; spans[1].style.display = ''; }
 }
 
 function _exitExUpdateMode() {
@@ -12853,13 +12897,13 @@ function _exitExUpdateMode() {
   _exDetailSnapshot = null;
   const btn = document.getElementById('ex-detail-finish-btn');
   if (!btn) return;
-  btn.style.background = 'var(--accent)';
-  btn.style.border = 'none';
+  btn.style.background = '#000';
+  btn.style.border = '1px solid var(--accent)';
   btn.style.pointerEvents = '';
   btn.style.cursor = 'pointer';
   const spans = btn.querySelectorAll('span');
-  if (spans[0]) { spans[0].style.color = '#000'; spans[0].textContent = 'FINISH'; }
-  if (spans[1]) { spans[1].style.color = '#000'; spans[1].textContent = 'EXERCISE'; }
+  if (spans[0]) { spans[0].style.color = 'var(--accent)'; spans[0].textContent = 'SAVE & DONE'; }
+  if (spans[1]) { spans[1].style.color = 'var(--accent)'; spans[1].textContent = 'EXERCISE'; spans[1].style.display = 'none'; }
 }
 
 function _markExDetailModified() {
@@ -27264,21 +27308,23 @@ function deleteCoachWorkout(id) {
       </div>
       <!-- FINISH + exercise name — below image -->
       <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 2px 4px;gap:8px;">
-        <button id="ex-detail-finish-btn" onclick="markExDetailDone()" style="position:relative;background:var(--accent);border:none;border-radius:8px;padding:7px 0;width:76px;cursor:pointer;-webkit-tap-highlight-color:transparent;flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:2px;">
-          <span style="color:#000;font-family:'DM Sans';font-size:13px;font-weight:900;letter-spacing:.5px;">FINISH</span>
-          <span style="color:#000;font-family:'DM Sans';font-size:10px;font-weight:700;letter-spacing:.3px;">EXERCISE</span>
+        <button id="ex-detail-finish-btn" onclick="markExDetailDone()" style="position:relative;background:#000;border:1px solid var(--accent);border-radius:8px;padding:0;width:120px;height:46px;box-sizing:border-box;cursor:pointer;-webkit-tap-highlight-color:transparent;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;">
+          <!-- One line "SAVE & DONE" (fixed 46px height); the second span only shows in
+               update mode ("UPDATE" / "EXERCISE", see _enterExUpdateMode). -->
+          <span style="color:var(--accent);font-family:'DM Sans';font-size:13px;font-weight:900;letter-spacing:.5px;white-space:nowrap;">SAVE &amp; DONE</span>
+          <span style="display:none;color:var(--accent);font-family:'DM Sans';font-size:10px;font-weight:700;letter-spacing:.3px;">EXERCISE</span>
           <!-- Creating/editing a workout repurposes this button into CLOSE (see
                openExDetail) — a separate overlaid label, absolutely centered,
                rather than editing the two spans above in place: those stay
                untouched (just invisible) so they keep governing this button's
                natural two-line height exactly as always, with nothing to
                measure/cache/get wrong. -->
-          <span id="ex-detail-finish-btn-close-label" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#000;font-family:'DM Sans';font-size:13px;font-weight:900;letter-spacing:.5px;white-space:nowrap;">CLOSE</span>
+          <span id="ex-detail-finish-btn-close-label" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--accent);font-family:'DM Sans';font-size:13px;font-weight:900;letter-spacing:.5px;white-space:nowrap;">CLOSE</span>
         </button>
         <div id="ex-detail-overlay-title" style="font-family:'DM Sans';font-size:24px;font-weight:900;color:var(--text);text-align:right;flex:1;min-width:0;word-break:break-word;"></div>
-        <!-- Body map mode only (replaces the title above): all-time best set — see _renderExDetailBestSet -->
-        <div id="ex-detail-bestset" style="display:none;"></div>
       </div>
+      <!-- Body map mode only: all-time best set, own line below FINISH, centered — see _renderExDetailBestSet -->
+      <div id="ex-detail-bestset" style="display:none;"></div>
     </div>
   </div>
   <div class="ex-detail-bottom-blocker" style="position:absolute;bottom:0;left:0;right:0;height:calc(100px + env(safe-area-inset-bottom));background:var(--bg);pointer-events:none;z-index:1;"></div>
@@ -30257,7 +30303,7 @@ function _buildExBodyMapDiagram(exName) {
   return diagram;
 }
 
-// Body map mode: the FINISH row's right side (where the name was) shows this
+// Body map mode: a centered line below the FINISH row shows this
 // exercise's all-time best set — same rule as Stats → BEST SET (highest
 // kg × (1 + reps/30)) — including sets ✓'d in the current workout. "NEW" in
 // front while a ✓'d set beats the previous record; animate pops it in when it
@@ -30326,6 +30372,8 @@ function _loadExDetailPhoto(exName, ctx) {
   if (ctx) wrap.dataset.ctx = ctx;
   wrap.querySelector('.ex-detail-bodymap')?.remove();
   if (titleEl) titleEl.style.display = '';
+  // FINISH row (FINISH + title): centered in body map mode, where the title is hidden.
+  if (titleEl?.parentElement) titleEl.parentElement.style.justifyContent = 'space-between';
   _renderExDetailBestSet(false); // shows only in body map mode (checked inside)
   const chevronBtn = document.getElementById('ex-detail-photo-chevron')?.parentElement;
   if (chevronBtn) chevronBtn.style.display = 'flex';
@@ -30374,6 +30422,7 @@ function _loadExDetailPhoto(exName, ctx) {
     }
     imgEl.parentElement.insertBefore(bm, imgEl);
     if (titleEl) titleEl.style.display = 'none';
+    if (titleEl?.parentElement) titleEl.parentElement.style.justifyContent = 'center';
     if (chevronBtn) chevronBtn.style.display = 'none'; // no chevron in this mode
     wrap.style.display = 'block';
     if (noPhotoWrap) noPhotoWrap.style.display = 'none';
