@@ -30380,6 +30380,19 @@ function _renderExDetailBestSet(animate) {
   }
   _fitBodyMapName();
 }
+// Body map box: the name, best-set line and PLAY share one right edge — lined
+// up with the set rows' ✓ buttons below (measured), via --bm-pr (the box's
+// right padding and PLAY's right offset). No set rows yet → stays 16px.
+function _alignBodyMapRight() {
+  const bm = document.querySelector('.ex-detail-bodymap');
+  const card = window._exDetailCardId ? document.getElementById(window._exDetailCardId) : null;
+  const chk = card?.querySelector('.set-row .set-done-btn');
+  if (!bm || !chk) return;
+  const cr = chk.getBoundingClientRect(), br = bm.getBoundingClientRect();
+  if (!cr.width || !br.width) return;
+  const pr = Math.round(br.right - cr.right);
+  if (pr >= 0 && pr < br.width / 2) bm.style.setProperty('--bm-pr', pr + 'px');
+}
 // Body map box: if PLAY + name + best-set line are taller than the box, shrink
 // the name (24px → down to 14px) until they fit.
 function _fitBodyMapName() {
@@ -30458,6 +30471,7 @@ function _loadExDetailPhoto(exName, ctx) {
   const bestEl = document.getElementById('ex-detail-bestset');
   if (bestEl && bestEl.closest('.ex-detail-bodymap')) wrap.appendChild(bestEl);
   wrap.querySelector('.ex-detail-bodymap')?.remove();
+  imgEl.parentElement.style.marginBottom = ''; // body map mode's 8px gap (set below)
   if (titleEl) titleEl.style.display = '';
   if (finRow) finRow.style.display = 'flex';
   _renderExDetailBestSet(false); // shows only in body map mode (checked inside)
@@ -30472,7 +30486,7 @@ function _loadExDetailPhoto(exName, ctx) {
     imgEl.src = '';
     const bm = document.createElement('div');
     bm.className = 'ex-detail-bodymap';
-    bm.style.cssText = 'position:absolute;inset:0;z-index:1;background:#000;display:flex;align-items:center;gap:14px;padding:4px 16px 4px 10px;box-sizing:border-box;';
+    bm.style.cssText = 'position:absolute;inset:0;z-index:1;background:#000;display:flex;align-items:center;gap:14px;padding:4px var(--bm-pr,16px) 4px 10px;box-sizing:border-box;';
     const diagram = _buildExBodyMapDiagram(exName);
     if (diagram) bm.appendChild(diagram);
     const nameEl = document.createElement('div');
@@ -30499,7 +30513,7 @@ function _loadExDetailPhoto(exName, ctx) {
       pb.className = 'ex-detail-bodymap-play';
       // Top-right corner: 4px vertical padding (tap area) puts it 4px from the
       // top; right:16px = the box's right padding, in line with the name.
-      pb.style.cssText = 'position:absolute;top:0;right:16px;display:flex;align-items:center;gap:5px;padding:4px 0;cursor:pointer;z-index:2;-webkit-tap-highlight-color:transparent;';
+      pb.style.cssText = 'position:absolute;top:0;right:var(--bm-pr,16px);display:flex;align-items:center;gap:5px;padding:4px 0;cursor:pointer;z-index:2;-webkit-tap-highlight-color:transparent;';
       pb.onclick = (e) => { e.stopPropagation(); window.open(videoUrl, '_blank'); };
       pb.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="var(--accent)" stroke="none"><polygon points="5,3 19,12 5,21"/></svg><span style="font-family:\'DM Sans\';font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.5px;margin-right:-.5px;">PLAY</span>';
       bm.appendChild(pb);
@@ -30519,13 +30533,14 @@ function _loadExDetailPhoto(exName, ctx) {
     }
     if (finRow) finRow.style.display = 'none';
     imgEl.parentElement.insertBefore(bm, imgEl);
+    imgEl.parentElement.style.marginBottom = '8px'; // 8px gap above the sets box
     if (titleEl) titleEl.style.display = 'none';
     if (chevronBtn) chevronBtn.style.display = 'none'; // no chevron in this mode
     wrap.style.display = 'block';
     if (noPhotoWrap) noPhotoWrap.style.display = 'none';
     requestAnimationFrame(_syncExDetailBodyTop);
     // Re-render once laid out, so the best-set box can measure the sets box's width.
-    requestAnimationFrame(() => _renderExDetailBestSet(false));
+    requestAnimationFrame(() => { _alignBodyMapRight(); _renderExDetailBestSet(false); });
     return;
   }
   const _applyDetailPhoto = (src) => {
