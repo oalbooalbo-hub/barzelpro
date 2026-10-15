@@ -239,15 +239,20 @@ body.desktop-mode .pages-wrap {
    :active scale below doesn't knock it out of position. */
 #ex-detail-stats-close{position:absolute;left:3px;top:50%;margin-top:-22px;width:44px;height:44px;padding:0;background:transparent;border:none;color:#aaa;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:30;-webkit-tap-highlight-color:transparent;transition:transform .1s ease-out;}
 #ex-detail-stats-close:active{transform:scale(.92);transition:none;}
-#ex-detail-bestset{padding:6px 2px 4px;min-height:26px;align-items:baseline;justify-content:center;gap:6px;font-family:'DM Sans';white-space:nowrap;}
-/* Body map mode: SAVE & DONE moved into the box, top-right — right edge in line with the name (box's 16px right padding). */
-.ex-detail-bodymap #ex-detail-finish-btn{position:absolute!important;top:4px;right:16px;z-index:3;}
-/* Hidden while Statistics is open — same moment/way as the SAVE & DONE button above it (visibility, so nothing shifts). */
-body.ex-detail-stats-open #ex-detail-bestset{visibility:hidden;}
-#ex-detail-bestset .bs-label{font-size:13px;font-weight:600;color:#ccc;}
-#ex-detail-bestset .bs-val{font-size:20px;font-weight:800;color:var(--pr-best);}
-#ex-detail-bestset .bs-unit{font-size:15px;font-weight:400;}
-#ex-detail-bestset .bs-new{background:var(--pr-best);color:#000;font-size:11px;font-weight:900;letter-spacing:.5px;padding:2px 6px;border-radius:4px;}
+/* Body map mode: best-set line inside the body map box, under the name — full column width, right-aligned,
+   one font size (--bs-fs, the largest that fits "⬟ 999.25 Kg × 99 Rep"; see _renderExDetailBestSet). */
+/* Color: the BEST SET color (colors.js → --pr-best), dimmed 25% toward black. */
+#ex-detail-bestset{align-self:stretch;width:100%;margin-top:2px;text-align:right;font-family:'DM Sans';color:color-mix(in srgb, var(--pr-best) 75%, #000);}
+#ex-detail-bestset .bs-line{white-space:nowrap;font-size:var(--bs-fs,18px);line-height:1.2;}
+#ex-detail-bestset .bs-penta{width:1em;height:1em;fill:currentColor;vertical-align:-.12em;}
+#ex-detail-bestset .bs-new-row{margin-bottom:3px;}
+/* Body map mode: SAVE & DONE docked, centered, 8px above the float bar (bottom set by _syncExFinishDock); the page gets its 46px + 8px as extra bottom room. */
+#ex-detail-finish-dock{position:fixed;left:50%;transform:translateX(-50%);z-index:210;display:none;}
+#ex-detail-finish-dock #ex-detail-finish-btn{width:var(--dock-w,120px)!important;}
+body.ex-finish-docked #ex-detail-overlay-body{padding-bottom:calc(214px + env(safe-area-inset-bottom));}
+#ex-detail-bestset .bs-val{font-weight:800;}
+#ex-detail-bestset .bs-unit{font-weight:400;}
+#ex-detail-bestset .bs-new{display:inline-block;background:var(--pr-best);color:#000;font-size:11px;font-weight:900;letter-spacing:.5px;padding:2px 6px;border-radius:4px;}
 #ex-detail-bestset .bs-new.pop{animation:exBestSetNewPop .5s cubic-bezier(.2,.8,.3,1.3) both;}
 @keyframes exBestSetNewPop{0%{opacity:0;transform:scale(.3);}60%{opacity:1;transform:scale(1.15);}100%{opacity:1;transform:scale(1);}}
 /* Branding → Coach list off (no FIND A COACH button): lift the Home carousel
@@ -30315,11 +30320,12 @@ function _renderExDetailBestSet(animate) {
   if (!el) return;
   const wrap = document.getElementById('ex-detail-photo-wrap');
   const card = window._exDetailCardId ? document.getElementById(window._exDetailCardId) : null;
-  if (!card || wrap?.dataset.ctx !== 'session' || !_isBodyMapImageEnabled()) {
+  // Lives in the body map box, under the name (moved there by _loadExDetailPhoto).
+  if (!card || wrap?.dataset.ctx !== 'session' || !_isBodyMapImageEnabled() || !el.closest('.ex-detail-bodymap')) {
     el.style.display = 'none'; el.innerHTML = ''; el.dataset.new = '0';
     return;
   }
-  el.style.display = 'flex';
+  el.style.display = 'block';
   const exName = card.dataset.exname || '';
   const score = s => s.kg * (1 + s.reps / 30);
   let best = null, curBest = null;
@@ -30348,18 +30354,83 @@ function _renderExDetailBestSet(animate) {
   const isNew = !!(curBest && histBest && score(curBest) > score(histBest));
   const wasNew = el.dataset.new === '1';
   el.dataset.new = isNew ? '1' : '0';
-  if (!best) { el.innerHTML = ''; return; }
+  if (!best) { el.innerHTML = ''; el.style.display = 'none'; _fitBodyMapName(); return; } // only with a value
   const fn = n => n % 1 === 0 ? String(n) : String(Math.round(n * 100) / 100);
   // BW/BW+ sets store the resolved total kg — show the BW notation instead.
-  // Numbers big and bold; "Kg" / "×" / "Rep" smaller and thin (.bs-unit).
+  // Numbers bold, "Kg" / "×" / "Rep" thin (.bs-unit) — all one size.
   const u = t => `<span class="bs-unit">${t}</span>`;
+  // Leading BEST SET pentagon (the PR star shape), sized to the text (1em).
+  const line = (w, r) => `<svg class="bs-penta" viewBox="0 0 24 24" aria-label="Your Best Set"><polygon points="12,2 22,9.27 18.18,21.02 5.82,21.02 2,9.27"/></svg> <span class="bs-val">${w}${u(' × ')}${r}${u(' Rep')}</span>`;
   const wt = best.bwExtra != null ? (best.bwExtra > 0 ? `BW+${fn(best.bwExtra)}${u(' Kg')}` : 'BW') : `${fn(best.kg)}${u(' Kg')}`;
-  el.innerHTML = (isNew ? `<span class="bs-new${animate && !wasNew ? ' pop' : ''}">NEW</span>` : '')
-    + `<span class="bs-label">Your Best Set</span><span class="bs-val">${wt}${u(' × ')}${best.reps}${u(' Rep')}</span>`;
+  // NEW sits on its own row just above the line, so it never costs the line width.
+  el.innerHTML = (isNew ? `<div class="bs-new-row"><span class="bs-new${animate && !wasNew ? ' pop' : ''}">NEW</span></div>` : '')
+    + `<div class="bs-line">${line(wt, best.reps)}</div>`;
+  // One font size for the whole line: the largest at which the longest case,
+  // "⬟ 999.25 Kg × 99 Rep", still fits the column (measured at 100px).
+  const colW = el.clientWidth;
+  if (colW > 0) {
+    const probe = document.createElement('div');
+    probe.className = 'bs-line';
+    probe.style.cssText = 'position:absolute;visibility:hidden;font-size:100px;width:auto;';
+    probe.innerHTML = line(`999.25${u(' Kg')}`, 99);
+    el.appendChild(probe);
+    const w = probe.getBoundingClientRect().width;
+    probe.remove();
+    if (w > 0) el.style.setProperty('--bs-fs', Math.floor(100 * (colW - 1) / w * 2) / 2 + 'px'); // 1px safety for rounding
+  }
+  _fitBodyMapName();
+}
+// Body map box: if PLAY + name + best-set line are taller than the box, shrink
+// the name (24px → down to 14px) until they fit.
+function _fitBodyMapName() {
+  const bm = document.querySelector('.ex-detail-bodymap');
+  const nameEl = bm?.querySelector('.ex-detail-bodymap-name');
+  const col = nameEl?.parentElement;
+  if (!col || !bm.clientHeight) return;
+  const avail = bm.clientHeight - 8; // box's 4px top/bottom padding
+  let fs = 24;
+  nameEl.style.fontSize = fs + 'px';
+  while (col.offsetHeight > avail && fs > 14) { fs -= 1; nameEl.style.fontSize = fs + 'px'; }
 }
 window._renderExDetailBestSet = _renderExDetailBestSet;
 
-function _stopClickBubble(e) { e.stopPropagation(); }
+// Body map mode's SAVE & DONE dock (#ex-detail-finish-dock, fixed): shown only
+// while it holds the button AND the float bar is showing on the exercise view —
+// the float bar is shown/hidden from many places (keyboards, editors, muscles…),
+// so it's mirrored via observers rather than hooked into each of them. Sits 8px
+// above the bar's live top edge (its height changes as labels collapse).
+function _syncExFinishDock() {
+  const dock = document.getElementById('ex-detail-finish-dock');
+  const fb = document.getElementById('ex-float-bar');
+  if (!dock || !fb) return;
+  const docked = !!dock.querySelector('#ex-detail-finish-btn');
+  document.body.classList.toggle('ex-finish-docked', docked);
+  const show = docked && document.body.classList.contains('ex-detail-open')
+    && !document.body.classList.contains('ex-tab-detail-open')
+    && getComputedStyle(fb).display !== 'none';
+  dock.style.display = show ? 'flex' : 'none';
+  if (!show) return;
+  dock.style.bottom = (window.innerHeight - fb.getBoundingClientRect().top + 8) + 'px';
+  // Spans from the middle of the bar's Note button to the middle of its Stats
+  // button (width via --dock-w, so it never sticks to the button once it's
+  // back in its own row).
+  const c = id => { const r = document.getElementById(id)?.getBoundingClientRect(); return r && r.width ? r.left + r.width / 2 : null; };
+  const from = c('ex-float-note'), to = c('ex-float-stats');
+  if (from != null && to != null && to > from) {
+    dock.style.left = from + 'px';
+    dock.style.transform = 'none';
+    dock.style.setProperty('--dock-w', (to - from) + 'px');
+  }
+}
+(function _watchExFinishDock() {
+  const fb = document.getElementById('ex-float-bar');
+  if (!fb) { document.addEventListener('DOMContentLoaded', _watchExFinishDock, { once: true }); return; }
+  const sync = () => _syncExFinishDock();
+  new MutationObserver(sync).observe(fb, { attributes: true, attributeFilter: ['style', 'class'] });
+  new MutationObserver(sync).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  if (window.ResizeObserver) new ResizeObserver(sync).observe(fb);
+  window.addEventListener('resize', sync);
+})();
 
 // ctx: 'session' (opened from an active workout), 'edit' (creating/editing a
 // workout) or 'extab' (Exercises tab). Omitted → keeps the current one (e.g.
@@ -30374,14 +30445,18 @@ function _loadExDetailPhoto(exName, ctx) {
   if (titleNoPhotoEl) titleNoPhotoEl.textContent = exName;
   if (!wrap || !imgEl) return;
   if (ctx) wrap.dataset.ctx = ctx;
-  // Body map mode moves SAVE & DONE into the box (top-right) — put it back in
-  // its own row, in front of the title, before the box is dropped.
+  // Body map mode docks SAVE & DONE above the float bar — put it back in its
+  // own row, in front of the title.
   const finBtn = document.getElementById('ex-detail-finish-btn');
   const finRow = titleEl?.parentElement;
-  if (finBtn && finRow && finBtn.closest('.ex-detail-bodymap')) {
+  const finDock = document.getElementById('ex-detail-finish-dock');
+  if (finBtn && finRow && finDock && finBtn.parentElement === finDock) {
     finRow.insertBefore(finBtn, titleEl);
-    finBtn.removeEventListener('click', _stopClickBubble);
+    _syncExFinishDock();
   }
+  // Same for the best-set line (moved under the name in the body map box).
+  const bestEl = document.getElementById('ex-detail-bestset');
+  if (bestEl && bestEl.closest('.ex-detail-bodymap')) wrap.appendChild(bestEl);
   wrap.querySelector('.ex-detail-bodymap')?.remove();
   if (titleEl) titleEl.style.display = '';
   if (finRow) finRow.style.display = 'flex';
@@ -30408,26 +30483,26 @@ function _loadExDetailPhoto(exName, ctx) {
     // growing upward. Not class="ex-name": that class is how cards are looked up.
     nameEl.style.cssText = "max-width:100%;font-family:'DM Sans';font-size:24px;font-weight:900;letter-spacing:0;line-height:1.2;color:var(--text);text-align:right;word-break:break-word;";
     nameEl.textContent = exName;
-    // Right column, bottom-aligned: [PLAY] stacked right above the name.
+    // Right column, bottom-aligned: the name, then the best-set line.
     const nameCol = document.createElement('div');
-    // max-height keeps a long name below SAVE & DONE (4px top + 46px + 6px gap).
-    nameCol.style.cssText = 'flex:1;min-width:0;align-self:flex-end;max-height:calc(100% - 56px);overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-end;gap:2px;';
+    nameCol.style.cssText = 'flex:1;min-width:0;align-self:flex-end;display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-end;gap:2px;';
     nameCol.appendChild(nameEl);
+    if (bestEl) nameCol.appendChild(bestEl); // best-set line right under the name
     bm.appendChild(nameCol);
-    // Video link → the Exercises tab's PLAY badge (openExtabExOverlay), right
-    // above the name; same link lookup and broken-link handling.
+    // Video link → the Exercises tab's PLAY badge (openExtabExOverlay), in the
+    // box's top-right corner; same link lookup and broken-link handling.
     const _exLib = typeof _exLibDef === 'function' ? _exLibDef(exName) : null;
     const _exDef = getAllExercises().find(x => x.name === exName || x.label === exName) || _exLib;
     const videoUrl = _exDef?.videoUrl || customExercises.find(e => e.name === exName)?.videoUrl || _exLib?.videoUrl || '';
     if (videoUrl && localStorage.getItem(`ironlog_ex_video_broken_${exName}`) !== '1') {
       const pb = document.createElement('div');
       pb.className = 'ex-detail-bodymap-play';
-      // No right padding (only vertical, for the tap area), so PLAY's right
-      // edge lines up with the name's.
-      pb.style.cssText = 'position:relative;display:flex;align-items:center;gap:5px;padding:4px 0;cursor:pointer;z-index:2;-webkit-tap-highlight-color:transparent;';
+      // Top-right corner: 4px vertical padding (tap area) puts it 4px from the
+      // top; right:16px = the box's right padding, in line with the name.
+      pb.style.cssText = 'position:absolute;top:0;right:16px;display:flex;align-items:center;gap:5px;padding:4px 0;cursor:pointer;z-index:2;-webkit-tap-highlight-color:transparent;';
       pb.onclick = (e) => { e.stopPropagation(); window.open(videoUrl, '_blank'); };
       pb.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="var(--accent)" stroke="none"><polygon points="5,3 19,12 5,21"/></svg><span style="font-family:\'DM Sans\';font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.5px;margin-right:-.5px;">PLAY</span>';
-      nameCol.insertBefore(pb, nameEl);
+      bm.appendChild(pb);
       if (window._checkVideoLinkReachable) {
         window._checkVideoLinkReachable(videoUrl).then(ok => {
           if (ok) { localStorage.removeItem(`ironlog_ex_video_broken_${exName}`); return; }
@@ -30436,12 +30511,11 @@ function _loadExDetailPhoto(exName, ctx) {
         });
       }
     }
-    // SAVE & DONE → the box's top-right corner (placed by CSS:
-    // .ex-detail-bodymap #ex-detail-finish-btn); its own row is then empty and
-    // hidden. Its taps mustn't reach the box's own tap (muscles/stats toggle).
-    if (finBtn) {
-      bm.appendChild(finBtn);
-      finBtn.addEventListener('click', _stopClickBubble);
+    // SAVE & DONE → docked, centered, 8px above the float bar (see
+    // _syncExFinishDock); its own row is then empty and hidden.
+    if (finBtn && finDock) {
+      finDock.appendChild(finBtn);
+      _syncExFinishDock();
     }
     if (finRow) finRow.style.display = 'none';
     imgEl.parentElement.insertBefore(bm, imgEl);
@@ -30450,6 +30524,8 @@ function _loadExDetailPhoto(exName, ctx) {
     wrap.style.display = 'block';
     if (noPhotoWrap) noPhotoWrap.style.display = 'none';
     requestAnimationFrame(_syncExDetailBodyTop);
+    // Re-render once laid out, so the best-set box can measure the sets box's width.
+    requestAnimationFrame(() => _renderExDetailBestSet(false));
     return;
   }
   const _applyDetailPhoto = (src) => {
@@ -32956,6 +33032,8 @@ function _updateKgDisplay(val, isBWMode) {
 <div id="reps-popup" style="display:none;"></div>
 <div id="ex-float-bar-block"></div>
 
+<!-- Body map mode: SAVE & DONE (#ex-detail-finish-btn) is moved in here — see _syncExFinishDock -->
+<div id="ex-detail-finish-dock"></div>
 <div id="ex-float-bar" style="display:none;flex-direction:row;">
   <button id="ex-float-note" onclick="exFloatAction('note')" title="Note" style="position:relative;">
     <svg class="ex-float-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
