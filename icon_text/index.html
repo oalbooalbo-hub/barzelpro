@@ -373,6 +373,9 @@ body.desktop-mode .pages-wrap {
 /* Body map mode: SAVE & DONE docked, centered, 8px above the float bar (bottom set by _syncExFinishDock); the page gets its 58px + 8px as extra bottom room. */
 #ex-detail-finish-dock{position:fixed;left:50%;transform:translateX(-50%);z-index:210;display:none;}
 #ex-detail-finish-dock #ex-detail-finish-btn{width:var(--dock-w,120px)!important;}
+/* Active workout's FINISH WORKOUT bottom bar (~125px + safe area): body already reserves 90px + safe area, this adds the rest so the last card scrolls clear. Hidden while a note's keyboard is up (it would ride above the keyboard). */
+body.workout-finish-bar-on #today-workout-area{padding-bottom:40px;}
+body.ex-note-editing #workout-finish-bar{display:none!important;}
 /* Fade behind the docked button: 46px transparent → page bg above it, solid down to the screen bottom (height set by _syncExFinishDock). Under the dock/float bar (210), over the overlay (200). */
 #ex-detail-finish-fade{position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;z-index:209;display:none;pointer-events:none;background:linear-gradient(to bottom,transparent,var(--bg) 46px);}
 body.ex-finish-docked #ex-detail-overlay-body{padding-bottom:calc(226px + env(safe-area-inset-bottom));}
@@ -1670,6 +1673,16 @@ window._fbModuleReady = true;
     <div id="today-info-panel" style="display:none;opacity:0;transform:translateY(10px);transition:opacity .25s ease,transform .25s ease;padding-bottom:24px;"></div>
     <div id="today-info-close-bar" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;padding:46px 20px calc(20px + env(safe-area-inset-bottom));background:linear-gradient(to bottom,transparent,var(--g11) 40%);z-index:200;box-sizing:border-box;">
       <button onclick="_closeTodayInfoPanel()" style="width:100%;padding:18px;background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:100px;font-family:'DM Sans';font-size:16px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;">CLOSE</button>
+    </div>
+    <!-- Active workout: FINISH WORKOUT bottom bar — same size, spot and fade as
+         Workout info's START WORKOUT (#w2-start-bottom-wrap). Shown/hidden by
+         _syncWorkoutFinishBar. -->
+    <div id="workout-finish-bar" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;padding:46px 20px calc(20px + env(safe-area-inset-bottom));background:linear-gradient(to bottom,transparent,var(--bg) 40%);z-index:150;box-sizing:border-box;pointer-events:none;">
+      <div style="display:flex;gap:10px;">
+        <button id="workout-finish-btn" onclick="finishWorkout()" style="flex:1;padding:17px;background:var(--g00);color:var(--gcc);border:1px solid var(--gcc);border-radius:100px;font-family:'DM Sans';font-size:18px;font-weight:900;cursor:pointer;letter-spacing:.3px;-webkit-tap-highlight-color:transparent;transition:transform .15s;pointer-events:auto;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">
+          SAVE WORKOUT
+        </button>
+      </div>
     </div>
     <div class="today-actions" style="margin:0;padding:0;">
       <button class="btn-clear-workout" onclick="clearSession()" style="display:none;"></button>
@@ -5429,10 +5442,11 @@ function _openTodayInfoPanel(w) {
   // positioned (bottom:4px) against this same row, so display:none on Finish/
   // PR-stars would shrink the row's height and shift that count upward —
   // visibility:hidden keeps their box space reserved instead.
-  ['workout-finish-btn', 'workout-pr-stars'].forEach(id => {
+  ['workout-finish-slot', 'workout-pr-stars'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.visibility = 'hidden';
   });
+  _syncWorkoutFinishBar(); // panel has its own CLOSE bar
   ['workout-hero-close-btn', 'workout-hero-menu-btn'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
@@ -5464,10 +5478,11 @@ function _closeTodayInfoPanel() {
   if (closeBar) closeBar.style.display = 'none';
   const chevron = document.getElementById('workout-hero-chevron');
   if (chevron) chevron.style.transform = 'rotate(0deg)';
-  ['workout-finish-btn', 'workout-pr-stars'].forEach(id => {
+  ['workout-pr-stars'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.visibility = '';
   });
+  _syncWorkoutFinishBar();
   ['workout-hero-close-btn', 'workout-hero-menu-btn'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'flex';
@@ -5532,11 +5547,15 @@ function _setWorkoutHeroPhoto(name) {
       </div>
     </div>
     ${window._isNewWorkoutFlow ? '' : `<div style="display:flex;align-items:flex-end;padding:8px 10px 4px;gap:8px;position:relative;">
-      <button id="workout-finish-btn" onclick="finishWorkout()" style="background:var(--accent);border:none;border-radius:8px;padding:7px 0;width:76px;cursor:pointer;-webkit-tap-highlight-color:transparent;display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;">
-        <span style="color:var(--g00);font-family:'DM Sans';font-size:13px;font-weight:900;letter-spacing:.5px;">FINISH</span>
-        <span style="color:var(--g00);font-family:'DM Sans';font-size:10px;font-weight:700;letter-spacing:.3px;">WORKOUT</span>
-      </button>
-      <div style="position:absolute;left:50%;transform:translateX(-50%);bottom:4px;display:flex;flex-direction:column;align-items:center;gap:1px;">
+      <!-- FINISH WORKOUT now lives in the fixed bottom bar (#workout-finish-bar).
+           This invisible slot keeps the old button's box: the row's height and
+           the exercise cards' status circles (_alignExCardCircles) line up on it. -->
+      <div id="workout-finish-slot" aria-hidden="true" style="visibility:hidden;pointer-events:none;border-radius:8px;padding:7px 0;width:76px;display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;">
+        <span style="font-family:'DM Sans';font-size:13px;font-weight:900;letter-spacing:.5px;">FINISH</span>
+        <span style="font-family:'DM Sans';font-size:10px;font-weight:700;letter-spacing:.3px;">WORKOUT</span>
+      </div>
+      <!-- Exercise count: on the left, centered over the (invisible) FINISH slot — the same column as the cards' status circles. -->
+      <div style="position:absolute;left:10px;width:76px;bottom:4px;display:flex;flex-direction:column;align-items:center;gap:1px;">
         <span id="workout-progress-fraction" style="font-family:'DM Sans';font-size:32px;font-weight:900;color:var(--gff);line-height:1;">0</span>
         <span style="font-family:'DM Sans';font-size:11px;font-weight:600;color:var(--g88);line-height:1;">exercises</span>
       </div>
@@ -5565,10 +5584,25 @@ function _setWorkoutHeroPhoto(name) {
   // leaving the spacer stale and the exercise list rendering under the fixed header.
   _syncWorkoutHeaderSpacer();
   requestAnimationFrame(_syncWorkoutHeaderSpacer);
-  // The FINISH WORKOUT button may have just (re)appeared — re-line-up the
-  // exercise cards' status circles under it.
+  // The FINISH WORKOUT slot may have just (re)appeared — re-line-up the
+  // exercise cards' status circles under it, and show/hide the bottom bar.
   _scheduleExCircleAlign();
+  _syncWorkoutFinishBar();
 }
+
+// Active workout: FINISH WORKOUT is a fixed bottom bar (same size/spot/fade
+// as Workout info's START WORKOUT). Shown whenever the hero row has its
+// FINISH slot (an active workout, not building a new one), except while the
+// in-place info panel is open (it has its own CLOSE bar there). Lives inside
+// #today-workout-area, so it's hidden along with it / on other tabs.
+function _syncWorkoutFinishBar() {
+  const bar = document.getElementById('workout-finish-bar');
+  if (!bar) return;
+  const on = !!document.getElementById('workout-finish-slot') && !window._todayInfoPanelOpen;
+  bar.style.display = on ? 'block' : 'none';
+  document.body.classList.toggle('workout-finish-bar-on', on);
+}
+window._syncWorkoutFinishBar = _syncWorkoutFinishBar;
 
 // Active workout: each exercise card's status circle (not started / in
 // progress / done) is centered horizontally under the FINISH WORKOUT button.
@@ -5583,7 +5617,7 @@ function _setWorkoutHeroPhoto(name) {
 function _layoutCenterX(el) { let x = el.offsetWidth / 2; for (let n = el; n; n = n.offsetParent) x += n.offsetLeft; return x; }
 
 function _alignExCardCircles() {
-  const btn = document.getElementById('workout-finish-btn');
+  const btn = document.getElementById('workout-finish-slot');
   const list = document.getElementById('exerciseList');
   if (!btn || !list || !btn.offsetParent) return;
   const cx = _layoutCenterX;
@@ -5698,6 +5732,14 @@ function _updateWorkoutProgress() {
   // exercise is completed — both numbers, not just the "done" one, so "7 of 7" reads
   // as a single all-green unit rather than a done/total pairing.
   const _allDone = total > 0 && done === total;
+  // SAVE WORKOUT (bottom bar): text + border bright grey until every exercise
+  // is completed, then --accent. Stays tappable either way.
+  const _saveBtn = document.getElementById('workout-finish-btn');
+  if (_saveBtn) {
+    const _c = _allDone ? 'var(--accent)' : 'var(--gcc)';
+    _saveBtn.style.color = _c;
+    _saveBtn.style.borderColor = _c;
+  }
   fraction.innerHTML = done > 0
     ? `<span style="font-size:32px;font-weight:900;color:${_allDone ? '#39FF14' : 'var(--gff)'};">${done}</span><span style="font-size:32px;font-weight:300;color:${_allDone ? '#39FF14' : 'var(--g88)'};margin:0 4px;">of</span><span style="font-size:32px;font-weight:900;color:${_allDone ? '#39FF14' : 'var(--g88)'};">${total}</span>`
     : `${total}`;
