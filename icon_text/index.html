@@ -370,10 +370,12 @@ body.desktop-mode .pages-wrap {
 #ex-detail-bestset .bs-line{white-space:nowrap;font-size:var(--bs-fs,18px);line-height:1.2;}
 #ex-detail-bestset .bs-penta{width:1em;height:1em;fill:currentColor;vertical-align:-.12em;}
 #ex-detail-bestset .bs-new-row{margin-bottom:3px;}
-/* Body map mode: SAVE & DONE docked, centered, 8px above the float bar (bottom set by _syncExFinishDock); the page gets its 46px + 8px as extra bottom room. */
+/* Body map mode: SAVE & DONE docked, centered, 8px above the float bar (bottom set by _syncExFinishDock); the page gets its 58px + 8px as extra bottom room. */
 #ex-detail-finish-dock{position:fixed;left:50%;transform:translateX(-50%);z-index:210;display:none;}
 #ex-detail-finish-dock #ex-detail-finish-btn{width:var(--dock-w,120px)!important;}
-body.ex-finish-docked #ex-detail-overlay-body{padding-bottom:calc(214px + env(safe-area-inset-bottom));}
+/* Fade behind the docked button: 46px transparent → page bg above it, solid down to the screen bottom (height set by _syncExFinishDock). Under the dock/float bar (210), over the overlay (200). */
+#ex-detail-finish-fade{position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;z-index:209;display:none;pointer-events:none;background:linear-gradient(to bottom,transparent,var(--bg) 46px);}
+body.ex-finish-docked #ex-detail-overlay-body{padding-bottom:calc(226px + env(safe-area-inset-bottom));}
 #ex-detail-bestset .bs-val{font-weight:800;}
 #ex-detail-bestset .bs-unit{font-weight:400;}
 #ex-detail-bestset .bs-new{display:inline-block;background:var(--pr-best);color:#000;font-size:11px;font-weight:900;letter-spacing:.5px;padding:2px 6px;border-radius:4px;}
@@ -3523,10 +3525,9 @@ window._applyAccountSound = _applyAccountSound;
 // Profile → Dark Mode: per-user, default ON (dark). Same storage scheme as App
 // Sound: users/{uid}.darkMode in the account, cached on the phone with its
 // owner's uid (the <head> script applies the cached value before first paint).
-// Light mode is being rolled out screen by screen: until every screen is
-// converted, only the super admin sees the switch / gets light mode. Flip to
-// true to open it to everyone.
-const DARK_MODE_FOR_ALL = false;
+// Open to every user (was super-admin only during the light-mode rollout).
+// Set back to false to restrict the switch / light mode to the super admin.
+const DARK_MODE_FOR_ALL = true;
 function _isDarkMode() {
   const uid = window._currentUser?.uid;
   if (!DARK_MODE_FOR_ALL && uid && typeof _isRealSuperAdmin === 'function' && !_isRealSuperAdmin()) return true;
@@ -27603,10 +27604,11 @@ function deleteCoachWorkout(id) {
       </div>
       <!-- FINISH + exercise name — below image -->
       <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 2px 4px;gap:8px;">
-        <button id="ex-detail-finish-btn" onclick="markExDetailDone()" style="position:relative;background:var(--g00);border:1px solid var(--accent);border-radius:23px;padding:0;width:120px;height:46px;box-sizing:border-box;cursor:pointer;-webkit-tap-highlight-color:transparent;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;">
-          <!-- One line "SAVE & DONE" (fixed 46px height), also in update mode
-               (_enterExUpdateMode); the second span is unused and stays hidden. -->
-          <span style="color:var(--accent);font-family:'DM Sans';font-size:13px;font-weight:900;letter-spacing:.5px;white-space:nowrap;">SAVE &amp; DONE</span>
+        <button id="ex-detail-finish-btn" onclick="markExDetailDone()" style="position:relative;background:var(--g00);border:1px solid var(--accent);border-radius:29px;padding:0 18px;min-width:120px;height:58px;box-sizing:border-box;cursor:pointer;-webkit-tap-highlight-color:transparent;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;">
+          <!-- One line "SAVE & DONE" (fixed 58px height, 18px text; width grows
+               from 120px to fit), also in update mode (_enterExUpdateMode); the
+               second span is unused and stays hidden. -->
+          <span style="color:var(--accent);font-family:'DM Sans';font-size:18px;font-weight:900;letter-spacing:.5px;white-space:nowrap;line-height:1;">SAVE &amp; DONE</span>
           <span style="display:none;color:var(--accent);font-family:'DM Sans';font-size:10px;font-weight:700;letter-spacing:.3px;">EXERCISE</span>
           <!-- Creating/editing a workout repurposes this button into CLOSE (see
                openExDetail) — a separate overlaid label, absolutely centered,
@@ -30710,8 +30712,15 @@ function _syncExFinishDock() {
     && !document.body.classList.contains('ex-tab-detail-open')
     && getComputedStyle(fb).display !== 'none';
   dock.style.display = show ? 'flex' : 'none';
+  // Fade follows the button: Stats etc. hide it with visibility:hidden.
+  const fade = document.getElementById('ex-detail-finish-fade');
+  const finBtn = dock.querySelector('#ex-detail-finish-btn');
+  const btnShown = show && finBtn && getComputedStyle(finBtn).visibility !== 'hidden';
+  if (fade) fade.style.display = btnShown ? 'block' : 'none';
   if (!show) return;
   dock.style.bottom = (window.innerHeight - fb.getBoundingClientRect().top + 8) + 'px';
+  // Fade: from 46px above the button's top down to the screen bottom.
+  if (fade) fade.style.height = (window.innerHeight - dock.getBoundingClientRect().top + 46) + 'px';
   // Spans from the middle of the bar's Note button to the middle of its Stats
   // button (width via --dock-w, so it never sticks to the button once it's
   // back in its own row).
@@ -30729,6 +30738,9 @@ function _syncExFinishDock() {
   const sync = () => _syncExFinishDock();
   new MutationObserver(sync).observe(fb, { attributes: true, attributeFilter: ['style', 'class'] });
   new MutationObserver(sync).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  // SAVE & DONE's own visibility (hidden by Stats etc.) drives the fade.
+  const finBtn = document.getElementById('ex-detail-finish-btn');
+  if (finBtn) new MutationObserver(sync).observe(finBtn, { attributes: true, attributeFilter: ['style'] });
   if (window.ResizeObserver) new ResizeObserver(sync).observe(fb);
   window.addEventListener('resize', sync);
 })();
@@ -33337,6 +33349,8 @@ function _updateKgDisplay(val, isBWMode) {
 <div id="ex-float-bar-block"></div>
 
 <!-- Body map mode: SAVE & DONE (#ex-detail-finish-btn) is moved in here — see _syncExFinishDock -->
+<!-- Body map mode: gradient fade behind the docked SAVE & DONE (like Workout info's START WORKOUT bar) — sized in _syncExFinishDock -->
+<div id="ex-detail-finish-fade"></div>
 <div id="ex-detail-finish-dock"></div>
 <div id="ex-float-bar" style="display:none;flex-direction:row;">
   <button id="ex-float-note" onclick="exFloatAction('note')" title="Note" style="position:relative;">
