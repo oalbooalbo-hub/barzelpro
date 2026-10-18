@@ -389,10 +389,22 @@ body.ex-note-editing #workout-finish-bar{display:none!important;}
    same gradient at the same size, anchored to the screen bottom, so it lines
    up with what's behind them; the fade itself is a 46px mask. */
 .home-bg-match-bottom{-webkit-mask-image:linear-gradient(to bottom,transparent,#000 46px);mask-image:linear-gradient(to bottom,transparent,#000 46px);}
-/* Exercise screen: the gradient fills the (full-screen) body box; the photo
-   area scrolls over it as a solid --bg band (--ex-photo-bottom, measured). */
+/* Exercise screen: the gradient fills the whole (full-screen) body box from the
+   top of the screen, static while content scrolls; the photo area is
+   see-through over it, and the fixed elapsed-time bar on top draws the same
+   gradient anchored to the screen top so it still hides what scrolls under it. */
+/* Active exercise, body map mode: the image box's background is a radial
+   gradient from #21262B at the top-right corner to full black at the
+   bottom-left one (farthest corner). Light mode keeps its plain --g00. */
+.ex-detail-bodymap{background:radial-gradient(farthest-corner at 100% 0%,#21262B,#000)!important;border:1px solid var(--g55);border-radius:inherit;}
+/* ^ border: same as the sets box (.exercise-card); radius follows the frame's 12px so the corners aren't clipped. */
+:root[data-theme="light"] .ex-detail-bodymap{background:var(--g00)!important;}
+/* Active exercise's top progress bar: darker empty segments (were --g33). */
+#ex-detail-progress-wrap > div{background:var(--g00)!important;}
 #ex-detail-finish-fade.home-bg-match-bottom{background:var(--home-bg) bottom/100% 100vh no-repeat;background-size:100% 100dvh;}
-#ex-detail-overlay:not(.ex-tab-mode) #ex-detail-overlay-body.ex-photo-bg{background:linear-gradient(var(--bg),var(--bg)) top/100% var(--ex-photo-bottom,0px) no-repeat local,var(--home-bg) scroll;}
+#ex-detail-overlay:not(.ex-tab-mode) #ex-detail-overlay-body.ex-photo-bg{background:var(--home-bg) scroll;}
+#ex-detail-overlay:not(.ex-tab-mode) #ex-detail-overlay-body.ex-photo-bg #ex-detail-photo-wrap{background:transparent;}
+#ex-detail-overlay.ex-photo-bg:not(.ex-tab-mode) #ex-detail-above-elapsed{background:var(--home-bg) top/100% 100vh no-repeat;background-size:100% 100dvh;}
 /* Workout list: gradient from the header's bottom (--wk-hdr-bottom, set by
    _syncWorkoutHeaderSpacer) to the screen bottom. */
 #workout-area-bg{display:none;position:fixed;top:var(--wk-hdr-bottom,0px);left:0;right:0;height:calc(100vh - var(--wk-hdr-bottom,0px));height:calc(100dvh - var(--wk-hdr-bottom,0px));max-width:430px;margin:0 auto;background:var(--home-bg);z-index:0;pointer-events:none;}
@@ -27796,7 +27808,7 @@ function deleteCoachWorkout(id) {
   <div id="ex-detail-overlay-body">
     <!-- Photo (21:9) + FINISH — scrollable, not sticky -->
     <div id="ex-detail-photo-wrap" style="display:none;">
-      <div id="ex-detail-photo-tap-wrap" onclick="if(document.getElementById('ex-detail-muscles-section'))_toggleExDetailMuscles();else if(document.getElementById('ex-detail-stats-section'))_toggleExDetailStats()" style="position:relative;margin:4px 2px 0;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;">
+      <div id="ex-detail-photo-tap-wrap" onclick="if(document.getElementById('ex-detail-muscles-section'))_toggleExDetailMuscles();else if(document.getElementById('ex-detail-stats-section'))_toggleExDetailStats()" style="position:relative;margin:4px 2px 0;aspect-ratio:21/9;overflow:hidden;border-radius:12px;">
         <img id="ex-detail-photo-img" src="" style="width:100%;height:100%;object-fit:cover;display:block;">
         <button onclick="event.stopPropagation();_toggleExDetailMuscles()" style="position:absolute;bottom:3px;right:3px;z-index:4;background:var(--g00);border:none;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;"><svg id="ex-detail-photo-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;transition:transform .25s ease;"><polyline points="6 9 12 15 18 9"/></svg></button>
       </div>
@@ -30941,6 +30953,7 @@ function _syncExFinishDock() {
   const sync = () => {
     body.style.setProperty('--ex-photo-bottom', (wrap.offsetHeight ? wrap.offsetTop + wrap.offsetHeight : 0) + 'px');
     body.classList.toggle('ex-photo-bg', !!wrap.offsetHeight);
+    document.getElementById('ex-detail-overlay')?.classList.toggle('ex-photo-bg', !!wrap.offsetHeight);
   };
   if (window.ResizeObserver) new ResizeObserver(sync).observe(wrap);
   sync();
@@ -30999,7 +31012,7 @@ function _loadExDetailPhoto(exName, ctx) {
     imgEl.src = '';
     const bm = document.createElement('div');
     bm.className = 'ex-detail-bodymap';
-    bm.style.cssText = 'position:absolute;inset:0;z-index:1;background:var(--g00);display:flex;align-items:center;gap:14px;padding:4px var(--bm-pr,16px) 4px 10px;box-sizing:border-box;';
+    bm.style.cssText = 'position:absolute;inset:0;z-index:1;background:var(--g00);display:flex;align-items:center;gap:14px;padding:10px var(--bm-pr,16px) 10px 10px;box-sizing:border-box;'; // 10px top/bottom → figures ~10px from the image's border
     const diagram = _buildExBodyMapDiagram(exName);
     if (diagram) bm.appendChild(diagram);
     const nameEl = document.createElement('div');
@@ -31012,7 +31025,9 @@ function _loadExDetailPhoto(exName, ctx) {
     nameEl.textContent = exName;
     // Right column, bottom-aligned: the name, then the best-set line.
     const nameCol = document.createElement('div');
-    nameCol.style.cssText = 'flex:1;min-width:0;align-self:flex-end;display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-end;gap:2px;';
+    // margin-bottom:-6px keeps the name/best-set 4px from the bottom, as before
+    // the box's bottom padding grew to 10px (for the figures' gap).
+    nameCol.style.cssText = 'flex:1;min-width:0;align-self:flex-end;display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-end;gap:2px;margin-bottom:-6px;';
     nameCol.appendChild(nameEl);
     if (bestEl) nameCol.appendChild(bestEl); // best-set line right under the name
     bm.appendChild(nameCol);
