@@ -5839,6 +5839,10 @@ function _updateWorkoutProgress() {
   fraction.innerHTML = (done > 0 && !window._todayInfoPanelOpen)
     ? `<span style="font-size:32px;font-weight:900;color:${_allDone ? '#39FF14' : 'var(--gff)'};">${done}</span><span style="font-size:32px;font-weight:300;color:${_allDone ? '#39FF14' : 'var(--g88)'};margin:0 4px;">of</span><span style="font-size:32px;font-weight:900;color:${_allDone ? '#39FF14' : 'var(--g88)'};">${total}</span>`
     : `${total}`;
+  // Info panel open: hold the count block at its pre-open width (see
+  // _animateWorkoutCountSwap) — "exercises" stays put, the number centers over it.
+  const _countBlk = fraction.parentElement;
+  if (_countBlk) _countBlk.style.minWidth = (window._todayInfoPanelOpen && window._workoutCountLockW) ? window._workoutCountLockW + 'px' : '';
   // One segment per exercise in the list (not a single smooth fill), so adding/removing
   // exercises reshapes the bar itself — segments fill left-to-right as exercises are
   // completed, in order, regardless of which specific exercise each one represents.
@@ -5891,6 +5895,11 @@ window._updateWorkoutProgress = _updateWorkoutProgress;
 function _animateWorkoutCountSwap() {
   const fr = document.getElementById('workout-progress-fraction');
   if (!fr) return;
+  // Opening: remember the block's "12 of 13" width (measured before the swap)
+  // so "exercises" keeps its spot and "13" centers above it — applied in
+  // _updateWorkoutProgress. Closing: released.
+  const blk = fr.parentElement;
+  window._workoutCountLockW = (window._todayInfoPanelOpen && blk) ? blk.offsetWidth : null;
   const done = document.querySelectorAll('#exerciseList .exercise-card.completed').length;
   if (!done || !fr.animate) { _updateWorkoutProgress(); return; }
   fr.getAnimations().forEach(a => a.cancel());
