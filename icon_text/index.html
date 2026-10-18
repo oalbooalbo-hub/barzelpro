@@ -373,6 +373,11 @@ body.desktop-mode .pages-wrap {
 /* Body map mode: SAVE & DONE docked, centered, 8px above the float bar (bottom set by _syncExFinishDock); the page gets its 58px + 8px as extra bottom room. */
 #ex-detail-finish-dock{position:fixed;left:50%;transform:translateX(-50%);z-index:210;display:none;}
 #ex-detail-finish-dock #ex-detail-finish-btn{width:var(--dock-w,120px)!important;}
+/* Home "Welcome" (no workout completed this week) — see _applyWeekWelcome. */
+#today-week-welcome{display:none;position:absolute;inset:0;z-index:2;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-family:'DM Sans';font-size:56px;font-weight:900;line-height:1.1;color:var(--text-strong);pointer-events:none;}
+#today-week-progress.week-welcome > :not(#today-week-welcome),#today-carousel-dots.week-welcome{visibility:hidden;}
+#today-week-progress.week-welcome #today-week-welcome{display:flex;animation:weekWelcomeIn .5s ease both;}
+@keyframes weekWelcomeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 /* Active workout's FINISH WORKOUT bottom bar (~125px + safe area): body already reserves 90px + safe area, this adds the rest so the last card scrolls clear. Hidden while a note's keyboard is up (it would ride above the keyboard). */
 body.workout-finish-bar-on #today-workout-area{padding-bottom:40px;}
 body.ex-note-editing #workout-finish-bar{display:none!important;}
@@ -1498,7 +1503,10 @@ window._fbModuleReady = true;
     <!-- Weekly strength progress ring / muscle heatmap carousel — swipe area is
          exactly this box (bounded above by the header via the screen's own
          top padding, below by the dots row that immediately follows it). -->
-    <div id="today-week-progress" style="display:none;width:100%;max-width:380px;flex-direction:column;align-items:center;gap:6px;margin-top:70px;padding-top:10px;padding-bottom:4px;margin-bottom:-14px;transform:translateY(-20px);overflow:hidden;-webkit-tap-highlight-color:transparent;touch-action:pan-y;">
+    <div id="today-week-progress" style="display:none;position:relative;width:100%;max-width:380px;flex-direction:column;align-items:center;gap:6px;margin-top:70px;padding-top:10px;padding-bottom:4px;margin-bottom:-14px;transform:translateY(-20px);overflow:hidden;-webkit-tap-highlight-color:transparent;touch-action:pan-y;">
+      <!-- No workout completed this week → shown instead of everything else in
+           this box (see _applyWeekWelcome), in the same space. -->
+      <div id="today-week-welcome" aria-live="polite"><span id="today-week-welcome-line">Welcome</span><span id="today-week-welcome-name" style="display:none;"></span></div>
       <!-- Sits above the carousel track, not inside either slide, so it never
            moves or re-renders when swiping between the ring and the heatmap. -->
       <div style="font-family:'DM Sans';font-size:14px;font-weight:700;color:var(--text-label);letter-spacing:.5px;text-transform:uppercase;transform:translateY(-10px);">This Week</div>
@@ -1555,7 +1563,7 @@ window._fbModuleReady = true;
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--accent);position:absolute;bottom:29px;left:50%;transform:translateX(-50%);z-index:2;pointer-events:none;"><polyline points="6 9 12 15 18 9"/></svg>
               </div>
               <!-- Page 3: weekly goal segments + count / OUT OF n / chevron. -->
-              <div onclick="openStrengthTargetSheet()" style="position:relative;width:300px;height:300px;flex-shrink:0;cursor:pointer;">
+              <div id="today-circle-pane-ring" onclick="openStrengthTargetSheet()" style="position:relative;width:300px;height:300px;flex-shrink:0;cursor:pointer;">
                 <svg width="300" height="300" viewBox="0 0 300 300" style="position:absolute;inset:0;display:block;">
                   <g id="today-progress-goal-ring" transform="rotate(-90 150 150)"></g>
                 </svg>
@@ -3687,6 +3695,32 @@ function _resetWeekProgressForReplay() {
   if (ring) ring.style.transition = 'stroke-dashoffset .6s ease,stroke .4s ease,stroke-opacity .4s ease';
 }
 
+// Home: no workout completed this week (the same count the Total Workouts ring
+// shows) → "Welcome" in place of the This Week circle/carousel + dots. Their
+// contents are only visibility:hidden, so the boxes keep their size and START
+// WORKOUT etc. don't move. Personalised with the first name only when the
+// profile name is purely Latin letters (accents OK) — no other scripts
+// (Hebrew, Arabic…), digits or signs (%, @, !…).
+function _applyWeekWelcome(on) {
+  const box = document.getElementById('today-week-progress');
+  const welcome = document.getElementById('today-week-welcome');
+  if (!box || !welcome) return;
+  box.classList.toggle('week-welcome', on);
+  document.getElementById('today-carousel-dots')?.classList.toggle('week-welcome', on);
+  if (!on) return;
+  const full = (window._currentUserData?.displayName || window._currentUser?.displayName || '').trim();
+  const first = /^[\p{Script=Latin}\p{M}]+(?:[ '\-][\p{Script=Latin}\p{M}]+)*$/u.test(full) ? full.split(/\s+/)[0] : '';
+  const nameEl = document.getElementById('today-week-welcome-name');
+  if (nameEl) {
+    nameEl.textContent = first;
+    nameEl.style.display = first ? '' : 'none';
+    // Long names shrink to fit the 380px column instead of overflowing.
+    nameEl.style.fontSize = first ? Math.min(56, Math.floor(360 / (first.length * 0.62))) + 'px' : '';
+  }
+  const lineEl = document.getElementById('today-week-welcome-line');
+  if (lineEl) lineEl.textContent = first ? 'Welcome,' : 'Welcome';
+}
+
 function renderTodayWeekProgress(withAnim) {
   const el = document.getElementById('today-week-progress');
   if (!el) return;
@@ -3713,6 +3747,9 @@ function renderTodayWeekProgress(withAnim) {
   }).length;
   const countEl = document.getElementById('today-progress-count');
   if (countEl) countEl.textContent = count;
+  _applyWeekWelcome(count === 0);
+  window._todayWeekWorkoutCount = count;
+  _applyTodayCarouselOrder();
   const targetLblTextEl = document.getElementById('today-progress-target-text');
   if (targetLblTextEl) targetLblTextEl.textContent = `OUT OF ${target}`;
   const goalRing = document.getElementById('today-progress-goal-ring');
@@ -4040,7 +4077,54 @@ window.renderTodayWeekProgress = renderTodayWeekProgress;
 // heatmap, page 2 = weekly ring (TODAY_RING_PAGE — the only thick-ring page) ──
 window._todayCarouselIdx = 0;
 const TODAY_CAROUSEL_PAGES = 3;
-const TODAY_PRS_PAGE = 0, TODAY_HEATMAP_PAGE = 1, TODAY_RING_PAGE = 2;
+// Page indices follow the current order (see _setTodayCarouselOrder).
+let TODAY_PRS_PAGE = 0, TODAY_HEATMAP_PAGE = 1, TODAY_RING_PAGE = 2;
+window._todayCarouselReady = true; // the lets above exist — safe to reorder
+
+// Order: normal = New records, Sets progress, Total Workouts. A week with
+// workouts but no new records leads with what has data instead: Sets
+// progress, Total Workouts, New records. The slides (track) and their circle
+// panes (strip) are physically reordered, so every index-based bit (track /
+// strip offsets, dots, swipe) just works; the circle window stays put.
+function _setTodayCarouselOrder(alt) {
+  if (!!window._todayCarouselAlt === alt) return;
+  const track = document.getElementById('today-carousel-track');
+  const strip = document.getElementById('today-circle-strip');
+  const win = document.getElementById('today-circle-window');
+  if (!track || !strip || !win) return;
+  window._todayCarouselAlt = alt;
+  const order = alt ? ['heatmap', 'ring', 'prs'] : ['prs', 'heatmap', 'ring'];
+  const paneId = { prs: 'prs', heatmap: 'sets', ring: 'ring' };
+  order.forEach(k => {
+    const slide = document.getElementById('today-carousel-slide-' + k);
+    const pane = document.getElementById('today-circle-pane-' + paneId[k]);
+    if (slide) track.insertBefore(slide, win);
+    if (pane) strip.appendChild(pane);
+  });
+  TODAY_PRS_PAGE = order.indexOf('prs');
+  TODAY_HEATMAP_PAGE = order.indexOf('heatmap');
+  TODAY_RING_PAGE = order.indexOf('ring');
+  _todayCarouselGoTo(0, true);
+}
+// Decides the order from this week's workout count (renderTodayWeekProgress)
+// and new-records total (_buildTodayWeekPRStars — computed on idle, so the last
+// known total is cached per user + week for an instant, jump-free first render).
+function _applyTodayCarouselOrder() {
+  if (!window._todayCarouselReady) return; // called before the carousel script ran
+  let pr = window._todayWeekPRTotal;
+  if (pr === undefined) {
+    try {
+      const c = JSON.parse(localStorage.getItem('bp_week_pr_total') || 'null');
+      if (c && c.w === _todayWeekStartMs() && c.u === (window._currentUser?.uid || '')) pr = c.n;
+    } catch (e) {}
+  }
+  if (pr === undefined) return; // not known yet — the PR prebuild calls back
+  _setTodayCarouselOrder((window._todayWeekWorkoutCount || 0) > 0 && pr === 0);
+}
+function _todayWeekStartMs() {
+  const d = new Date(); d.setDate(d.getDate() - d.getDay()); d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
 function _todayCarouselGoTo(idx, instant) {
   idx = Math.max(0, Math.min(TODAY_CAROUSEL_PAGES - 1, idx));
   const track = document.getElementById('today-carousel-track');
@@ -4101,7 +4185,10 @@ function _todayCarouselWarmUp() {
   if (!page || !page.classList.contains('active') || !start || start.style.display === 'none' || !box || box.style.display === 'none') return;
   // Page 1 (PRs) is the one on screen here; the heatmap (page 2) is the heavy
   // pane still to pre-draw. Page 3's ring pane is light and isn't included.
-  const panes = [['today-circle-pane-sets', 300]]
+  // (Alternate order: the heatmap is on screen and the PR pentagons — also
+  // heavy — are the ones to pre-draw.) Offset = the pane's slot in the strip.
+  const panes = [['today-circle-pane-sets', TODAY_HEATMAP_PAGE * 300], ['today-circle-pane-prs', TODAY_PRS_PAGE * 300]]
+    .filter(([, off]) => off > 0)
     .map(([id, off]) => [document.getElementById(id), off]).filter(p => p[0]);
   if (!panes.length) return;
   window._todayWarmUpPending = true;
@@ -4198,6 +4285,7 @@ function _todayRingMorphTo(target, instant) {
     if (mx > 10 || my > 10) _tapMoved = true;
   }, { passive: true });
   zone.addEventListener('touchend', e => {
+    if (zone.classList.contains('week-welcome')) return; // "Welcome" shown — no carousel to swipe/tap
     const t = e.changedTouches[0];
     if (!_moved) {
       // Tap inside the circle → run the current page's action straight from
@@ -4212,7 +4300,8 @@ function _todayRingMorphTo(target, instant) {
       const k = r.width / 300; // 300 = the circle's SVG box
       const dx = t.clientX - (r.left + r.width / 2), dy = t.clientY - (r.top + r.height / 2);
       if (Math.hypot(dx, dy) > 136 * k) return; // 136 = the ring's outer edge (thin-ring pages)
-      const action = [null, window.openSetsTargetSheet, window.openStrengthTargetSheet][window._todayCarouselIdx];
+      const _i = window._todayCarouselIdx;
+      const action = _i === TODAY_HEATMAP_PAGE ? window.openSetsTargetSheet : _i === TODAY_RING_PAGE ? window.openStrengthTargetSheet : null;
       if (typeof action !== 'function') return;
       // Cancel the browser's own click for this touch: it would land a moment
       // later on the sheet's backdrop (now under the finger) and close the
@@ -5411,6 +5500,7 @@ window._openWorkoutHeroMenu = _openWorkoutHeroMenu;
 function _openTodayInfoPanel(w) {
   if (!w || window._todayInfoPanelOpen) return;
   window._todayInfoPanelOpen = true;
+  _animateWorkoutCountSwap(); // "2 of 7" → "7" while the panel is open
   window._todayInfoPanelScrollY = window.scrollY;
   _renderW2MusclesInto(w);
 
@@ -5472,6 +5562,7 @@ window._openTodayInfoPanel = _openTodayInfoPanel;
 function _closeTodayInfoPanel() {
   if (!window._todayInfoPanelOpen) return;
   window._todayInfoPanelOpen = false;
+  _animateWorkoutCountSwap(); // back to live progress ("2 of 7")
   const panel = document.getElementById('today-info-panel');
   const closeBar = document.getElementById('today-info-close-bar');
   if (panel) { panel.style.opacity = '0'; panel.style.transform = 'translateY(10px)'; }
@@ -5555,8 +5646,10 @@ function _setWorkoutHeroPhoto(name) {
         <span style="font-family:'DM Sans';font-size:13px;font-weight:900;letter-spacing:.5px;">FINISH</span>
         <span style="font-family:'DM Sans';font-size:10px;font-weight:700;letter-spacing:.3px;">WORKOUT</span>
       </div>
-      <!-- Exercise count: on the left, centered over the (invisible) FINISH slot — the same column as the cards' status circles. -->
-      <div style="position:absolute;left:10px;width:76px;bottom:4px;display:flex;flex-direction:column;align-items:center;gap:1px;">
+      <!-- Exercise count: left edge on the exercise cards' left edge (both 10px in:
+           this row's padding / .page's), growing rightward to fit (e.g. "99 of 99");
+           "exercises" stays centered under the number. -->
+      <div style="position:absolute;left:10px;bottom:4px;display:flex;flex-direction:column;align-items:center;gap:1px;white-space:nowrap;">
         <span id="workout-progress-fraction" style="font-family:'DM Sans';font-size:32px;font-weight:900;color:var(--gff);line-height:1;">0</span>
         <span style="font-family:'DM Sans';font-size:11px;font-weight:600;color:var(--g88);line-height:1;">exercises</span>
       </div>
@@ -5741,7 +5834,9 @@ function _updateWorkoutProgress() {
     _saveBtn.style.color = _c;
     _saveBtn.style.borderColor = _c;
   }
-  fraction.innerHTML = done > 0
+  // While the info panel is open the count shows just the total, styled as
+  // if nothing were completed yet (see _animateWorkoutCountSwap).
+  fraction.innerHTML = (done > 0 && !window._todayInfoPanelOpen)
     ? `<span style="font-size:32px;font-weight:900;color:${_allDone ? '#39FF14' : 'var(--gff)'};">${done}</span><span style="font-size:32px;font-weight:300;color:${_allDone ? '#39FF14' : 'var(--g88)'};margin:0 4px;">of</span><span style="font-size:32px;font-weight:900;color:${_allDone ? '#39FF14' : 'var(--g88)'};">${total}</span>`
     : `${total}`;
   // One segment per exercise in the list (not a single smooth fill), so adding/removing
@@ -5789,6 +5884,25 @@ function _updateWorkoutProgress() {
   }
 }
 window._updateWorkoutProgress = _updateWorkoutProgress;
+
+// Info panel open/close: crossfade the count between "2 of 7" and plain "7"
+// (fade + slight scale out, re-render, back in). Nothing completed → the text
+// is "7" either way, so it just re-renders without animating.
+function _animateWorkoutCountSwap() {
+  const fr = document.getElementById('workout-progress-fraction');
+  if (!fr) return;
+  const done = document.querySelectorAll('#exerciseList .exercise-card.completed').length;
+  if (!done || !fr.animate) { _updateWorkoutProgress(); return; }
+  fr.getAnimations().forEach(a => a.cancel());
+  const out = fr.animate([{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(.85)' }],
+    { duration: 180, easing: 'ease-in', fill: 'forwards' });
+  out.onfinish = () => {
+    _updateWorkoutProgress();
+    fr.animate([{ opacity: 0, transform: 'scale(.85)' }, { opacity: 1, transform: 'scale(1)' }],
+      { duration: 200, easing: 'cubic-bezier(.2,.8,.3,1)' });
+    out.cancel(); // drop its held opacity:0 so it can't resurface after the fade-in
+  };
+}
 
 function _syncWorkoutHeaderSpacer() {
   const hdr = document.getElementById('workout-sticky-header');
@@ -20688,6 +20802,9 @@ function calDeleteWorkout(wi, btn) {
     renderWorkoutsTab();
     renderCalendar();
     if (selectedCalDay) selectCalDay(selectedCalDay);
+    // The calendar is a modal over Home — closing it doesn't re-render Home,
+    // so refresh the This Week count / carousel (and Welcome) behind it now.
+    if (typeof renderTodayWeekProgress === 'function') renderTodayWeekProgress();
   };
 }
 
@@ -32373,7 +32490,10 @@ function _buildTodayWeekPRStars() {
   const base = allW.filter(w => { const d = new Date(w.date); return d >= weekStart && d <= weekEnd; });
   const countFor = (metric) => Object.values(_computeBodyPartExPRs(allW, base, metric)).reduce((a, e) => a + e.count, 0);
   const maxN = countFor('max'), bestSetN = countFor('1rm'), volN = countFor('vol');
-  const sig = JSON.stringify([maxN, bestSetN, volN, BP_COLORS.pr]);
+  // This week's new-records total drives the carousel order (_applyTodayCarouselOrder).
+  window._todayWeekPRTotal = maxN + bestSetN + volN;
+  try { localStorage.setItem('bp_week_pr_total', JSON.stringify({ w: weekStart.getTime(), u: window._currentUser?.uid || '', n: window._todayWeekPRTotal })); } catch (e) {}
+  const sig =JSON.stringify([maxN, bestSetN, volN, BP_COLORS.pr]);
   if (sig === mount.dataset.sig && mount.firstChild) return false; // up to date
   // A count of 0 draws an empty outline-only pentagon with no number (see star()).
   // Rendered grey/unlit first regardless of the real count, and only swapped
@@ -32436,9 +32556,13 @@ window._renderTodayWeekPRStars = _renderTodayWeekPRStars;
 function _prebuildTodayWeekPRStars() {
   const run = () => {
     window._todayPRStarsPrebuildPending = false;
-    // Already showing the PR page (the default page 1) → rebuilt (unlit)
-    // pentagons must light up at once.
-    if (_buildTodayWeekPRStars() && window._todayCarouselIdx === TODAY_PRS_PAGE) {
+    const _built = _buildTodayWeekPRStars();
+    // Fresh new-records total → settle the carousel order before anything
+    // below checks which page is showing.
+    _applyTodayCarouselOrder();
+    // Already showing the PR page (page 1 in the normal order) → rebuilt
+    // (unlit) pentagons must light up at once.
+    if (_built && window._todayCarouselIdx === TODAY_PRS_PAGE) {
       const mount = document.getElementById('today-pr-stars');
       requestAnimationFrame(() => requestAnimationFrame(() => _animateTodayPRStars(mount)));
     }
