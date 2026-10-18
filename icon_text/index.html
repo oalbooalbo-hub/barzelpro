@@ -382,7 +382,27 @@ body.desktop-mode .pages-wrap {
 body.workout-finish-bar-on #today-workout-area{padding-bottom:40px;}
 body.ex-note-editing #workout-finish-bar{display:none!important;}
 /* Fade behind the docked button: 46px transparent → page bg above it, solid down to the screen bottom (height set by _syncExFinishDock). Under the dock/float bar (210), over the overlay (200). */
-#ex-detail-finish-fade{position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;z-index:209;display:none;pointer-events:none;background:linear-gradient(to bottom,transparent,var(--bg) 46px);}
+#ex-detail-finish-fade{position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;z-index:209;display:none;pointer-events:none;}
+/* Home's gradient (--home-bg) behind the active workout's exercise list (below
+   the fixed header's divider) and the active exercise's content (below the
+   photo). It's static on screen, like Home. Bars that fade over it draw the
+   same gradient at the same size, anchored to the screen bottom, so it lines
+   up with what's behind them; the fade itself is a 46px mask. */
+.home-bg-match-bottom{-webkit-mask-image:linear-gradient(to bottom,transparent,#000 46px);mask-image:linear-gradient(to bottom,transparent,#000 46px);}
+/* Exercise screen: the gradient fills the (full-screen) body box; the photo
+   area scrolls over it as a solid --bg band (--ex-photo-bottom, measured). */
+#ex-detail-finish-fade.home-bg-match-bottom{background:var(--home-bg) bottom/100% 100vh no-repeat;background-size:100% 100dvh;}
+#ex-detail-overlay:not(.ex-tab-mode) #ex-detail-overlay-body.ex-photo-bg{background:linear-gradient(var(--bg),var(--bg)) top/100% var(--ex-photo-bottom,0px) no-repeat local,var(--home-bg) scroll;}
+/* Workout list: gradient from the header's bottom (--wk-hdr-bottom, set by
+   _syncWorkoutHeaderSpacer) to the screen bottom. */
+#workout-area-bg{display:none;position:fixed;top:var(--wk-hdr-bottom,0px);left:0;right:0;height:calc(100vh - var(--wk-hdr-bottom,0px));height:calc(100dvh - var(--wk-hdr-bottom,0px));max-width:430px;margin:0 auto;background:var(--home-bg);z-index:0;pointer-events:none;}
+body.workout-home-bg #workout-area-bg{display:block;}
+/* Stacking: this layer is z-index 0 and first in #today-workout-area; the list
+   (#ex-nav-slider, position:relative, z-index auto) and the info panel (has a
+   transform) come later in the DOM, so they paint above it — WITHOUT their own
+   z-index, so popups inside the cards (.kg-inline-editor z9000, etc.) still rise
+   above the header and bars. (z-index:-1 was hidden on device.) */
+body.workout-home-bg #workout-finish-bar,body.workout-home-bg #today-info-close-bar{background:var(--home-bg) bottom/100% calc(100vh - var(--wk-hdr-bottom,0px)) no-repeat!important;background-size:100% calc(100dvh - var(--wk-hdr-bottom,0px))!important;-webkit-mask-image:linear-gradient(to bottom,transparent,#000 46px);mask-image:linear-gradient(to bottom,transparent,#000 46px);}
 body.ex-finish-docked #ex-detail-overlay-body{padding-bottom:calc(226px + env(safe-area-inset-bottom));}
 #ex-detail-bestset .bs-val{font-weight:800;}
 #ex-detail-bestset .bs-unit{font-weight:400;}
@@ -521,7 +541,7 @@ body.ex-finish-docked #ex-detail-overlay-body{padding-bottom:calc(226px + env(sa
 /* Exercise detail full-screen overlay */
 #ex-detail-overlay{
   position:fixed;top:0;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;z-index:200;
-  background:var(--bg);
+  background:var(--bg); /* Home's gradient is drawn only below the photo — see #ex-detail-overlay-body */
   display:none;
   will-change:transform,opacity;
   overflow:hidden;
@@ -1664,6 +1684,10 @@ window._fbModuleReady = true;
   <!-- Top-edge workout progress bar — outside sticky header to avoid stacking context -->
   <div id="workout-top-progress-wrap" style="display:none;position:fixed;top:0;left:0;right:0;max-width:430px;margin:0 auto;height:3px;background:var(--g22);overflow:hidden;z-index:500;"></div>
   <div id="today-workout-area" style="display:none;overflow-x:visible;">
+    <!-- Active workout: Home's gradient behind the list (fixed, under all content;
+         hides with this area / on other tabs). Shown via body.workout-home-bg —
+         see _syncWorkoutFinishBar. -->
+    <div id="workout-area-bg"></div>
     <div id="workout-sticky-header" style="position:fixed;top:0;left:0;right:0;max-width:430px;margin-left:auto;margin-right:auto;z-index:25;background:var(--g0a);padding-top:10px;">
       <div id="workout-hero-photo" style="display:none;width:100%;overflow:hidden;"></div>
       <div id="nwf-ex-count-display" style="display:none;text-align:center;padding:0 0 8px;margin-top:-7px;"></div>
@@ -1685,7 +1709,7 @@ window._fbModuleReady = true;
     <!-- Active workout: FINISH WORKOUT bottom bar — same size, spot and fade as
          Workout info's START WORKOUT (#w2-start-bottom-wrap). Shown/hidden by
          _syncWorkoutFinishBar. -->
-    <div id="workout-finish-bar" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;padding:46px 20px calc(20px + env(safe-area-inset-bottom));background:linear-gradient(to bottom,transparent,var(--bg) 40%);z-index:150;box-sizing:border-box;pointer-events:none;">
+    <div id="workout-finish-bar" class="home-bg-match-bottom" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;padding:46px 20px calc(20px + env(safe-area-inset-bottom));z-index:150;box-sizing:border-box;pointer-events:none;">
       <div style="display:flex;gap:10px;">
         <button id="workout-finish-btn" onclick="finishWorkout()" style="flex:1;padding:17px;background:var(--g00);color:var(--gcc);border:1px solid var(--gcc);border-radius:100px;font-family:'DM Sans';font-size:18px;font-weight:700;cursor:pointer;letter-spacing:.3px;-webkit-tap-highlight-color:transparent;transition:transform .15s;pointer-events:auto;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">
           SAVE WORKOUT
@@ -5690,6 +5714,9 @@ function _setWorkoutHeroPhoto(name) {
 // in-place info panel is open (it has its own CLOSE bar there). Lives inside
 // #today-workout-area, so it's hidden along with it / on other tabs.
 function _syncWorkoutFinishBar() {
+  // Home's gradient background on the active workout list (not while
+  // building a new workout).
+  document.body.classList.toggle('workout-home-bg', !window._isNewWorkoutFlow);
   const bar = document.getElementById('workout-finish-bar');
   if (!bar) return;
   const on = !!document.getElementById('workout-finish-slot') && !window._todayInfoPanelOpen;
@@ -5926,6 +5953,8 @@ function _syncWorkoutHeaderSpacer() {
     // padding-top specifically) is what actually keeps this correct regardless of
     // which ancestor introduces that offset.
     const hdrBottom = hdr.getBoundingClientRect().bottom;
+    // Active workout's gradient background starts at this divider (#workout-area-bg).
+    document.documentElement.style.setProperty('--wk-hdr-bottom', Math.max(0, hdrBottom) + 'px');
     // spacer.getBoundingClientRect().top is viewport-relative, so it drifts by the
     // current scroll offset — cancel that out (+ scrollY) so a sync that happens to
     // run while the page is mid-scroll (e.g. a filter's show/hide animation shifting
@@ -12323,7 +12352,7 @@ function updateTodayMuscleChips() {
     const total = c;
     const countHtml = done > 0
       ? `<span style="font-size:18px;font-weight:300;opacity:0.6;color:var(--gff);line-height:1;white-space:nowrap;">${total}</span>`
-      : `<span style="font-size:18px;font-weight:700;color:${active ? color : 'var(--g88)'};line-height:1;">${total}</span>`;
+      : `<span style="font-size:18px;font-weight:300;color:${active ? color : 'var(--g88)'};line-height:1;">${total}</span>`;
     return `<button onclick="filterTodayByMuscle('${m}')" style="${_btnBase}position:relative;background:${active ? color+'33' : 'rgba(255,255,255,.12)'};border:1px solid ${active ? color : 'var(--g33)'};">${countHtml}<span style="font-size:14px;font-weight:600;color:${active ? color : 'var(--g88)'};letter-spacing:.2px;line-height:1;white-space:nowrap;">${_muscleAbbr}</span></button>`;
   }).join('');
   if (entries.length === 4) {
@@ -30901,6 +30930,21 @@ function _syncExFinishDock() {
     dock.style.setProperty('--dock-w', (to - from) + 'px');
   }
 }
+// Exercise screen: the solid band over the gradient ends at the photo area's
+// bottom (#ex-detail-overlay-body background) — kept in step with its size
+// (photo load, body map, hidden when there's no photo → 0).
+(function _watchExPhotoBottom() {
+  const body = document.getElementById('ex-detail-overlay-body');
+  const wrap = document.getElementById('ex-detail-photo-wrap');
+  if (!body || !wrap) { document.addEventListener('DOMContentLoaded', _watchExPhotoBottom, { once: true }); return; }
+  // No photo area → no gradient at all (the body box would cover the no-photo header).
+  const sync = () => {
+    body.style.setProperty('--ex-photo-bottom', (wrap.offsetHeight ? wrap.offsetTop + wrap.offsetHeight : 0) + 'px');
+    body.classList.toggle('ex-photo-bg', !!wrap.offsetHeight);
+  };
+  if (window.ResizeObserver) new ResizeObserver(sync).observe(wrap);
+  sync();
+})();
 (function _watchExFinishDock() {
   const fb = document.getElementById('ex-float-bar');
   if (!fb) { document.addEventListener('DOMContentLoaded', _watchExFinishDock, { once: true }); return; }
@@ -33526,7 +33570,7 @@ function _updateKgDisplay(val, isBWMode) {
 
 <!-- Body map mode: SAVE & DONE (#ex-detail-finish-btn) is moved in here — see _syncExFinishDock -->
 <!-- Body map mode: gradient fade behind the docked SAVE & DONE (like Workout info's START WORKOUT bar) — sized in _syncExFinishDock -->
-<div id="ex-detail-finish-fade"></div>
+<div id="ex-detail-finish-fade" class="home-bg-match-bottom"></div>
 <div id="ex-detail-finish-dock"></div>
 <div id="ex-float-bar" style="display:none;flex-direction:row;">
   <button id="ex-float-note" onclick="exFloatAction('note')" title="Note" style="position:relative;">
