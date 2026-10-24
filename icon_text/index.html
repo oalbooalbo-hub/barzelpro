@@ -272,6 +272,10 @@ body.desktop-mode .pages-wrap {
 
 /* ── EXERCISE CARDS ────────────────────────────── */
 .exercise-card{background:var(--surface);border:1px solid var(--g55);border-radius:var(--radius);margin-bottom:8px;overflow:visible;scroll-margin-top:70px;}
+/* Active workout list: standard tap press (select_animation_skill) before the
+   card expands into its exercise page — instant press, animated release. */
+body.workout-home-bg #exerciseList > .exercise-card{transition:transform .1s ease-out;}
+body.workout-home-bg #exerciseList > .exercise-card:active{transform:scale(.92);transition:none;}
 @keyframes pickNoticeBgFade{0%{background:rgba(255,140,66,.08);border-color:rgba(255,140,66,.2);}50%{background:rgba(255,140,66,.08);border-color:rgba(255,140,66,.2);}100%{background:rgba(255,140,66,0);border-color:rgba(255,140,66,0);}}
 .exercise-card.completed{border-color:rgba(var(--accent-rgb),.15);border-color:color-mix(in srgb, var(--accent) 15%, transparent);}
 .exercise-card.completed .ex-header{background:color-mix(in srgb, var(--accent) 6%, transparent);}
@@ -1665,7 +1669,7 @@ window._fbModuleReady = true;
       }
     </script>
     <div id="today-load-btn-wrap" style="width:100%;max-width:380px;display:none;">
-      <button onclick="window._isNewWorkoutFlow=false;window._loadFromToday=true;loadOrSwitchWorkouts()" style="width:100%;height:100px;display:flex;align-items:center;justify-content:center;background:var(--accent);color:var(--g00);border:1px solid var(--accent);border-radius:26px;font-family:'DM Sans';font-size:22px;letter-spacing:0;cursor:pointer;box-sizing:border-box;line-height:1;font-weight:700;">START WORKOUT</button>
+      <button onclick="window._isNewWorkoutFlow=false;window._loadFromToday=true;loadOrSwitchWorkouts()" style="width:100%;height:100px;display:flex;align-items:center;justify-content:center;background:var(--accent);color:var(--g00);border:1px solid var(--accent);border-radius:26px;font-family:'DM Sans';font-size:22px;letter-spacing:0;cursor:pointer;box-sizing:border-box;line-height:1;font-weight:700;-webkit-tap-highlight-color:transparent;transition:transform .15s;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">START WORKOUT</button>
     </div>
     <div style="width:100%;max-width:380px;display:flex;gap:8px;">
       <button id="today-replace-btn" onclick="replaceTodayPlan()" style="display:none;padding:16px 20px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:12px;font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;letter-spacing:0;cursor:pointer;box-sizing:border-box;line-height:1;">REPLACE</button>
@@ -1738,7 +1742,7 @@ window._fbModuleReady = true;
          _syncWorkoutFinishBar. -->
     <div id="workout-finish-bar" class="home-bg-match-bottom" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;padding:46px 20px calc(20px + env(safe-area-inset-bottom));z-index:150;box-sizing:border-box;pointer-events:none;">
       <div style="display:flex;gap:10px;">
-        <button id="workout-finish-btn" onclick="finishWorkout()" style="flex:1;padding:17px;background:var(--g00);color:var(--gcc);border:1px solid var(--gcc);border-radius:100px;font-family:'DM Sans';font-size:18px;font-weight:700;cursor:pointer;letter-spacing:.3px;-webkit-tap-highlight-color:transparent;transition:transform .15s;pointer-events:auto;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">
+        <button id="workout-finish-btn" onclick="_workoutFinishBtnTap()" style="flex:1;padding:17px;background:var(--g00);color:var(--gcc);border:1px solid var(--gcc);border-radius:100px;font-family:'DM Sans';font-size:18px;font-weight:700;cursor:pointer;letter-spacing:.3px;-webkit-tap-highlight-color:transparent;transition:transform .15s;pointer-events:auto;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">
           SAVE WORKOUT
         </button>
       </div>
@@ -2966,6 +2970,50 @@ function clearDraft() {
   }
 }
 
+// Active workout bottom button: CLOSE while nothing is done yet (no exercise
+// completed, no set checked), SAVE WORKOUT once anything is. Only for a real
+// active session — building/editing a workout (new, edit, coach, explore)
+// always keeps SAVE WORKOUT since that saves the workout itself.
+function _isCloseOnlyWorkout(anyDone) {
+  return !anyDone && !window._isNewWorkoutFlow && !window._coachWorkoutMode
+    && !window._exploreWorkoutMode && window._editingWorkoutIdx == null;
+}
+function _syncWorkoutFinishBtnLabel(anyDone) {
+  const btn = document.getElementById('workout-finish-btn');
+  if (!btn) return;
+  const close = _isCloseOnlyWorkout(anyDone);
+  btn.dataset.mode = close ? 'close' : 'save';
+  btn.textContent = close ? 'CLOSE' : 'SAVE WORKOUT';
+}
+function _workoutFinishBtnTap() {
+  // Re-check live state (label sync is debounced 80ms behind checkFinishReady)
+  const anyDone = !!document.querySelector('#exerciseList .exercise-card.completed, #exerciseList .set-done-btn.done');
+  if (_isCloseOnlyWorkout(anyDone)) closeActiveWorkout();
+  else finishWorkout();
+}
+// CLOSE: nothing was done, so drop the session (and its auto-saved draft)
+// without saving and return to the Workouts tab list.
+function closeActiveWorkout() {
+  document.getElementById('_nwf-back-wrapper')?.remove();
+  _nwfResetHeaderPadding();
+  window._newFromToday = false;
+  window._isNewWorkoutFlow = false;
+  window._activeTabHighlight = null;
+  window._createNewMode = false;
+  window._newFromWorkouts = false;
+  clearDraft();
+  actionsRowRestore();
+  resetWorkoutState();
+  document.getElementById('workoutName').value = '';
+  _LS.remove('ironlog_session');
+  checkFinishReady();
+  updatePickModeTabs();
+  showTodayStartScreen();
+  switchTab('workouts2');
+}
+window._workoutFinishBtnTap = _workoutFinishBtnTap;
+window.closeActiveWorkout = closeActiveWorkout;
+
 let _checkFinishReadyTimer = null;
 function checkFinishReady() {
   if (_checkFinishReadyTimer) return;
@@ -2980,6 +3028,7 @@ function _checkFinishReadyImpl() {
   const anySetDone = !!document.querySelector('#exerciseList .set-done-btn.done');
   const hasExercises = document.querySelector('#exerciseList .exercise-card') !== null;
   const inWorkoutArea = document.getElementById('today-workout-area')?.style.display !== 'none';
+  _syncWorkoutFinishBtnLabel(anyDone || anySetDone);
   if (inWorkoutArea) {
     startFinishTimer();
   } else {
@@ -5701,13 +5750,15 @@ function _setWorkoutHeroPhoto(name) {
       <img src="${photo}" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;filter:brightness(0.85);">
       ${window._isNewWorkoutFlow ? `<button onclick="event.stopPropagation();_openPhotoModalFromHero()" style="position:absolute;top:8px;right:8px;z-index:4;background:rgba(0,0,0,0.55);border:none;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>` : ''}
       ${(localStorage.getItem(`ironlog_workout_video_${name}`) && localStorage.getItem(`ironlog_workout_video_broken_${name}`) !== '1') ? `<button onclick="event.stopPropagation();const _v=localStorage.getItem('ironlog_workout_video_${name}');if(_v)window.open(_v,'_blank');" style="position:absolute;top:8px;left:10px;z-index:4;display:flex;align-items:center;gap:5px;background:transparent;border:none;padding:4px 6px;border-radius:4px;cursor:pointer;-webkit-tap-highlight-color:transparent;"><svg width="13" height="13" viewBox="0 0 24 24" fill="var(--accent)" stroke="none"><polygon points="5,3 19,12 5,21"/></svg><span style="color:var(--accent);font-family:'DM Sans';font-size:11px;font-weight:700;letter-spacing:.5px;">PLAY</span></button>` : ''}
-      ${window._isNewWorkoutFlow ? '' : `<button onclick="event.stopPropagation();_openWorkoutHeroMenu()" style="position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);z-index:4;background:transparent;border:none;padding:0;width:36px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;"><svg id="workout-hero-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;transition:transform .25s ease;transform:rotate(${window._todayInfoPanelOpen ? '180deg' : '0deg'});"><polyline points="6 9 12 15 18 9"/></svg></button>`}
-      <!-- Chevron (above) is centered and floats over the name if they meet — the name keeps the plain 14px right edge. -->
       <div style="position:absolute;bottom:0;left:0;right:0;padding:10px 14px 12px 14px;pointer-events:none;text-align:right;">
         <div id="workout-hero-name" data-name="${name||''}" onclick="${window._isNewWorkoutFlow ? '_startHeroNameEdit(this)' : 'event.stopPropagation();_openWorkoutHeroMenu()'}" style="font-family:'DM Sans';font-size:20px;font-weight:900;color:#fff;max-width:60%;margin-left:auto;line-height:1.2;pointer-events:auto;cursor:pointer;-webkit-tap-highlight-color:transparent;${_heroNameDir(name)}">${_heroNameHtml(name)}</div>
       </div>
     </div>
     ${window._isNewWorkoutFlow ? '' : `<div style="display:flex;align-items:flex-end;padding:8px 10px 4px;gap:8px;position:relative;">
+      <!-- Hero chevron: right below the image, centred on the screen (this row is
+           full width), in the empty middle between the exercise count and the
+           pentagons — absolutely placed so the row's height doesn't change. -->
+      <button onclick="event.stopPropagation();_openWorkoutHeroMenu()" style="position:absolute;top:0;left:50%;transform:translateX(-50%);z-index:4;background:transparent;border:none;padding:0;width:44px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;"><svg id="workout-hero-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;transition:transform .25s ease;transform:rotate(${window._todayInfoPanelOpen ? '180deg' : '0deg'});"><polyline points="6 9 12 15 18 9"/></svg></button>
       <!-- FINISH WORKOUT now lives in the fixed bottom bar (#workout-finish-bar).
            This invisible slot keeps the old button's box: the row's height and
            the exercise cards' status circles (_alignExCardCircles) line up on it. -->
@@ -5723,7 +5774,11 @@ function _setWorkoutHeroPhoto(name) {
         <span id="workout-progress-fraction" style="font-family:'DM Sans';font-size:32px;font-weight:900;color:var(--gff);line-height:1;">0</span>
         <span style="font-family:'DM Sans';font-size:11px;font-weight:600;color:var(--g88);line-height:1;">exercises</span>
       </div>
-      <div id="workout-pr-stars" onclick="openPRStarsInfo()" style="flex:1;display:flex;gap:5px;align-items:center;justify-content:flex-end;cursor:pointer;-webkit-tap-highlight-color:transparent;"></div>
+      <!-- Only the pentagons open the PR page: sized to its content (not flex:1,
+           which made the whole empty middle of the row tappable), pushed right by
+           margin-left:auto. 6px invisible padding, cancelled by matching negative
+           margins, keeps the tap target ≥44px tall without moving anything. -->
+      <div id="workout-pr-stars" onclick="openPRStarsInfo()" style="flex:0 0 auto;margin:-6px -6px -6px auto;padding:6px;display:flex;gap:5px;align-items:center;justify-content:flex-end;cursor:pointer;-webkit-tap-highlight-color:transparent;"></div>
     </div>`}`;
   } else if (window._isNewWorkoutFlow && name) {
     // New workout with no photo — black placeholder matching hero geometry
@@ -6861,14 +6916,16 @@ function renderExercisesTab() {
     // Same as the Workouts tab's bar: no counts (the title shows "n items
     // selected") and identical box metrics on every button so flex:1 makes
     // them exactly the same size.
-    const _bb = 'flex:1;min-width:0;box-sizing:border-box;border-radius:12px;font-family:\'DM Sans\',sans-serif;font-size:15px;padding:14px 6px;white-space:nowrap;cursor:pointer;-webkit-tap-highlight-color:transparent;';
+    const _bb = 'flex:1;min-width:0;box-sizing:border-box;border-radius:12px;font-family:\'DM Sans\',sans-serif;font-size:15px;padding:14px 6px;white-space:nowrap;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .15s;';
+    // Tap feedback (start_btn_tap_skill); a disabled (greyed) button stays still.
+    const _tp = `onmousedown="if(!this.disabled)this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="if(!this.disabled)this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''"`;
     _exDelBar.innerHTML = `
-      <button onclick="_exExitDelMode()" style="${_bb}background:transparent;border:1px solid var(--g55);color:var(--gff);font-weight:600;">CANCEL</button>
+      <button onclick="_exExitDelMode()" ${_tp} style="${_bb}background:transparent;border:1px solid var(--g55);color:var(--gff);font-weight:600;">CANCEL</button>
       ${(_exSuper && _exTabView === 'all')
         // Super admin PUBLISHED → unpublish (same look as the Workouts tab's).
-        ? `<button onclick="_exUnpublishSelected()" ${_n ? '' : 'disabled'} style="${_bb}background:#ff8c42;border:1px solid #ff8c42;color:#000;font-weight:700;opacity:${_n ? '1' : '0.4'};">UNPUBLISH</button>`
-        : `${_exSuper ? `<button onclick="_exPublishSelected()" ${_n ? '' : 'disabled'} style="${_bb}background:var(--accent);border:1px solid var(--accent);color:var(--g00);font-weight:700;opacity:${_n ? '1' : '0.4'};">PUBLISH</button>` : ''}
-      <button onclick="_exConfirmDeleteSelected()" ${_n ? '' : 'disabled'} style="${_bb}background:#ff4747;border:1px solid #ff4747;color:var(--gff);font-weight:700;opacity:${_n ? '1' : '0.4'};">DELETE</button>`}`;
+        ? `<button onclick="_exUnpublishSelected()" ${_n ? '' : 'disabled'} ${_tp} style="${_bb}background:#ff8c42;border:1px solid #ff8c42;color:#000;font-weight:700;opacity:${_n ? '1' : '0.4'};">UNPUBLISH</button>`
+        : `${_exSuper ? `<button onclick="_exPublishSelected()" ${_n ? '' : 'disabled'} ${_tp} style="${_bb}background:var(--accent);border:1px solid var(--accent);color:var(--g00);font-weight:700;opacity:${_n ? '1' : '0.4'};">PUBLISH</button>` : ''}
+      <button onclick="_exConfirmDeleteSelected()" ${_n ? '' : 'disabled'} ${_tp} style="${_bb}background:#ff4747;border:1px solid #ff4747;color:var(--gff);font-weight:700;opacity:${_n ? '1' : '0.4'};">DELETE</button>`}`;
   } else if (_exDelBar) {
     _exDelBar.remove();
   }
@@ -7628,18 +7685,21 @@ function donePickMode() {
     // Back/Save instead of the old >6-exercises/block:'center' heuristic, which
     // didn't account for that fixed bar and skipped short lists entirely.
     _scrollAddExerciseIntoView(400);
+    // Building a workout keeps its own fade/slide-in above; the new cards just
+    // get the accent glow once that (and the scroll) has settled.
+    const _nwfNewCards = [...document.querySelectorAll('#exerciseList > .exercise-card')].slice(-toAdd.length);
+    setTimeout(() => _nwfNewCards.forEach((c, i) => setTimeout(() => _exCardReturnGlow(c), i * 120)), 750);
   } else {
+    // Picker shrinks onto the first new card, then the new cards glow
+    // (see _exLandOnCards) — cover first so the tab switch underneath is hidden.
+    const _bodyBg = getComputedStyle(document.body).backgroundColor;
+    const _ghost = _exGhostCover(_bodyBg && _bodyBg !== 'rgba(0, 0, 0, 0)' ? _bodyBg : null);
     exitPickMode();
     switchTab('log');
     toAdd.forEach(ex => addExerciseCard(ex));
     saveSession();
-    setTimeout(() => {
-      const _exCount = document.querySelectorAll('#exerciseList .exercise-card').length;
-      if (_exCount > 6) {
-        const _addBtn = document.querySelector('.btn-add-exercise');
-        if (_addBtn) _addBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }, 300);
+    const _newCards = [...document.querySelectorAll('#exerciseList > .exercise-card')].slice(-toAdd.length);
+    setTimeout(() => _exLandOnCards(_ghost, _newCards), 60);
   }
 }
 
@@ -8136,13 +8196,18 @@ function _flashNewWorkoutBadgeOnce(cardEl, workoutName) {
   if (shown.includes(workoutName)) return;
   shown.push(workoutName);
   _LS.set('ironlog_new_workout_badge_shown', JSON.stringify(shown));
-  if (!cardEl.isConnected) return;
+  _flashWorkoutCardBadge(cardEl, 'NEW');
+}
+// The badge + accent border flash itself — 'NEW' (once per created workout,
+// above) or 'UPDATED' (every time an edited workout lands back in the list).
+function _flashWorkoutCardBadge(cardEl, label) {
+  if (!cardEl || !cardEl.isConnected) return;
   if (!cardEl.style.position) cardEl.style.position = 'relative';
   const _origBorderColor = getComputedStyle(cardEl).borderColor;
   cardEl.style.transition = 'border-color .25s ease';
   cardEl.style.borderColor = 'var(--accent)';
   const badge = document.createElement('div');
-  badge.textContent = 'NEW';
+  badge.textContent = label;
   badge.style.cssText = "position:absolute;top:8px;right:8px;font-family:'DM Sans';font-size:12px;font-weight:900;letter-spacing:.5px;color:var(--accent);opacity:0;transform:translateY(-4px) scale(.85);transition:opacity .25s ease,transform .25s cubic-bezier(.2,.8,.3,1);pointer-events:none;z-index:5;";
   cardEl.appendChild(badge);
   requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -8164,16 +8229,30 @@ function _flashNewWorkoutBadgeOnce(cardEl, workoutName) {
 // uses for every card element's id (id="...-${workouts.indexOf(w)}") — and
 // runs the flash above on its card, once the workouts2 tab's own .4s
 // entrance transition (tabSlideUp, index.html ~110) has settled.
+// Coming from the "Workout created !" screen's Back to Workouts, a cover in that
+// screen's colour (window._nwfLandGhost, put up before it closed) then shrinks
+// onto the new card and the card glows — same landing as a new exercise (see
+// _exLandOnCards). Without one (e.g. QR import) it's just the scroll + flash.
+// An edited workout (window._nwfEditedWorkoutIdx — it stays at its own index,
+// not moved to the front) lands the same way, with an UPDATED badge every time.
 function _flashNewWorkoutCardOnce() {
   const name = window._nwfLastSavedWorkoutName;
   const wasNewCreation = window._nwfWasNewCreation;
+  const editedIdx = window._nwfEditedWorkoutIdx;
+  const ghost = window._nwfLandGhost || null;
+  window._nwfLandGhost = null;
   window._nwfWasNewCreation = false; // one-shot — never fires again off a stale flag
-  if (!wasNewCreation || !name || !workouts[0] || workouts[0].name !== name) return;
+  window._nwfEditedWorkoutIdx = undefined;
+  const _dropGhost = () => { if (ghost) _exLandOnCards(ghost, []); };   // fades the cover away
+  const idx = wasNewCreation ? 0 : editedIdx;
+  if (idx === undefined || !name || !workouts[idx] || workouts[idx].name !== name) { _dropGhost(); return; }
   setTimeout(() => {
-    const cardEl = document.getElementById('w2-card-border-0');
-    if (!cardEl) return;
-    cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    _flashNewWorkoutBadgeOnce(cardEl, name);
+    const cardEl = document.getElementById(`w2-card-border-${idx}`);
+    if (!cardEl) { _dropGhost(); return; }
+    if (ghost) _exLandOnCards(ghost, [cardEl]);
+    else cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (wasNewCreation) _flashNewWorkoutBadgeOnce(cardEl, name);
+    else _flashWorkoutCardBadge(cardEl, 'UPDATED');
   }, 450);
 }
 window._flashNewWorkoutCardOnce = _flashNewWorkoutCardOnce;
@@ -8363,31 +8442,31 @@ function confirmNewEx() {
   customExercises.push({ name, label: name, muscle, subMuscles, custom: true, ...(videoUrl ? { videoUrl } : {}) });
   saveCustom();
   setTimeout(() => {
-    closeNewExModal();
-    _exTabView = 'custom';
-    window._exTabMuscle = muscle;
-    renderExercisesTab();
-    setTimeout(() => {
-      const rows = document.querySelectorAll('#exercisesTabContent [data-exname]');
-      const last = rows[rows.length - 1];
-      if (last) { last.scrollIntoView({ behavior: 'smooth', block: 'center' }); _flashNewExBadgeOnce(last, name); }
-    }, 100);
+    _newExCloseAndLand(name, muscle);
     if (addBtn) { addBtn.disabled = false; addBtn.textContent = 'Add'; addBtn.style.opacity = ''; }
   }, 300);
   return;
   }
   // Shared finish for isHidden path
+  setTimeout(() => _newExCloseAndLand(name, muscle), 300);
+}
+
+// New Exercise page → Exercises tab (custom view): the page shrinks onto the
+// new exercise's row and the row glows (see _exLandOnCards), plus the existing
+// one-time "NEW" badge. Cover goes up before the page closes so the list
+// re-render/jump underneath is never seen.
+function _newExCloseAndLand(name, muscle) {
+  const _ghost = _exGhostCover(getComputedStyle(document.getElementById('newExModalOverlay')).backgroundColor);
+  closeNewExModal();
+  _exTabView = 'custom';
+  window._exTabMuscle = muscle;
+  renderExercisesTab();
   setTimeout(() => {
-    closeNewExModal();
-    _exTabView = 'custom';
-    window._exTabMuscle = muscle;
-    renderExercisesTab();
-    setTimeout(() => {
-      const rows = document.querySelectorAll('#exercisesTabContent [data-exname]');
-      const last = rows[rows.length - 1];
-      if (last) { last.scrollIntoView({ behavior: 'smooth', block: 'center' }); _flashNewExBadgeOnce(last, name); }
-    }, 100);
-  }, 300);
+    const rows = [...document.querySelectorAll('#exercisesTabContent [data-exname]')];
+    const row = rows.find(r => r.dataset.exname === name) || rows[rows.length - 1];
+    _exLandOnCards(_ghost, [row]);
+    if (row) _flashNewExBadgeOnce(row, name);
+  }, 100);
 }
 
 function toggleExTabCard(safeIdOrEl) {
@@ -11319,8 +11398,12 @@ function renderWorkoutsTab2() {
     // it only ever returns true right after a long-press just fired.
     const _wtabTapOnclick = `if(_wtabLPConsume(${JSON.stringify(w.id)}))return;${_wtabTapAction}`;
 
+    // Tap feedback (start_btn_tap_skill) on this wrapper, not on
+    // #w2-card-border-* — that one's style.transition is borrowed by
+    // _flashWorkoutCardBadge. touchmove also releases it, so scrolling the
+    // list doesn't leave a card shrunk.
     const cardInner = `
-      <div style="position:relative;">
+      <div style="position:relative;-webkit-tap-highlight-color:transparent;transition:transform .15s;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" onmouseleave="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''" ontouchmove="this.style.transform=''" ontouchcancel="this.style.transform=''">
         ${(!_isPlanStrengthMode && !_isPubPickMode && !_isDeleteMode && _isTodayPlanned) ? `<span style="position:absolute;top:0;left:14px;transform:translateY(-50%);background:var(--bg);color:var(--accent);font-family:'DM Sans';font-size:10px;font-weight:800;letter-spacing:.4px;padding:0 6px;line-height:1.4;white-space:nowrap;z-index:4;">Today's Plan</span>` : ''}
         <div id="w2-card-border-${i}"${_wtabLPAttrs} oncontextmenu="return false;" style="position:relative;display:flex;border-radius:14px;overflow:hidden;aspect-ratio:21/9;background:var(--g1a);-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;${_showAccentBorder ? 'border:1px solid transparent;background-clip:padding-box;' : 'border:1px solid var(--g2a);'}">
             ${/* Accented (selected / Today's Plan): ONE continuous 2px frame on top
@@ -11443,7 +11526,7 @@ function renderWorkoutsTab2() {
           : (_isLibSelMode && _sel) ? `_wtabToggleDeletePick(${_idJs})` : `openW2Sheet(null,'${safeId}')`;
         const _dimmed = _isLibSelMode && !_sel;
         return `<div data-wlibname="${(w.name||'').replace(/"/g,'&quot;')}" style="padding:5px 2px;${_dimmed ? 'opacity:0.25;pointer-events:none;' : ''}">
-          <div style="position:relative;">
+          <div style="position:relative;-webkit-tap-highlight-color:transparent;transition:transform .15s;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" onmouseleave="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''" ontouchmove="this.style.transform=''" ontouchcancel="this.style.transform=''">
             ${_isTodayPlannedLib ? `<span style="position:absolute;top:0;left:14px;transform:translateY(-50%);background:var(--bg);color:var(--accent);font-family:'DM Sans';font-size:10px;font-weight:800;letter-spacing:.4px;padding:0 6px;line-height:1.4;white-space:nowrap;z-index:4;">Today's Plan</span>` : ''}
             <div${_lpAttrs} oncontextmenu="return false;" style="position:relative;display:flex;border-radius:14px;overflow:hidden;aspect-ratio:21/9;background:var(--g1a);-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;${_accent ? 'border:1px solid transparent;background-clip:padding-box;' : 'border:1px solid var(--g2a);'}">
               ${_accent ? `<div style="position:absolute;inset:0;border:2px solid var(--accent);border-radius:13px;pointer-events:none;z-index:3;"></div>` : ''}
@@ -11542,13 +11625,15 @@ function renderWorkoutsTab2() {
     // 14px 6px padding) so flex:1 makes them exactly the same size — with
     // flex:1 the padding/border sit on top of each equal share, so the old
     // mix (CANCEL bordered, PUBLISH 6px padding, others 14px) came out uneven.
-    const _bb = 'flex:1;min-width:0;box-sizing:border-box;border-radius:12px;font-family:\'DM Sans\',sans-serif;font-size:15px;padding:14px 6px;white-space:nowrap;cursor:pointer;-webkit-tap-highlight-color:transparent;';
+    const _bb = 'flex:1;min-width:0;box-sizing:border-box;border-radius:12px;font-family:\'DM Sans\',sans-serif;font-size:15px;padding:14px 6px;white-space:nowrap;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .15s;';
+    // Tap feedback (start_btn_tap_skill); a disabled (greyed) button stays still.
+    const _tp = `onmousedown="if(!this.disabled)this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="if(!this.disabled)this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''"`;
     _delBar.innerHTML = `
-      <button onclick="_wtabCancelDeleteMode();" style="${_bb}background:transparent;border:1px solid var(--g55);color:var(--gff);font-weight:600;">CANCEL</button>
+      <button onclick="_wtabCancelDeleteMode();" ${_tp} style="${_bb}background:transparent;border:1px solid var(--g55);color:var(--gff);font-weight:600;">CANCEL</button>
       ${_isUnpubMode
-        ? `<button onclick="_wtabConfirmUnpublishSelected();" ${_delCount ? '' : 'disabled'} style="${_bb}background:#ff8c42;border:1px solid #ff8c42;color:#000;font-weight:700;opacity:${_delCount ? '1' : '0.4'};">UNPUBLISH</button>`
-        : `${_wSuperSplit ? `<button onclick="_wtabPublishSelected();" ${_delCount ? '' : 'disabled'} style="${_bb}background:var(--accent);border:1px solid var(--accent);color:var(--g00);font-weight:700;opacity:${_delCount ? '1' : '0.4'};">PUBLISH</button>` : ''}
-        <button onclick="_wtabConfirmDeleteSelected();" ${_delCount ? '' : 'disabled'} style="${_bb}background:#ff4747;border:1px solid #ff4747;color:var(--gff);font-weight:700;opacity:${_delCount ? '1' : '0.4'};">DELETE</button>`}`;
+        ? `<button onclick="_wtabConfirmUnpublishSelected();" ${_delCount ? '' : 'disabled'} ${_tp} style="${_bb}background:#ff8c42;border:1px solid #ff8c42;color:#000;font-weight:700;opacity:${_delCount ? '1' : '0.4'};">UNPUBLISH</button>`
+        : `${_wSuperSplit ? `<button onclick="_wtabPublishSelected();" ${_delCount ? '' : 'disabled'} ${_tp} style="${_bb}background:var(--accent);border:1px solid var(--accent);color:var(--g00);font-weight:700;opacity:${_delCount ? '1' : '0.4'};">PUBLISH</button>` : ''}
+        <button onclick="_wtabConfirmDeleteSelected();" ${_delCount ? '' : 'disabled'} ${_tp} style="${_bb}background:#ff4747;border:1px solid #ff4747;color:var(--gff);font-weight:700;opacity:${_delCount ? '1' : '0.4'};">DELETE</button>`}`;
   } else if (_delBar) {
     _delBar.remove();
   }
@@ -12103,7 +12188,9 @@ function applyTodayFilters() {
   });
 
   // Show "X exercises done!" (or "All exercises done!" when no muscle filter is active)
-  // at the bottom of the list when everything currently visible is completed.
+  // ABOVE the list when everything currently visible is completed. Its block is as
+  // tall as the visible screen, so scrolled to the top it hides every (completed)
+  // card below the fold — the user scrolls down to see them.
   let emptyMsg = document.getElementById('today-filter-empty-msg');
   const _mcolors = { ...BP_COLORS.muscles };
   const _filterKey = _todayMuscleFilter || '__all__';
@@ -12123,12 +12210,8 @@ function applyTodayFilters() {
     if (!emptyMsg) {
       emptyMsg = document.createElement('div');
       emptyMsg.id = 'today-filter-empty-msg';
-      emptyMsg.style.cssText = 'text-align:center;padding:24px 16px;font-family:"DM Sans";font-size:22px;font-weight:700;';
-      // The fixed bottom tab bar (56px + safe-area) sits on top of the last bit
-      // of normal document flow — scrollIntoView has no idea it's there, so
-      // without this the message can land scrolled to just behind/under it.
-      emptyMsg.style.scrollMarginBottom = 'calc(56px + env(safe-area-inset-bottom) + 16px)';
-      document.getElementById('exerciseList').after(emptyMsg);
+      emptyMsg.style.cssText = 'text-align:center;padding:24px 16px;font-family:"DM Sans";font-size:22px;font-weight:700;box-sizing:border-box;';
+      document.getElementById('exerciseList').before(emptyMsg);
     }
     const muscleColor = _mcolors[_todayMuscleFilter] || '#4caf50';
     emptyMsg.innerHTML = _todayMuscleFilter
@@ -12136,18 +12219,34 @@ function applyTodayFilters() {
       : `<span style="color:#39FF14">All</span> exercises done !`;
     emptyMsg.dataset.shownForMuscle = _filterKey;
     emptyMsg.style.display = '';
-    // Scroll down to the bottom of the list so the "<muscle> exercises done!"
-    // message (which sits right after it) is actually visible — whether the
-    // filter was just tapped (and everything in it already happened to be
-    // done) or it was already active and this is the moment the last exercise
-    // in it just got completed. Delayed to let the filter's own staggered
-    // show/hide animations (up to ~600ms) finish first — same reasoning as
-    // _scrollToNextExercise's own wait — otherwise this scrolls against a
-    // layout that's still mid-transition and lands in the wrong place.
-    if (!_wasAlreadyShown) setTimeout(() => emptyMsg.scrollIntoView({ behavior: 'smooth', block: 'end' }), 620);
+    _sizeTodayDoneMsg(emptyMsg);
+    // Scroll the "<muscle> exercises done!" message to the top, just under the
+    // sticky header — whether the filter was just tapped (and everything in it
+    // already happened to be done) or it was already active and this is the
+    // moment the last exercise in it just got completed. Delayed to let the
+    // filter's own staggered show/hide animations (up to ~600ms) finish first —
+    // same reasoning as _scrollToNextExercise's own wait — otherwise this
+    // scrolls against a layout that's still mid-transition and lands in the
+    // wrong place. Re-sized right before scrolling (header height may have
+    // changed in the meantime, e.g. chips row).
+    if (!_wasAlreadyShown) setTimeout(() => {
+      if (emptyMsg.style.display === 'none') return;
+      _sizeTodayDoneMsg(emptyMsg);
+      emptyMsg.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 620);
   } else if (emptyMsg) {
     emptyMsg.style.display = 'none';
+    emptyMsg.style.minHeight = '';
   }
+}
+// "…exercises done !" block: min-height = the screen area below the sticky
+// header, so with it scrolled to the top the first card starts exactly at the
+// bottom edge of the screen (behind the bottom bars) — none visible.
+function _sizeTodayDoneMsg(msg) {
+  const hdr = document.getElementById('workout-sticky-header');
+  const top = (hdr ? hdr.offsetHeight : 70) + 8;
+  msg.style.scrollMarginTop = top + 'px';
+  msg.style.minHeight = Math.max(0, window.innerHeight - top) + 'px';
 }
 
 function _updateAllExCircleColors() {
@@ -12378,7 +12477,7 @@ function updateTodayMuscleChips() {
       : '';
     // Unselected: a faint 6% overlay (white in dark mode, black in light via
     // --inv-rgb) so the shaded body-part colours stand out; selected keeps its tint.
-    return `<button onclick="filterTodayByMuscle('${m}')" style="${_btnBase}position:relative;background:${active ? color+'33' : 'rgba(var(--inv-rgb),.06)'};border:1px solid ${active ? color : 'var(--g33)'};">${countHtml}${_doneMark}<span style="font-size:14px;font-weight:600;color:${_nameCol};letter-spacing:.2px;line-height:1;white-space:nowrap;">${_muscleAbbr}</span></button>`;
+    return `<button onclick="filterTodayByMuscle('${m}')" style="${_btnBase}position:relative;-webkit-tap-highlight-color:transparent;background:${active ? color+'33' : 'rgba(var(--inv-rgb),.06)'};border:1px solid ${active ? color : 'var(--g33)'};" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">${countHtml}${_doneMark}<span style="font-size:14px;font-weight:600;color:${_nameCol};letter-spacing:.2px;line-height:1;white-space:nowrap;">${_muscleAbbr}</span></button>`;
   }).join('');
   if (entries.length === 4) {
     scrollEl.style.justifyContent = 'space-between';
@@ -13450,6 +13549,384 @@ function _syncExDetailAboveElapsedVisibility() {
 }
 window._syncExDetailAboveElapsedVisibility = _syncExDetailAboveElapsedVisibility;
 
+// ── Card ⇄ exercise page "container transform" ──
+// Opening an exercise grows the overlay out of the tapped card's exact spot
+// (clip-path inset from the card's rect → full screen) while the list behind
+// dims; closing shrinks it back onto the card, which then glows briefly so the
+// user sees which exercise they just left. The overlay's own background starts
+// as the card's surface colour and its contents fade in once it has mostly
+// grown (reverse on close), so it reads as the card itself expanding.
+// Web Animations (not CSS classes) — the Exercises tab's detail view shares
+// this overlay and keeps its own ex-overlay-in/out slide.
+const _EX_MORPH_OPEN_MS = 380;
+const _EX_MORPH_CLOSE_MS = 320;
+// Card's on-screen rect, ignoring its :active press-scale (a tap's release
+// transition can still be running when the click fires). null when the card
+// isn't on screen — callers fall back to the plain slide.
+function _exMorphRect(card) {
+  if (!card || !card.isConnected || card.offsetParent === null) return null;
+  const _t = card.style.transform, _tr = card.style.transition;
+  card.style.transition = 'none';
+  card.style.transform = 'none';
+  const r = card.getBoundingClientRect();
+  card.style.transform = _t;
+  card.style.transition = _tr;
+  if (r.width < 1 || r.height < 1 || r.bottom <= 0 || r.top >= window.innerHeight) return null;
+  return { rect: r, radius: getComputedStyle(card).borderTopLeftRadius || '12px', surface: getComputedStyle(card).backgroundColor };
+}
+function _exMorphCancel(overlay) {
+  (overlay._exMorphAnims || []).forEach(a => { try { a.cancel(); } catch(e) {} });
+  overlay._exMorphAnims = null;
+  document.getElementById('ex-morph-backdrop')?.remove();
+}
+function _exOverlayMorph(overlay, from, opening, onDone) {
+  _exMorphCancel(overlay);
+  const o = overlay.getBoundingClientRect();
+  const r = from.rect;
+  const cardClip = `inset(${r.top - o.top}px ${o.right - r.right}px ${o.bottom - r.bottom}px ${r.left - o.left}px round ${from.radius})`;
+  const fullClip = 'inset(0px 0px 0px 0px round 0px)';
+  const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const dur = reduce ? 200 : (opening ? _EX_MORPH_OPEN_MS : _EX_MORPH_CLOSE_MS);
+  const easing = opening ? 'cubic-bezier(.2,.8,.3,1)' : 'cubic-bezier(.4,0,.2,1)';
+  const pageBg = getComputedStyle(overlay).backgroundColor;
+  const backdrop = document.createElement('div');
+  backdrop.id = 'ex-morph-backdrop';
+  backdrop.style.cssText = 'position:fixed;inset:0;background:#000;z-index:199;pointer-events:none;opacity:0;';
+  overlay.parentNode.insertBefore(backdrop, overlay);
+  const dimK = [{ opacity: 0 }, { opacity: .55 }];
+  const anims = [];
+  if (reduce) {
+    // Reduced motion: plain cross-fade, no geometry change.
+    anims.push(overlay.animate(opening ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 1 }, { opacity: 0 }], { duration: dur, easing: 'linear', fill: 'forwards' }));
+  } else {
+    const shape = [
+      { clipPath: cardClip, webkitClipPath: cardClip, backgroundColor: from.surface },
+      { clipPath: fullClip, webkitClipPath: fullClip, backgroundColor: pageBg },
+    ];
+    anims.push(overlay.animate(opening ? shape : shape.slice().reverse(), { duration: dur, easing, fill: 'forwards' }));
+    const fadeK = opening
+      ? [{ opacity: 0 }, { opacity: 0, offset: .35 }, { opacity: 1 }]
+      : [{ opacity: 1 }, { opacity: 0, offset: .45 }, { opacity: 0 }];
+    [...overlay.children].forEach(ch => anims.push(ch.animate(fadeK, { duration: dur, easing: 'linear', fill: 'forwards' })));
+  }
+  anims.push(backdrop.animate(opening ? dimK : dimK.slice().reverse(), { duration: dur, easing: 'linear', fill: 'forwards' }));
+  overlay._exMorphAnims = anims;
+  anims[0].onfinish = () => {
+    if (overlay._exMorphAnims !== anims) return;   // superseded by a newer open/close
+    onDone && onDone();
+    _exMorphCancel(overlay);
+  };
+}
+// Closing landed back on the card — brief accent glow marks "you were here".
+function _exCardReturnGlow(card) {
+  if (!card || !card.animate) return;
+  const acc = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#e8ff47';
+  const halo = /^#[0-9a-f]{6}$/i.test(acc) ? acc + '66' : acc;
+  return card.animate([
+    { boxShadow: `0 0 0 2px ${acc}, 0 0 16px ${halo}` },
+    { boxShadow: `0 0 0 2px ${acc}, 0 0 16px ${halo}`, offset: .35 },
+    { boxShadow: '0 0 0 0px transparent, 0 0 0px transparent' },
+  ], { duration: 900, easing: 'ease-out' });
+}
+
+// After an exercise closes back into the list, anything that would move or
+// scroll the list (a completed card repositioning, scroll to the next
+// exercise, the "… exercises done !" message) is held via _afterExReturn()
+// until the card's return glow has faded + _EX_RETURN_SETTLE_MS, so the glow
+// plays where the card landed. Safety release in case the close animation is
+// cancelled (exercise reopened mid-close) and never reaches the glow.
+const _EX_RETURN_SETTLE_MS = 200;
+let _exReturnHold = null;   // { queue, timer }
+function _exReturnHoldStart() {
+  if (!_exReturnHold) _exReturnHold = { queue: [] };
+  clearTimeout(_exReturnHold.timer);
+  _exReturnHold.timer = setTimeout(_exReturnHoldRelease, 3000);
+}
+function _exReturnHoldRelease() {
+  const h = _exReturnHold;
+  if (!h) return;
+  _exReturnHold = null;
+  clearTimeout(h.timer);
+  h.queue.forEach(fn => { try { fn(); } catch(e) { console.error(e); } });
+}
+function _exReturnHoldReleaseAfter(anim) {
+  const h = _exReturnHold;
+  if (!h) return;
+  clearTimeout(h.timer);
+  const go = () => { if (_exReturnHold === h) h.timer = setTimeout(_exReturnHoldRelease, _EX_RETURN_SETTLE_MS); };
+  if (anim?.finished) anim.finished.then(go, go); else go();
+}
+function _afterExReturn(fn) {
+  if (_exReturnHold) _exReturnHold.queue.push(fn); else fn();
+}
+
+// Same "page shrinks onto its card, card glows" landing for screens that close
+// instantly rather than through the exercise overlay — the exercise picker
+// (Add Exercise → DONE) and the New Exercise page. _exGhostCover() is called
+// BEFORE the screen closes: a blank stand-in in the screen's colour covers
+// everything while the destination list renders and jumps to the new card
+// underneath; _exLandOnCards() then collapses it onto the first new card (same
+// _exOverlayMorph as closing an exercise) and glows every new card, staggered.
+function _exGhostCover(bg) {
+  const g = document.createElement('div');
+  g.className = 'ex-land-ghost';
+  g.style.cssText = `position:fixed;top:0;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;z-index:300;background:${bg || 'var(--g0a)'};pointer-events:none;`;
+  document.body.appendChild(g);
+  return g;
+}
+function _exLandOnCards(ghost, cards) {
+  cards = (cards || []).filter(c => c && c.isConnected);
+  if (cards[0]) cards[0].scrollIntoView({ behavior: 'instant', block: 'center' });
+  const glowAll = () => cards.forEach((c, i) => setTimeout(() => _exCardReturnGlow(c), i * 120));
+  const from = cards[0] ? _exMorphRect(cards[0]) : null;
+  if (!ghost) { glowAll(); return; }
+  if (!from) {
+    // Card not on screen — just fade the cover away.
+    ghost.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, fill: 'forwards' }).onfinish = () => ghost.remove();
+    glowAll();
+    return;
+  }
+  _exOverlayMorph(ghost, from, false, () => { ghost.remove(); glowAll(); });
+}
+
+// ── Active workout card ⇄ active exercise: "card flies to the top" ──
+// Opening: an exact copy of the tapped card flies from its list spot to the
+// top of the exercise page (where the photo / body map frame sits), then grows
+// into that frame while the photo fades in underneath it. The card's name
+// stays visible throughout — a floating copy travels from the card to the
+// page title (the anchor the eye follows) — and the rest of the page (SAVE &
+// DONE / CLOSE row, sets) fades up last. The page's top bar is identical to
+// the workout's, so it just stays put. Closing runs the same steps in reverse
+// and ends on the card's accent glow (_exCardReturnGlow).
+// The real card is already inside the overlay (it becomes the sets area), so
+// the flying card is a visual clone. Reduced motion: plain cross-fade.
+const _EX_FLY_MS = 260;     // card travels list ⇄ top
+const _EX_GROW_AT = 200;    // card ⇄ photo frame starts (overlaps the flight's tail)
+const _EX_GROW_MS = 260;
+const _EX_REST_AT = 280;    // rest of the page fades up
+const _EX_REST_MS = 240;
+const _EX_FLY_EASE = 'cubic-bezier(.2,.8,.3,1)';
+const _EX_LAND_FADE_MS = 200; // closing: workout page fades in after the card/name land
+
+function _exFlyCancel(overlay) {
+  const s = overlay._exFly;
+  if (!s) return;
+  overlay._exFly = null;
+  s.anims.forEach(a => { try { a.cancel(); } catch(e) {} });
+  s.cleanup && s.cleanup();
+}
+// Fixed-position clone of a list card at rect. Wrapped in a box carrying the
+// list's class/--ex-circle-ml so the clone lays out like the original; ids
+// stripped so nothing looks it up by mistake.
+function _exFlyGhost(card, rect) {
+  const list = document.getElementById('exerciseList');
+  const g = document.createElement('div');
+  g.className = 'ex-fly-ghost ' + (list?.className || '');
+  g.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;z-index:260;pointer-events:none;margin:0;`;
+  const ml = list?.style.getPropertyValue('--ex-circle-ml');
+  if (ml) g.style.setProperty('--ex-circle-ml', ml);
+  const c = card.cloneNode(true);
+  c.removeAttribute('id');
+  c.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+  c.style.margin = '0';
+  c.style.height = '100%';
+  c.style.boxSizing = 'border-box';
+  c.style.overflow = 'hidden';
+  c.style.transform = 'none';
+  c.style.transition = 'none';
+  c.style.visibility = 'visible';
+  g.appendChild(c);
+  document.body.appendChild(g);
+  return g;
+}
+// The page's name element the card's name flies to: the body map's own name,
+// else the title beside SAVE & DONE.
+function _exFlyNameTarget() {
+  const bm = document.querySelector('#ex-detail-photo-wrap .ex-detail-bodymap-name');
+  if (bm && bm.offsetParent) return bm;
+  const t = document.getElementById('ex-detail-overlay-title');
+  return t && t.offsetParent ? t : null;
+}
+// Floating copy of the card's name sitting on cardName; returns it plus the
+// transform that lands it on pageName (right edges / tops aligned, scaled to
+// the page title's font size).
+function _exFlyNameEl(cardName, pageName) {
+  const s = cardName.getBoundingClientRect(), d0 = pageName.getBoundingClientRect();
+  const cs = getComputedStyle(cardName), ds = getComputedStyle(pageName);
+  // Text box only — the page title is inset by padding-right.
+  const pr = parseFloat(ds.paddingRight) || 0, pl = parseFloat(ds.paddingLeft) || 0;
+  const d = { top: d0.top, right: d0.right - pr, width: d0.width - pr - pl, height: d0.height };
+  const k = (parseFloat(ds.fontSize) || 24) / (parseFloat(cs.fontSize) || 16);
+  // Typeset like the page title (shrunk by 1/k) so that once scaled up it is
+  // pixel-identical to it — same line height, and same wrapping when the
+  // title runs to two lines — and the hand-off to the real title doesn't jump.
+  const lh = parseFloat(ds.lineHeight);
+  const oneLine = (lh || parseFloat(ds.fontSize) * 1.3) * 1.5;
+  const wraps = d.height > oneLine;
+  const n = document.createElement('div');
+  n.textContent = pageName.textContent || cardName.textContent;
+  n.style.cssText = `position:fixed;left:${wraps ? s.right - d.width / k : s.left}px;top:${s.top}px;width:${wraps ? d.width / k : s.width}px;z-index:261;pointer-events:none;margin:0;text-align:right;white-space:${wraps ? 'normal' : 'nowrap'};word-break:break-word;transform-origin:top right;font-family:${ds.fontFamily};font-size:${parseFloat(ds.fontSize) / k}px;font-weight:${ds.fontWeight};line-height:${lh ? (lh / k) + 'px' : 'normal'};letter-spacing:${(parseFloat(ds.letterSpacing) || 0) / k}px;text-transform:${ds.textTransform};color:${ds.color};`;
+  document.body.appendChild(n);
+  return { el: n, landed: `translate(${d.right - s.right}px, ${d.top - s.top}px) scale(${k})` };
+}
+// Everything on the page except the photo frame (and the top bar): fades
+// up after the card has landed / out before it leaves.
+function _exFlyRestEls(frame) {
+  const body = document.getElementById('ex-detail-overlay-body');
+  const pWrap = document.getElementById('ex-detail-photo-wrap');
+  const noPhoto = document.getElementById('ex-detail-no-photo-wrap');
+  const rest = [...(body?.children || [])].filter(ch => ch !== pWrap);
+  if (pWrap) rest.push(...[...pWrap.children].filter(ch => ch !== frame));
+  if (noPhoto && getComputedStyle(noPhoto).display !== 'none') rest.push(noPhoto);
+  return rest;
+}
+function _exFlyFrame() {
+  const pWrap = document.getElementById('ex-detail-photo-wrap');
+  if (!pWrap || getComputedStyle(pWrap).display === 'none') return null;
+  return document.getElementById('ex-detail-photo-tap-wrap');
+}
+// Where the card sits at the top of the page: the frame's top edge (or, with
+// no photo, the top of the scroll body's content), frame-wide.
+function _exFlyTopRect(frame, cardRect) {
+  if (frame) return frame.getBoundingClientRect();
+  const body = document.getElementById('ex-detail-overlay-body');
+  const b = body.getBoundingClientRect();
+  const top = b.top + (parseFloat(getComputedStyle(body).paddingTop) || 0);
+  return { left: cardRect.left, top, width: cardRect.width, height: cardRect.height };
+}
+function _exFlyRun(overlay, state, onDone) {
+  Promise.all(state.anims.map(a => a.finished)).then(() => {
+    if (overlay._exFly !== state) return;   // superseded / cancelled
+    overlay._exFly = null;
+    state.anims.forEach(a => a.cancel());
+    state.cleanup();
+    onDone && onDone();
+  }).catch(() => {});
+}
+
+// ghost: _exFlyGhost of the card, made before the card moved into the overlay.
+function _exCardFlyOpen(overlay, ghost, from, onDone) {
+  _exFlyCancel(overlay);
+  _exMorphCancel(overlay);
+  // Hidden for the one tick until the photo/body map is in place (loaded via
+  // setTimeout 0 in openExDetail, which this runs after); the ghost already
+  // covers the card's old spot so nothing visibly changes meanwhile.
+  overlay.style.visibility = 'hidden';
+  const state = { anims: [], nameEl: null };
+  state.cleanup = () => { ghost.remove(); state.nameEl?.remove(); overlay.style.visibility = ''; };
+  overlay._exFly = state;
+  const A = (el, k, o) => { const a = el.animate(k, { fill: 'backwards', ...o }); state.anims.push(a); return a; };
+  setTimeout(() => {
+    if (overlay._exFly !== state) return;
+    if (typeof _syncExDetailBodyTop === 'function') _syncExDetailBodyTop();
+    overlay.style.visibility = '';
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      ghost.remove();
+      A(overlay, [{ opacity: 0 }, { opacity: 1 }], { duration: 200 });
+      _exFlyRun(overlay, state, onDone);
+      return;
+    }
+    const r0 = from.rect;
+    const frame = _exFlyFrame();
+    const T = _exFlyTopRect(frame, r0);
+    const pageBg = getComputedStyle(overlay).backgroundColor;
+    // 1) Page background comes in behind the card; the card flies to the top.
+    A(overlay, [{ backgroundColor: 'rgba(0,0,0,0)' }, { backgroundColor: pageBg }], { duration: _EX_FLY_MS, easing: 'linear' });
+    A(ghost, [
+      { left: r0.left + 'px', top: r0.top + 'px', width: r0.width + 'px' },
+      { left: T.left + 'px', top: T.top + 'px', width: T.width + 'px' },
+    ], { duration: _EX_FLY_MS, easing: _EX_FLY_EASE, fill: 'forwards' });
+    // 2) …then grows into the photo frame, the photo fading in underneath.
+    if (frame) {
+      A(ghost, [{ height: r0.height + 'px', opacity: 1 }, { height: T.height + 'px', opacity: 0 }],
+        { delay: _EX_GROW_AT, duration: _EX_GROW_MS, easing: _EX_FLY_EASE, fill: 'both' });
+      const band = `inset(0px 0px ${Math.max(0, T.height - r0.height)}px 0px round 12px)`;
+      A(frame, [{ clipPath: band, webkitClipPath: band, opacity: 0 }, { clipPath: 'inset(0px 0px 0px 0px round 12px)', webkitClipPath: 'inset(0px 0px 0px 0px round 12px)', opacity: 1 }],
+        { delay: _EX_GROW_AT, duration: _EX_GROW_MS, easing: _EX_FLY_EASE });
+    } else {
+      A(ghost, [{ opacity: 1 }, { opacity: 0 }], { delay: _EX_GROW_AT, duration: 200, easing: 'linear', fill: 'both' });
+    }
+    // 3) The name travels from the card to the page title.
+    const cardName = ghost.querySelector('.ex-name');
+    const pageName = _exFlyNameTarget();
+    if (cardName && pageName) {
+      const fly = _exFlyNameEl(cardName, pageName);
+      state.nameEl = fly.el;
+      cardName.style.visibility = 'hidden';
+      const total = _EX_GROW_AT + _EX_GROW_MS;
+      A(fly.el, [{ transform: 'none' }, { transform: fly.landed }], { duration: total, easing: _EX_FLY_EASE, fill: 'forwards' });
+      // The real title stays hidden until everything has settled (its row is
+      // still fading/sliding up after the name lands) — the landed copy holds
+      // its place and the two swap in one frame at the very end.
+      A(pageName, [{ opacity: 0 }, { opacity: 0 }], { duration: Math.max(total, _EX_REST_AT + _EX_REST_MS) });
+    }
+    // 4) The rest of the page fades up.
+    _exFlyRestEls(frame).forEach(el => A(el, [{ opacity: 0, transform: 'translateY(12px)' }, { opacity: 1, transform: 'none' }],
+      { delay: _EX_REST_AT, duration: _EX_REST_MS, easing: _EX_FLY_EASE }));
+    _exFlyRun(overlay, state, onDone);
+  }, 0);
+}
+
+// Reverse of _exCardFlyOpen. card is back in the list (hidden until the
+// flying copy lands on it); to = _exMorphRect(card).
+function _exCardFlyClose(overlay, card, to, onDone) {
+  _exFlyCancel(overlay);
+  _exMorphCancel(overlay);
+  const state = { anims: [], nameEl: null };
+  const A = (el, k, o) => { const a = el.animate(k, { fill: 'forwards', ...o }); state.anims.push(a); return a; };
+  overlay._exFly = state;
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+    state.cleanup = () => {};
+    A(overlay, [{ opacity: 1 }, { opacity: 0 }], { duration: 200 });
+    _exFlyRun(overlay, state, onDone);
+    return;
+  }
+  const r0 = to.rect;
+  const frame = _exFlyFrame();
+  const T = _exFlyTopRect(frame, r0);
+  const ghost = _exFlyGhost(card, frame ? T : { left: T.left, top: T.top, width: T.width, height: r0.height });
+  card.style.visibility = 'hidden';
+  state.cleanup = () => { ghost.remove(); state.nameEl?.remove(); card.style.visibility = ''; };
+  // Flight back starts as the shrink nears its end — same 60ms overlap as opening.
+  const leaveAt = _EX_GROW_MS - (_EX_FLY_MS - _EX_GROW_AT);
+  // 1) The rest of the page fades out; the photo shrinks back into the card.
+  _exFlyRestEls(frame).forEach(el => A(el, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(12px)' }],
+    { duration: 160, easing: 'ease-in' }));
+  if (frame) {
+    A(ghost, [{ height: T.height + 'px', opacity: 0 }, { height: r0.height + 'px', opacity: 1 }],
+      { duration: _EX_GROW_MS, easing: _EX_FLY_EASE, fill: 'both' });
+    const band = `inset(0px 0px ${Math.max(0, T.height - r0.height)}px 0px round 12px)`;
+    A(frame, [{ clipPath: 'inset(0px 0px 0px 0px round 12px)', webkitClipPath: 'inset(0px 0px 0px 0px round 12px)', opacity: 1 }, { clipPath: band, webkitClipPath: band, opacity: 0 }],
+      { duration: _EX_GROW_MS, easing: _EX_FLY_EASE });
+  } else {
+    A(ghost, [{ opacity: 0 }, { opacity: 1 }], { duration: 160, easing: 'linear', fill: 'both' });
+  }
+  // 2) …then the card flies back down to its spot over the still-solid page.
+  A(ghost, [
+    { left: T.left + 'px', top: T.top + 'px', width: T.width + 'px' },
+    { left: r0.left + 'px', top: r0.top + 'px', width: r0.width + 'px' },
+  ], { delay: leaveAt, duration: _EX_FLY_MS, easing: _EX_FLY_EASE, fill: 'both' });
+  // 4) Only once card + name have settled does the workout page fade in
+  // around them: the whole overlay (page bg, top bar — identical to the
+  // workout's) fades out; the flying card/name live outside it and stay put.
+  A(overlay, [{ opacity: 1 }, { opacity: 0 }], { delay: leaveAt + _EX_FLY_MS, duration: _EX_LAND_FADE_MS, easing: 'ease-out' });
+  // 3) The name travels from the page title back into the card.
+  const cardName = ghost.querySelector('.ex-name');
+  const pageName = _exFlyNameTarget();
+  if (cardName && pageName) {
+    // Measured on the card's final (list) spot — the ghost isn't there yet.
+    const listName = card.querySelector('.ex-name');
+    if (listName) {
+      const fly = _exFlyNameEl(listName, pageName);
+      state.nameEl = fly.el;
+      cardName.style.visibility = 'hidden';
+      A(fly.el, [{ transform: fly.landed }, { transform: 'none' }], { duration: leaveAt + _EX_FLY_MS, easing: _EX_FLY_EASE });
+      A(pageName, [{ opacity: 0 }, { opacity: 0 }], { duration: leaveAt + _EX_FLY_MS });
+    }
+  }
+  _exFlyRun(overlay, state, onDone);
+}
+
 function openExDetail(id) {
   // Client-role users can't open an exercise's detail view from Step 2 of 2
   // (creating/editing a workout) — only staff (coach/admin/etc.) build or
@@ -13459,6 +13936,10 @@ function openExDetail(id) {
   if (window._isNewWorkoutFlow && (window._currentUserData?.role || 'client') === 'client') return;
   const card = document.getElementById(id);
   if (!card) return;
+  // Measured (and cloned) before the card is moved into the overlay — the
+  // flying copy starts here (see _exCardFlyOpen).
+  const _morphFrom = _exMorphRect(card);
+  const _flyGhost = _morphFrom ? _exFlyGhost(card, _morphFrom.rect) : null;
   unlockExerciseCard(id);
   window._exDetailCardId = id;
   if (window._historyPush) window._historyPush('ex-detail');
@@ -13506,17 +13987,21 @@ function openExDetail(id) {
   const _cw = document.getElementById('todayMuscleChipsWrap');
   if (_cw) _cw.style.display = 'none';
 
+  if (!_flyGhost) { _exFlyCancel(overlay); _exMorphCancel(overlay); }
   overlay.classList.remove('ex-overlay-out', 'ex-overlay-open');
-  overlay.classList.add('ex-overlay-in');
-  // Sync immediately then again after layout settles (photo may not be rendered yet)
-  _syncExDetailBodyTop();
-  setTimeout(_syncExDetailBodyTop, 50);
-  overlay.addEventListener('animationend', () => {
+  const _onOpened = () => {
     overlay.classList.remove('ex-overlay-in');
     overlay.classList.add('ex-overlay-open');
     _syncExDetailBodyTop();
     if (window.showExFloatBar) showExFloatBar(id);
-  }, { once: true });
+  };
+  // The tapped card flies to the top; card not on screen → the plain slide-up.
+  overlay.classList.add(_flyGhost ? 'ex-overlay-open' : 'ex-overlay-in');
+  // Sync immediately then again after layout settles (photo may not be rendered yet)
+  _syncExDetailBodyTop();
+  setTimeout(_syncExDetailBodyTop, 50);
+  if (_flyGhost) _exCardFlyOpen(overlay, _flyGhost, _morphFrom, _onOpened);
+  else overlay.addEventListener('animationend', _onOpened, { once: true });
 
   if (window.showExFloatBar) showExFloatBar(id);
   setTimeout(() => { if (window.showExFloatBar && window._exDetailCardId === id) showExFloatBar(id); }, 50);
@@ -13547,31 +14032,90 @@ function openExDetail(id) {
   if (!window._isNewWorkoutFlow && card.classList.contains('completed')) {
     setTimeout(() => _enterExUpdateMode(id), 0);
   }
-  // Creating/editing a workout has nothing to "finish" — this same button/slot
-  // is repurposed into a CLOSE button (same size/position) instead of being
-  // hidden outright, so there's always a way to leave the exercise (see
-  // _maybeCloseExDetail). Runs after _exitExUpdateMode() above, which
-  // unconditionally resets this button's text to FINISH/EXERCISE — doing this
-  // any earlier in the function just gets overwritten by that call.
-  if (_exFinBtn) {
-    // The two original FINISH/EXERCISE spans are never touched — they stay
-    // in normal flow (just invisible) and keep governing this button's
-    // natural two-line height exactly as always. CLOSE is a separate,
-    // absolutely-positioned label overlaid on top and centered independently
-    // — no measured/cached height, no risk of it drifting from the button's
-    // real size on any given device.
-    const _finSpans = _exFinBtn.querySelectorAll(':scope > span:not(#ex-detail-finish-btn-close-label)');
-    const _closeLabel = document.getElementById('ex-detail-finish-btn-close-label');
-    if (window._isNewWorkoutFlow) {
-      _exFinBtn.onclick = () => _maybeCloseExDetail();
-      _finSpans.forEach(s => { s.style.visibility = 'hidden'; });
-      if (_closeLabel) _closeLabel.style.display = 'block';
-    } else {
-      _exFinBtn.onclick = () => markExDetailDone();
-      _finSpans.forEach(s => { s.style.visibility = ''; });
-      if (_closeLabel) _closeLabel.style.display = 'none';
-    }
+  // Runs after _exitExUpdateMode() above, which unconditionally resets this
+  // button's text — doing this any earlier just gets overwritten by that call.
+  _syncExDetailFinishBtnMode();
+}
+
+// Creating/editing a workout has nothing to "finish" — this same button/slot
+// is repurposed into a CLOSE button (same size/position) instead of being
+// hidden outright, so there's always a way to leave the exercise (see
+// _maybeCloseExDetail). Same in an active session while the open exercise has
+// no set checked as done (and isn't completed) — CLOSE just goes back to the
+// workout's exercise list; checking a set flips it back to SAVE & DONE
+// (re-run from markSetDone with animate=true — see _animateExFinishLabelSwap).
+function _syncExDetailFinishBtnMode(animate) {
+  const _exFinBtn = document.getElementById('ex-detail-finish-btn');
+  const card = document.getElementById(window._exDetailCardId);
+  if (!_exFinBtn || !card) return;
+  const close = window._isNewWorkoutFlow
+    || (!card.classList.contains('completed') && !card.querySelector('.set-done-btn.done'));
+  const _prevMode = _exFinBtn.dataset.mode;
+  (_exFinBtn._labelAnims || []).forEach(a => a.cancel());
+  _exFinBtn._labelAnims = null;
+  // The two original FINISH/EXERCISE spans are never touched — they stay
+  // in normal flow (just invisible) and keep governing this button's
+  // natural two-line height exactly as always. CLOSE is a separate,
+  // absolutely-positioned label overlaid on top and centered independently
+  // — no measured/cached height, no risk of it drifting from the button's
+  // real size on any given device.
+  const _finSpans = _exFinBtn.querySelectorAll(':scope > span:not(#ex-detail-finish-btn-close-label)');
+  const _closeLabel = document.getElementById('ex-detail-finish-btn-close-label');
+  _exFinBtn.dataset.mode = close ? 'close' : 'finish';
+  if (close) {
+    _exFinBtn.onclick = () => _maybeCloseExDetail();
+    _finSpans.forEach(s => { s.style.visibility = 'hidden'; });
+    if (_closeLabel) _closeLabel.style.display = 'block';
+  } else {
+    _exFinBtn.onclick = () => markExDetailDone();
+    _finSpans.forEach(s => { s.style.visibility = ''; });
+    if (_closeLabel) _closeLabel.style.display = 'none';
   }
+  const _newMode = _exFinBtn.dataset.mode;
+  if (animate && _prevMode && _prevMode !== _newMode && _closeLabel && _exFinBtn.animate) {
+    _animateExFinishLabelSwap(_exFinBtn, [..._finSpans], _closeLabel, _newMode === 'finish');
+  }
+}
+window._syncExDetailFinishBtnMode = _syncExDetailFinishBtnMode;
+
+// CLOSE ⇄ SAVE & DONE label roll (~250ms): the old label slides 8px and fades
+// out while the new one slides in from 8px the other side — upward going
+// forward (CLOSE → SAVE & DONE), downward going back. Going forward the button
+// also pulses (1 → 1.04 → 1) to flag that the exercise can now be saved.
+// Final state is already applied by the caller; the outgoing label is just
+// kept visible for the duration, then the animations are dropped. Reduced
+// motion: plain cross-fade, no slide/pulse.
+function _animateExFinishLabelSwap(btn, finSpans, closeLabel, forward) {
+  const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const D = 250, ease = 'cubic-bezier(.2,.8,.3,1)';
+  const dy = reduce ? 0 : (forward ? 8 : -8);
+  // CLOSE is centred with translate(-50%,-50%) — keep that in its keyframes.
+  const tr = (el, y) => el === closeLabel ? `translate(-50%, calc(-50% + ${y}px))` : `translateY(${y}px)`;
+  const outEls = forward ? [closeLabel] : finSpans;
+  const inEls  = forward ? finSpans : [closeLabel];
+  // Keep the outgoing label on screen while it animates out.
+  if (forward) closeLabel.style.display = 'block';
+  else finSpans.forEach(s => { s.style.visibility = ''; });
+  const anims = [];
+  outEls.forEach(el => anims.push(el.animate(
+    [{ opacity: 1, transform: tr(el, 0) }, { opacity: 0, transform: tr(el, -dy) }],
+    { duration: D, easing: ease, fill: 'forwards' })));
+  inEls.forEach(el => anims.push(el.animate(
+    [{ opacity: 0, transform: tr(el, dy) }, { opacity: 1, transform: tr(el, 0) }],
+    { duration: D, easing: ease, fill: 'backwards' })));
+  // Pulse runs a bit longer than the labels and ends on its own (no fill), so
+  // it's only cancelled if a newer swap supersedes it — not by the cleanup below.
+  const pulse = (forward && !reduce) ? btn.animate(
+    [{ transform: 'scale(1)' }, { transform: 'scale(1.04)', offset: .45 }, { transform: 'scale(1)' }],
+    { duration: 320, easing: 'ease-out' }) : null;
+  const all = pulse ? [...anims, pulse] : anims;
+  btn._labelAnims = all;
+  anims[0].onfinish = () => {
+    if (btn._labelAnims !== all) return;   // superseded by a newer swap
+    if (forward) closeLabel.style.display = 'none';
+    else finSpans.forEach(s => { s.style.visibility = 'hidden'; });
+    anims.forEach(a => a.cancel());
+  };
 }
 
 function closeExDetailOverlay() {
@@ -13663,7 +14207,9 @@ function closeExDetailOverlay() {
   const _cw = document.getElementById('todayMuscleChipsWrap');
   if (_cw) _cw.style.display = 'flex';
   if (window.hideExFloatBar) hideExFloatBar();
-  if (_wasCompleted) setTimeout(_scrollToNextExercise, 380);
+  // List moves/scrolls wait for the card's landing + glow (released below).
+  if (card) _exReturnHoldStart();
+  if (_wasCompleted) setTimeout(() => _afterExReturn(_scrollToNextExercise), 380);
   // Header shrank while its chips row was hidden during the detail view — resync
   // the spacer now that it's restored, otherwise it keeps reserving the taller
   // height and leaves a dead blank gap above the list.
@@ -13676,11 +14222,26 @@ function closeExDetailOverlay() {
     overlayBody.scrollTo({ top: 0, behavior: 'smooth' });
   }
   Array.from(overlayBody.children).forEach(ch => { if (ch.id !== 'ex-detail-photo-wrap') ch.remove(); });
-  overlay.classList.remove('ex-overlay-open', 'ex-overlay-in');
-  overlay.classList.add('ex-overlay-out');
-  overlay.addEventListener('animationend', () => {
-    overlay.classList.remove('ex-overlay-out');
-  }, { once: true });
+  // Card flies back down to its spot (now back in the list, layout restored
+  // above), then glows. Card not on screen (e.g. filtered out) → the plain slide-out.
+  const _morphTo = _exMorphRect(card);
+  overlay.classList.remove('ex-overlay-in');
+  if (_morphTo) {
+    _exCardFlyClose(overlay, card, _morphTo, () => {
+      overlay.classList.remove('ex-overlay-open');
+      _exReturnHoldReleaseAfter(_exCardReturnGlow(card));
+    });
+  } else {
+    // No landing/glow to wait for — let held list moves run.
+    _exReturnHoldRelease();
+    _exFlyCancel(overlay);
+    _exMorphCancel(overlay);
+    overlay.classList.remove('ex-overlay-open');
+    overlay.classList.add('ex-overlay-out');
+    overlay.addEventListener('animationend', () => {
+      overlay.classList.remove('ex-overlay-out');
+    }, { once: true });
+  }
 }
 window.closeExDetailOverlay = closeExDetailOverlay;
 
@@ -14003,6 +14564,8 @@ function markSetDone(btn, exId) {
   _updateExSetCount(exId);
   // Open exercise in body map mode: refresh its best set ("NEW" pops in on a new record).
   if (exId === window._exDetailCardId && typeof _renderExDetailBestSet === 'function') _renderExDetailBestSet(true);
+  // Open exercise: CLOSE <-> SAVE & DONE as its first set is checked / last unchecked.
+  if (exId === window._exDetailCardId) _syncExDetailFinishBtnMode(true);
   saveSession();
   autoSaveDraft();
 }
@@ -14222,9 +14785,11 @@ function toggleDone(id) {
       if (window._exDetailCardId === id && window.closeExDetail) {
         closeExDetail();
         // Wait for slide animation then reposition
-        setTimeout(() => _repositionDoneCard(id), 370);
+        setTimeout(() => _afterExReturn(() => _repositionDoneCard(id)), 370);
       } else {
-        _repositionDoneCard(id);
+        // Closing from the exercise page: the card first lands + glows where
+        // it is, then moves (see _afterExReturn).
+        _afterExReturn(() => _repositionDoneCard(id));
       }
     }, 320);
     function _repositionDoneCard(id) {
@@ -15847,8 +16412,11 @@ function saveWorkoutToList() {
     return;
   }
 
+  window._nwfEditedWorkoutIdx = undefined;
   if (window._editingWorkoutIdx !== undefined && workouts[window._editingWorkoutIdx]) {
     // Update existing workout
+    // Remembered for Back to Workouts' landing + UPDATED badge (_flashNewWorkoutCardOnce).
+    window._nwfEditedWorkoutIdx = window._editingWorkoutIdx;
     const existing = workouts[window._editingWorkoutIdx];
     const _prevName = existing.name;
     existing.name = name;
@@ -15913,7 +16481,7 @@ function saveWorkoutToList() {
         optDiv.id = 'postSaveOptions';
         optDiv.style.cssText = 'display:flex;flex-direction:column;gap:10px;padding:12px 0;opacity:0;transition:opacity 0.4s ease, transform 0.45s cubic-bezier(0.2,0.8,0.3,1);align-items:center;position:fixed;top:50%;left:50%;transform:translate(-50%, calc(-50% + 48px));width:calc(100% - 32px);max-width:398px;z-index:201;';
         const exitOnclick = _wasFromWorkouts
-          ? `document.getElementById('postSaveOptions').remove();document.getElementById('_saveBlackScreen')?.remove();document.getElementById('_nwf-back-wrapper')?.remove();_nwfResetHeaderPadding();document.querySelectorAll('.tab').forEach(t=>{t.style.opacity='';t.style.pointerEvents=''});const _db=document.getElementById('dateBadge');if(_db){_db.style.opacity='';_db.style.cursor='';}actionsRowRestore();resetWorkoutState();document.getElementById('workoutName').value='';showTodayStartScreen();checkFinishReady();switchTab('workouts2');_flashNewWorkoutCardOnce();`
+          ? `window._nwfLandGhost=_exGhostCover(getComputedStyle(document.getElementById('_saveBlackScreen')||document.body).backgroundColor);document.getElementById('postSaveOptions').remove();document.getElementById('_saveBlackScreen')?.remove();document.getElementById('_nwf-back-wrapper')?.remove();_nwfResetHeaderPadding();document.querySelectorAll('.tab').forEach(t=>{t.style.opacity='';t.style.pointerEvents=''});const _db=document.getElementById('dateBadge');if(_db){_db.style.opacity='';_db.style.cursor='';}actionsRowRestore();resetWorkoutState();document.getElementById('workoutName').value='';showTodayStartScreen();checkFinishReady();switchTab('workouts2');_flashNewWorkoutCardOnce();`
           : `document.getElementById('postSaveOptions').remove();document.getElementById('_saveBlackScreen')?.remove();document.getElementById('_nwf-back-wrapper')?.remove();_nwfResetHeaderPadding();document.querySelectorAll('.tab').forEach(t=>{t.style.opacity='';t.style.pointerEvents=''});const _db=document.getElementById('dateBadge');if(_db){_db.style.opacity='';_db.style.cursor='';}actionsRowRestore();resetWorkoutState();document.getElementById('workoutName').value='';showTodayStartScreen();checkFinishReady();`;
         optDiv.innerHTML = `
             <div style="text-align:center;margin-bottom:18px;">
@@ -27837,9 +28405,9 @@ function deleteCoachWorkout(id) {
                untouched (just invisible) so they keep governing this button's
                natural two-line height exactly as always, with nothing to
                measure/cache/get wrong. -->
-          <span id="ex-detail-finish-btn-close-label" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--accent);font-family:'DM Sans';font-size:13px;font-weight:900;letter-spacing:.5px;white-space:nowrap;">CLOSE</span>
+          <span id="ex-detail-finish-btn-close-label" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--accent);font-family:'DM Sans';font-size:18px;font-weight:900;letter-spacing:.5px;white-space:nowrap;line-height:1;">CLOSE</span>
         </button>
-        <div id="ex-detail-overlay-title" style="font-family:'DM Sans';font-size:24px;font-weight:900;color:var(--text);text-align:right;flex:1;min-width:0;word-break:break-word;"></div>
+        <div id="ex-detail-overlay-title" style="font-family:'DM Sans';font-size:24px;font-weight:900;color:var(--text);text-align:right;flex:1;min-width:0;word-break:break-word;padding-right:12px;"></div>
       </div>
       <!-- Body map mode only: all-time best set, own line below FINISH, centered — see _renderExDetailBestSet -->
       <div id="ex-detail-bestset" style="display:none;"></div>
