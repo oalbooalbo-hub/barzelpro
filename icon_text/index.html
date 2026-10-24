@@ -272,10 +272,6 @@ body.desktop-mode .pages-wrap {
 
 /* ── EXERCISE CARDS ────────────────────────────── */
 .exercise-card{background:var(--surface);border:1px solid var(--g55);border-radius:var(--radius);margin-bottom:8px;overflow:visible;scroll-margin-top:70px;}
-/* Active workout list: standard tap press (select_animation_skill) before the
-   card expands into its exercise page — instant press, animated release. */
-body.workout-home-bg #exerciseList > .exercise-card{transition:transform .1s ease-out;}
-body.workout-home-bg #exerciseList > .exercise-card:active{transform:scale(.92);transition:none;}
 @keyframes pickNoticeBgFade{0%{background:rgba(255,140,66,.08);border-color:rgba(255,140,66,.2);}50%{background:rgba(255,140,66,.08);border-color:rgba(255,140,66,.2);}100%{background:rgba(255,140,66,0);border-color:rgba(255,140,66,0);}}
 .exercise-card.completed{border-color:rgba(var(--accent-rgb),.15);border-color:color-mix(in srgb, var(--accent) 15%, transparent);}
 .exercise-card.completed .ex-header{background:color-mix(in srgb, var(--accent) 6%, transparent);}
@@ -377,10 +373,17 @@ body.workout-home-bg #exerciseList > .exercise-card:active{transform:scale(.92);
 /* Body map mode: SAVE & DONE docked, centered, 8px above the float bar (bottom set by _syncExFinishDock); the page gets its 58px + 8px as extra bottom room. */
 #ex-detail-finish-dock{position:fixed;left:50%;transform:translateX(-50%);z-index:210;display:none;}
 #ex-detail-finish-dock #ex-detail-finish-btn{width:var(--dock-w,120px)!important;}
-/* Home "Welcome" (no workout completed this week) — see _applyWeekWelcome. */
-#today-week-welcome{display:none;position:absolute;inset:0;z-index:2;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-family:'DM Sans';font-size:56px;font-weight:900;line-height:1.1;color:var(--text-strong);pointer-events:none;}
+/* Home "Welcome" / "Welcome Back" — see _applyWeekWelcome. The carousel's first
+   page (no circle): it and #today-week-main (This Week + the circle pages)
+   slide side by side — .on-welcome = Welcome in view (_todayHomeGoTo). No
+   workout completed this week (.week-welcome): Welcome alone, the rest hidden. */
+#today-week-welcome{display:flex;position:absolute;inset:0;z-index:2;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-family:'DM Sans';font-size:56px;font-weight:900;line-height:1.1;color:var(--text-strong);pointer-events:none;transition:transform .3s cubic-bezier(.2,.8,.3,1);}
+#today-week-main{width:100%;display:flex;flex-direction:column;align-items:center;gap:6px;transition:transform .3s cubic-bezier(.2,.8,.3,1);}
+#today-week-progress:not(.on-welcome) #today-week-welcome{transform:translateX(-100%);}
+#today-week-progress.on-welcome #today-week-main{transform:translateX(100%);}
+#today-week-progress.home-instant #today-week-welcome,#today-week-progress.home-instant #today-week-main{transition:none;}
 #today-week-progress.week-welcome > :not(#today-week-welcome),#today-carousel-dots.week-welcome{visibility:hidden;}
-#today-week-progress.week-welcome #today-week-welcome{display:flex;animation:weekWelcomeIn .5s ease both;}
+#today-week-progress.week-welcome #today-week-welcome{transform:none;animation:weekWelcomeIn .5s ease both;}
 @keyframes weekWelcomeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 /* Active workout's FINISH WORKOUT bottom bar (~125px + safe area): body already reserves 90px + safe area, this adds the rest so the last card scrolls clear. Hidden while a note's keyboard is up (it would ride above the keyboard). */
 body.workout-finish-bar-on #today-workout-area{padding-bottom:40px;}
@@ -794,20 +797,21 @@ body.ex-tab-detail-open #ex-float-bar{display:none !important;}
 .modal-overlay.open{display:flex;}
 /* PR stars info sheet: darken everything except the 3 stars themselves, which
    stay lit in their real MAX/BEST SET/VOL colors — the overlay itself is left
-   transparent and #prStarsSpotlight (a box-shadow "hole" sized to the stars'
-   own rect) supplies the actual darkening, so nothing ever paints over them. */
+   transparent; #prStarsSpotlight darkens the whole screen (no box around the
+   stars) and #pr-stars-lit-clone, a copy of the stars at their exact spot,
+   sits above it (openPRStarsInfo). */
 #prStarsInfoOverlay{background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none;}
-#prStarsSpotlight{position:fixed;z-index:245;display:none;border-radius:10px;box-shadow:0 0 0 9999px rgba(0,0,0,.85);pointer-events:none;}
+#prStarsSpotlight{position:fixed;top:0;bottom:0;left:0;right:0;z-index:245;display:none;background:rgba(0,0,0,.85);pointer-events:none;}
 #prStarsSpotlight.open{display:block;}
-#workout-pr-stars.pr-stars-lit span[data-pr="0"] svg{fill:var(--pr-max) !important;}
-#workout-pr-stars.pr-stars-lit span[data-pr="0"] > span:last-child{color:var(--pr-max) !important;}
-#workout-pr-stars.pr-stars-lit span[data-pr="1"] svg{fill:var(--pr-best) !important;}
-#workout-pr-stars.pr-stars-lit span[data-pr="1"] > span:last-child{color:var(--pr-best) !important;}
-#workout-pr-stars.pr-stars-lit span[data-pr="2"] svg{fill:var(--pr-vol) !important;}
-#workout-pr-stars.pr-stars-lit span[data-pr="2"] > span:last-child{color:var(--pr-vol) !important;}
+:is(#workout-pr-stars,#pr-stars-lit-clone).pr-stars-lit span[data-pr="0"] svg{fill:var(--pr-max) !important;}
+:is(#workout-pr-stars,#pr-stars-lit-clone).pr-stars-lit span[data-pr="0"] > span:last-child{color:var(--pr-max) !important;}
+:is(#workout-pr-stars,#pr-stars-lit-clone).pr-stars-lit span[data-pr="1"] svg{fill:var(--pr-best) !important;}
+:is(#workout-pr-stars,#pr-stars-lit-clone).pr-stars-lit span[data-pr="1"] > span:last-child{color:var(--pr-best) !important;}
+:is(#workout-pr-stars,#pr-stars-lit-clone).pr-stars-lit span[data-pr="2"] svg{fill:var(--pr-vol) !important;}
+:is(#workout-pr-stars,#pr-stars-lit-clone).pr-stars-lit span[data-pr="2"] > span:last-child{color:var(--pr-vol) !important;}
 /* Opening/closing the PR info page: pentagons (and their text) fade lit / back to their real state (openPRStarsInfo / closePRStarsInfo). */
-#workout-pr-stars.pr-stars-fading span[data-pr] svg{transition:fill .5s ease;}
-#workout-pr-stars.pr-stars-fading span[data-pr] span{transition:color .5s ease;}
+:is(#workout-pr-stars,#pr-stars-lit-clone).pr-stars-fading span[data-pr] svg{transition:fill .5s ease;}
+:is(#workout-pr-stars,#pr-stars-lit-clone).pr-stars-fading span[data-pr] span{transition:color .5s ease;}
 .modal-sheet{width:100%;max-width:430px;background:var(--surface);border-radius:20px 20px 0 0;border:1px solid var(--border);border-bottom:none;max-height:88vh;max-height:88dvh;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom);}
 #calendarOverlay{background:rgba(0,0,0,.5)!important;top:0!important;align-items:flex-start!important;}#calendarOverlay .modal-sheet{border-radius:20px;border-top:none;border-bottom:1px solid var(--border);animation:sheetDown .3s cubic-bezier(.34,1.56,.64,1);margin-top:0;max-height:100dvh;max-height:100vh;overflow:hidden;}@keyframes sheetDown{from{transform:translateY(-60px);opacity:0}to{transform:translateY(0);opacity:1}}
 @keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
@@ -931,7 +935,9 @@ body.ex-tab-detail-open #ex-float-bar{display:none !important;}
 .cal-day.cal-day-adjacent{opacity:.4;}
 /* Same exception for prev/next-month days — a completed workout must stay visible even across the boundary. */
 .cal-day.cal-day-adjacent.has-workout{opacity:1;}
-.cal-day-dots{display:flex;gap:2px;margin-top:2px;}
+/* Pinned just under the (centered) day number — out of the flow, so a dot
+   never pushes the number up; same ~4px gap below the number as before. */
+.cal-day-dots{display:flex;gap:2px;position:absolute;left:50%;top:calc(50% + 12px);transform:translateX(-50%);pointer-events:none;}
 
 .cal-targets-row{display:flex;gap:10px;padding:10px 0 4px;border-top:1px solid var(--border);margin-top:8px;}
 .cal-target-item{flex:1;display:flex;flex-direction:column;gap:4px;align-items:center;}
@@ -1554,10 +1560,13 @@ window._fbModuleReady = true;
     <!-- Weekly strength progress ring / muscle heatmap carousel — swipe area is
          exactly this box (bounded above by the header via the screen's own
          top padding, below by the dots row that immediately follows it). -->
-    <div id="today-week-progress" style="display:none;position:relative;width:100%;max-width:380px;flex-direction:column;align-items:center;gap:6px;margin-top:70px;padding-top:10px;padding-bottom:4px;margin-bottom:-14px;transform:translateY(-20px);overflow:hidden;-webkit-tap-highlight-color:transparent;touch-action:pan-y;">
-      <!-- No workout completed this week → shown instead of everything else in
-           this box (see _applyWeekWelcome), in the same space. -->
-      <div id="today-week-welcome" aria-live="polite"><span id="today-week-welcome-line">Welcome</span><span id="today-week-welcome-name" style="display:none;"></span></div>
+    <div id="today-week-progress" class="on-welcome" style="display:none;position:relative;width:100%;max-width:380px;flex-direction:column;align-items:center;gap:6px;margin-top:70px;padding-top:10px;padding-bottom:4px;margin-bottom:-14px;transform:translateY(-20px);overflow:hidden;-webkit-tap-highlight-color:transparent;touch-action:pan-y;">
+      <!-- The carousel's first page, "Welcome" / "Welcome Back" (no circle) —
+           and, with no workout completed this week, shown alone instead of
+           everything else in this box (see _applyWeekWelcome), same space. -->
+      <div id="today-week-welcome" aria-live="polite"><span id="today-week-welcome-line">Welcome</span></div>
+      <!-- This Week + the circle pages: slides in from the right after Welcome. -->
+      <div id="today-week-main">
       <!-- Sits above the carousel track, not inside either slide, so it never
            moves or re-renders when swiping between the ring and the heatmap. -->
       <div style="font-family:'DM Sans';font-size:14px;font-weight:700;color:var(--text-label);letter-spacing:.5px;text-transform:uppercase;transform:translateY(-10px);">This Week</div>
@@ -1637,12 +1646,15 @@ window._fbModuleReady = true;
           </div>
         </div>
       </div>
+      </div>
     </div>
     <div id="today-plan-card" style="width:100%;max-width:380px;display:none;"></div>
+    <!-- 4 dots: Welcome + the 3 circle pages (_todayHomeGoTo / _todaySyncDots). -->
     <div id="today-carousel-dots" style="display:none;justify-content:center;gap:6px;margin-top:-17px;transform:translateY(5px);">
-      <span class="today-carousel-dot" onclick="_todayCarouselGoTo(0)" style="width:6px;height:6px;border-radius:50%;background:var(--accent);cursor:pointer;transition:background .2s ease;"></span>
-      <span class="today-carousel-dot" onclick="_todayCarouselGoTo(1)" style="width:6px;height:6px;border-radius:50%;background:var(--dot-off);cursor:pointer;transition:background .2s ease;"></span>
-      <span class="today-carousel-dot" onclick="_todayCarouselGoTo(2)" style="width:6px;height:6px;border-radius:50%;background:var(--dot-off);cursor:pointer;transition:background .2s ease;"></span>
+      <span class="today-carousel-dot" onclick="_todayHomeGoTo(0)" style="width:6px;height:6px;border-radius:50%;background:var(--accent);cursor:pointer;transition:background .2s ease;"></span>
+      <span class="today-carousel-dot" onclick="_todayHomeGoTo(1)" style="width:6px;height:6px;border-radius:50%;background:var(--dot-off);cursor:pointer;transition:background .2s ease;"></span>
+      <span class="today-carousel-dot" onclick="_todayHomeGoTo(2)" style="width:6px;height:6px;border-radius:50%;background:var(--dot-off);cursor:pointer;transition:background .2s ease;"></span>
+      <span class="today-carousel-dot" onclick="_todayHomeGoTo(3)" style="width:6px;height:6px;border-radius:50%;background:var(--dot-off);cursor:pointer;transition:background .2s ease;"></span>
     </div>
     <div id="today-coach-wrap" style="width:100%;max-width:380px;margin-top:20px;">
       <button id="today-coach-btn" onclick="openCoachesGallery()" style="width:100%;height:55px;display:flex;align-items:center;justify-content:center;background:transparent;color:var(--text-label);border:1px solid var(--text-label);border-radius:26px;font-family:'DM Sans';font-size:16px;letter-spacing:0;cursor:pointer;box-sizing:border-box;line-height:1;font-weight:700;opacity:0;transform:translateY(24px);">FIND A COACH</button>
@@ -1735,14 +1747,14 @@ window._fbModuleReady = true;
          the W2 sheet uses (moved in, not duplicated) so there's no SVG id clash. -->
     <div id="today-info-panel" style="display:none;opacity:0;transform:translateY(10px);transition:opacity .25s ease,transform .25s ease;padding-bottom:24px;"></div>
     <div id="today-info-close-bar" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;padding:46px 20px calc(20px + env(safe-area-inset-bottom));background:linear-gradient(to bottom,transparent,var(--g11) 40%);z-index:200;box-sizing:border-box;">
-      <button onclick="_closeTodayInfoPanel()" style="width:100%;padding:18px;background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:100px;font-family:'DM Sans';font-size:16px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;">CLOSE</button>
+      <button onclick="_closeTodayInfoPanel()" style="width:100%;padding:18px;background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:100px;font-family:'DM Sans';font-size:18px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;">CLOSE</button>
     </div>
     <!-- Active workout: FINISH WORKOUT bottom bar — same size, spot and fade as
          Workout info's START WORKOUT (#w2-start-bottom-wrap). Shown/hidden by
          _syncWorkoutFinishBar. -->
     <div id="workout-finish-bar" class="home-bg-match-bottom" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;padding:46px 20px calc(20px + env(safe-area-inset-bottom));z-index:150;box-sizing:border-box;pointer-events:none;">
       <div style="display:flex;gap:10px;">
-        <button id="workout-finish-btn" onclick="_workoutFinishBtnTap()" style="flex:1;padding:17px;background:var(--g00);color:var(--gcc);border:1px solid var(--gcc);border-radius:100px;font-family:'DM Sans';font-size:18px;font-weight:700;cursor:pointer;letter-spacing:.3px;-webkit-tap-highlight-color:transparent;transition:transform .15s;pointer-events:auto;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">
+        <button id="workout-finish-btn" onclick="_workoutFinishBtnTap()" style="flex:1;padding:17px;background:var(--g00);color:var(--gcc);border:1px solid var(--gcc);border-radius:100px;font-family:'DM Sans';font-size:18px;font-weight:700;cursor:pointer;letter-spacing:.3px;-webkit-tap-highlight-color:transparent;transition:transform .15s,background-color .4s ease,color .4s ease,border-color .4s ease;pointer-events:auto;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">
           SAVE WORKOUT
         </button>
       </div>
@@ -3515,7 +3527,8 @@ function showTodayStartScreen(skipGoalReplay) {
   if (window.hideExFloatBar) hideExFloatBar();
   window._isNewWorkoutFlow = false;
   document.getElementById('today-start-screen').style.display = 'flex';
-  if (typeof _todayCarouselGoTo === 'function') _todayCarouselGoTo(0, true);
+  // Keeps the Home carousel's page (Welcome only on app start — _todayHomeGoTo).
+  if (window._todayCarouselReady) _todayHomeGoTo(_todayHomePage(), true);
   _syncShareBtn();
   document.getElementById('today-workout-area').style.display = 'none';
   const _pageLogC = document.getElementById('page-log');
@@ -3816,27 +3829,19 @@ function _resetWeekProgressForReplay() {
 // Home: no workout completed this week (the same count the Total Workouts ring
 // shows) → "Welcome" in place of the This Week circle/carousel + dots. Their
 // contents are only visibility:hidden, so the boxes keep their size and START
-// WORKOUT etc. don't move. Personalised with the first name only when the
-// profile name is purely Latin letters (accents OK) — no other scripts
-// (Hebrew, Arabic…), digits or signs (%, @, !…).
+// WORKOUT etc. don't move. The same element is otherwise the carousel's first
+// page (see _todayHomeGoTo). Text: "Welcome Back" once any workout was ever
+// recorded, else "Welcome" — no name (user removed the personalisation).
 function _applyWeekWelcome(on) {
   const box = document.getElementById('today-week-progress');
   const welcome = document.getElementById('today-week-welcome');
   if (!box || !welcome) return;
   box.classList.toggle('week-welcome', on);
   document.getElementById('today-carousel-dots')?.classList.toggle('week-welcome', on);
-  if (!on) return;
-  const full = (window._currentUserData?.displayName || window._currentUser?.displayName || '').trim();
-  const first = /^[\p{Script=Latin}\p{M}]+(?:[ '\-][\p{Script=Latin}\p{M}]+)*$/u.test(full) ? full.split(/\s+/)[0] : '';
-  const nameEl = document.getElementById('today-week-welcome-name');
-  if (nameEl) {
-    nameEl.textContent = first;
-    nameEl.style.display = first ? '' : 'none';
-    // Long names shrink to fit the 380px column instead of overflowing.
-    nameEl.style.fontSize = first ? Math.min(56, Math.floor(360 / (first.length * 0.62))) + 'px' : '';
-  }
   const lineEl = document.getElementById('today-week-welcome-line');
-  if (lineEl) lineEl.textContent = first ? 'Welcome,' : 'Welcome';
+  let _ever = false;
+  try { _ever = workouts.some(w => !w._draft && !w._template); } catch (e) {}
+  if (lineEl) lineEl.textContent = _ever ? 'Welcome Back' : 'Welcome';
 }
 
 function renderTodayWeekProgress(withAnim) {
@@ -4194,6 +4199,7 @@ window.renderTodayWeekProgress = renderTodayWeekProgress;
 // ── Home carousel: page 0 = this-week PR stars, page 1 = this-week muscle
 // heatmap, page 2 = weekly ring (TODAY_RING_PAGE — the only thick-ring page) ──
 window._todayCarouselIdx = 0;
+window._todayOnWelcome = true; // app start → the Welcome page first (_todayHomeGoTo)
 const TODAY_CAROUSEL_PAGES = 3;
 // Page indices follow the current order (see _setTodayCarouselOrder).
 let TODAY_PRS_PAGE = 0, TODAY_HEATMAP_PAGE = 1, TODAY_RING_PAGE = 2;
@@ -4274,15 +4280,43 @@ function _todayCarouselGoTo(idx, instant) {
     track.style.transition = 'transform .3s cubic-bezier(.2,.8,.3,1)';
     [win, strip].forEach(el => { if (el) el.style.transition = 'transform .3s cubic-bezier(.2,.8,.3,1)'; });
   });
-  document.querySelectorAll('#today-carousel-dots .today-carousel-dot').forEach((d, i) => {
-    d.style.background = i === idx ? 'var(--accent)' : 'var(--dot-off)';
-  });
+  _todaySyncDots();
   // The heatmap diagram is prebuilt (see _prebuildTodayWeekHeatmap) — only its
   // color reveal runs here, so the slide's first frames stay light.
   if (idx === TODAY_HEATMAP_PAGE && typeof _showTodayWeekHeatmap === 'function') _showTodayWeekHeatmap();
   // The PR pentagons are prebuilt too (see _prebuildTodayWeekPRStars).
   if (idx === TODAY_PRS_PAGE && typeof _showTodayWeekPRStars === 'function') _showTodayWeekPRStars();}
 window._todayCarouselGoTo = _todayCarouselGoTo;
+
+// Home page p: 0 = "Welcome" / "Welcome Back" (no circle), 1–3 = the circle
+// pages above (_todayCarouselGoTo(p - 1)). Opens on Welcome when the app
+// starts (_todayOnWelcome, set with _todayCarouselIdx above); switching tabs
+// and back keeps the page (_todayHomePage).
+function _todayHomePage() {
+  return window._todayOnWelcome ? 0 : window._todayCarouselIdx + 1;
+}
+// After a workout is completed this session (_todaySkipWelcome, set in
+// doSaveWorkout) the Welcome page and its dot are gone — pages 1–3 only.
+function _todayHomeGoTo(p, instant) {
+  p = Math.max(window._todaySkipWelcome ? 1 : 0, Math.min(TODAY_CAROUSEL_PAGES, p));
+  const box = document.getElementById('today-week-progress');
+  window._todayOnWelcome = p === 0;
+  if (box) {
+    if (instant) box.classList.add('home-instant');
+    box.classList.toggle('on-welcome', p === 0);
+    if (instant) { box.getBoundingClientRect(); requestAnimationFrame(() => box.classList.remove('home-instant')); }
+  }
+  if (p > 0) _todayCarouselGoTo(p - 1, instant);
+  else _todaySyncDots();
+}
+window._todayHomeGoTo = _todayHomeGoTo;
+function _todaySyncDots() {
+  const act = _todayHomePage();
+  document.querySelectorAll('#today-carousel-dots .today-carousel-dot').forEach((d, i) => {
+    d.style.background = i === act ? 'var(--accent)' : 'var(--dot-off)';
+    if (i === 0) d.style.display = window._todaySkipWelcome ? 'none' : '';
+  });
+}
 
 // Performance (low-end phones): pages 2/3 sit outside the circle's clip while
 // page 1 shows, so the browser never draws them until the first swipe — then
@@ -4412,6 +4446,7 @@ function _todayRingMorphTo(target, instant) {
       // was sometimes dropped, so the first tap did nothing. The whole disc
       // (ring included) is the target, whatever sits under the finger.
       if (_tapMoved || Date.now() - _t0 > 600) return;
+      if (window._todayOnWelcome) return; // Welcome page — no circle to tap
       const win = document.getElementById('today-circle-window');
       if (!win) return;
       const r = win.getBoundingClientRect(); // includes the page-offset transform
@@ -4432,7 +4467,7 @@ function _todayRingMorphTo(target, instant) {
     const dx = t.clientX - _tx;
     const dy = t.clientY - _ty;
     if (Math.abs(dx) < 40 || Math.abs(dy) > Math.abs(dx)) return;
-    _todayCarouselGoTo(window._todayCarouselIdx + (dx < 0 ? 1 : -1));
+    _todayHomeGoTo(_todayHomePage() + (dx < 0 ? 1 : -1));
   }, { passive: false }); // non-passive so a handled tap can preventDefault
   // A drag that ends inside the ring slide would otherwise still fire its
   // onclick (openStrengthTargetSheet) once the finger lifts — swallow that
@@ -4760,6 +4795,19 @@ function resetWorkoutState() {
   exerciseCounter = 0; setCounters = {};
   _todayMuscleFilter = null;
   _todayHideDone = false;
+  // List now empty → hide a leftover "… exercises done !" (+ its spacer) from
+  // the previous session, which would otherwise show on the next new workout.
+  const _doneMsg = document.getElementById('today-filter-empty-msg');
+  if (_doneMsg) {
+    _doneMsg.style.display = 'none';
+    _doneMsg.style.opacity = '';
+    _doneMsg.style.textShadow = '';
+    delete _doneMsg.dataset.shownForMuscle;
+    const _addRow = _doneMsg.nextElementSibling;
+    if (_addRow?.classList.contains('add-ex-row')) _addRow.style.opacity = '';
+  }
+  document.getElementById('today-done-spacer')?.remove();
+  window._todayDoneSeqPending = false;
   window._sessionStartTime = null;
   _LS.remove('ironlog_session_start');
   localStorage.removeItem('ironlog_wip_plan_id');
@@ -5941,6 +5989,27 @@ function _renderProgressSegments(wrap, total, done) {
     fill.style.transform = target;
   });
 }
+// SAVE WORKOUT (bottom bar): bright grey text + border on its dark fill
+// until every exercise is completed, then a solid --accent button with black
+// text (0.4s colour transition on the button). Stays tappable either way.
+// Turning --accent waits while the last exercise is still closing (its page
+// open / return hold) or the "… exercises done !" message is still coming in
+// and glowing (_todayDoneSeqPending) — that sequence calls this again at the
+// glow's end.
+function _syncSaveBtnDone(allDone) {
+  const btn = document.getElementById('workout-finish-btn');
+  if (!btn) return;
+  if (allDone === undefined) {
+    const cards = document.querySelectorAll('#exerciseList .exercise-card');
+    allDone = cards.length > 0 && [...cards].every(c => c.classList.contains('completed'));
+  }
+  if (allDone && btn.dataset.allDone !== '1'
+      && (window._exDetailCardId || _exReturnHold || window._todayDoneSeqPending)) return;
+  btn.dataset.allDone = allDone ? '1' : '';
+  btn.style.background = allDone ? 'var(--accent)' : 'var(--g00)';
+  btn.style.color = allDone ? '#000' : 'var(--gcc)';
+  btn.style.borderColor = allDone ? 'var(--accent)' : 'var(--gcc)';
+}
 function _updateWorkoutProgress() {
   const section  = document.getElementById('workout-progress-section');
   const wrap     = document.getElementById('workout-hero-progress-wrap');
@@ -5954,14 +6023,7 @@ function _updateWorkoutProgress() {
   // exercise is completed — both numbers, not just the "done" one, so "7 of 7" reads
   // as a single all-green unit rather than a done/total pairing.
   const _allDone = total > 0 && done === total;
-  // SAVE WORKOUT (bottom bar): text + border bright grey until every exercise
-  // is completed, then --accent. Stays tappable either way.
-  const _saveBtn = document.getElementById('workout-finish-btn');
-  if (_saveBtn) {
-    const _c = _allDone ? 'var(--accent)' : 'var(--gcc)';
-    _saveBtn.style.color = _c;
-    _saveBtn.style.borderColor = _c;
-  }
+  _syncSaveBtnDone(_allDone);
   // While the info panel is open the count shows just the total, styled as
   // if nothing were completed yet (see _animateWorkoutCountSwap).
   fraction.innerHTML = (done > 0 && !window._todayInfoPanelOpen)
@@ -7686,20 +7748,22 @@ function donePickMode() {
     // didn't account for that fixed bar and skipped short lists entirely.
     _scrollAddExerciseIntoView(400);
     // Building a workout keeps its own fade/slide-in above; the new cards just
-    // get the accent glow once that (and the scroll) has settled.
+    // get the accent border glow once that (and the scroll) has settled.
     const _nwfNewCards = [...document.querySelectorAll('#exerciseList > .exercise-card')].slice(-toAdd.length);
-    setTimeout(() => _nwfNewCards.forEach((c, i) => setTimeout(() => _exCardReturnGlow(c), i * 120)), 750);
+    setTimeout(() => _nwfNewCards.forEach(c => _flashWorkoutCardBadge(c)), 750);
   } else {
-    // Picker shrinks onto the first new card, then the new cards glow
-    // (see _exLandOnCards) — cover first so the tab switch underneath is hidden.
-    const _bodyBg = getComputedStyle(document.body).backgroundColor;
-    const _ghost = _exGhostCover(_bodyBg && _bodyBg !== 'rgba(0, 0, 0, 0)' ? _bodyBg : null);
+    // No landing (user removed it): straight back to the workout, which
+    // scrolls to the first new card; the new cards then get the accent border
+    // glow (_flashWorkoutCardBadge, no badge) — same flow as a new workout.
     exitPickMode();
     switchTab('log');
     toAdd.forEach(ex => addExerciseCard(ex));
     saveSession();
     const _newCards = [...document.querySelectorAll('#exerciseList > .exercise-card')].slice(-toAdd.length);
-    setTimeout(() => _exLandOnCards(_ghost, _newCards), 60);
+    setTimeout(() => {
+      _newCards[0]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => _newCards.forEach(c => _flashWorkoutCardBadge(c)), 450);
+    }, 60);
   }
 }
 
@@ -8157,33 +8221,9 @@ function _flashNewExBadgeOnce(cardEl, exName) {
   shown.push(exName);
   _LS.set('ironlog_new_ex_badge_shown', JSON.stringify(shown));
   // Delayed past the smooth scrollIntoView's own duration so the badge only
-  // appears once the card has actually stopped moving.
-  setTimeout(() => {
-    if (!cardEl.isConnected) return;
-    if (!cardEl.style.position) cardEl.style.position = 'relative';
-    // Border flashes to --accent alongside the badge, and fades back to
-    // whatever it actually was rendering (not assumed) once the badge does.
-    const _origBorderColor = getComputedStyle(cardEl).borderColor;
-    cardEl.style.transition = 'border-color .25s ease';
-    cardEl.style.borderColor = 'var(--accent)';
-    const badge = document.createElement('div');
-    badge.textContent = 'NEW';
-    badge.style.cssText = "position:absolute;top:8px;right:8px;font-family:'DM Sans';font-size:12px;font-weight:900;letter-spacing:.5px;color:var(--accent);opacity:0;transform:translateY(-4px) scale(.85);transition:opacity .25s ease,transform .25s cubic-bezier(.2,.8,.3,1);pointer-events:none;z-index:5;";
-    cardEl.appendChild(badge);
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      badge.style.opacity = '1';
-      badge.style.transform = 'translateY(0) scale(1)';
-    }));
-    setTimeout(() => {
-      badge.style.opacity = '0';
-      badge.style.transform = 'translateY(-4px) scale(.85)';
-      cardEl.style.borderColor = _origBorderColor;
-      setTimeout(() => {
-        badge.remove();
-        cardEl.style.transition = '';
-      }, 260);
-    }, 1000);
-  }, 450);
+  // appears once the card has actually stopped moving. Same badge + accent
+  // border glow as a new workout's card.
+  setTimeout(() => _flashWorkoutCardBadge(cardEl, 'NEW'), 450);
 }
 // Same one-time "NEW" flash treatment as _flashNewExBadgeOnce above, for a
 // just-created workout's card back in the Workouts tab — tracked separately
@@ -8198,29 +8238,50 @@ function _flashNewWorkoutBadgeOnce(cardEl, workoutName) {
   _LS.set('ironlog_new_workout_badge_shown', JSON.stringify(shown));
   _flashWorkoutCardBadge(cardEl, 'NEW');
 }
-// The badge + accent border flash itself — 'NEW' (once per created workout,
-// above) or 'UPDATED' (every time an edited workout lands back in the list).
+// The badge + accent border glow flash itself — 'NEW' (once per created
+// workout / exercise, above) or 'UPDATED' (every time an edited workout lands
+// back in the list); no label → just the border glow (exercises just added
+// to a workout from the picker).
 function _flashWorkoutCardBadge(cardEl, label) {
   if (!cardEl || !cardEl.isConnected) return;
-  if (!cardEl.style.position) cardEl.style.position = 'relative';
+  if (label && !cardEl.style.position) cardEl.style.position = 'relative';
   const _origBorderColor = getComputedStyle(cardEl).borderColor;
-  cardEl.style.transition = 'border-color .25s ease';
+  // Inline border as written — e.g. a workout card's `border:1px solid
+  // var(--g2a)`: a var() shorthand has no readable border-color longhand, so
+  // it's put back whole at the end (clearing just the colour would leave the
+  // default currentColor = white).
+  const _origInlineBorder = cardEl.style.border;
+  const _origInlineBorderColor = cardEl.style.borderColor;
+  const _origShadow = cardEl.style.boxShadow;
+  // Border turns --accent with a soft --accent glow around the card.
+  cardEl.style.transition = 'border-color .25s ease,box-shadow .25s ease';
   cardEl.style.borderColor = 'var(--accent)';
-  const badge = document.createElement('div');
-  badge.textContent = label;
-  badge.style.cssText = "position:absolute;top:8px;right:8px;font-family:'DM Sans';font-size:12px;font-weight:900;letter-spacing:.5px;color:var(--accent);opacity:0;transform:translateY(-4px) scale(.85);transition:opacity .25s ease,transform .25s cubic-bezier(.2,.8,.3,1);pointer-events:none;z-index:5;";
-  cardEl.appendChild(badge);
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    badge.style.opacity = '1';
-    badge.style.transform = 'translateY(0) scale(1)';
-  }));
+  cardEl.style.boxShadow = '0 0 8px var(--accent), 0 0 18px var(--accent)';
+  let badge = null;
+  if (label) {
+    badge = document.createElement('div');
+    badge.textContent = label;
+    badge.style.cssText = "position:absolute;top:8px;right:8px;font-family:'DM Sans';font-size:12px;font-weight:900;letter-spacing:.5px;color:var(--accent);opacity:0;transform:translateY(-4px) scale(.85);transition:opacity .25s ease,transform .25s cubic-bezier(.2,.8,.3,1);pointer-events:none;z-index:5;";
+    cardEl.appendChild(badge);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      badge.style.opacity = '1';
+      badge.style.transform = 'translateY(0) scale(1)';
+    }));
+  }
   setTimeout(() => {
-    badge.style.opacity = '0';
-    badge.style.transform = 'translateY(-4px) scale(.85)';
+    if (badge) {
+      badge.style.opacity = '0';
+      badge.style.transform = 'translateY(-4px) scale(.85)';
+    }
     cardEl.style.borderColor = _origBorderColor;
+    cardEl.style.boxShadow = _origShadow;
     setTimeout(() => {
-      badge.remove();
+      badge?.remove();
       cardEl.style.transition = '';
+      // Faded back to the colour it was rendering — hand it back to its
+      // original inline border / CSS.
+      if (_origInlineBorder) cardEl.style.border = _origInlineBorder;
+      else cardEl.style.borderColor = _origInlineBorderColor;
     }, 260);
   }, 1000);
 }
@@ -8229,10 +8290,10 @@ function _flashWorkoutCardBadge(cardEl, label) {
 // uses for every card element's id (id="...-${workouts.indexOf(w)}") — and
 // runs the flash above on its card, once the workouts2 tab's own .4s
 // entrance transition (tabSlideUp, index.html ~110) has settled.
-// Coming from the "Workout created !" screen's Back to Workouts, a cover in that
-// screen's colour (window._nwfLandGhost, put up before it closed) then shrinks
-// onto the new card and the card glows — same landing as a new exercise (see
-// _exLandOnCards). Without one (e.g. QR import) it's just the scroll + flash.
+// With a cover (window._nwfLandGhost) it shrinks onto the new card and the
+// card glows — same landing as a new exercise (see _exLandOnCards). The
+// "Workout created !" screen's Back to Workouts List no longer puts one up (user
+// removed the landing), so like QR import it's just the scroll + flash.
 // An edited workout (window._nwfEditedWorkoutIdx — it stays at its own index,
 // not moved to the front) lands the same way, with an UPDATED badge every time.
 function _flashNewWorkoutCardOnce() {
@@ -8451,12 +8512,12 @@ function confirmNewEx() {
   setTimeout(() => _newExCloseAndLand(name, muscle), 300);
 }
 
-// New Exercise page → Exercises tab (custom view): the page shrinks onto the
-// new exercise's row and the row glows (see _exLandOnCards), plus the existing
-// one-time "NEW" badge. Cover goes up before the page closes so the list
-// re-render/jump underneath is never seen.
+// New Exercise page → Exercises tab (custom view): no landing (user removed
+// it) — the page closes straight to the list, which scrolls to the new
+// exercise's row; the row then gets the one-time "NEW" badge with the accent
+// border glow (_flashNewExBadgeOnce → _flashWorkoutCardBadge), same as a new
+// workout's card.
 function _newExCloseAndLand(name, muscle) {
-  const _ghost = _exGhostCover(getComputedStyle(document.getElementById('newExModalOverlay')).backgroundColor);
   closeNewExModal();
   _exTabView = 'custom';
   window._exTabMuscle = muscle;
@@ -8464,8 +8525,9 @@ function _newExCloseAndLand(name, muscle) {
   setTimeout(() => {
     const rows = [...document.querySelectorAll('#exercisesTabContent [data-exname]')];
     const row = rows.find(r => r.dataset.exname === name) || rows[rows.length - 1];
-    _exLandOnCards(_ghost, [row]);
-    if (row) _flashNewExBadgeOnce(row, name);
+    if (!row) return;
+    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    _flashNewExBadgeOnce(row, name);
   }, 100);
 }
 
@@ -10945,7 +11007,8 @@ function switchTab(tab) {
       renderTodayPlanCard();
       _resetWeekProgressForReplay();
       renderTodayWeekProgress(true);
-      if (typeof _todayCarouselGoTo === 'function') _todayCarouselGoTo(0, true);
+      // Back on Home: same page as when it was left (Welcome only on app start).
+      if (window._todayCarouselReady) _todayHomeGoTo(_todayHomePage(), true);
     }
   }
   if (tab !== 'log' && tab !== 'exercises') { if (!window._createNewMode) window._activeTabHighlight = null; if (tab !== 'workouts') { window._loadFromToday = false; window._isChangingWorkout = false; } }
@@ -12154,11 +12217,15 @@ function _animateFilterHide(card, delay) {
   card._filterAnimTimer = setTimeout(() => { card.style.display = 'none'; }, delay + 310);
 }
 
-function applyTodayFilters() {
+function applyTodayFilters(opts) {
   let visibleCount = 0;
   // Check if any card is currently expanded — if so, don't restore hidden cards
   const expandedCard = document.querySelector('#exerciseList .exercise-card[data-open="true"]');
   let _staggerIdx = 0;
+  // A body-part chip tap (instant) onto a body part that's all done: no
+  // in-between frames — cards hide/show at once and the page is placed at the
+  // "… exercises done !" final position before the next paint (see below).
+  const _jumpToDone = !!opts?.instant && _todayAllFilteredDone();
   document.querySelectorAll('#exerciseList .exercise-card').forEach(card => {
     // Don't touch cards hidden by KG editor focus mode
     if (card.dataset.kgHide !== undefined) return;
@@ -12171,6 +12238,18 @@ function applyTodayFilters() {
     if (expandedCard && card !== expandedCard && card.dataset.hiddenByExpand) {
       if (!show) card.style.display = 'none';
       // Don't restore hiddenByExpand cards while another card is open
+      return;
+    }
+    if (_jumpToDone) {
+      if (show) {
+        visibleCount++;
+        delete card.dataset.hiddenByExpand;
+        delete card.dataset.expandedHeight;
+      }
+      clearTimeout(card._filterAnimTimer);
+      card.dataset.filterState = show ? 'visible' : 'hidden';
+      ['transition', 'height', 'overflow', 'opacity', 'transform', 'marginBottom'].forEach(p => { card.style[p] = ''; });
+      card.style.display = show ? '' : 'none';
       return;
     }
     if (show) {
@@ -12188,17 +12267,12 @@ function applyTodayFilters() {
   });
 
   // Show "X exercises done!" (or "All exercises done!" when no muscle filter is active)
-  // ABOVE the list when everything currently visible is completed. Its block is as
-  // tall as the visible screen, so scrolled to the top it hides every (completed)
-  // card below the fold — the user scrolls down to see them.
+  // BELOW the list — right above "+ ADD EXERCISE" — when everything currently
+  // visible is completed.
   let emptyMsg = document.getElementById('today-filter-empty-msg');
   const _mcolors = { ...BP_COLORS.muscles };
   const _filterKey = _todayMuscleFilter || '__all__';
-  const _allFilteredDone = (() => {
-    const filtered = [...document.querySelectorAll('#exerciseList .exercise-card')]
-      .filter(c => !_todayMuscleFilter || (c.dataset.exmuscle || 'Chest') === _todayMuscleFilter);
-    return filtered.length > 0 && filtered.every(c => c.classList.contains('completed'));
-  })();
+  const _allFilteredDone = _todayAllFilteredDone();
   if (_allFilteredDone) {
     // Was the message already showing for this same filter (or lack of one) before this
     // call? Only scroll to reveal it on the transition into "all done" (or a switch to a
@@ -12207,46 +12281,158 @@ function applyTodayFilters() {
     // scrolling the user is doing themselves. The element itself is shared across all
     // muscles/no-filter, so display!=='none' alone can't tell them apart.
     const _wasAlreadyShown = !!emptyMsg && emptyMsg.style.display !== 'none' && emptyMsg.dataset.shownForMuscle === _filterKey;
+    // An exercise is still closing back into the list (its card's return flow
+    // + the completed card's move are held — see _afterExReturn): the message
+    // waits for all of that, then this runs again and shows it.
+    if (!_wasAlreadyShown && _exReturnHold) {
+      if (emptyMsg) emptyMsg.style.display = 'none';
+      if (!_exReturnHold.doneMsgQueued) {
+        _exReturnHold.doneMsgQueued = true;
+        _afterExReturn(() => applyTodayFilters({ afterReturn: true }));
+      }
+      return;
+    }
+    // Still on the exercise page (its last set just checked off): not yet —
+    // closing it runs this again under the hold above, so the message comes
+    // in after the card is back (+ _EX_DONE_MSG_WAIT_MS) instead of being
+    // already there behind the page.
+    if (!_wasAlreadyShown && window._exDetailCardId) {
+      if (emptyMsg) emptyMsg.style.display = 'none';
+      return;
+    }
     if (!emptyMsg) {
       emptyMsg = document.createElement('div');
       emptyMsg.id = 'today-filter-empty-msg';
       emptyMsg.style.cssText = 'text-align:center;padding:24px 16px;font-family:"DM Sans";font-size:22px;font-weight:700;box-sizing:border-box;';
-      document.getElementById('exerciseList').before(emptyMsg);
     }
+    const _exList = document.getElementById('exerciseList');
+    if (_exList && _exList.nextElementSibling !== emptyMsg) _exList.after(emptyMsg);
     const muscleColor = _mcolors[_todayMuscleFilter] || '#4caf50';
     emptyMsg.innerHTML = _todayMuscleFilter
       ? `<span style="color:${muscleColor}">${_todayMuscleFilter}</span> exercises done !`
       : `<span style="color:#39FF14">All</span> exercises done !`;
     emptyMsg.dataset.shownForMuscle = _filterKey;
     emptyMsg.style.display = '';
-    _sizeTodayDoneMsg(emptyMsg);
-    // Scroll the "<muscle> exercises done!" message to the top, just under the
-    // sticky header — whether the filter was just tapped (and everything in it
-    // already happened to be done) or it was already active and this is the
-    // moment the last exercise in it just got completed. Delayed to let the
-    // filter's own staggered show/hide animations (up to ~600ms) finish first —
-    // same reasoning as _scrollToNextExercise's own wait — otherwise this
-    // scrolls against a layout that's still mid-transition and lands in the
-    // wrong place. Re-sized right before scrolling (header height may have
-    // changed in the meantime, e.g. chips row).
-    if (!_wasAlreadyShown) setTimeout(() => {
+    emptyMsg.style.minHeight = '';
+    const addRow = emptyMsg.nextElementSibling?.classList.contains('add-ex-row') ? emptyMsg.nextElementSibling : null;
+    // Newly shown: the message (and "+ ADD EXERCISE" under it) are invisible
+    // — space held — while the page first scrolls to them; only once the
+    // scroll has ended do they animate in (fade + 12px rise), then glow.
+    // After an exercise's close (afterReturn: its card is back + the
+    // _EX_DONE_MSG_WAIT_MS pause) the scroll starts right away; after a filter
+    // tap, first wait out the filter's own staggered show/hide animations (up
+    // to ~600ms) — same reasoning as _scrollToNextExercise's own wait —
+    // otherwise the scroll runs against a layout that's still mid-transition.
+    if (!_wasAlreadyShown && !opts?.instant) [emptyMsg, addRow].forEach(el => { if (el) el.style.opacity = '0'; });
+    const _doneMsgIn = () => {
       if (emptyMsg.style.display === 'none') return;
-      _sizeTodayDoneMsg(emptyMsg);
-      emptyMsg.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 620);
+      [emptyMsg, addRow].forEach(el => {
+        if (!el) return;
+        el.style.opacity = '';
+        el.animate?.([{ opacity: 0, transform: 'translateY(12px)' }, { opacity: 1, transform: 'none' }],
+          { duration: _TODAY_DONE_MSG_IN_MS, easing: 'cubic-bezier(.2,.8,.3,1)' });
+      });
+      // …then a brief glow in the body part's colour (green for "All":
+      // swells, holds, fades — a plain CSS text-shadow transition).
+      const _gc = _todayMuscleFilter ? muscleColor : '#39FF14';
+      const _half = Math.round(_TODAY_DONE_GLOW_MS / 4);
+      setTimeout(() => {
+        if (emptyMsg.style.display === 'none') return;
+        emptyMsg.style.transition = `text-shadow ${_half}ms ease-in-out`;
+        emptyMsg.style.textShadow = `0 0 10px ${_gc}, 0 0 22px ${_gc}, 0 0 38px ${_gc}`;
+        setTimeout(() => { emptyMsg.style.textShadow = ''; }, _TODAY_DONE_GLOW_MS - _half);
+        setTimeout(() => {
+          emptyMsg.style.transition = '';
+          // Glow done → SAVE WORKOUT may now turn --accent (_syncSaveBtnDone).
+          window._todayDoneSeqPending = false;
+          _syncSaveBtnDone();
+        }, _TODAY_DONE_GLOW_MS);
+      }, _TODAY_DONE_MSG_IN_MS);
+    };
+    // The page's final position for the message.
+    const _scrollToDone = behavior => {
+      if (_todayMuscleFilter) {
+        // Body part selected: the message goes up to just under the sticky
+        // header so its (all completed) cards are hidden above — with enough
+        // empty room added below the list for the page to scroll that far.
+        const hdr = document.getElementById('workout-sticky-header');
+        const top = (hdr ? hdr.offsetHeight : 70) + 8;
+        _todayDoneSpacer(0);
+        const need = emptyMsg.getBoundingClientRect().top + window.scrollY - top + window.innerHeight;
+        _todayDoneSpacer(Math.max(0, Math.ceil(need - document.documentElement.scrollHeight)));
+        emptyMsg.style.scrollMarginTop = top + 'px';
+        emptyMsg.scrollIntoView({ behavior, block: 'start' });
+      } else {
+        // No body part: message + "+ ADD EXERCISE" in view just above the bottom bar.
+        _todayDoneSpacer(0);
+        const target = addRow || emptyMsg;
+        const bar = document.getElementById('workout-finish-bar');
+        const barH = bar && bar.style.display !== 'none' ? bar.offsetHeight : 0;
+        target.style.scrollMarginBottom = (barH + 8) + 'px';
+        target.scrollIntoView({ behavior, block: 'end' });
+      }
+    };
+    // instant (a body-part chip tap, filterTodayByMuscle — cards already
+    // hidden/shown at once above): the page is placed at the final position
+    // in this same frame, the message simply there — no scroll seen, no fade,
+    // no glow.
+    if (opts?.instant) {
+      [emptyMsg, addRow].forEach(el => { if (el) el.style.opacity = ''; });
+      if (!_wasAlreadyShown) _scrollToDone('instant');
+    }
+    else if (!_wasAlreadyShown) { window._todayDoneSeqPending = true; setTimeout(() => {
+      if (emptyMsg.style.display === 'none') return;
+      // Message comes in when the scroll ends ('scrollend'; the timeout covers
+      // browsers without it, or no scroll needed at all).
+      let _inDone = false;
+      const _afterScroll = () => {
+        if (_inDone) return;
+        _inDone = true;
+        window.removeEventListener('scrollend', _afterScroll);
+        _doneMsgIn();
+      };
+      window.addEventListener('scrollend', _afterScroll);
+      setTimeout(_afterScroll, _TODAY_DONE_SCROLL_MAX_MS);
+      _scrollToDone('smooth');
+      // Already in place (nothing to scroll → no 'scrollend'): come in now.
+      const _y0 = window.scrollY;
+      setTimeout(() => { if (window.scrollY === _y0) _afterScroll(); }, 100);
+    }, opts?.afterReturn ? 0 : 620); }
   } else if (emptyMsg) {
     emptyMsg.style.display = 'none';
-    emptyMsg.style.minHeight = '';
+    emptyMsg.style.opacity = '';
+    emptyMsg.style.textShadow = '';
+    const addRow = emptyMsg.nextElementSibling?.classList.contains('add-ex-row') ? emptyMsg.nextElementSibling : null;
+    if (addRow) addRow.style.opacity = '';
+    _todayDoneSpacer(0);
+    if (window._todayDoneSeqPending) { window._todayDoneSeqPending = false; _syncSaveBtnDone(); }
   }
 }
-// "…exercises done !" block: min-height = the screen area below the sticky
-// header, so with it scrolled to the top the first card starts exactly at the
-// bottom edge of the screen (behind the bottom bars) — none visible.
-function _sizeTodayDoneMsg(msg) {
-  const hdr = document.getElementById('workout-sticky-header');
-  const top = (hdr ? hdr.offsetHeight : 70) + 8;
-  msg.style.scrollMarginTop = top + 'px';
-  msg.style.minHeight = Math.max(0, window.innerHeight - top) + 'px';
+// Every exercise in view (the selected body part's, or all) is completed —
+// the "… exercises done !" case.
+function _todayAllFilteredDone() {
+  const filtered = [...document.querySelectorAll('#exerciseList .exercise-card')]
+    .filter(c => !_todayMuscleFilter || (c.dataset.exmuscle || 'Chest') === _todayMuscleFilter);
+  return filtered.length > 0 && filtered.every(c => c.classList.contains('completed'));
+}
+const _TODAY_DONE_MSG_IN_MS = 300;  // "… exercises done !" (+ ADD EXERCISE) fade-in / rise
+const _TODAY_DONE_GLOW_MS = 1200;  // …then its brief glow
+const _TODAY_DONE_SCROLL_MAX_MS = 900; // the page's scroll to it, which comes first — fallback if 'scrollend' never fires
+// Empty room after "+ ADD EXERCISE" that lets the page scroll a body part's
+// "… exercises done !" message up under the header (see applyTodayFilters).
+// h = 0 removes it.
+function _todayDoneSpacer(h) {
+  let sp = document.getElementById('today-done-spacer');
+  if (!h) { sp?.remove(); return null; }
+  if (!sp) {
+    sp = document.createElement('div');
+    sp.id = 'today-done-spacer';
+    sp.style.pointerEvents = 'none';
+    const addRow = document.querySelector('#ex-nav-list > .add-ex-row');
+    (addRow || document.getElementById('ex-nav-list'))?.[addRow ? 'after' : 'append'](sp);
+  }
+  sp.style.height = h + 'px';
+  return sp;
 }
 
 function _updateAllExCircleColors() {
@@ -12270,7 +12456,7 @@ function filterTodayByMuscle(muscle) {
   document.querySelectorAll('#exerciseList .exercise-card[data-open="true"]').forEach(c => {
     toggleCardCollapse(c.id);
   });
-  applyTodayFilters();
+  applyTodayFilters({ instant: true });
   updateTodayMuscleChips();
   _updateAllExCircleColors();
   // Wait for the filter show/hide animations (up to ~200ms stagger + 380ms) to
@@ -12457,15 +12643,15 @@ function updateTodayMuscleChips() {
     ? Object.values(remainCounts).reduce((a,b)=>a+b,0)
     : Object.values(counts).reduce((a,b)=>a+b,0);
   const _savedScrollLeft = scrollEl.scrollLeft;
-  scrollEl.innerHTML = entries.map(([m, c]) => {
+  const _chipsHtml = entries.map(([m, c]) => {
     const color = muscleColors[m] || '#888';
     const _muscleAbbr = MUSCLE_ABBR[m] || m.slice(0,4);
     const active = _todayMuscleFilter === m;
     const total = c;
     // Number + name share one colour: full when this chip is selected, its
-    // colour shaded (50%) when no body part is selected, grey otherwise —
+    // colour shaded (80%) when no body part is selected, grey otherwise —
     // whether or not any of its exercises are completed.
-    const _nameCol = active ? color : allActive ? bpAlpha(color, .5) : 'var(--g88)';
+    const _nameCol = active ? color : allActive ? bpAlpha(color, .8) : 'var(--g88)';
     const countHtml = `<span style="font-size:18px;font-weight:300;color:${_nameCol};line-height:1;white-space:nowrap;">${total}</span>`;
     // Every exercise in this body part completed → green ✓ right of the number,
     // at a fixed spot (14px right of the chip's center, on the number's 18px
@@ -12477,8 +12663,27 @@ function updateTodayMuscleChips() {
       : '';
     // Unselected: a faint 6% overlay (white in dark mode, black in light via
     // --inv-rgb) so the shaded body-part colours stand out; selected keeps its tint.
-    return `<button onclick="filterTodayByMuscle('${m}')" style="${_btnBase}position:relative;-webkit-tap-highlight-color:transparent;background:${active ? color+'33' : 'rgba(var(--inv-rgb),.06)'};border:1px solid ${active ? color : 'var(--g33)'};" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">${countHtml}${_doneMark}<span style="font-size:14px;font-weight:600;color:${_nameCol};letter-spacing:.2px;line-height:1;white-space:nowrap;">${_muscleAbbr}</span></button>`;
-  }).join('');
+    // Tap feedback (start_btn_tap_skill), pressed harder (90%) — at 76px
+    // wide, the standard 97% is only ~2px and hard to see.
+    return `<button data-m="${m}" onclick="filterTodayByMuscle('${m}')" style="${_btnBase}position:relative;-webkit-tap-highlight-color:transparent;background:${active ? color+'33' : 'rgba(var(--inv-rgb),.06)'};border:1px solid ${active ? color : 'var(--g33)'};" onmousedown="this.style.transform='scale(0.9)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.9)'" ontouchend="this.style.transform=''" ontouchcancel="this.style.transform=''">${countHtml}${_doneMark}<span style="font-size:14px;font-weight:600;color:${_nameCol};letter-spacing:.2px;line-height:1;white-space:nowrap;">${_muscleAbbr}</span></button>`;
+  });
+  // Same body parts as already shown → update the existing buttons in place
+  // (content + colours) instead of replacing them, so a tapped chip's release
+  // animation and colour change play out (they'd be cut by a fresh node).
+  const _oldChips = [...scrollEl.children];
+  if (_oldChips.length === entries.length && _oldChips.every((b, i) => b.dataset.m === entries[i][0])) {
+    const _tpl = document.createElement('template');
+    _tpl.innerHTML = _chipsHtml.join('');
+    [..._tpl.content.children].forEach((nb, i) => {
+      const ob = _oldChips[i];
+      const t = ob.style.transform;
+      ob.setAttribute('style', nb.getAttribute('style'));
+      ob.style.transform = t;
+      if (ob.innerHTML !== nb.innerHTML) ob.innerHTML = nb.innerHTML;
+    });
+  } else {
+    scrollEl.innerHTML = _chipsHtml.join('');
+  }
   if (entries.length === 4) {
     scrollEl.style.justifyContent = 'space-between';
     scrollEl.style.overflowX = 'hidden';
@@ -12833,6 +13038,7 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
   // Hide "X exercises done" message when a new exercise is added
   const _emptyMsg = document.getElementById('today-filter-empty-msg');
   if (_emptyMsg) _emptyMsg.style.display = 'none';
+  _todayDoneSpacer(0);
 
   updateTodayMuscleChips();
   saveSession();
@@ -13636,11 +13842,11 @@ function _exCardReturnGlow(card) {
 // plays where the card landed. Safety release in case the close animation is
 // cancelled (exercise reopened mid-close) and never reaches the glow.
 const _EX_RETURN_SETTLE_MS = 200;
-let _exReturnHold = null;   // { queue, timer }
+var _exReturnHold = null;   // { queue, timer } — var: read by applyTodayFilters, which can run earlier in load
 function _exReturnHoldStart() {
   if (!_exReturnHold) _exReturnHold = { queue: [] };
   clearTimeout(_exReturnHold.timer);
-  _exReturnHold.timer = setTimeout(_exReturnHoldRelease, 3000);
+  _exReturnHold.timer = setTimeout(_exReturnHoldRelease, 4000);
 }
 function _exReturnHoldRelease() {
   const h = _exReturnHold;
@@ -13649,11 +13855,11 @@ function _exReturnHoldRelease() {
   clearTimeout(h.timer);
   h.queue.forEach(fn => { try { fn(); } catch(e) { console.error(e); } });
 }
-function _exReturnHoldReleaseAfter(anim) {
+function _exReturnHoldReleaseAfter(anim, wait = _EX_RETURN_SETTLE_MS) {
   const h = _exReturnHold;
   if (!h) return;
   clearTimeout(h.timer);
-  const go = () => { if (_exReturnHold === h) h.timer = setTimeout(_exReturnHoldRelease, _EX_RETURN_SETTLE_MS); };
+  const go = () => { if (_exReturnHold === h) h.timer = setTimeout(_exReturnHoldRelease, Math.max(0, wait)); };
   if (anim?.finished) anim.finished.then(go, go); else go();
 }
 function _afterExReturn(fn) {
@@ -13690,14 +13896,12 @@ function _exLandOnCards(ghost, cards) {
 }
 
 // ── Active workout card ⇄ active exercise: "card flies to the top" ──
-// Opening: an exact copy of the tapped card flies from its list spot to the
-// top of the exercise page (where the photo / body map frame sits), then grows
-// into that frame while the photo fades in underneath it. The card's name
-// stays visible throughout — a floating copy travels from the card to the
-// page title (the anchor the eye follows) — and the rest of the page (SAVE &
-// DONE / CLOSE row, sets) fades up last. The page's top bar is identical to
-// the workout's, so it just stays put. Closing runs the same steps in reverse
-// and ends on the card's accent glow (_exCardReturnGlow).
+// Opening: only the name animates — a floating copy travels from the card to
+// the page title while the whole exercise page fades in over the list.
+// Closing: the photo / body map frame shrinks back into an exact copy of the
+// card, which flies down to its list spot while the name travels back into
+// it; then the workout page fades in (no glow on the card).
+// The page's top bar is identical to the workout's, so it just stays put.
 // The real card is already inside the overlay (it becomes the sets area), so
 // the flying card is a visual clone. Reduced motion: plain cross-fade.
 const _EX_FLY_MS = 260;     // card travels list ⇄ top
@@ -13707,7 +13911,13 @@ const _EX_REST_AT = 280;    // rest of the page fades up
 const _EX_REST_MS = 240;
 const _EX_FLY_EASE = 'cubic-bezier(.2,.8,.3,1)';
 const _EX_LAND_FADE_MS = 200; // closing: workout page fades in after the card/name land
-
+const _EX_NAME_MS = 460;      // opening: the name's trip card → page title
+const _EX_OPEN_FADE_MS = 300; // opening: exercise page fades in over the list
+const _EX_SETS_DROP_MS = 300; // opening: sets box drops down once the name has landed
+const _EX_BODYFIG_MS = 250;   // opening (body map mode): body figures fade in once the name has landed
+const _EX_CARD_IN_MS = 250;   // closing a completed exercise: card fades in around the landed name
+const _EX_DONE_SCROLL_WAIT_MS = 500; // …then the list scrolls this long after the card is fully back
+const _EX_DONE_MSG_WAIT_MS = 300; // last exercise done: pause after the card is fully back before "… exercises done !"
 function _exFlyCancel(overlay) {
   const s = overlay._exFly;
   if (!s) return;
@@ -13749,8 +13959,11 @@ function _exFlyNameTarget() {
 }
 // Floating copy of the card's name sitting on cardName; returns it plus the
 // transform that lands it on pageName (right edges / tops aligned, scaled to
-// the page title's font size).
-function _exFlyNameEl(cardName, pageName) {
+// the page title's font size). crossfade: when the title wraps, also lay a
+// one-line copy (as on the card) over the wrapped one, top-right anchored in
+// the same moving frame — returned as one/multi so the caller can cross-fade
+// one line → final lines during the trip.
+function _exFlyNameEl(cardName, pageName, crossfade) {
   const s = cardName.getBoundingClientRect(), d0 = pageName.getBoundingClientRect();
   const cs = getComputedStyle(cardName), ds = getComputedStyle(pageName);
   // Text box only — the page title is inset by padding-right.
@@ -13764,10 +13977,21 @@ function _exFlyNameEl(cardName, pageName) {
   const oneLine = (lh || parseFloat(ds.fontSize) * 1.3) * 1.5;
   const wraps = d.height > oneLine;
   const n = document.createElement('div');
-  n.textContent = pageName.textContent || cardName.textContent;
+  const text = pageName.textContent || cardName.textContent;
+  n.textContent = text;
   n.style.cssText = `position:fixed;left:${wraps ? s.right - d.width / k : s.left}px;top:${s.top}px;width:${wraps ? d.width / k : s.width}px;z-index:261;pointer-events:none;margin:0;text-align:right;white-space:${wraps ? 'normal' : 'nowrap'};word-break:break-word;transform-origin:top right;font-family:${ds.fontFamily};font-size:${parseFloat(ds.fontSize) / k}px;font-weight:${ds.fontWeight};line-height:${lh ? (lh / k) + 'px' : 'normal'};letter-spacing:${(parseFloat(ds.letterSpacing) || 0) / k}px;text-transform:${ds.textTransform};color:${ds.color};`;
+  let one = null, multi = null;
+  if (crossfade && wraps) {
+    n.textContent = '';
+    multi = document.createElement('div');
+    multi.textContent = text;
+    one = document.createElement('div');
+    one.textContent = text;
+    one.style.cssText = 'position:absolute;top:0;right:0;white-space:nowrap;';
+    n.append(multi, one);
+  }
   document.body.appendChild(n);
-  return { el: n, landed: `translate(${d.right - s.right}px, ${d.top - s.top}px) scale(${k})` };
+  return { el: n, one, multi, landed: `translate(${d.right - s.right}px, ${d.top - s.top}px) scale(${k})` };
 }
 // Everything on the page except the photo frame (and the top bar): fades
 // up after the card has landed / out before it leaves.
@@ -13819,6 +14043,13 @@ function _exCardFlyOpen(overlay, ghost, from, onDone) {
   setTimeout(() => {
     if (overlay._exFly !== state) return;
     if (typeof _syncExDetailBodyTop === 'function') _syncExDetailBodyTop();
+    // Body map box: settle its final layout now (right inset, best-set line,
+    // name size — otherwise done a frame later by _loadExDetailPhoto's rAF),
+    // so the name is measured where it will stay and doesn't jump after landing.
+    if (document.querySelector('#ex-detail-photo-wrap .ex-detail-bodymap')) {
+      if (typeof _alignBodyMapRight === 'function') _alignBodyMapRight();
+      if (typeof _renderExDetailBestSet === 'function') _renderExDetailBestSet(false);
+    }
     overlay.style.visibility = '';
     if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
       ghost.remove();
@@ -13826,45 +14057,80 @@ function _exCardFlyOpen(overlay, ghost, from, onDone) {
       _exFlyRun(overlay, state, onDone);
       return;
     }
-    const r0 = from.rect;
-    const frame = _exFlyFrame();
-    const T = _exFlyTopRect(frame, r0);
-    const pageBg = getComputedStyle(overlay).backgroundColor;
-    // 1) Page background comes in behind the card; the card flies to the top.
-    A(overlay, [{ backgroundColor: 'rgba(0,0,0,0)' }, { backgroundColor: pageBg }], { duration: _EX_FLY_MS, easing: 'linear' });
-    A(ghost, [
-      { left: r0.left + 'px', top: r0.top + 'px', width: r0.width + 'px' },
-      { left: T.left + 'px', top: T.top + 'px', width: T.width + 'px' },
-    ], { duration: _EX_FLY_MS, easing: _EX_FLY_EASE, fill: 'forwards' });
-    // 2) …then grows into the photo frame, the photo fading in underneath.
-    if (frame) {
-      A(ghost, [{ height: r0.height + 'px', opacity: 1 }, { height: T.height + 'px', opacity: 0 }],
-        { delay: _EX_GROW_AT, duration: _EX_GROW_MS, easing: _EX_FLY_EASE, fill: 'both' });
-      const band = `inset(0px 0px ${Math.max(0, T.height - r0.height)}px 0px round 12px)`;
-      A(frame, [{ clipPath: band, webkitClipPath: band, opacity: 0 }, { clipPath: 'inset(0px 0px 0px 0px round 12px)', webkitClipPath: 'inset(0px 0px 0px 0px round 12px)', opacity: 1 }],
-        { delay: _EX_GROW_AT, duration: _EX_GROW_MS, easing: _EX_FLY_EASE });
-    } else {
-      A(ghost, [{ opacity: 1 }, { opacity: 0 }], { delay: _EX_GROW_AT, duration: 200, easing: 'linear', fill: 'both' });
-    }
-    // 3) The name travels from the card to the page title.
+    // Only the name moves: it travels from the card to the page title while
+    // the whole page simply fades in over the list (the card — the ghost
+    // standing in its spot — fades out with the list). Nothing slides/grows.
+    A(overlay, [{ opacity: 0 }, { opacity: 1 }], { duration: _EX_OPEN_FADE_MS, easing: 'ease-out' });
+    A(ghost, [{ opacity: 1 }, { opacity: 0 }], { duration: _EX_OPEN_FADE_MS, easing: 'ease-out', fill: 'forwards' });
     const cardName = ghost.querySelector('.ex-name');
     const pageName = _exFlyNameTarget();
     if (cardName && pageName) {
-      const fly = _exFlyNameEl(cardName, pageName);
+      const fly = _exFlyNameEl(cardName, pageName, true);
       state.nameEl = fly.el;
       cardName.style.visibility = 'hidden';
-      const total = _EX_GROW_AT + _EX_GROW_MS;
-      A(fly.el, [{ transform: 'none' }, { transform: fly.landed }], { duration: total, easing: _EX_FLY_EASE, fill: 'forwards' });
-      // The real title stays hidden until everything has settled (its row is
-      // still fading/sliding up after the name lands) — the landed copy holds
-      // its place and the two swap in one frame at the very end.
-      A(pageName, [{ opacity: 0 }, { opacity: 0 }], { duration: Math.max(total, _EX_REST_AT + _EX_REST_MS) });
+      A(fly.el, [{ transform: 'none' }, { transform: fly.landed }], { duration: _EX_NAME_MS, easing: _EX_FLY_EASE, fill: 'forwards' });
+      // Long name: leaves the card as its one line and turns into the title's
+      // final lines on the way (cross-fade in the same moving frame).
+      if (fly.one) {
+        A(fly.one, [{ opacity: 1 }, { opacity: 0 }], { duration: _EX_NAME_MS, easing: 'ease-in-out', fill: 'both' });
+        A(fly.multi, [{ opacity: 0 }, { opacity: 1 }], { duration: _EX_NAME_MS, easing: 'ease-in-out', fill: 'both' });
+      }
+      // The real title stays hidden until the travelling copy has landed on
+      // it — they swap in one frame at the end.
+      A(pageName, [{ opacity: 0 }, { opacity: 0 }], { duration: _EX_NAME_MS });
     }
-    // 4) The rest of the page fades up.
-    _exFlyRestEls(frame).forEach(el => A(el, [{ opacity: 0, transform: 'translateY(12px)' }, { opacity: 1, transform: 'none' }],
-      { delay: _EX_REST_AT, duration: _EX_REST_MS, easing: _EX_FLY_EASE }));
+    // The sets box (the card itself, now in the page) waits for the name to
+    // land, then drops down: unrolls from its top edge while easing in from a
+    // little above. Its space is held all along, so nothing below moves. A tap
+    // on the page meanwhile skips straight to the end.
+    const setsBox = document.querySelector('#ex-detail-overlay-body > .exercise-card');
+    // Body map mode: the body figures also wait for the name, then fade in
+    // (their box, background and PLAY come in with the page as usual).
+    const bodyFig = document.querySelector('#ex-detail-photo-wrap .ex-detail-bodymap-fig');
+    const figIn = bodyFig ? A(bodyFig, [{ opacity: 0 }, { opacity: 1 }], { delay: _EX_NAME_MS, duration: _EX_BODYFIG_MS, easing: 'ease-out' }) : null;
+    if (setsBox || figIn) {
+      const drop = setsBox ? A(setsBox, [
+        { clipPath: 'inset(0px 0px 100% 0px)', webkitClipPath: 'inset(0px 0px 100% 0px)', opacity: 0, transform: 'translateY(-8px)' },
+        { clipPath: 'inset(0px 0px 0px 0px)', webkitClipPath: 'inset(0px 0px 0px 0px)', opacity: 1, transform: 'none' },
+      ], { delay: _EX_NAME_MS, duration: _EX_SETS_DROP_MS, easing: _EX_FLY_EASE }) : null;
+      const skip = () => [drop, figIn].forEach(a => { try { a?.finish(); } catch(e) {} });
+      overlay.addEventListener('pointerdown', skip, { capture: true, once: true });
+      const _cl = state.cleanup;
+      state.cleanup = () => { overlay.removeEventListener('pointerdown', skip, { capture: true }); _cl(); };
+    }
     _exFlyRun(overlay, state, onDone);
   }, 0);
+}
+
+// Closing a COMPLETED exercise: only the name travels — page title → its spot
+// on the list card — while the page's content fades out over a still-solid
+// background. Once the name has settled, the rest of the card fades in around
+// it (a copy at the card's spot), then the workout page fades in.
+function _exCardNameClose(overlay, card, r0, frame, state, A, onDone) {
+  const ghost = _exFlyGhost(card, r0);
+  card.style.visibility = 'hidden';
+  state.cleanup = () => { ghost.remove(); state.nameEl?.remove(); card.style.visibility = ''; };
+  const out = { duration: 250, easing: 'ease-in' };
+  _exFlyRestEls(frame).forEach(el => A(el, [{ opacity: 1 }, { opacity: 0 }], out));
+  if (frame) A(frame, [{ opacity: 1 }, { opacity: 0 }], out);
+  const cardName = ghost.querySelector('.ex-name');
+  const listName = card.querySelector('.ex-name');
+  const pageName = _exFlyNameTarget();
+  if (cardName && listName && pageName) {
+    const fly = _exFlyNameEl(listName, pageName, true);
+    state.nameEl = fly.el;
+    cardName.style.visibility = 'hidden';
+    A(fly.el, [{ transform: fly.landed }, { transform: 'none' }], { duration: _EX_NAME_MS, easing: _EX_FLY_EASE });
+    if (fly.one) {
+      A(fly.multi, [{ opacity: 1 }, { opacity: 0 }], { duration: _EX_NAME_MS, easing: 'ease-in-out' });
+      A(fly.one, [{ opacity: 0 }, { opacity: 1 }], { duration: _EX_NAME_MS, easing: 'ease-in-out' });
+    }
+    A(pageName, [{ opacity: 0 }, { opacity: 0 }], { duration: _EX_NAME_MS });
+  }
+  // Name settled → the card fills in around it → the workout page fades in.
+  A(ghost, [{ opacity: 0 }, { opacity: 1 }], { delay: _EX_NAME_MS, duration: _EX_CARD_IN_MS, easing: 'ease-out', fill: 'both' });
+  A(overlay, [{ opacity: 1 }, { opacity: 0 }], { delay: _EX_NAME_MS + _EX_CARD_IN_MS, duration: _EX_LAND_FADE_MS, easing: 'ease-out' });
+  _exFlyRun(overlay, state, onDone);
 }
 
 // Reverse of _exCardFlyOpen. card is back in the list (hidden until the
@@ -13883,6 +14149,7 @@ function _exCardFlyClose(overlay, card, to, onDone) {
   }
   const r0 = to.rect;
   const frame = _exFlyFrame();
+  if (card.classList.contains('completed')) { _exCardNameClose(overlay, card, r0, frame, state, A, onDone); return; }
   const T = _exFlyTopRect(frame, r0);
   const ghost = _exFlyGhost(card, frame ? T : { left: T.left, top: T.top, width: T.width, height: r0.height });
   card.style.visibility = 'hidden';
@@ -13917,10 +14184,16 @@ function _exCardFlyClose(overlay, card, to, onDone) {
     // Measured on the card's final (list) spot — the ghost isn't there yet.
     const listName = card.querySelector('.ex-name');
     if (listName) {
-      const fly = _exFlyNameEl(listName, pageName);
+      const fly = _exFlyNameEl(listName, pageName, true);
       state.nameEl = fly.el;
       cardName.style.visibility = 'hidden';
       A(fly.el, [{ transform: fly.landed }, { transform: 'none' }], { duration: leaveAt + _EX_FLY_MS, easing: _EX_FLY_EASE });
+      // Long name: the title's lines turn back into the card's one line on
+      // the way (reverse of opening's cross-fade).
+      if (fly.one) {
+        A(fly.multi, [{ opacity: 1 }, { opacity: 0 }], { duration: leaveAt + _EX_FLY_MS, easing: 'ease-in-out' });
+        A(fly.one, [{ opacity: 0 }, { opacity: 1 }], { duration: leaveAt + _EX_FLY_MS, easing: 'ease-in-out' });
+      }
       A(pageName, [{ opacity: 0 }, { opacity: 0 }], { duration: leaveAt + _EX_FLY_MS });
     }
   }
@@ -14123,6 +14396,10 @@ function closeExDetailOverlay() {
   const overlayBody = document.getElementById('ex-detail-overlay-body');
   if (!overlay) return;
   window._extabSess?.exit(); // stats ALL SESSIONS select mode + its bottom bar
+  // List moves/scrolls and the "… exercises done !" message wait for the card's
+  // return flow (released at its end) — started first, since closing the
+  // editors below already refreshes the list's filters.
+  if (window._exDetailCardId) _exReturnHoldStart();
 
   if (window._isNewWorkoutFlow) {
     const _nwfTitle = document.getElementById('_nwf-edit-title');
@@ -14207,8 +14484,6 @@ function closeExDetailOverlay() {
   const _cw = document.getElementById('todayMuscleChipsWrap');
   if (_cw) _cw.style.display = 'flex';
   if (window.hideExFloatBar) hideExFloatBar();
-  // List moves/scrolls wait for the card's landing + glow (released below).
-  if (card) _exReturnHoldStart();
   if (_wasCompleted) setTimeout(() => _afterExReturn(_scrollToNextExercise), 380);
   // Header shrank while its chips row was hidden during the detail view — resync
   // the spacer now that it's restored, otherwise it keeps reserving the taller
@@ -14224,12 +14499,35 @@ function closeExDetailOverlay() {
   Array.from(overlayBody.children).forEach(ch => { if (ch.id !== 'ex-detail-photo-wrap') ch.remove(); });
   // Card flies back down to its spot (now back in the list, layout restored
   // above), then glows. Card not on screen (e.g. filtered out) → the plain slide-out.
+  // The card must land in the visible part of the list: below the sticky
+  // header (image + body part buttons) and above the bottom bar. If the list
+  // ended up scrolled so it sits behind either (e.g. the header grew back as
+  // its chips row returned), scroll it into the clear first — instantly, while
+  // the page is still covered by the exercise page, so it isn't seen.
+  if (card && card.offsetParent) {
+    const hb = (document.getElementById('workout-sticky-header')?.getBoundingClientRect().bottom || 0) + 8;
+    const bar = document.getElementById('workout-finish-bar');
+    const bt = (bar && bar.style.display !== 'none' ? bar.getBoundingClientRect().top + 46 : window.innerHeight) - 8; // 46 = bar's fade-in padding
+    const cr = card.getBoundingClientRect();
+    let dy = 0;
+    if (cr.top < hb) dy = cr.top - hb;
+    else if (cr.bottom > bt) dy = Math.min(cr.bottom - bt, cr.top - hb);
+    if (dy) window.scrollTo({ top: window.scrollY + dy, behavior: 'instant' });
+  }
   const _morphTo = _exMorphRect(card);
   overlay.classList.remove('ex-overlay-in');
   if (_morphTo) {
     _exCardFlyClose(overlay, card, _morphTo, () => {
       overlay.classList.remove('ex-overlay-open');
-      _exReturnHoldReleaseAfter(_exCardReturnGlow(card));
+      // No return glow on the card (user removed it). Held list moves (the
+      // completed card's reposition + scroll) run _EX_DONE_SCROLL_WAIT_MS after
+      // the card reappeared — it did so _EX_LAND_FADE_MS ago (the page fade).
+      // Last exercise of the body part / workout: the card is fully shown
+      // now (page fade done) — wait _EX_DONE_MSG_WAIT_MS, then the
+      // "… exercises done !" message animates in and its own scroll follows
+      // it (applyTodayFilters, afterReturn).
+      const _lastDone = card.classList.contains('completed') && _todayAllFilteredDone();
+      _exReturnHoldReleaseAfter(null, _lastDone ? _EX_DONE_MSG_WAIT_MS : _EX_DONE_SCROLL_WAIT_MS - _EX_LAND_FADE_MS);
     });
   } else {
     // No landing/glow to wait for — let held list moves run.
@@ -14805,7 +15103,9 @@ function toggleDone(id) {
       // Always refresh — shows/scrolls-to the "<muscle> exercises done!" (or plain
       // "All exercises done!" with no filter) message when finishing the last exercise,
       // whether in a filtered muscle group or browsing unfiltered.
-      applyTodayFilters();
+      // afterReturn: runs once the card is back (held by _afterExReturn), so no
+      // filter animations to wait out — the message animates in, then scrolls.
+      applyTodayFilters({ afterReturn: true });
       if (window._updateWorkoutProgress) _updateWorkoutProgress();
       _scrollToNextExercise();
     }
@@ -16481,7 +16781,7 @@ function saveWorkoutToList() {
         optDiv.id = 'postSaveOptions';
         optDiv.style.cssText = 'display:flex;flex-direction:column;gap:10px;padding:12px 0;opacity:0;transition:opacity 0.4s ease, transform 0.45s cubic-bezier(0.2,0.8,0.3,1);align-items:center;position:fixed;top:50%;left:50%;transform:translate(-50%, calc(-50% + 48px));width:calc(100% - 32px);max-width:398px;z-index:201;';
         const exitOnclick = _wasFromWorkouts
-          ? `window._nwfLandGhost=_exGhostCover(getComputedStyle(document.getElementById('_saveBlackScreen')||document.body).backgroundColor);document.getElementById('postSaveOptions').remove();document.getElementById('_saveBlackScreen')?.remove();document.getElementById('_nwf-back-wrapper')?.remove();_nwfResetHeaderPadding();document.querySelectorAll('.tab').forEach(t=>{t.style.opacity='';t.style.pointerEvents=''});const _db=document.getElementById('dateBadge');if(_db){_db.style.opacity='';_db.style.cursor='';}actionsRowRestore();resetWorkoutState();document.getElementById('workoutName').value='';showTodayStartScreen();checkFinishReady();switchTab('workouts2');_flashNewWorkoutCardOnce();`
+          ? `document.getElementById('postSaveOptions').remove();document.getElementById('_saveBlackScreen')?.remove();document.getElementById('_nwf-back-wrapper')?.remove();_nwfResetHeaderPadding();document.querySelectorAll('.tab').forEach(t=>{t.style.opacity='';t.style.pointerEvents=''});const _db=document.getElementById('dateBadge');if(_db){_db.style.opacity='';_db.style.cursor='';}actionsRowRestore();resetWorkoutState();document.getElementById('workoutName').value='';showTodayStartScreen();checkFinishReady();switchTab('workouts2');_flashNewWorkoutCardOnce();`
           : `document.getElementById('postSaveOptions').remove();document.getElementById('_saveBlackScreen')?.remove();document.getElementById('_nwf-back-wrapper')?.remove();_nwfResetHeaderPadding();document.querySelectorAll('.tab').forEach(t=>{t.style.opacity='';t.style.pointerEvents=''});const _db=document.getElementById('dateBadge');if(_db){_db.style.opacity='';_db.style.cursor='';}actionsRowRestore();resetWorkoutState();document.getElementById('workoutName').value='';showTodayStartScreen();checkFinishReady();`;
         optDiv.innerHTML = `
             <div style="text-align:center;margin-bottom:18px;">
@@ -16491,7 +16791,7 @@ function saveWorkoutToList() {
               <div style="font-family:'DM Sans',sans-serif;font-size:32px;font-weight:900;color:var(--gff);line-height:1.15;letter-spacing:-0.5px;margin-bottom:16px;">${_wasEditingWorkout ? 'Workout updated !' : 'Workout created !'}</div>
             </div>
             <button onclick="_nwfStartWorkout();" style="width:100%;padding:18px;background:var(--accent);color:var(--g00);border:none;border-radius:100px;font-family:'DM Sans';font-size:18px;font-weight:900;cursor:pointer;letter-spacing:.3px;-webkit-tap-highlight-color:transparent;transition:transform .15s;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">START WORKOUT</button>
-            <button onclick="${exitOnclick}" style="width:100%;padding:18px;background:#464E57;color:var(--gff);border:none;border-radius:100px;font-family:'DM Sans';font-size:18px;font-weight:900;cursor:pointer;letter-spacing:.3px;-webkit-tap-highlight-color:transparent;transition:transform .15s;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">Back to Workouts</button>
+            <button onclick="${exitOnclick}" style="width:100%;padding:18px;background:#464E57;color:var(--gff);border:none;border-radius:100px;font-family:'DM Sans';font-size:18px;font-weight:900;cursor:pointer;letter-spacing:.3px;-webkit-tap-highlight-color:transparent;transition:transform .15s;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">Back to Workouts List</button>
           `;
         if (actionsRow.parentNode) actionsRow.parentNode.insertBefore(optDiv, actionsRow);
         else document.getElementById('today-workout-area')?.prepend(optDiv);
@@ -16634,27 +16934,32 @@ function openPRStarsInfo() {
   if (window._historyPush) window._historyPush('prStarsInfo');
   const starsEl = document.getElementById('workout-pr-stars');
   const spot = document.getElementById('prStarsSpotlight');
-  const spans = starsEl ? [...starsEl.querySelectorAll('span[data-pr]')] : [];
-  if (spot && spans.length) {
-    const rects = spans.map(s => s.getBoundingClientRect());
-    const pad = 6;
-    const left   = Math.min(...rects.map(r => r.left))   - pad;
-    const top    = Math.min(...rects.map(r => r.top))    - pad;
-    const right  = Math.max(...rects.map(r => r.right))  + pad;
-    const bottom = Math.max(...rects.map(r => r.bottom)) + pad;
-    spot.style.left   = left + 'px';
-    spot.style.top    = top + 'px';
-    spot.style.width  = (right - left) + 'px';
-    spot.style.height = (bottom - top) + 'px';
+  // The whole screen darkens; a copy of the stars, at their exact spot, sits
+  // above the dark layer so they alone stay bright — with no box around them.
+  let clone = null;
+  if (spot && starsEl && starsEl.querySelector('span[data-pr]')) {
+    clearTimeout(window._prStarsCloneTimer);
+    document.getElementById('pr-stars-lit-clone')?.remove();
+    const r = starsEl.getBoundingClientRect();
+    clone = starsEl.cloneNode(true);
+    clone.id = 'pr-stars-lit-clone';
+    clone.removeAttribute('onclick');
+    clone.classList.remove('pr-stars-lit', 'pr-stars-fading');
+    Object.assign(clone.style, {
+      position: 'fixed', left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px',
+      margin: '0', boxSizing: 'border-box', zIndex: '246', pointerEvents: 'none',
+    });
+    document.body.appendChild(clone);
     spot.classList.add('open');
   }
   // Light the pentagons up with the same 0.5s fade as closing (.pr-stars-fading).
-  if (starsEl) {
-    starsEl.classList.add('pr-stars-fading');
+  const _lit = [starsEl, clone].filter(Boolean);
+  if (_lit.length) {
+    _lit.forEach(el => el.classList.add('pr-stars-fading'));
     void starsEl.offsetWidth; // transition in place before the colors change
-    starsEl.classList.add('pr-stars-lit');
+    _lit.forEach(el => el.classList.add('pr-stars-lit'));
     clearTimeout(window._prStarsFadeTimer);
-    window._prStarsFadeTimer = setTimeout(() => starsEl.classList.remove('pr-stars-fading'), 550);
+    window._prStarsFadeTimer = setTimeout(() => _lit.forEach(el => el.classList.remove('pr-stars-fading')), 550);
   }
   document.getElementById('prStarsInfoOverlay').classList.add('open');
   const _sheet = document.querySelector('#prStarsInfoOverlay .modal-sheet');
@@ -16668,11 +16973,16 @@ function closePRStarsInfo() {
   // 0.5s) — those without a PR go back to grey smoothly, alongside the close.
   const _unlight = () => {
     const starsEl = document.getElementById('workout-pr-stars');
-    if (!starsEl || !starsEl.classList.contains('pr-stars-lit')) return;
-    starsEl.classList.add('pr-stars-fading');
-    starsEl.classList.remove('pr-stars-lit');
+    const clone = document.getElementById('pr-stars-lit-clone');
+    const els = [starsEl, clone].filter(el => el && el.classList.contains('pr-stars-lit'));
+    if (!els.length) return;
+    els.forEach(el => { el.classList.add('pr-stars-fading'); el.classList.remove('pr-stars-lit'); });
     clearTimeout(window._prStarsFadeTimer);
-    window._prStarsFadeTimer = setTimeout(() => starsEl.classList.remove('pr-stars-fading'), 550);
+    window._prStarsFadeTimer = setTimeout(() => els.forEach(el => el.classList.remove('pr-stars-fading')), 550);
+    // The copy (exactly over the real stars, fading alongside them) goes once
+    // the fade is done.
+    clearTimeout(window._prStarsCloneTimer);
+    if (clone) window._prStarsCloneTimer = setTimeout(() => clone.remove(), 550);
   };
   const _finish = () => {
     _ovl.classList.remove('open');
@@ -16695,6 +17005,9 @@ function doSaveWorkout() {
   if (window._workoutSaved) return;
   window._workoutSaved = true;
   if (!window._pendingWorkout) return;
+  // A workout completed this session → the Home carousel drops its Welcome
+  // Back page until the app is next opened (_todayHomeGoTo).
+  window._todaySkipWelcome = true;
   window._pendingPRs = [];
   clearDraft();
   // Remove all draft workouts from history and recycle bin
@@ -20850,12 +21163,12 @@ function calNav(dir) {
   if (calMonth > 11) { calMonth = 0; calYear++; } else if (calMonth < 0) { calMonth = 11; calYear--; }
   selectedCalDay = null;
   renderCalendar();
-  const cb = document.getElementById('calBody');
-  if (cb) {
-    cb.style.animation = 'none';
-    cb.offsetHeight;
-    cb.style.animation = (dir > 0 ? 'calSlideInRight' : 'calSlideInLeft') + ' .25s cubic-bezier(.25,.46,.45,.94)';
-  }
+  // Only the dates (and the content under them) slide in — the day-name row
+  // stays still.
+  ['cal-dates-grid', 'calWorkoutList'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.animation = (dir > 0 ? 'calSlideInRight' : 'calSlideInLeft') + ' .25s cubic-bezier(.25,.46,.45,.94)';
+  });
 }
 function calNavClick(btn, dir) {
   btn.classList.add('flash');
@@ -20898,9 +21211,11 @@ function renderCalendar() {
   const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
 
   const dows = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  let html = '<div class="cal-grid">';
-  // Header: 7 day columns
+  // Header: 7 day columns — its own grid (same columns, 4px = the grid's row
+  // gap below it) so it stays still while calNav slides the dates in.
+  let html = '<div class="cal-grid" style="margin-bottom:4px;">';
   html += dows.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  html += '</div><div class="cal-grid" id="cal-dates-grid">';
 
   // Shared day-cell renderer — used for the current month's days as well as the
   // prev/next-month days that fill out a boundary week's leading/trailing cells,
@@ -20932,7 +21247,7 @@ function renderCalendar() {
     const onclick = isPlanPast ? '' : `onclick="selectCalDay('${key}')"`;
     const planHighlight = isPlanSelected ? 'outline:2px solid var(--accent);outline-offset:1px;' : '';
     const pastStyle = isPlanPast ? 'opacity:0.25;cursor:default;pointer-events:none;' : '';
-    return `<div class="${cls}" style="${hasAny?'cursor:pointer':''}${planHighlight}${pastStyle}" ${onclick}>${day}${isPlanSelected ? '<div style="width:5px;height:5px;border-radius:50%;background:var(--accent);margin:1px auto 0;"></div>' : (isPlannedOnly ? dots : '')}</div>`;
+    return `<div class="${cls}" style="${hasAny?'cursor:pointer':''}${planHighlight}${pastStyle}" ${onclick}>${day}${isPlanSelected ? '<div style="position:absolute;left:50%;top:calc(50% + 11px);transform:translateX(-50%);width:5px;height:5px;border-radius:50%;background:var(--accent);pointer-events:none;"></div>' : (isPlannedOnly ? dots : '')}</div>`;
   };
 
   const prevMonthRef = new Date(calYear, calMonth, 0);
@@ -20976,7 +21291,7 @@ function renderCalendar() {
       const _pex = _pw ? _pw.exercises.map(e => `${e.name} ×${e.sets.filter(s=>!s.ignored).length||e.sets.length}`).join(' + ') : '';
       listContent = `<div style="text-align:center;color:var(--gcc);padding:20px;font-size:16px;font-weight:700;line-height:1.6;">Select days for workout<br><span style="display:inline-block;margin-top:60px;font-size:24px;color:var(--gff);font-weight:700;font-family:'DM Sans';letter-spacing:.5px;">${_pname}</span></div>`;
     } else {
-      listContent = isFutureMonth ? '' : '<div style="text-align:center;color:var(--muted);padding:20px;font-size:13px;">Select a day to view activity</div>';
+      listContent = isFutureMonth ? '' : '<div style="text-align:center;color:var(--gcc);padding:20px;font-size:13px;">Select a day to view activity</div>';
     }
   }
   if (false && !window._wtabPlanMode) html += `<div class="cal-targets-row">
@@ -31387,7 +31702,8 @@ function _buildExBodyMapDiagram(exName) {
 // exercise's all-time best set — same rule as Stats → BEST SET (highest
 // kg × (1 + reps/30)) — including sets ✓'d in the current workout. "NEW" in
 // front while a ✓'d set beats the previous record; animate pops it in when it
-// first appears (from markSetDone, on a ✓). No recorded set → empty.
+// first appears (from markSetDone, on a ✓). No recorded set → blank, but the
+// line's space is kept.
 function _renderExDetailBestSet(animate) {
   const el = document.getElementById('ex-detail-bestset');
   if (!el) return;
@@ -31427,7 +31743,11 @@ function _renderExDetailBestSet(animate) {
   const isNew = !!(curBest && histBest && score(curBest) > score(histBest));
   const wasNew = el.dataset.new === '1';
   el.dataset.new = isNew ? '1' : '0';
-  if (!best) { el.innerHTML = ''; el.style.display = 'none'; _fitBodyMapName(); return; } // only with a value
+  // No recorded set → the line is still laid out (invisible, with a stand-in
+  // value) so its space stays reserved and the box looks the same either way.
+  const _empty = !best;
+  if (_empty) best = { kg: 0, reps: 0, bwExtra: null };
+  el.style.visibility = _empty ? 'hidden' : '';
   const fn = n => n % 1 === 0 ? String(n) : String(Math.round(n * 100) / 100);
   // BW/BW+ sets store the resolved total kg — show the BW notation instead.
   // Numbers bold, "Kg" / "×" / "Rep" thin (.bs-unit) — all one size.
@@ -31587,7 +31907,7 @@ function _loadExDetailPhoto(exName, ctx) {
     bm.className = 'ex-detail-bodymap';
     bm.style.cssText = 'position:absolute;inset:0;z-index:1;background:var(--g00);display:flex;align-items:center;gap:14px;padding:10px var(--bm-pr,16px) 10px 10px;box-sizing:border-box;'; // 10px top/bottom → figures ~10px from the image's border
     const diagram = _buildExBodyMapDiagram(exName);
-    if (diagram) bm.appendChild(diagram);
+    if (diagram) { diagram.classList.add('ex-detail-bodymap-fig'); bm.appendChild(diagram); }
     const nameEl = document.createElement('div');
     nameEl.className = 'ex-detail-bodymap-name';
     // Bottom-right (4px from the bottom, the box's padding), styled like the
