@@ -14075,6 +14075,18 @@ function _exCardFlyOpen(overlay, ghost, from, onDone) {
   state.cleanup = () => { ghost.remove(); state.nameEl?.remove(); overlay.style.visibility = ''; };
   overlay._exFly = state;
   const A = (el, k, o) => { const a = el.animate(k, { fill: 'backwards', ...o }); state.anims.push(a); return a; };
+  const _reduced = !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  // Body map mode's CLOSE / SAVE & DONE (+ its gradient + the BEST SET line):
+  // started right now, not in the tick below — the dock sits outside the page
+  // (_syncExFinishDock) and gets the button / is shown in the photo loader's
+  // own tick, which could paint before ours (CLOSE blinked). The delay holds
+  // them invisible (fill: backwards) until they fade in with the body figures
+  // once the name lands (_EX_OPEN_FADE_MS + _EX_NAME_MS). Body map mode only
+  // (Branding → Body map image, active workout — not building one).
+  const _bodyMap = document.documentElement.classList.contains('bodymap-mode') && !window._isNewWorkoutFlow;
+  const dockIn = (_reduced || !_bodyMap) ? [] : ['ex-detail-bestset', 'ex-detail-finish-dock', 'ex-detail-finish-fade']
+    .map(id => document.getElementById(id)).filter(Boolean)
+    .map(el => A(el, [{ opacity: 0 }, { opacity: 1 }], { delay: _EX_OPEN_FADE_MS + _EX_NAME_MS, duration: _EX_BODYFIG_MS, easing: 'ease-out' }));
   setTimeout(() => {
     if (overlay._exFly !== state) return;
     if (typeof _syncExDetailBodyTop === 'function') _syncExDetailBodyTop();
@@ -14127,12 +14139,7 @@ function _exCardFlyOpen(overlay, ghost, from, onDone) {
     // (their box, background and PLAY come in with the page as usual).
     const bodyFig = document.querySelector('#ex-detail-photo-wrap .ex-detail-bodymap-fig');
     const figIn = bodyFig ? A(bodyFig, [{ opacity: 0 }, { opacity: 1 }], { delay: _landAt, duration: _EX_BODYFIG_MS, easing: 'ease-out' }) : null;
-    // …and so do the BEST SET line under the name and CLOSE / SAVE & DONE,
-    // which body map mode keeps in a fixed dock outside the page
-    // (_syncExFinishDock) (+ its gradient).
-    const dockIn = bodyFig ? ['ex-detail-bestset', 'ex-detail-finish-dock', 'ex-detail-finish-fade']
-      .map(id => document.getElementById(id)).filter(Boolean)
-      .map(el => A(el, [{ opacity: 0 }, { opacity: 1 }], { delay: _landAt, duration: _EX_BODYFIG_MS, easing: 'ease-out' })) : [];
+    // …and so do the BEST SET line and CLOSE / SAVE & DONE (dockIn, above).
     if (setsBox || figIn) {
       const drop = setsBox ? A(setsBox, [
         { clipPath: 'inset(0px 0px 100% 0px)', webkitClipPath: 'inset(0px 0px 100% 0px)', opacity: 0, transform: 'translateY(-8px)' },
@@ -14300,10 +14307,22 @@ function openExDetail(id) {
   overlayBody.scrollTop = 0;
 
   document.body.classList.add('ex-detail-open');
+  // The workout header's body-part chips hide while the exercise is open —
+  // which shrinks the header, moving the list up. With the fade-in opening,
+  // only once the workout page is fully covered (_EX_OPEN_FADE_MS), so the
+  // list doesn't visibly slide up during the fade.
+  // Their spacer block goes right away: it's 0px tall in the list view, but
+  // the float bar showing below (_repositionChips) would grow it (~87px) and
+  // push the list DOWN meanwhile.
   const _cb = document.getElementById('today-chips-block');
   if (_cb) _cb.style.display = 'none';
-  const _cw = document.getElementById('todayMuscleChipsWrap');
-  if (_cw) _cw.style.display = 'none';
+  const _hideChips = () => {
+    if (window._exDetailCardId !== id) return; // closed again meanwhile
+    const _cw = document.getElementById('todayMuscleChipsWrap');
+    if (_cw) _cw.style.display = 'none';
+  };
+  // (+50: the fade itself starts a tick later, in _exCardFlyOpen's setTimeout.)
+  if (_flyGhost) setTimeout(_hideChips, _EX_OPEN_FADE_MS + 50); else _hideChips();
 
   if (!_flyGhost) { _exFlyCancel(overlay); _exMorphCancel(overlay); }
   overlay.classList.remove('ex-overlay-out', 'ex-overlay-open');
