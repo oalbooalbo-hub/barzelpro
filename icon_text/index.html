@@ -14070,9 +14070,12 @@ function _exCardFlyOpen(overlay, ghost, from, onDone) {
   // Hidden for the one tick until the photo/body map is in place (loaded via
   // setTimeout 0 in openExDetail, which this runs after); the ghost already
   // covers the card's old spot so nothing visibly changes meanwhile.
+  // Opacity too: visibility:hidden alone can be overridden by children that
+  // set their own visibility:visible — the sets box blinked for that tick.
   overlay.style.visibility = 'hidden';
+  overlay.style.opacity = '0';
   const state = { anims: [], nameEl: null };
-  state.cleanup = () => { ghost.remove(); state.nameEl?.remove(); overlay.style.visibility = ''; };
+  state.cleanup = () => { ghost.remove(); state.nameEl?.remove(); overlay.style.visibility = ''; overlay.style.opacity = ''; };
   overlay._exFly = state;
   const A = (el, k, o) => { const a = el.animate(k, { fill: 'backwards', ...o }); state.anims.push(a); return a; };
   const _reduced = !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
@@ -14098,6 +14101,7 @@ function _exCardFlyOpen(overlay, ghost, from, onDone) {
       if (typeof _renderExDetailBestSet === 'function') _renderExDetailBestSet(false);
     }
     overlay.style.visibility = '';
+    overlay.style.opacity = ''; // the fade-in below (fill: backwards) holds it at 0 from here
     if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
       ghost.remove();
       A(overlay, [{ opacity: 0 }, { opacity: 1 }], { duration: 200 });
