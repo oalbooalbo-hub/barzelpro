@@ -427,6 +427,9 @@ body.workout-home-bg #workout-area-bg{display:block;}
    above the header and bars. (z-index:-1 was hidden on device.) */
 body.workout-home-bg #workout-finish-bar,body.workout-home-bg #today-info-close-bar{background:var(--home-bg) bottom/100% calc(100vh - var(--wk-hdr-bottom,0px)) no-repeat!important;background-size:100% calc(100dvh - var(--wk-hdr-bottom,0px))!important;-webkit-mask-image:linear-gradient(to bottom,transparent,#000 46px);mask-image:linear-gradient(to bottom,transparent,#000 46px);}
 body.ex-finish-docked #ex-detail-overlay-body{padding-bottom:calc(226px + env(safe-area-inset-bottom));}
+/* Branding → Video links off (not the super admin): no Video Link field in
+   New / Edit Workout step 1 or New / Edit Exercise — see _syncVideoLinksFields. */
+html.video-links-off #nwf-video-field,html.video-links-off #newEx-video-field{display:none !important;}
 /* Branding → Body map image mode: no photo box in New / Edit Exercise. */
 html.bodymap-mode #newExPhotoSection{display:none!important;}
 /* Active workout → chevron info panel: "MUSCLES" title centered on screen, styled
@@ -1176,6 +1179,8 @@ function applyBrandConfig(cfg, opts) {
   if (!opts?.keepCached && window._setBodyMapImageEnabled) window._setBodyMapImageEnabled(cfg.bodyMapImageEnabled === true);
   // Admin Panel → Branding → Progress: missing field = on (default).
   if (!opts?.keepCached && window._setProgressEnabled) window._setProgressEnabled(cfg.progressEnabled !== false);
+  // Admin Panel → Branding → Video links: missing field = off (default).
+  if (!opts?.keepCached && window._setVideoLinksEnabled) window._setVideoLinksEnabled(cfg.videoLinksEnabled === true);
 }
 // This lives in a <script type="module"> block, which doesn't leak top-level
 // declarations to window the way classic scripts do — export it explicitly so
@@ -1966,6 +1971,24 @@ window._fbModuleReady = true;
     window._setProgressEnabled = _setProgressEnabled;
     window._syncProfileProgressBtn = _syncProfileProgressBtn;
     _syncProfileProgressBtn();
+    // Admin Panel → Branding → "Video links" (brand-wide, brands/{id}.videoLinksEnabled,
+    // default OFF). Off hides the Video Link field in New / Edit Workout (step 1) and
+    // New / Edit Exercise (html.video-links-off) for every user except the real super
+    // admin. Existing links / PLAY buttons aren't affected. Cached like Progress.
+    function _isVideoLinksEnabled() {
+      try { return localStorage.getItem('bp_video_links_enabled') === '1'; } catch (e) { return false; }
+    }
+    function _syncVideoLinksFields() {
+      const isSA = typeof _isRealSuperAdmin === 'function' && _isRealSuperAdmin();
+      document.documentElement.classList.toggle('video-links-off', !(_isVideoLinksEnabled() || isSA));
+    }
+    function _setVideoLinksEnabled(on) {
+      try { localStorage.setItem('bp_video_links_enabled', on ? '1' : '0'); } catch (e) {}
+      _syncVideoLinksFields();
+    }
+    window._setVideoLinksEnabled = _setVideoLinksEnabled;
+    window._syncVideoLinksFields = _syncVideoLinksFields;
+    _syncVideoLinksFields();
   </script>
   <button onclick="closeDataModal();openDataModal()" style="width:100%;background:transparent;border:none;border-radius:10px;color:var(--text-strong);font-family:'DM Sans';font-size:16px;font-weight:600;padding:14px 12px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--text-soft)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8V21H3V8"/><path d="M1 3h22v5H1z"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
@@ -6632,7 +6655,7 @@ function renderExercisesTab() {
     const isActive = muscle === selected;
     pillsHtml += `<div onclick="selectExTabMuscle('${muscle}')" style="
       flex:1;text-align:center;padding:8px 4px;cursor:pointer;
-      font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;
+      font-family:'DM Sans';font-size:14px;font-weight:700;letter-spacing:0;
       color:${isActive ? color : 'var(--g44)'};
       transition:color .15s;
     ">${MUSCLE_LABELS[muscle]}</div>`;
@@ -7747,10 +7770,8 @@ function donePickMode() {
     // Back/Save instead of the old >6-exercises/block:'center' heuristic, which
     // didn't account for that fixed bar and skipped short lists entirely.
     _scrollAddExerciseIntoView(400);
-    // Building a workout keeps its own fade/slide-in above; the new cards just
-    // get the accent border glow once that (and the scroll) has settled.
-    const _nwfNewCards = [...document.querySelectorAll('#exerciseList > .exercise-card')].slice(-toAdd.length);
-    setTimeout(() => _nwfNewCards.forEach(c => _flashWorkoutCardBadge(c)), 750);
+    // Building a workout: just its own fade/slide-in above — no glow on the
+    // new cards (user removed it).
   } else {
     // No landing (user removed it): straight back to the workout, which
     // scrolls to the first new card; the new cards then get the accent border
@@ -12218,6 +12239,20 @@ function _animateFilterHide(card, delay) {
 }
 
 function applyTodayFilters(opts) {
+  // The last exercise of the WHOLE workout just came back done while a body
+  // part is selected: deselect it (all cards show again, with the usual
+  // filter animation) so it's "All exercises done !" — the no-opts call waits
+  // out those animations before its scroll → message in → glow.
+  if (opts?.afterReturn && _todayMuscleFilter && !window._isNewWorkoutFlow) {
+    const _all = document.querySelectorAll('#exerciseList .exercise-card');
+    if (_all.length && [..._all].every(c => c.classList.contains('completed'))) {
+      _todayMuscleFilter = null;
+      applyTodayFilters();
+      updateTodayMuscleChips();
+      _updateAllExCircleColors();
+      return;
+    }
+  }
   let visibleCount = 0;
   // Check if any card is currently expanded — if so, don't restore hidden cards
   const expandedCard = document.querySelector('#exerciseList .exercise-card[data-open="true"]');
@@ -13896,8 +13931,8 @@ function _exLandOnCards(ghost, cards) {
 }
 
 // ── Active workout card ⇄ active exercise: "card flies to the top" ──
-// Opening: only the name animates — a floating copy travels from the card to
-// the page title while the whole exercise page fades in over the list.
+// Opening: the whole exercise page fades in over the list first; only then
+// does the name animate — a floating copy travels from the card to the title.
 // Closing: the photo / body map frame shrinks back into an exact copy of the
 // card, which flies down to its list spot while the name travels back into
 // it; then the workout page fades in (no glow on the card).
@@ -14057,27 +14092,31 @@ function _exCardFlyOpen(overlay, ghost, from, onDone) {
       _exFlyRun(overlay, state, onDone);
       return;
     }
-    // Only the name moves: it travels from the card to the page title while
-    // the whole page simply fades in over the list (the card — the ghost
-    // standing in its spot — fades out with the list). Nothing slides/grows.
+    // Only the name moves: first the whole page fades in over the list (the
+    // card — the ghost standing in its spot — fades out with the list) while
+    // the name holds still on the card; once the workout page is fully gone
+    // (_EX_OPEN_FADE_MS), the name travels to the page title. Nothing
+    // slides/grows.
     A(overlay, [{ opacity: 0 }, { opacity: 1 }], { duration: _EX_OPEN_FADE_MS, easing: 'ease-out' });
     A(ghost, [{ opacity: 1 }, { opacity: 0 }], { duration: _EX_OPEN_FADE_MS, easing: 'ease-out', fill: 'forwards' });
+    const _nameAt = _EX_OPEN_FADE_MS;   // name starts moving
+    const _landAt = _nameAt + _EX_NAME_MS; // …and lands
     const cardName = ghost.querySelector('.ex-name');
     const pageName = _exFlyNameTarget();
     if (cardName && pageName) {
       const fly = _exFlyNameEl(cardName, pageName, true);
       state.nameEl = fly.el;
       cardName.style.visibility = 'hidden';
-      A(fly.el, [{ transform: 'none' }, { transform: fly.landed }], { duration: _EX_NAME_MS, easing: _EX_FLY_EASE, fill: 'forwards' });
+      A(fly.el, [{ transform: 'none' }, { transform: fly.landed }], { delay: _nameAt, duration: _EX_NAME_MS, easing: _EX_FLY_EASE, fill: 'both' });
       // Long name: leaves the card as its one line and turns into the title's
       // final lines on the way (cross-fade in the same moving frame).
       if (fly.one) {
-        A(fly.one, [{ opacity: 1 }, { opacity: 0 }], { duration: _EX_NAME_MS, easing: 'ease-in-out', fill: 'both' });
-        A(fly.multi, [{ opacity: 0 }, { opacity: 1 }], { duration: _EX_NAME_MS, easing: 'ease-in-out', fill: 'both' });
+        A(fly.one, [{ opacity: 1 }, { opacity: 0 }], { delay: _nameAt, duration: _EX_NAME_MS, easing: 'ease-in-out', fill: 'both' });
+        A(fly.multi, [{ opacity: 0 }, { opacity: 1 }], { delay: _nameAt, duration: _EX_NAME_MS, easing: 'ease-in-out', fill: 'both' });
       }
       // The real title stays hidden until the travelling copy has landed on
       // it — they swap in one frame at the end.
-      A(pageName, [{ opacity: 0 }, { opacity: 0 }], { duration: _EX_NAME_MS });
+      A(pageName, [{ opacity: 0 }, { opacity: 0 }], { delay: _nameAt, duration: _EX_NAME_MS });
     }
     // The sets box (the card itself, now in the page) waits for the name to
     // land, then drops down: unrolls from its top edge while easing in from a
@@ -14087,13 +14126,19 @@ function _exCardFlyOpen(overlay, ghost, from, onDone) {
     // Body map mode: the body figures also wait for the name, then fade in
     // (their box, background and PLAY come in with the page as usual).
     const bodyFig = document.querySelector('#ex-detail-photo-wrap .ex-detail-bodymap-fig');
-    const figIn = bodyFig ? A(bodyFig, [{ opacity: 0 }, { opacity: 1 }], { delay: _EX_NAME_MS, duration: _EX_BODYFIG_MS, easing: 'ease-out' }) : null;
+    const figIn = bodyFig ? A(bodyFig, [{ opacity: 0 }, { opacity: 1 }], { delay: _landAt, duration: _EX_BODYFIG_MS, easing: 'ease-out' }) : null;
+    // …and so do the BEST SET line under the name and CLOSE / SAVE & DONE,
+    // which body map mode keeps in a fixed dock outside the page
+    // (_syncExFinishDock) (+ its gradient).
+    const dockIn = bodyFig ? ['ex-detail-bestset', 'ex-detail-finish-dock', 'ex-detail-finish-fade']
+      .map(id => document.getElementById(id)).filter(Boolean)
+      .map(el => A(el, [{ opacity: 0 }, { opacity: 1 }], { delay: _landAt, duration: _EX_BODYFIG_MS, easing: 'ease-out' })) : [];
     if (setsBox || figIn) {
       const drop = setsBox ? A(setsBox, [
         { clipPath: 'inset(0px 0px 100% 0px)', webkitClipPath: 'inset(0px 0px 100% 0px)', opacity: 0, transform: 'translateY(-8px)' },
         { clipPath: 'inset(0px 0px 0px 0px)', webkitClipPath: 'inset(0px 0px 0px 0px)', opacity: 1, transform: 'none' },
-      ], { delay: _EX_NAME_MS, duration: _EX_SETS_DROP_MS, easing: _EX_FLY_EASE }) : null;
-      const skip = () => [drop, figIn].forEach(a => { try { a?.finish(); } catch(e) {} });
+      ], { delay: _landAt, duration: _EX_SETS_DROP_MS, easing: _EX_FLY_EASE }) : null;
+      const skip = () => [drop, figIn, ...dockIn].forEach(a => { try { a?.finish(); } catch(e) {} });
       overlay.addEventListener('pointerdown', skip, { capture: true, once: true });
       const _cl = state.cleanup;
       state.cleanup = () => { overlay.removeEventListener('pointerdown', skip, { capture: true }); _cl(); };
@@ -16574,6 +16619,9 @@ function finishWorkoutFull() {
 
   const _desc = (document.getElementById('nwf-description')?.value || '').trim();
   window._pendingWorkout = {name, date:Date.now(), exercises, description: _desc};
+  // Every exercise completed → nothing to review (no NOT COMPLETED / incomplete
+  // sets): skip the summary and save straight away (GOOD / GREAT JOB screen).
+  if (completedExCount === exercises.length) { confirmSave(); return; }
   document.getElementById('summaryOverlay').classList.add('open');
   if (window._historyPush) window._historyPush('summary');
 }
@@ -17076,14 +17124,16 @@ function confirmSave() {
   //                              → SAVED TO YOUR DEVICE (offline / error / slower
   //                                than 4s / not signed in — the data is on the
   //                                device and the app keeps syncing it later)
-  // → shown 2s so it can be read → Home.
+  // → stays shown until CLOSE (bottom) → Home.
   const _celIco = {
     cloud: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9"/><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/></svg>',
     spin:  '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="animation:celSpin .8s linear infinite;"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="42" stroke-dashoffset="14"/></svg>',
     // Green "V" for both results (SAVED TO CLOUD / SAVED TO YOUR DEVICE).
     check: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
   };
-  const _celBtnHtml = `<button id="celCloseBtn" style="width:100%;max-width:320px;padding:18px;background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:100px;font-family:'DM Sans';font-size:16px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;margin-bottom:40px;display:flex;align-items:center;justify-content:center;gap:10px;transition:background .2s,color .2s;">${_celIco.cloud}<span>SYNC DATA TO CLOUD</span></button>`;
+  // The sync runs on its own (below), so this is a plain status line — no
+  // border/background — showing IN PROGRESS… from the start.
+  const _celBtnHtml = `<button id="celCloseBtn" style="width:100%;max-width:320px;padding:18px;background:transparent;color:var(--accent);border:none;font-family:'DM Sans';font-size:16px;font-weight:700;cursor:default;-webkit-tap-highlight-color:transparent;margin-bottom:180px;display:flex;align-items:center;justify-content:center;gap:10px;">${_celIco.spin}<span>IN PROGRESS…</span></button>`;
   const _sleep = ms => new Promise(r => setTimeout(r, ms));
   const _celSyncAndClose = async () => {
     const btn = document.getElementById('celCloseBtn');
@@ -17097,18 +17147,29 @@ function confirmSave() {
     const syncP = window._lastSaveSync || Promise.resolve(false);
     const ok = await Promise.race([syncP.catch(() => false), _sleep(4000).then(() => false)]);
     await _sleep(Math.max(0, 1000 - (performance.now() - t0)));
-    // Button stays outlined (no accent fill) so the green V reads clearly.
+    // Plain status text (no fill/border) so the green V reads clearly.
     btn.innerHTML = `${_celIco.check}<span>${ok ? 'SAVED TO CLOUD' : 'SAVED TO YOUR DEVICE'}</span>`;
-    await _sleep(2000);
+    // Stays on this screen — only CLOSE (_celClose) goes Home, enabled now
+    // that the result is showing.
+    const closeBtn = document.getElementById('celCloseHomeBtn');
+    if (closeBtn) { closeBtn.disabled = false; closeBtn.style.opacity = ''; closeBtn.style.cursor = 'pointer'; }
+  };
+  // CLOSE (bottom, where SAVE WORKOUT was): the only way back to Home —
+  // disabled (dimmed) until SAVED TO CLOUD / SAVED TO YOUR DEVICE shows.
+  const _celClose = () => {
+    const closeBtn = document.getElementById('celCloseHomeBtn');
+    if (!closeBtn || closeBtn.disabled) return;
     // Same path every other "go to Home" action in the app uses (tab bar
     // active state, header collapse state, toggle bars, etc.) — not just
     // doSaveWorkout's own showTodayStartScreen — so landing on Home here looks
     // identical to switching there from another tab (e.g. Profile), not just
     // reusing whatever state happened to be left over underneath this overlay.
     switchTab('log');
-    const el = document.getElementById('celebrationOverlay');
-    if (el) el.remove();
+    document.getElementById('celebrationOverlay')?.remove();
   };
+  // Same box/spot/look as the active workout's SAVE WORKOUT bar
+  // (#workout-finish-bar) + the START WORKOUT tap press.
+  const _celCloseHtml = `<div style="position:absolute;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;padding:0 20px calc(20px + env(safe-area-inset-bottom));box-sizing:border-box;"><button id="celCloseHomeBtn" disabled style="width:100%;padding:17px;background:var(--g00);color:var(--gcc);border:1px solid var(--gcc);border-radius:100px;font-family:'DM Sans';font-size:18px;font-weight:700;cursor:default;letter-spacing:.3px;-webkit-tap-highlight-color:transparent;transition:transform .15s,opacity .3s ease;opacity:.4;" onmousedown="if(!this.disabled)this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="if(!this.disabled)this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">CLOSE</button></div>`;
   if (hasStars) {
     const starTypes = [{ label: 'MAX', color: BP_COLORS.pr.max },{ label: 'BEST SET', color: BP_COLORS.pr.bestSet },{ label: 'VOL', color: BP_COLORS.pr.vol }];
     const starsRow = starTypes.map((t, ti) => { const count = allStars.filter(s => s.label === t.label).length; if (!count) return ''; return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;animation:starPop .8s cubic-bezier(.175,.885,.32,1.275) both;animation-delay:${ti * 0.25}s;"><div style="position:relative;width:72px;height:72px;display:flex;align-items:center;justify-content:center;">${svgStar(t.color, 72)}<span style="position:absolute;font-family:'DM Sans';font-size:34px;font-weight:800;color:#000;line-height:1;margin-top:5px;">${count}</span></div><span style="font-size:12px;font-weight:700;color:${t.color};letter-spacing:.5px;text-transform:uppercase;">${t.label}</span></div>`; }).join('');
@@ -17124,7 +17185,10 @@ function confirmSave() {
   // Spinner keyframes for the button's IN PROGRESS… state.
   cel.insertAdjacentHTML('afterbegin', '<style>@keyframes celSpin{to{transform:rotate(360deg)}}</style>');
   document.body.appendChild(cel);
-  cel.querySelector('#celCloseBtn').addEventListener('click', _celSyncAndClose);
+  cel.insertAdjacentHTML('beforeend', _celCloseHtml);
+  cel.querySelector('#celCloseHomeBtn').addEventListener('click', _celClose);
+  // Starts on its own (no tap) once the screen has faded in (celFadeIn .4s).
+  setTimeout(_celSyncAndClose, 400);
 }
 
 // ══════════════════════════════════════════════════════
@@ -22559,6 +22623,25 @@ window.addEventListener('load', function() {
                   onblur="_nwfFieldFocus('nwf-desc-title','nwf-desc-box',false)"
                   oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px';var _rtl=/[֐-׿]/.test(this.value);this.style.direction=_rtl?'rtl':'ltr';this.style.textAlign=_rtl?'right':'left';"></textarea>
       </div>
+      <script>
+        // Description box: at least 3× the Workout name box's height — the
+        // textarea itself gets the min-height (box minus its own padding 10+12
+        // and border 1+1), so the whole box stays tappable. Measured live (the
+        // page is hidden at load, and the name box follows the font).
+        (function () {
+          const nameBox = document.getElementById('nwf-name-box');
+          const descBox = document.getElementById('nwf-desc-box');
+          const ta = document.getElementById('nwf-description');
+          if (!nameBox || !descBox || !ta || !window.ResizeObserver) return;
+          new ResizeObserver(() => {
+            const h = nameBox.offsetHeight;
+            if (!h) return;
+            const cs = getComputedStyle(descBox);
+            const chrome = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom) + parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth);
+            ta.style.minHeight = Math.max(0, 3 * h - chrome) + 'px';
+          }).observe(nameBox);
+        })();
+      </script>
     </div>
     <div class="nwf-field" id="nwf-video-field">
       <div id="nwf-video-title" class="nwf-field-label">Video link <span class="nwf-optional" style="color:var(--g66);font-weight:500;font-size:14px;">(optional)</span><span id="nwf-video-note" style="display:none;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;transform:translateY(2px);"></span></div>
@@ -23207,6 +23290,20 @@ document.getElementById("installBtn").addEventListener("click", async () => {
         </button>
         <div id="adminProgressSaveMsg" style="display:none;font-size:12px;font-weight:600;margin-top:8px;"></div>
       </div>
+      <!-- Video links: brand-wide on/off (default off) for the Video Link field in
+           New / Edit Workout and New / Edit Exercise (the super admin always keeps
+           it). Same switch. -->
+      <div style="background:var(--g14);border:1px solid var(--g2a);border-radius:12px;padding:16px;margin-top:12px;">
+        <div style="font-family:'Bebas Neue';font-size:14px;letter-spacing:1px;color:var(--g55);margin-bottom:6px;">VIDEO LINKS</div>
+        <div style="font-size:12px;color:var(--g55);line-height:1.6;margin-bottom:10px;">Lets users add a video link when creating or editing a workout or an exercise, for every user of this brand.</div>
+        <button onclick="toggleAdminVideoLinks()" style="width:100%;background:transparent;border:none;border-radius:10px;color:var(--gff);font-family:'DM Sans';font-size:16px;font-weight:600;padding:10px 0;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
+          <span style="flex:1;">Video links</span>
+          <span id="adminVideoLinksSwitch" style="width:44px;height:24px;border-radius:12px;background:var(--g33);position:relative;display:inline-block;flex-shrink:0;transition:background .2s;">
+            <span id="adminVideoLinksKnob" style="position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:var(--gff);transition:transform .2s;"></span>
+          </span>
+        </button>
+        <div id="adminVideoLinksSaveMsg" style="display:none;font-size:12px;font-weight:600;margin-top:8px;"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -23404,6 +23501,7 @@ window._onAuthReady = (user) => {
   if (typeof _applyTheme === 'function') _applyTheme(); // role now known → apply / force dark
   _menuBtn('userMenuBrandLibBtn', role === 'super_admin');
   if (window._syncProfileProgressBtn) window._syncProfileProgressBtn(); // Branding → Progress (super admin always sees it)
+  if (window._syncVideoLinksFields) window._syncVideoLinksFields(); // Branding → Video links (same)
   _menuBtn('userMenuViewAsBtn', role === 'super_admin'); // View As Role — super_admin only
   _menuBtn('userMenuExitViewBtn', false);
   if (_menuBtn('userMenuSiteManagerBtn', ['super_admin','brand_admin','site_manager'].includes(role)) && ['super_admin','brand_admin','site_manager'].includes(role)) checkPendingRequests();
@@ -24104,6 +24202,9 @@ function switchAdminTab(tab) {
     _updateAdminProgressUI(window._brandConfig?.progressEnabled !== false);
     const pmsg = document.getElementById('adminProgressSaveMsg');
     if (pmsg) pmsg.style.display = 'none';
+    _updateAdminVideoLinksUI(window._brandConfig?.videoLinksEnabled === true);
+    const vmsg = document.getElementById('adminVideoLinksSaveMsg');
+    if (vmsg) vmsg.style.display = 'none';
   }
 }
 
@@ -24193,6 +24294,35 @@ function toggleAdminProgress() {
   }).finally(() => { window._progressSaving = false; });
 }
 window.toggleAdminProgress = toggleAdminProgress;
+
+// ── Admin Panel → Branding → Video links (brand-wide, brands/{id}.videoLinksEnabled, default off) ──
+function _updateAdminVideoLinksUI(on) {
+  const track = document.getElementById('adminVideoLinksSwitch');
+  const knob = document.getElementById('adminVideoLinksKnob');
+  if (track) track.style.background = on ? 'var(--accent)' : 'var(--switch-off)';
+  if (knob) knob.style.transform = on ? 'translateX(20px)' : '';
+}
+function toggleAdminVideoLinks() {
+  const msg = document.getElementById('adminVideoLinksSaveMsg');
+  if (window._videoLinksSaving) return;
+  if (!window._fbDb || !window._fbDoc || !window._fbSetDoc) {
+    if (msg) { msg.style.display = 'block'; msg.style.color = '#ff4747'; msg.textContent = 'Not connected — try again in a moment'; }
+    return;
+  }
+  const next = window._brandConfig?.videoLinksEnabled !== true; // off/unset → on, on → off
+  _updateAdminVideoLinksUI(next); // flip right away; reverted below if the save fails
+  window._videoLinksSaving = true;
+  const ref = window._fbDoc(window._fbDb, 'brands', window.BRAND_ID);
+  window._fbSetDoc(ref, { videoLinksEnabled: next }, { merge: true }).then(() => {
+    window._brandConfig = { ...(window._brandConfig || {}), videoLinksEnabled: next };
+    if (window._setVideoLinksEnabled) window._setVideoLinksEnabled(next);
+    if (msg) { msg.style.display = 'block'; msg.style.color = '#34d399'; msg.textContent = next ? 'Saved — users can add video links' : 'Saved — video link fields are hidden for users'; }
+  }).catch(e => {
+    _updateAdminVideoLinksUI(!next);
+    if (msg) { msg.style.display = 'block'; msg.style.color = '#ff4747'; msg.textContent = 'Save failed: ' + e.message; }
+  }).finally(() => { window._videoLinksSaving = false; });
+}
+window.toggleAdminVideoLinks = toggleAdminVideoLinks;
 
 function setAdminAccentDefault() {
   const def = '#47d1fa';
@@ -27739,7 +27869,7 @@ function _renderCoachExercisesTab(el) {
   MUSCLE_ORDER.forEach(muscle => {
     const color = MUSCLE_COLORS[muscle];
     const isActive = muscle === selected;
-    pillsHtml += `<div onclick="selectExTabMuscle('${muscle}')" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;font-family:'DM Sans';font-size:13px;font-weight:700;color:${isActive ? color : 'var(--g44)'};transition:color .15s;">${MUSCLE_LABELS[muscle]}</div>`;
+    pillsHtml += `<div onclick="selectExTabMuscle('${muscle}')" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;font-family:'DM Sans';font-size:14px;font-weight:700;color:${isActive ? color : 'var(--g44)'};transition:color .15s;">${MUSCLE_LABELS[muscle]}</div>`;
   });
   pillsHtml += `<div id="exTab-muscle-indicator" style="position:absolute;bottom:0;height:2px;left:calc(100%/${MUSCLE_ORDER.length}*${_muscleIdx});width:calc(100%/${MUSCLE_ORDER.length});background:${MUSCLE_COLORS[selected]};transition:none;"></div></div></div>`;
 
