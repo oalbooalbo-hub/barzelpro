@@ -1686,7 +1686,7 @@ window._fbModuleReady = true;
       }
     </script>
     <div id="today-load-btn-wrap" style="width:100%;max-width:380px;display:none;">
-      <button onclick="window._isNewWorkoutFlow=false;window._loadFromToday=true;loadOrSwitchWorkouts()" style="width:100%;height:100px;display:flex;align-items:center;justify-content:center;background:var(--accent);color:var(--g00);border:1px solid var(--accent);border-radius:26px;font-family:'DM Sans';font-size:22px;letter-spacing:0;cursor:pointer;box-sizing:border-box;line-height:1;font-weight:700;-webkit-tap-highlight-color:transparent;transition:transform .15s;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">START WORKOUT</button>
+      <button id="today-load-btn" onclick="window._isNewWorkoutFlow=false;window._loadFromToday=true;loadOrSwitchWorkouts()" style="width:100%;height:100px;display:flex;align-items:center;justify-content:center;background:var(--accent);color:var(--g00);border:1px solid var(--accent);border-radius:26px;font-family:'DM Sans';font-size:22px;letter-spacing:0;cursor:pointer;box-sizing:border-box;line-height:1;font-weight:700;-webkit-tap-highlight-color:transparent;transition:transform .15s;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">START WORKOUT</button>
     </div>
     <div style="width:100%;max-width:380px;display:flex;gap:8px;">
       <button id="today-replace-btn" onclick="replaceTodayPlan()" style="display:none;padding:16px 20px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:12px;font-family:'DM Sans';font-size:15px;font-weight:900;-webkit-text-stroke:0.4px currentColor;letter-spacing:0;cursor:pointer;box-sizing:border-box;line-height:1;">REPLACE</button>
@@ -4710,6 +4710,17 @@ function renderTodayPlanCard() {
   cardEl.style.display = 'none';
   const hasWorkouts = _homeHasStartableWorkouts(); // own OR brand workouts
   if (loadWrap) loadWrap.style.display = hasWorkouts ? '' : 'none';
+  // A workout already completed today → "START NEXT WORKOUT".
+  const loadBtn = document.getElementById('today-load-btn');
+  if (loadBtn) {
+    const _t = new Date();
+    const _doneToday = (workouts || []).some(w => {
+      if (w._draft || w._template) return false;
+      const d = new Date(w.date);
+      return d.getFullYear() === _t.getFullYear() && d.getMonth() === _t.getMonth() && d.getDate() === _t.getDate();
+    });
+    loadBtn.textContent = _doneToday ? 'START NEXT WORKOUT' : 'START WORKOUT';
+  }
   if (replaceBtn) replaceBtn.style.display = 'none';
   const deletePlanBtn = document.getElementById('today-delete-plan-btn');
   if (deletePlanBtn) deletePlanBtn.style.display = 'none';
@@ -29619,7 +29630,7 @@ function _updateExFloatBar(cardId) {
   if (noteBtn) noteBtn.classList.toggle('active', !!noteArea?.classList.contains('open')); // highlight when open
   if (!noteBadge?.dataset.locked) {
     const _hasNote = !!(noteBox?.value?.trim());
-    if (noteBadge) noteBadge.style.display = _hasNote ? 'block' : 'none';
+    if (noteBadge) noteBadge.style.display = _hasNote ? 'flex' : 'none'; // flex: centres the "!" in its circle
   }
 
   // Timer button — accent only when panel is open
@@ -34673,7 +34684,7 @@ function _updateKgDisplay(val, isBWMode) {
 <div id="ex-float-bar" style="display:none;flex-direction:row;">
   <button id="ex-float-note" onclick="exFloatAction('note')" title="Note" style="position:relative;">
     <svg class="ex-float-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-    <span id="ex-float-note-badge" style="display:none;position:absolute;top:1px;right:8px;line-height:1;font-family:'DM Sans';font-size:20px;font-weight:900;color:var(--accent);">!</span>
+    <span id="ex-float-note-badge" style="display:none;position:absolute;top:2px;right:6px;width:16px;height:16px;border-radius:50%;background:var(--accent);align-items:center;justify-content:center;line-height:1;font-family:'DM Sans';font-size:12px;font-weight:900;color:#000;">!</span>
     <span class="ex-float-label">Note</span>
   </button>
   <button id="ex-float-timer" onclick="exFloatAction('timer')" title="Timer" style="position:relative;">
