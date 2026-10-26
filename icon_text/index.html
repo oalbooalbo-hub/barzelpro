@@ -13944,9 +13944,9 @@ function _exLandOnCards(ghost, cards) {
 // ── Active workout card ⇄ active exercise: "card flies to the top" ──
 // Opening: the whole exercise page fades in over the list first; only then
 // does the name animate — a floating copy travels from the card to the title.
-// Closing: the photo / body map frame shrinks back into an exact copy of the
-// card, which flies down to its list spot while the name travels back into
-// it; then the workout page fades in (no glow on the card).
+// Closing: only the name travels back down to its card, which then fades in
+// at its own list spot (never moves); then the workout page fades in
+// (_exCardNameClose — no glow on the card).
 // The page's top bar is identical to the workout's, so it just stays put.
 // The real card is already inside the overlay (it becomes the sets area), so
 // the flying card is a visual clone. Reduced motion: plain cross-fade.
@@ -14169,7 +14169,7 @@ function _exCardFlyOpen(overlay, ghost, from, onDone) {
   }, 0);
 }
 
-// Closing a COMPLETED exercise: only the name travels — page title → its spot
+// Closing an exercise (any — completed or not): only the name travels — page title → its spot
 // on the list card — while the page's content fades out over a still-solid
 // background. Once the name has settled, the rest of the card fades in around
 // it (a copy at the card's spot), then the workout page fades in.
@@ -14216,7 +14216,10 @@ function _exCardFlyClose(overlay, card, to, onDone) {
   }
   const r0 = to.rect;
   const frame = _exFlyFrame();
-  if (card.classList.contains('completed')) { _exCardNameClose(overlay, card, r0, frame, state, A, onDone); return; }
+  // Every close is name-only now (user: the card stays in its list spot, only
+  // the name travels) — the card-flies-down-from-the-top close below is no
+  // longer reached.
+  _exCardNameClose(overlay, card, r0, frame, state, A, onDone); return;
   const T = _exFlyTopRect(frame, r0);
   const ghost = _exFlyGhost(card, frame ? T : { left: T.left, top: T.top, width: T.width, height: r0.height });
   card.style.visibility = 'hidden';
