@@ -427,6 +427,10 @@ body.workout-home-bg #workout-area-bg{display:block;}
    above the header and bars. (z-index:-1 was hidden on device.) */
 body.workout-home-bg #workout-finish-bar,body.workout-home-bg #today-info-close-bar{background:var(--home-bg) bottom/100% calc(100vh - var(--wk-hdr-bottom,0px)) no-repeat!important;background-size:100% calc(100dvh - var(--wk-hdr-bottom,0px))!important;-webkit-mask-image:linear-gradient(to bottom,transparent,#000 46px);mask-image:linear-gradient(to bottom,transparent,#000 46px);}
 body.ex-finish-docked #ex-detail-overlay-body{padding-bottom:calc(226px + env(safe-area-inset-bottom));}
+/* Creating / editing a workout keeps its Back arrow layer (#_nwf-back-wrapper,
+   z-index 500) on top of everything — hide it while the New Exercise page
+   (z-index 250) is open from the exercise picker, or it overlaps its ✕. */
+body:has(#newExModalOverlay.open) #_nwf-back-wrapper{display:none;}
 /* Branding → Video links off (not the super admin): no Video Link field in
    New / Edit Workout step 1 or New / Edit Exercise — see _syncVideoLinksFields. */
 html.video-links-off #nwf-video-field,html.video-links-off #newEx-video-field{display:none !important;}
@@ -5406,6 +5410,14 @@ function _openNwfNamePage() {
     _nwfPage.style.opacity = '';
     _nwfPage.addEventListener('transitionend', () => { _nwfPage.style.transition = ''; }, { once: true });
   }));
+  // New workout (not editing one, nor back from Step 2 with a name already
+  // typed): once the page has slid in (.45s), put the cursor in Workout name
+  // (keyboard up) — same as New Exercise.
+  if (window._editingWorkoutIdx == null && !cur) setTimeout(() => {
+    if (_nwfPage.style.display === 'none') return; // closed meanwhile
+    const _ni = document.getElementById('nwf-name-input');
+    if (_ni && !_ni.value && document.activeElement !== _ni) _ni.focus({ preventScroll: true });
+  }, 470);
   if (window._historyPush) window._historyPush('nwf-name');
   // Note: Cancel/Next visibility while editing a field is handled by
   // _nwfFieldFocus() (focus/blur on the fields themselves), not by guessing
@@ -7084,7 +7096,14 @@ function renderExercisesTab() {
       <button id="extab-library-sync-btn" onclick="syncExploreExercisesToFirestore()" style="background:transparent;border:1px solid #34d39966;border-radius:10px;color:#34d399;font-family:'DM Sans';font-size:13px;font-weight:700;padding:10px 14px;cursor:${window._exploreExLocalPending?'pointer':'not-allowed'};flex-shrink:0;transition:all .2s;opacity:${window._exploreExLocalPending?'1':'0.4'};pointer-events:${window._exploreExLocalPending?'auto':'none'};"><svg width="16" height="16" viewBox="0 0 38 36" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 22 Q4 14 12 14 Q13 8 20 8 Q28 8 28 16 Q34 16 34 22 Q34 28 28 28 L8 28 Q4 28 4 22Z"/></svg> Library</button>
       <button onclick="openAddExploreExercise('${selected}')" style="flex:1;background:transparent;border:1px dashed #34d399;border-radius:10px;color:#34d399;font-family:'DM Sans';font-size:13px;font-weight:600;padding:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;">+ Add to Explore</button>
     </div>` : '';
-    el.innerHTML = (_exTabView === 'all' ? _pc + _exAllListHtml : _exTabView === 'app' ? _pc + _exAppListHtml :_exTabView === 'created' ? searchHtml + _pc + listBox + (_pickMode ? '' : addBtnHtml) : _exTabView === 'custom' ? _pc + _exCustomListHtml : _exTabView === 'coach' ? buildCoachExercisesHtml() : _pc + (_pickMode ? `<div id="pickModeListBox" style="border:1px solid var(--border);border-radius:12px;padding:6px 0;">` + _exLibListHtml.replace(/<button[^>]*Add to Library[^<]*<\/button>/g,'') + `</div>` : _exLibListHtml + _exLibAddBtns));
+    const _coachHtml = _exTabView === 'coach' ? buildCoachExercisesHtml() : '';
+    // "Create New Exercise" under every list (all views, both roles, also
+    // while picking exercises for a workout — the one wanted may not exist
+    // yet): same as the "+" at the top. Not in select mode (the + is hidden
+    // there too), nor where the list already has its own (coach's library).
+    const _createExBtn = (_exDelMode || _coachHtml.includes('openNewExModal(')) ? '' :
+      `<button class="extab-create-btn" onclick="openNewExModal(window._exTabMuscle||'Chest')" style="width:100%;margin:4px 0 12px;background:transparent;border:1px dashed ${_exEmpty ? 'var(--accent)' : 'var(--g66)'};border-radius:10px;color:${_exEmpty ? 'var(--accent)' : 'var(--gcc)'};font-family:'DM Sans';font-size:16px;font-weight:600;height:64px;box-sizing:border-box;padding:0 13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;-webkit-tap-highlight-color:transparent;"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Create New Exercise</button>`; // 64px = 2/3 of an exercise row (min-height 96px)
+    el.innerHTML = (_exTabView === 'all' ? _pc + _exAllListHtml : _exTabView === 'app' ? _pc + _exAppListHtml :_exTabView === 'created' ? searchHtml + _pc + listBox + (_pickMode ? '' : addBtnHtml) : _exTabView === 'custom' ? _pc + _exCustomListHtml : _exTabView === 'coach' ? _coachHtml : _pc + (_pickMode ? `<div id="pickModeListBox" style="border:1px solid var(--border);border-radius:12px;padding:6px 0;">` + _exLibListHtml.replace(/<button[^>]*Add to Library[^<]*<\/button>/g,'') + `</div>` : _exLibListHtml + _exLibAddBtns)) + _createExBtn;
     // Pick mode / long-press select mode: line the rows' circles up with the
     // workout cards' (and the select-all circle over them).
     if (_pickMode || _exDelMode) requestAnimationFrame(_alignPickCircles);
@@ -7678,7 +7697,10 @@ function _updatePickModeDoneBtn() {
   if (!btn || !btnsWrap) return;
   const n = _pickModeSelected.length;
   btnsWrap.style.display = _pickMode ? 'flex' : 'none';
-  btn.textContent = n > 0 ? `ADD ${n} EXERCISES` : 'ADD EXERCISES';
+  // Creating / editing a workout: "ADD TO WORKOUT" / "ADD 3 TO WORKOUT".
+  btn.textContent = window._isNewWorkoutFlow
+    ? (n > 0 ? `ADD ${n} TO WORKOUT` : 'ADD TO WORKOUT')
+    : (n > 0 ? `ADD ${n} EXERCISES` : 'ADD EXERCISES');
   btn.style.opacity = '1';
   btn.style.background = 'var(--g00)';
   btn.style.color = 'var(--accent)';
@@ -7895,6 +7917,14 @@ function openNewExModal(muscle) {
       }, { once: true });
     }
   }));
+  // Once the page has finished sliding in (.45s), put the cursor in Exercise
+  // Name (keyboard up) — creating only, not when this page is reused to edit
+  // an exercise (_editExName), and not if it was closed meanwhile.
+  setTimeout(() => {
+    if (window._editExName || !_nxOvl?.classList.contains('open')) return;
+    const _nxIn = document.getElementById('newExInput');
+    if (_nxIn && document.activeElement !== _nxIn) _nxIn.focus({ preventScroll: true });
+  }, 470);
   if (window._historyPush) window._historyPush('new-ex');
 }
 
@@ -8551,7 +8581,11 @@ function confirmNewEx() {
 // workout's card.
 function _newExCloseAndLand(name, muscle) {
   closeNewExModal();
-  _exTabView = 'custom';
+  // Super admin → PENDING ('custom'), as before. Clients keep ALL / MY
+  // EXERCISES; from APP EXERCISES or COACH (where a new exercise isn't
+  // listed) → ALL.
+  if (window._currentUserData?.role === 'super_admin') _exTabView = 'custom';
+  else if (_exTabView !== 'all' && _exTabView !== 'custom') _exTabView = 'all';
   window._exTabMuscle = muscle;
   renderExercisesTab();
   setTimeout(() => {
