@@ -368,7 +368,9 @@ body.desktop-mode .pages-wrap {
 /* Color: the BEST SET color (colors.js → --pr-best), dimmed 25% toward black. */
 #ex-detail-bestset{align-self:stretch;width:100%;margin-top:2px;text-align:right;font-family:'DM Sans';color:color-mix(in srgb, var(--pr-best) 75%, var(--g00));}
 #ex-detail-bestset .bs-line{white-space:nowrap;font-size:var(--bs-fs,18px);line-height:1.2;}
-#ex-detail-bestset .bs-penta{width:1em;height:1em;fill:currentColor;vertical-align:-.12em;}
+/* Label smaller than the values — the line's auto-fit (--bs-fs, measured with
+   this same markup) then gives the values the room it saves. */
+#ex-detail-bestset .bs-label{font-weight:700;font-size:.7em;}
 #ex-detail-bestset .bs-new-row{margin-bottom:3px;}
 /* Body map mode: SAVE & DONE docked, centered, 8px above the float bar (bottom set by _syncExFinishDock); the page gets its 58px + 8px as extra bottom room. */
 #ex-detail-finish-dock{position:fixed;left:50%;transform:translateX(-50%);z-index:210;display:none;}
@@ -427,6 +429,9 @@ body.workout-home-bg #workout-area-bg{display:block;}
    above the header and bars. (z-index:-1 was hidden on device.) */
 body.workout-home-bg #workout-finish-bar,body.workout-home-bg #today-info-close-bar{background:var(--home-bg) bottom/100% calc(100vh - var(--wk-hdr-bottom,0px)) no-repeat!important;background-size:100% calc(100dvh - var(--wk-hdr-bottom,0px))!important;-webkit-mask-image:linear-gradient(to bottom,transparent,#000 46px);mask-image:linear-gradient(to bottom,transparent,#000 46px);}
 body.ex-finish-docked #ex-detail-overlay-body{padding-bottom:calc(226px + env(safe-area-inset-bottom));}
+/* Set options open (openSetOptions): its row's KG / REP / ✓ can't be tapped
+   — every cell except the set number's (which toggles the menu closed). */
+tr.set-options-row > td:not(:has(.set-num)){pointer-events:none;}
 /* Creating / editing a workout keeps its Back arrow layer (#_nwf-back-wrapper,
    z-index 500) on top of everything — hide it while the New Exercise page
    (z-index 250) is open from the exercise picker, or it overlaps its ✕. */
@@ -442,7 +447,8 @@ html.bodymap-mode #newExPhotoSection{display:none!important;}
 #today-info-panel #w2-sheet-muscles-title{text-align:center;padding-left:0;padding-right:0;}
 #today-info-panel #w2-sheet-muscles-title span{font-family:'Bebas Neue'!important;font-size:26px!important;font-weight:400!important;letter-spacing:1px!important;color:var(--gcc)!important;}
 #ex-detail-bestset .bs-val{font-weight:800;}
-#ex-detail-bestset .bs-unit{font-weight:400;}
+#ex-detail-bestset .bs-unit{font-weight:400;font-size:.7em;} /* "Kg" / "Rep" — smaller than the numbers */
+#ex-detail-bestset .bs-x{font-weight:400;}
 #ex-detail-bestset .bs-new{display:inline-block;background:var(--pr-best);color:#000;font-size:11px;font-weight:900;letter-spacing:.5px;padding:2px 6px;border-radius:4px;}
 #ex-detail-bestset .bs-new.pop{animation:exBestSetNewPop .5s cubic-bezier(.2,.8,.3,1.3) both;}
 @keyframes exBestSetNewPop{0%{opacity:0;transform:scale(.3);}60%{opacity:1;transform:scale(1.15);}100%{opacity:1;transform:scale(1);}}
@@ -927,18 +933,17 @@ body.ex-tab-detail-open #ex-float-bar{display:none !important;}
 .cal-nav-btn{background:transparent;border:1px solid transparent;border-radius:8px;color:var(--muted);font-size:38px;font-weight:700;width:48px;height:48px;flex-shrink:0;padding:0;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:color .15s,border-color .15s;-webkit-tap-highlight-color:transparent;}
 .cal-nav-btn.flash{color:var(--accent);border-color:var(--accent);}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px;}
-.cal-dow{font-size:10px;color:var(--gcc);text-align:center;font-weight:700;padding:4px 0;text-transform:uppercase;letter-spacing:.5px;}
-.cal-day{position:relative;aspect-ratio:1;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:16px;font-weight:600;cursor:default;color:var(--muted);}
-.cal-day.has-workout{background:transparent;border:2px solid var(--accent);border-radius:50%;color:var(--accent);cursor:pointer;font-size:16px;}
+.cal-dow{font-size:12px;color:var(--gcc);text-align:center;font-weight:700;padding:4px 0;text-transform:uppercase;letter-spacing:.5px;}
+.cal-day{position:relative;aspect-ratio:1;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:16px;font-weight:600;cursor:default;color:var(--gff);}
+/* Day numbers are all white (--gff) — a workout day keeps its accent ring only. */
+.cal-day.has-workout{background:transparent;border:2px solid var(--accent);border-radius:50%;color:var(--gff);cursor:pointer;font-size:16px;}
 .cal-day.has-workout:hover{background:rgba(232,255,71,.08);}
 .cal-day.today{border:1px solid var(--gff);color:var(--text);}
 .cal-day.today.selected{border-color:transparent;}
 .cal-day.selected{outline:2px solid #ff8c42;outline-offset:1px;border-radius:50%;}
 .cal-day.empty{opacity:0;}
 .cal-day.future{cursor:pointer;}
-.cal-day.past{opacity:.55;}
-/* Completed workout days stay fully bright even in the past — they should stand out, not fade. */
-.cal-day.past.has-workout{opacity:1;}
+/* Past days are no longer dimmed (all day numbers white). */
 .cal-day.cal-day-adjacent{opacity:.4;}
 /* Same exception for prev/next-month days — a completed workout must stay visible even across the boundary. */
 .cal-day.cal-day-adjacent.has-workout{opacity:1;}
@@ -31951,16 +31956,16 @@ function _renderExDetailBestSet(animate) {
   el.style.visibility = _empty ? 'hidden' : '';
   const fn = n => n % 1 === 0 ? String(n) : String(Math.round(n * 100) / 100);
   // BW/BW+ sets store the resolved total kg — show the BW notation instead.
-  // Numbers bold, "Kg" / "×" / "Rep" thin (.bs-unit) — all one size.
+  // Numbers bold; "×" thin at their size; "Kg" / "Rep" thin and smaller (.bs-unit).
   const u = t => `<span class="bs-unit">${t}</span>`;
-  // Leading BEST SET pentagon (the PR star shape), sized to the text (1em).
-  const line = (w, r) => `<svg class="bs-penta" viewBox="0 0 24 24" aria-label="Your Best Set"><polygon points="12,2 22,9.27 18.18,21.02 5.82,21.02 2,9.27"/></svg> <span class="bs-val">${w}${u(' × ')}${r}${u(' Rep')}</span>`;
+  // Leading "Best Set" label (was the PR pentagon), same colour/size as the line.
+  const line = (w, r) => `<span class="bs-label">Best Set</span> <span class="bs-val">${w}<span class="bs-x"> × </span>${r}${u(' Rep')}</span>`;
   const wt = best.bwExtra != null ? (best.bwExtra > 0 ? `BW+${fn(best.bwExtra)}${u(' Kg')}` : 'BW') : `${fn(best.kg)}${u(' Kg')}`;
   // NEW sits on its own row just above the line, so it never costs the line width.
   el.innerHTML = (isNew ? `<div class="bs-new-row"><span class="bs-new${animate && !wasNew ? ' pop' : ''}">NEW</span></div>` : '')
     + `<div class="bs-line">${line(wt, best.reps)}</div>`;
   // One font size for the whole line: the largest at which the longest case,
-  // "⬟ 999.25 Kg × 99 Rep", still fits the column (measured at 100px).
+  // "Best Set 999.25 Kg × 99 Rep", still fits the column (measured at 100px).
   const colW = el.clientWidth;
   if (colW > 0) {
     const probe = document.createElement('div');
@@ -32266,8 +32271,12 @@ function openSetOptions(btn, exId) {
     closeSetOptions();
     return;
   }
+  _setOptionsRow?.classList.remove('set-options-row'); // switching rows
   _setOptionsRow = _tappedRow;
   _setOptionsExId = exId;
+  // The row stays undimmed above the sheet, but its KG / REP / ✓ are blocked
+  // while the menu is open (only its set number still toggles the menu).
+  _setOptionsRow?.classList.add('set-options-row');
   const currentType = _setOptionsRow?.dataset?.setType || 'regular';
   ['regular', 'warmup', 'drop'].forEach(t => {
     const el = document.getElementById(`set-opt-check-${t}`);
@@ -32349,6 +32358,7 @@ function closeSetOptions() {
   document.getElementById('set-options-overlay-bottom').style.top = '';
   document.getElementById('set-options-sheet').style.display = 'none';
   if (_setOptionsRow) {
+    _setOptionsRow.classList.remove('set-options-row');
     _setOptionsRow.style.scrollMarginBottom = '';
     _setOptionsRow.style.scrollMarginTop = '';
     // Clearing (not hardcoding) falls back to the .set-num class rule's color:var(--gaa)/
