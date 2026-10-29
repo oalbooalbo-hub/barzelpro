@@ -429,6 +429,12 @@ body.workout-home-bg #workout-area-bg{display:block;}
    above the header and bars. (z-index:-1 was hidden on device.) */
 body.workout-home-bg #workout-finish-bar,body.workout-home-bg #today-info-close-bar{background:var(--home-bg) bottom/100% calc(100vh - var(--wk-hdr-bottom,0px)) no-repeat!important;background-size:100% calc(100dvh - var(--wk-hdr-bottom,0px))!important;-webkit-mask-image:linear-gradient(to bottom,transparent,#000 46px);mask-image:linear-gradient(to bottom,transparent,#000 46px);}
 body.ex-finish-docked #ex-detail-overlay-body{padding-bottom:calc(226px + env(safe-area-inset-bottom));}
+/* Active exercise's SAVE & DONE: every set ✓ and at least one isn't a warm-up
+   → solid --accent with black text, 0.4s fade (_syncExFinishReady). */
+#ex-detail-finish-btn{transition:background-color .4s ease,border-color .4s ease;}
+#ex-detail-finish-btn > span{transition:color .4s ease;}
+#ex-detail-finish-btn.ex-fin-ready{background-color:var(--accent) !important;}
+#ex-detail-finish-btn.ex-fin-ready > span{color:#000 !important;}
 /* Set options open (openSetOptions): its row's KG / REP / ✓ can't be tapped
    — every cell except the set number's (which toggles the menu closed). */
 tr.set-options-row > td:not(:has(.set-num)){pointer-events:none;}
@@ -2292,18 +2298,21 @@ window._fbModuleReady = true;
       <div class="nwf-field" id="newEx-name-field" style="margin-top:0;">
         <div id="newEx-name-title" class="nwf-field-label">Exercise Name<span id="newExDuplicateNote" style="display:none;color:#ff4747;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;transform:translateY(1px);">Name already exists</span></div>
         <div id="newEx-name-box" class="nwf-field-box">
-          <input id="newExInput" type="text" autocomplete="off" enterkeyhint="done" style="width:100%;background:transparent;border:none;outline:none;color:var(--gff);font-family:'DM Sans',sans-serif;font-size:18px;font-weight:600;caret-color:#34d399;-webkit-text-fill-color:var(--gff);box-sizing:border-box;" oninput="const _hb=/[\u0590-\u05FF]/.test(this.value);this.style.direction=_hb?'rtl':'ltr';this.style.textAlign=_hb?'right':'left';document.getElementById('newExDuplicateNote').style.display='none';_newExNameBoxBorder('#444');_nwfSyncFieldFloatByEl(this);" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onfocus="_newExFieldFocus('newEx-name-title','newEx-name-box',true)" onblur="_newExFieldFocus('newEx-name-title','newEx-name-box',false);_newExCheckDuplicate()"/>
+          <input id="newExInput" type="text" autocomplete="off" enterkeyhint="done" style="width:100%;background:transparent;border:none;outline:none;color:var(--gff);font-family:'DM Sans',sans-serif;font-size:18px;font-weight:600;caret-color:#34d399;-webkit-text-fill-color:var(--gff);box-sizing:border-box;" oninput="const _hb=/[\u0590-\u05FF]/.test(this.value);this.style.direction=_hb?'rtl':'ltr';this.style.textAlign=_hb?'right':'left';document.getElementById('newExDuplicateNote').style.display='none';_newExNameBoxBorder('#444');_nwfSyncFieldFloatByEl(this);_newExSyncSave();" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onfocus="_newExFieldFocus('newEx-name-title','newEx-name-box',true)" onblur="_newExFieldFocus('newEx-name-title','newEx-name-box',false);_newExCheckDuplicate()"/>
         </div>
       </div>
       <!-- Body part -->
       <div>
-        <div style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;color:var(--gaa);letter-spacing:0;margin-bottom:10px;">Primary Body Part</div>
+        <!-- No "Primary Body Part" title. SAVE with no body part → this centred
+             red note above the buttons (confirmNewEx); its line is always
+             reserved (visibility), so nothing moves when it shows. -->
+        <div id="newExBodyPartNote" style="visibility:hidden;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;color:#ff4747;text-align:center;margin-bottom:10px;">Select a body part</div>
         <div id="newExMusclePills" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;"></div>
         <!-- Body SVG diagram -->
-        <div id="nex-body-container" style="display:flex;gap:18px;width:100%;box-sizing:border-box;margin-top:-26px;transform:scale(0.770) translateZ(0);transform-origin:top center;pointer-events:none;backface-visibility:hidden;"></div>
-        <div style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;color:var(--gaa);letter-spacing:0;margin-top:-67px;margin-bottom:6px;">Muscles <span style="color:var(--g88);font-weight:500;">(optional)</span></div>
-        <!-- Muscle slider -->
-        <div id="nex-slider-wrap" style="display:none;margin-top:-4px;">
+        <div id="nex-body-container" style="display:flex;gap:18px;width:100%;box-sizing:border-box;margin-top:-6px;transform:scale(0.770) translateZ(0);transform-origin:top center;pointer-events:none;backface-visibility:hidden;"></div>
+        <!-- Muscle slider (pulled up over the diagram's empty bottom — the
+             margin the "Muscles" title above it used to take). -->
+        <div id="nex-slider-wrap" style="display:none;margin-top:-47px;">
           <div id="nex-slider-label-row" style="width:60%;margin:0 auto;">
             <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:6px;gap:1px;">
               <div id="nex-bodypart-label" style="min-height:15px;font-family:'DM Sans';font-size:12px;font-weight:700;letter-spacing:.2px;white-space:nowrap;text-align:center;"></div>
@@ -2320,6 +2329,8 @@ window._fbModuleReady = true;
               <div id="nex-slider-dots" style="position:absolute;left:10px;right:10px;top:50%;transform:translateY(-50%);display:flex;justify-content:space-between;pointer-events:none;"></div>
             </div>
           </div>
+          <!-- Below the slider bar, centred. -->
+          <div id="nex-muscles-title" style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;color:var(--gaa);letter-spacing:0;text-align:center;margin-top:6px;">Muscles <span style="color:var(--g88);font-weight:500;">(optional)</span></div>
         </div>
         <!-- Video URL -->
         <div class="nwf-field" id="newEx-video-field">
@@ -5374,8 +5385,11 @@ function _openNwfNamePage() {
   const nwfBg = document.getElementById('nwf-hero-bg');
   if (nwfBg) {
     const _savedPhoto = cur ? localStorage.getItem(`ironlog_workout_photo_${cur}`) : null;
-    nwfBg.src = _savedPhoto || _workoutDefaultPhoto || 'images/workout_background.webp';
+    // Back from Step 2 with the suggested photo still pending → keep showing it.
+    nwfBg.src = _savedPhoto || window._nwfSuggestedPhoto?.src || _workoutDefaultPhoto || 'images/workout_background.webp';
   }
+  // Brand-new workout: suggest an App Photo no workout uses yet (_suggestNwfPhoto).
+  if (window._editingWorkoutIdx == null && !cur) _suggestNwfPhoto();
   const nwfNameInput = document.getElementById('nwf-name-input');
   if (nwfNameInput) { nwfNameInput.value = cur; const _ni_rtl = /[֐-׿]/.test(cur); nwfNameInput.style.direction = _ni_rtl ? 'rtl' : 'ltr'; nwfNameInput.style.textAlign = _ni_rtl ? 'right' : 'left'; nwfNameInput.style.color = ''; }
   // Video-link verification (icon/note) reflects whatever link is still
@@ -7871,15 +7885,17 @@ function _renderExercisesTabKeepScroll() {
 function openNewExModal(muscle) {
   document.getElementById('wtab-menu-fade')?.remove();
   _setNewExHeaderIcon('close');
-  window._newExMuscle = muscle || 'Chest';
+  // Creating: no body part preselected — the user picks one (SAVE stays dimmed
+  // until they do; _newExSyncSave). The muscle arg is no longer used for it.
+  window._newExMuscle = null;
   window._newExCompoundMuscles = [];
   window._newExPhoto = null;
   window._newExPhoto32 = null;
   const input = document.getElementById('newExInput');
   if (input) input.value = '';
   _nwfSyncFieldFloatByEl(input);
-  const _nsb = document.getElementById('newExSaveBtn');
-  if (_nsb) { _nsb.style.opacity = '1'; _nsb.style.cursor = 'pointer'; }
+  const _bpNote = document.getElementById('newExBodyPartNote');
+  if (_bpNote) _bpNote.style.visibility = 'hidden';
   const _nxVideo = document.getElementById('newExVideoUrl');
   if (_nxVideo) _nxVideo.value = '';
   _nwfSyncFieldFloatByEl(_nxVideo);
@@ -7888,15 +7904,17 @@ function openNewExModal(muscle) {
   const _nxVideoNote = document.getElementById('newExVideoNote');
   if (_nxVideoNote) _nxVideoNote.style.display = 'none';
   // Reset photo
+  // No body part yet → no body-part default photo (comes with the pick).
   const _nxDefImg = document.getElementById('newExPhotoDefaultImg');
-  if (_nxDefImg) { _nxDefImg.src = _EX_DEFAULT_PHOTOS[window._newExMuscle] || ''; _nxDefImg.style.display = 'block'; }
+  if (_nxDefImg) { _nxDefImg.src = ''; _nxDefImg.style.display = 'none'; }
   document.getElementById('newExPhotoImg').style.display = 'none';
   document.getElementById('newExPhotoImg').src = '';
   document.getElementById('newExPhotoLabel').innerHTML = 'Change Image <span style="color:var(--g88);font-weight:500;">(optional)</span>';
   document.getElementById('newExPhotoLabel').style.color = 'var(--gff)';
-  _renderNewExPills(window._newExMuscle);
+  _renderNewExPills(null);
   _nExSetupBodySVG();
-  _nExHighlightMuscle(window._newExMuscle);
+  _nExHighlightMuscle(null); // nothing lit; muscle slider + "Muscles (optional)" hidden
+  _newExSyncSave();
   const _nxOvl = document.getElementById('newExModalOverlay');
   const _nxSheet = _nxOvl?.querySelector('.modal-sheet');
   if (_nxOvl) { _nxOvl.style.opacity = '0'; _nxOvl.style.transition = 'none'; }
@@ -7933,7 +7951,8 @@ function openNewExModal(muscle) {
   if (window._historyPush) window._historyPush('new-ex');
 }
 
-function _renderNewExPills(selected) {
+// missing: SAVE tapped with no body part picked → red outlines (confirmNewEx).
+function _renderNewExPills(selected, missing) {
   const pillsEl = document.getElementById('newExMusclePills');
   if (!pillsEl) return;
   const muscles = ['Chest','Back','Legs','Shoulders','Arms','Core','Mix'];
@@ -7942,7 +7961,7 @@ function _renderNewExPills(selected) {
   pillsEl.innerHTML = muscles.map(m => {
     const isSelected = m === selected;
     const c = colors[m];
-    return `<div onclick="_selectNewExMuscle('${m}')" style="padding:15px 0;border-radius:10px;background:${isSelected ? c+'22' : 'var(--g1a)'};border:1px solid ${isSelected ? c : 'var(--g2a)'};color:${isSelected ? c : 'var(--g55)'};font-family:'DM Sans';font-size:13px;font-weight:700;text-align:center;cursor:pointer;transition:all .15s;">${labels[m]}</div>`;
+    return `<div onclick="_selectNewExMuscle('${m}')" style="padding:15px 0;border-radius:10px;background:${isSelected ? c+'22' : 'var(--g1a)'};border:1px solid ${isSelected ? c : missing ? '#ff4747' : 'var(--g2a)'};color:${isSelected ? c : 'var(--g55)'};font-family:'DM Sans';font-size:13px;font-weight:700;text-align:center;cursor:pointer;transition:all .15s;">${labels[m]}</div>`;
   }).join('');
 }
 
@@ -8011,6 +8030,10 @@ const _BP_ORDER = ['Chest','Back','Legs','Shoulders','Arms','Core'];
 function _bpRank(bp) { const i = _BP_ORDER.indexOf(bp); return i === -1 ? 999 : i; }
 
 function _nExHighlightMuscle(bodyPart, preserveSubMuscles) {
+  // No body part picked yet (new exercise): nothing lit, and the slider with
+  // its "Muscles (optional)" title (inside #nex-slider-wrap) hidden below.
+  const _mt = document.getElementById('nex-muscles-title');
+  if (_mt) _mt.style.visibility = bodyPart ? '' : 'hidden';
   W2_ALL_MUSCLE_IDS.forEach(id => {
     const el = document.getElementById('nex-' + id);
     if (el) { el.setAttribute('fill','#2a2a2a'); el.setAttribute('opacity','1'); }
@@ -8216,12 +8239,26 @@ function _nExSliderHighlight(subMuscle, bodyPart) {
 function _selectNewExMuscle(muscle) {
   window._newExMuscle = muscle;
   window._newExCompoundMuscles = [];
+  const _bpNote = document.getElementById('newExBodyPartNote');
+  if (_bpNote) _bpNote.style.visibility = 'hidden'; // "Select a body part" answered
   _renderNewExPills(muscle);
   _nExHighlightMuscle(muscle);
   if (!window._newExPhoto) {
     const _nxDef = document.getElementById('newExPhotoDefaultImg');
     if (_nxDef) { _nxDef.src = _EX_DEFAULT_PHOTOS[muscle] || ''; _nxDef.style.display = 'block'; }
   }
+  _newExSyncSave();
+}
+// SAVE lit only with a name, no duplicate-name note, and a body part picked.
+// Dimmed is just a look — a tap still runs confirmNewEx, which says what's missing.
+function _newExSyncSave() {
+  const btn = document.getElementById('newExSaveBtn');
+  if (!btn) return;
+  const name = (document.getElementById('newExInput')?.value || '').trim();
+  const dup = document.getElementById('newExDuplicateNote')?.style.display === 'inline';
+  const ok = !!name && !dup && !!window._newExMuscle;
+  btn.style.opacity = ok ? '1' : '0.35';
+  btn.style.cursor = ok ? 'pointer' : 'not-allowed';
 }
 
 function openNewExPhotoSheet() {
@@ -8270,11 +8307,7 @@ function _newExCheckDuplicate() {
   }
   if (note) note.style.display = isDup ? 'inline' : 'none';
   _newExNameBoxBorder(isDup ? '#ff4747' : '#444');
-  if (saveBtn) {
-    const canSave = !!name && !isDup;
-    saveBtn.style.opacity = canSave ? '1' : '0.35';
-    saveBtn.style.cursor = canSave ? 'pointer' : 'not-allowed';
-  }
+  if (saveBtn) _newExSyncSave(); // name + no duplicate + body part
   return isDup;
 }
 // One-time "NEW" flash on a just-created exercise's card, so the user can spot
@@ -8393,7 +8426,16 @@ function confirmNewEx() {
     _inp.focus();
     return;
   }
-  const muscle = window._newExMuscle || 'Chest';
+  // Name given but no body part picked yet → say so (red note + red outlines
+  // on the body-part buttons), save nothing.
+  if (!window._newExMuscle) {
+    const _bpNote = document.getElementById('newExBodyPartNote');
+    if (_bpNote) _bpNote.style.visibility = 'visible';
+    _renderNewExPills(null, true);
+    document.getElementById('newExMusclePills')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+  const muscle = window._newExMuscle;
   const videoUrl = (document.getElementById('newExVideoUrl')?.value || '').trim();
   const compoundMuscles = window._newExCompoundMuscles || [];
   const subMuscles = (window._newExSelectedSubMuscles && window._newExSelectedSubMuscles.length > 0)
@@ -14469,8 +14511,37 @@ function _syncExDetailFinishBtnMode(animate) {
   if (animate && _prevMode && _prevMode !== _newMode && _closeLabel && _exFinBtn.animate) {
     _animateExFinishLabelSwap(_exFinBtn, [..._finSpans], _closeLabel, _newMode === 'finish');
   }
+  _syncExFinishReady();
 }
 window._syncExDetailFinishBtnMode = _syncExDetailFinishBtnMode;
+
+// SAVE & DONE "ready" look (.ex-fin-ready, CSS above): active workout only,
+// in SAVE & DONE mode, every set (ignored ones aside) ✓ and at least one of
+// them not a warm-up ("W"). Re-checked on any set change of the open
+// exercise — ✓, type, ignore, add/delete — via the observer below.
+function _syncExFinishReady() {
+  const btn = document.getElementById('ex-detail-finish-btn');
+  if (!btn) return;
+  const card = window._exDetailCardId ? document.getElementById(window._exDetailCardId) : null;
+  let ready = false;
+  if (card && !window._isNewWorkoutFlow && btn.dataset.mode === 'finish') {
+    const rows = [...card.querySelectorAll('tr.set-row')]
+      .filter(r => r.dataset.ignored !== '1' && !r.classList.contains('ignored'));
+    ready = rows.length > 0
+      && rows.every(r => r.querySelector('.set-done-btn.done'))
+      && rows.some(r => (r.dataset.setType || 'regular') !== 'warmup');
+  }
+  btn.classList.toggle('ex-fin-ready', ready);
+}
+(function _watchExFinishReady() {
+  const body = document.getElementById('ex-detail-overlay-body');
+  if (!body) { document.addEventListener('DOMContentLoaded', _watchExFinishReady, { once: true }); return; }
+  let raf = 0;
+  new MutationObserver(() => {
+    if (raf) return;
+    raf = requestAnimationFrame(() => { raf = 0; _syncExFinishReady(); });
+  }).observe(body, { subtree: true, childList: true, attributes: true, attributeFilter: ['class', 'data-set-type', 'data-ignored'] });
+})();
 
 // CLOSE ⇄ SAVE & DONE label roll (~250ms): the old label slides 8px and fades
 // out while the new one slides in from 8px the other side — upward going
@@ -16867,6 +16938,8 @@ function saveWorkoutToList() {
   }
   save();
   _LS.remove('ironlog_session');
+  // New workout kept its suggested App Photo → now saved as its photo.
+  if (!_wasEditingWorkout) _saveNwfSuggestedPhoto(name);
   const _savedName = name;
   // _nwfStartWorkout's "Start Workout" button (on the post-save screen) needs
   // to know which workout this was — an edit updates workouts[] in place at
@@ -17387,6 +17460,10 @@ function _openWorkoutPhotoStepSheet() {
     <div id="workout-photo-step-panel" style="position:absolute;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:var(--g1a);border-radius:20px 20px 0 0;padding:0 16px calc(16px + env(safe-area-inset-bottom));">
       <div style="width:36px;height:3px;background:var(--g55);border-radius:2px;margin:12px auto 4px;"></div>
       <div style="font-family:'DM Sans';font-size:11px;font-weight:700;color:var(--g88);letter-spacing:.8px;text-align:center;padding:6px 0 12px;">WORKOUT PHOTO</div>
+      <button onclick="document.getElementById('workout-photo-step-sheet').remove();_openAppWorkoutPhotos(true)" style="width:100%;background:transparent;border:none;border-top:1px solid var(--g2a);color:var(--gff);font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Choose from App Photos
+      </button>
       <button onclick="document.getElementById('workout-photo-step-sheet').remove();_triggerWorkoutPhotoStep('camera')" style="width:100%;background:transparent;border:none;border-top:1px solid var(--g2a);color:var(--gff);font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
         Take Photo
@@ -17441,6 +17518,144 @@ function _triggerWorkoutPhotoStep(mode) {
   };
   document.body.appendChild(input);
   input.click();
+}
+// ── WORKOUT PHOTO → "Choose from App Photos" ──
+// The app's own workout images: ./images/workouts/, listed (the app can't read
+// a folder) in ./images/workouts/list.json — a JSON array of file names, e.g.
+// ["chest_day.webp", "legs.jpg"], kept up to date by hand. They're already
+// 21:9, so a pick skips the crop step. newMode: the new-workout photo step
+// (_openWorkoutPhotoStepSheet) vs. the workout image's camera (ex-photo-sheet).
+const _APP_WORKOUT_PHOTOS_DIR = 'images/workouts/';
+async function _openAppWorkoutPhotos(newMode) {
+  document.getElementById('app-workout-photos')?.remove();
+  const ov = document.createElement('div');
+  ov.id = 'app-workout-photos';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:600;background:var(--g0a);display:flex;flex-direction:column;max-width:430px;margin:0 auto;';
+  ov.innerHTML = `
+    <div style="position:relative;text-align:center;padding:calc(env(safe-area-inset-top) + 20px) 20px 14px;flex-shrink:0;">
+      <button onclick="document.getElementById('app-workout-photos')?.remove()" style="position:absolute;left:16px;top:calc(env(safe-area-inset-top) + 16px);background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><line x1="19" y1="12" x2="5" y2="12" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round"/><polyline points="11,6 5,12 11,18" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <span style="font-family:'DM Sans';font-size:20px;font-weight:700;color:var(--gff);text-transform:uppercase;">App Photos</span>
+    </div>
+    <div id="app-workout-photos-grid" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px 16px calc(24px + env(safe-area-inset-bottom));display:grid;grid-template-columns:1fr 1fr;gap:10px;align-content:start;">
+      <div style="grid-column:1/-1;text-align:center;color:var(--g88);font-family:'DM Sans';font-size:14px;padding:30px 0;">Loading…</div>
+    </div>`;
+  document.body.appendChild(ov);
+  const grid = ov.querySelector('#app-workout-photos-grid');
+  let files = [];
+  try {
+    const res = await fetch(_APP_WORKOUT_PHOTOS_DIR + 'list.json', { cache: 'no-cache' });
+    const data = res.ok ? await res.json() : [];
+    files = (Array.isArray(data) ? data : []).filter(f => typeof f === 'string' && f.trim());
+  } catch (e) {}
+  if (!grid.isConnected) return;
+  if (!files.length) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--g88);font-family:\'DM Sans\';font-size:14px;padding:30px 0;">No app photos yet</div>';
+    return;
+  }
+  grid.innerHTML = '';
+  files.forEach(f => {
+    const src = _APP_WORKOUT_PHOTOS_DIR + encodeURIComponent(f.trim());
+    const b = document.createElement('button');
+    b.style.cssText = 'padding:0;border:1px solid var(--g33);border-radius:10px;overflow:hidden;background:var(--g11);aspect-ratio:21/9;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .15s;';
+    b.onmousedown = b.ontouchstart = () => { b.style.transform = 'scale(0.97)'; };
+    b.onmouseup = b.ontouchend = b.ontouchcancel = b.onmouseleave = () => { b.style.transform = ''; };
+    b.innerHTML = `<img src="${src}" loading="lazy" alt="" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.closest('button').remove()">`;
+    b.onclick = () => _useAppWorkoutPhoto(src, newMode);
+    grid.appendChild(b);
+  });
+}
+window._openAppWorkoutPhotos = _openAppWorkoutPhotos;
+// Same result as a gallery pick + crop, minus the cropper: the whole image
+// goes through saveWorkoutRectCrop (630×270, its normal save/preview path).
+function _useAppWorkoutPhoto(src, newMode) {
+  const img = new Image();
+  img.onload = () => {
+    document.getElementById('app-workout-photos')?.remove();
+    // Remembered against the saved copy (saveWorkoutRectCrop → _appPhotoRecord).
+    window._appPhotoPickFile = decodeURIComponent(src.split('/').pop());
+    _exPhotoRawImg = img;
+    window._wRectCropNewMode = !!newMode;
+    _wRectState = { img, scale: 1, rx: 0, ry: 0, rectW: img.naturalWidth, rectH: img.naturalHeight };
+    saveWorkoutRectCrop();
+  };
+  img.onerror = () => showToast("Couldn't load that photo");
+  img.src = src;
+}
+// Which App Photo a workout uses: a picked photo is saved as a re-encoded copy
+// (data URL), so each copy's fingerprint is mapped to its file name
+// (localStorage ironlog_app_photo_map). A workout with no photo of its own
+// shows the default image = workout_default.webp.
+function _appPhotoHash(s) {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+  return s.length + ':' + (h >>> 0).toString(36);
+}
+function _appPhotoMap() {
+  try { return JSON.parse(localStorage.getItem('ironlog_app_photo_map') || '{}') || {}; } catch (e) { return {}; }
+}
+function _appPhotoRecord(dataUrl, file) {
+  if (!dataUrl || !file) return;
+  const m = _appPhotoMap();
+  m[_appPhotoHash(dataUrl)] = file;
+  try { localStorage.setItem('ironlog_app_photo_map', JSON.stringify(m)); } catch (e) {}
+}
+function _appPhotoFileOf(photo, map) {
+  if (!photo) return null;
+  if (photo.startsWith('data:')) return map[_appPhotoHash(photo)] || null;
+  const path = photo.split('?')[0];
+  const file = decodeURIComponent(path.split('/').pop());
+  return /images\/(workouts\/)?[^/]+$/.test(path) ? file : null; // app image paths (incl. images/workout_default.webp)
+}
+// New workout's suggested photo: one of list.json's files that no workout —
+// own or library — uses; all used → one of the least used, at random.
+async function _pickSuggestedAppPhoto() {
+  let files = [];
+  try {
+    const res = await fetch(_APP_WORKOUT_PHOTOS_DIR + 'list.json', { cache: 'no-cache' });
+    const data = res.ok ? await res.json() : [];
+    files = (Array.isArray(data) ? data : []).filter(f => typeof f === 'string' && f.trim()).map(f => f.trim());
+  } catch (e) {}
+  if (!files.length) return null;
+  const map = _appPhotoMap();
+  const counts = Object.fromEntries(files.map(f => [f, 0]));
+  [...(workouts || []).filter(w => !w._draft), ...(_libraryWorkouts || [])].forEach(w => {
+    const f = _appPhotoFileOf(w.photo || _getWorkoutPhoto(w.name), map);
+    if (f && f in counts) counts[f]++;
+  });
+  const min = Math.min(...files.map(f => counts[f]));
+  const pool = files.filter(f => counts[f] === min);
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+// Shows the suggestion on the new workout's image (Step 1). Kept in
+// window._nwfSuggestedPhoto until the user picks/removes a photo (cleared
+// there) or the workout is saved (saveWorkoutToList stores it under its name).
+async function _suggestNwfPhoto() {
+  window._nwfSuggestedPhoto = null;
+  const file = await _pickSuggestedAppPhoto();
+  if (!file) return;
+  const src = _APP_WORKOUT_PHOTOS_DIR + encodeURIComponent(file);
+  const img = new Image();
+  img.onload = () => {
+    const page = document.getElementById('nwf-name-page');
+    if (!page || page.style.display === 'none' || window._editingWorkoutIdx != null) return;
+    window._nwfSuggestedPhoto = { file, img, src };
+    const bg = document.getElementById('nwf-hero-bg');
+    if (bg) bg.src = src;
+  };
+  img.src = src;
+}
+// The suggestion as the saved photo — same 630×270 copy a pick would make.
+function _saveNwfSuggestedPhoto(name) {
+  const s = window._nwfSuggestedPhoto;
+  window._nwfSuggestedPhoto = null;
+  if (!s || !name || localStorage.getItem(`ironlog_workout_photo_${name}`)) return;
+  const out = document.createElement('canvas');
+  out.width = 630; out.height = 270;
+  out.getContext('2d').drawImage(s.img, 0, 0, 630, 270);
+  let url = out.toDataURL('image/webp', 0.88);
+  if (!url.startsWith('data:image/webp')) url = out.toDataURL('image/jpeg', 0.88);
+  _saveWorkoutPhotoWithRetry(`ironlog_workout_photo_${name}`, url);
+  _appPhotoRecord(url, s.file);
 }
 function _backToWorkoutNameStep() {
   document.getElementById('workoutPhotoModalOverlay').classList.remove('open');
@@ -22675,9 +22890,6 @@ window.addEventListener('load', function() {
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
       </button>
       <div id="nwf-hero-name" data-name="" style="display:none;"></div>
-      <div style="position:absolute;bottom:0;left:0;right:0;padding:10px 14px 12px;pointer-events:none;text-align:right;">
-        <div style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:rgba(var(--inv-rgb),0.45);letter-spacing:1px;text-transform:uppercase;">preview</div>
-      </div>
     </div>
     <div class="nwf-field" id="nwf-name-field">
       <div id="nwf-name-title" class="nwf-field-label">Workout Name<span id="nwf-name-dup-msg" style="display:none;color:#ff4747;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;transform:translateY(1px);">Name already exists</span></div>
@@ -29112,6 +29324,11 @@ function deleteCoachWorkout(id) {
 <div id="ex-photo-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:var(--g1a);border-radius:20px 20px 0 0;z-index:301;padding:0 16px calc(16px + env(safe-area-inset-bottom));">
   <div style="width:36px;height:3px;background:var(--g55);border-radius:2px;margin:12px auto 4px;"></div>
   <div id="ex-photo-sheet-title" style="font-family:'DM Sans';font-size:11px;font-weight:700;color:var(--g88);letter-spacing:.8px;text-align:center;padding:8px 0 12px;">EXERCISE PHOTO</div>
+  <!-- Workout photos only (shown by openWorkoutPhotoFlow, hidden by openExPhotoSheet). -->
+  <button id="ex-photo-app-btn" onclick="closeExPhotoSheet();_openAppWorkoutPhotos(false)" style="display:none;width:100%;background:transparent;border:none;border-top:1px solid var(--g2a);color:var(--gff);font-family:'DM Sans';font-size:16px;font-weight:600;padding:18px 8px;cursor:pointer;text-align:left;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    Choose from App Photos
+  </button>
   <button onclick="closeExPhotoSheet();triggerExPhoto('camera')" style="width:100%;background:transparent;border:none;border-top:1px solid var(--g2a);color:var(--gff);font-family:'DM Sans';font-size:16px;font-weight:600;padding:18px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
     Take Photo
@@ -31480,6 +31697,8 @@ function openExPhotoSheet() {
     : !!localStorage.getItem(`ironlog_ex_photo_${document.getElementById('ex-detail-overlay-title')?.textContent || ''}`);
   const titleEl = document.getElementById('ex-photo-sheet-title');
   if (titleEl) titleEl.textContent = 'EXERCISE PHOTO';
+  const _appBtn = document.getElementById('ex-photo-app-btn');
+  if (_appBtn) _appBtn.style.display = 'none'; // App Photos are workout images
   const removeBtn = document.getElementById('ex-photo-remove-btn');
   if (removeBtn) removeBtn.style.display = hasPhoto ? 'flex' : 'none';
   if (window._historyPush) window._historyPush('ex-photo-sheet');
@@ -31808,6 +32027,7 @@ function saveExPhotoCrop() {
   }
 
   if (window._workoutPhotoMode) {
+    window._nwfSuggestedPhoto = null; // own photo chosen — no suggestion
     const w = workouts[_workoutPhotoIdx];
     if (w) {
       try { localStorage.setItem(`ironlog_workout_photo_${w.name}`, url32); } catch(e) { showToast('Storage full — photo not saved'); }
@@ -32766,6 +32986,8 @@ function openWorkoutPhotoFlow(idx) {
   const hasPhoto = !!localStorage.getItem(`ironlog_workout_photo_${_wName}`);
   const titleEl = document.getElementById('ex-photo-sheet-title');
   if (titleEl) titleEl.textContent = 'WORKOUT PHOTO';
+  const _appBtn = document.getElementById('ex-photo-app-btn');
+  if (_appBtn) _appBtn.style.display = 'flex'; // "Choose from App Photos" — workouts only
   const removeBtn = document.getElementById('ex-photo-remove-btn');
   if (removeBtn) removeBtn.style.display = hasPhoto ? 'flex' : 'none';
   if (window._historyPush) window._historyPush('ex-photo-sheet');
@@ -32910,6 +33132,7 @@ function _removeCurrentPhoto() {
 }
 
 function _removeWorkoutPhoto() {
+  window._nwfSuggestedPhoto = null; // removing drops a new workout's suggestion too
   const w = workouts[_workoutPhotoIdx];
   const _wName = w ? w.name : (document.getElementById('workoutName')?.value || '').trim();
   if (!_wName) return;
@@ -33225,6 +33448,10 @@ function saveWorkoutRectCrop() {
   ctx.drawImage(s.img, srcX, srcY, srcW, srcH, 0, 0, 630, 270);
   let url = out.toDataURL('image/webp', 0.88);
   if (!url.startsWith('data:image/webp')) url = out.toDataURL('image/jpeg', 0.88);
+  // An explicit photo choice replaces the new workout's suggested one; an App
+  // Photo pick is remembered as using that file (_pickSuggestedAppPhoto).
+  window._nwfSuggestedPhoto = null;
+  if (window._appPhotoPickFile) { _appPhotoRecord(url, window._appPhotoPickFile); window._appPhotoPickFile = null; }
   if (window._wRectCropNewMode) {
     window._pendingWorkoutPhoto = url;
     window._wRectCropNewMode = false;
