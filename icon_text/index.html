@@ -17565,26 +17565,24 @@ async function _openAppWorkoutPhotos(newMode) {
   });
 }
 window._openAppWorkoutPhotos = _openAppWorkoutPhotos;
-// Same result as a gallery pick + crop, minus the cropper: the whole image
-// goes through saveWorkoutRectCrop (630×270, its normal save/preview path).
+// Same result as a gallery pick + crop, minus the cropper — saved through
+// saveWorkoutRectCrop's normal save/preview path, but as just the image's path
+// (no copy). Loaded first only to make sure the file is really there.
 function _useAppWorkoutPhoto(src, newMode) {
   const img = new Image();
   img.onload = () => {
     document.getElementById('app-workout-photos')?.remove();
-    // Remembered against the saved copy (saveWorkoutRectCrop → _appPhotoRecord).
-    window._appPhotoPickFile = decodeURIComponent(src.split('/').pop());
-    _exPhotoRawImg = img;
     window._wRectCropNewMode = !!newMode;
-    _wRectState = { img, scale: 1, rx: 0, ry: 0, rectW: img.naturalWidth, rectH: img.naturalHeight };
-    saveWorkoutRectCrop();
+    saveWorkoutRectCrop(src);
   };
   img.onerror = () => showToast("Couldn't load that photo");
   img.src = src;
 }
-// Which App Photo a workout uses: a picked photo is saved as a re-encoded copy
-// (data URL), so each copy's fingerprint is mapped to its file name
-// (localStorage ironlog_app_photo_map). A workout with no photo of its own
-// shows the default image = workout_default.webp.
+// Which App Photo a workout uses: App Photos are stored as their path
+// (images/workouts/…), so the file name is read straight off it. (A few
+// earlier picks were saved as re-encoded copies — their fingerprints, if any,
+// in localStorage ironlog_app_photo_map, are still recognised.) A workout with
+// no photo of its own shows the default image = workout_default.webp.
 function _appPhotoHash(s) {
   let h = 5381;
   for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
@@ -17592,12 +17590,6 @@ function _appPhotoHash(s) {
 }
 function _appPhotoMap() {
   try { return JSON.parse(localStorage.getItem('ironlog_app_photo_map') || '{}') || {}; } catch (e) { return {}; }
-}
-function _appPhotoRecord(dataUrl, file) {
-  if (!dataUrl || !file) return;
-  const m = _appPhotoMap();
-  m[_appPhotoHash(dataUrl)] = file;
-  try { localStorage.setItem('ironlog_app_photo_map', JSON.stringify(m)); } catch (e) {}
 }
 function _appPhotoFileOf(photo, map) {
   if (!photo) return null;
@@ -17644,18 +17636,12 @@ async function _suggestNwfPhoto() {
   };
   img.src = src;
 }
-// The suggestion as the saved photo — same 630×270 copy a pick would make.
+// The suggestion as the saved photo — stored as its path, same as a pick.
 function _saveNwfSuggestedPhoto(name) {
   const s = window._nwfSuggestedPhoto;
   window._nwfSuggestedPhoto = null;
   if (!s || !name || localStorage.getItem(`ironlog_workout_photo_${name}`)) return;
-  const out = document.createElement('canvas');
-  out.width = 630; out.height = 270;
-  out.getContext('2d').drawImage(s.img, 0, 0, 630, 270);
-  let url = out.toDataURL('image/webp', 0.88);
-  if (!url.startsWith('data:image/webp')) url = out.toDataURL('image/jpeg', 0.88);
-  _saveWorkoutPhotoWithRetry(`ironlog_workout_photo_${name}`, url);
-  _appPhotoRecord(url, s.file);
+  _saveWorkoutPhotoWithRetry(`ironlog_workout_photo_${name}`, s.src);
 }
 function _backToWorkoutNameStep() {
   document.getElementById('workoutPhotoModalOverlay').classList.remove('open');
@@ -26890,7 +26876,11 @@ function _pubConfirmPublish() {
     const w = p.source;
     const id = p.existingId || (Date.now().toString() + '_' + Math.random().toString(36).slice(2, 6));
     const rawPhoto = localStorage.getItem(`ironlog_workout_photo_${w.name}`) || null;
-    const photoUrl = (rawPhoto && window._uploadLibraryWorkoutPhoto) ? await window._uploadLibraryWorkoutPhoto(id, rawPhoto, brandId) : null;
+    // An App Photo is stored as its path (images/workouts/…) — published as is,
+    // no upload; only real image data goes to Storage.
+    const photoUrl = !rawPhoto ? null
+      : !rawPhoto.startsWith('data:') ? rawPhoto
+      : window._uploadLibraryWorkoutPhoto ? await window._uploadLibraryWorkoutPhoto(id, rawPhoto, brandId) : null;
     // Only a link that passed verification (not flagged broken) is published.
     const _rawVideo = localStorage.getItem(`ironlog_workout_video_${w.name}`) || '';
     const videoLink = (_rawVideo && localStorage.getItem(`ironlog_workout_video_broken_${w.name}`) !== '1') ? _rawVideo : '';
@@ -27239,7 +27229,10 @@ function syncExploreToFirestore() {
     const id = Date.now().toString() + '_' + Math.random().toString(36).slice(2,6);
     // w.photo is a raw data URL (still local) — upload it once here and store only
     // the resulting download URL in Firestore, same split exercise photos already use.
-    const photoUrl = w.photo && window._uploadLibraryWorkoutPhoto ? await window._uploadLibraryWorkoutPhoto(id, w.photo) : null;
+    // (An App Photo is already just its path — published as is, no upload.)
+    const photoUrl = !w.photo ? null
+      : !w.photo.startsWith('data:') ? w.photo
+      : window._uploadLibraryWorkoutPhoto ? await window._uploadLibraryWorkoutPhoto(id, w.photo) : null;
     const data = { name: w.name, description: w.description || '', exercises: (w.exercises || []).map(e => Array.isArray(e.sets) ? { ...e, sets: _pubDefaultSets(e.sets) } : e), photo: photoUrl, createdBy: window._currentUser?.uid, createdAt: new Date().toISOString() };
     return window._fbSetDoc(window._fbDoc(window._fbDb, 'library', brandId, 'workouts', id), data).then(() => {
       const idx = _libraryWorkouts.findIndex(x => x.id === w.id);
@@ -33437,21 +33430,28 @@ function _saveWorkoutPhotoWithRetry(key, url) {
   }
 }
 
-function saveWorkoutRectCrop() {
-  const s = _wRectState;
-  if (!s.img) return;
-  const srcX = s.rx / s.scale, srcY = s.ry / s.scale;
-  const srcW = s.rectW / s.scale, srcH = s.rectH / s.scale;
-  const out = document.createElement('canvas');
-  out.width = 630; out.height = 270;
-  const ctx = out.getContext('2d');
-  ctx.drawImage(s.img, srcX, srcY, srcW, srcH, 0, 0, 630, 270);
-  let url = out.toDataURL('image/webp', 0.88);
-  if (!url.startsWith('data:image/webp')) url = out.toDataURL('image/jpeg', 0.88);
+// srcPath: an App Photo (images/workouts/…) — stored as just that path, no
+// crop/re-encode (it's already 21:9 and ships with the app), so it costs
+// almost nothing on the device and publishes without a cloud upload.
+function saveWorkoutRectCrop(srcPath) {
+  let url;
+  if (typeof srcPath === 'string' && srcPath) {
+    url = srcPath;
+  } else {
+    const s = _wRectState;
+    if (!s.img) return;
+    const srcX = s.rx / s.scale, srcY = s.ry / s.scale;
+    const srcW = s.rectW / s.scale, srcH = s.rectH / s.scale;
+    const out = document.createElement('canvas');
+    out.width = 630; out.height = 270;
+    const ctx = out.getContext('2d');
+    ctx.drawImage(s.img, srcX, srcY, srcW, srcH, 0, 0, 630, 270);
+    url = out.toDataURL('image/webp', 0.88);
+    if (!url.startsWith('data:image/webp')) url = out.toDataURL('image/jpeg', 0.88);
+  }
   // An explicit photo choice replaces the new workout's suggested one; an App
   // Photo pick is remembered as using that file (_pickSuggestedAppPhoto).
   window._nwfSuggestedPhoto = null;
-  if (window._appPhotoPickFile) { _appPhotoRecord(url, window._appPhotoPickFile); window._appPhotoPickFile = null; }
   if (window._wRectCropNewMode) {
     window._pendingWorkoutPhoto = url;
     window._wRectCropNewMode = false;
