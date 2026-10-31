@@ -2,13 +2,15 @@
  * service-worker.js — BARZELPRO PWA Service Worker v2.5.0
  */
 
-const APP_VERSION   = 'v2.5.11';
+const APP_VERSION   = 'v2.5.3';
 const STATIC_CACHE  = `barzelpro-static-${APP_VERSION}`;
 const RUNTIME_CACHE = `barzelpro-runtime-${APP_VERSION}`;
 
 const STATIC_ASSETS = [
   './',
   './index.html',
+  './config.js',         // ← brand settings (blocking <script> in index.html)
+  './colors.js',         // ← body-part + PR colours (blocking <script> in index.html)
   './install.html',      // ← Install landing page (LCP critical)
   './success.html',      // ← Post-install success page
   './offline.html',
@@ -18,7 +20,26 @@ const STATIC_ASSETS = [
   './icons/icon-192.png',
   './icons/icon-192-maskable.png',
   './icons/icon-512.png',
+  './images/workouts/list.json', // Workout photo → "Choose from App Photos" (see below)
+  './images/welcome.webp',       // Home "Welcome" / "Welcome Back" background
 ];
+
+// The app's own workout photos (./images/workouts/, listed in list.json —
+// a JSON array of file names): precached on install so the App Photos grid
+// works offline. Photos added to list.json later are cached the first time
+// they're shown (rule 5, cache-first).
+async function precacheAppWorkoutPhotos(cache) {
+  try {
+    const res = await fetch('./images/workouts/list.json', { cache: 'no-cache' });
+    if (!res.ok) return;
+    const files = await res.json();
+    if (!Array.isArray(files)) return;
+    await Promise.allSettled(files
+      .filter(f => typeof f === 'string' && f.trim())
+      .map(f => cache.add('./images/workouts/' + encodeURIComponent(f.trim()))
+        .catch(e => console.warn('[SW] Pre-cache failed:', f, e))));
+  } catch (e) { console.warn('[SW] App workout photos pre-cache skipped:', e); }
+}
 
 // index.html's top module block does static `import`s of these straight from
 // gstatic — if that import fails (nothing cached + no network), the whole
@@ -71,11 +92,12 @@ self.addEventListener('install', event => {
   console.log('[SW] Installing', APP_VERSION);
   event.waitUntil(
     caches.open(STATIC_CACHE)
-      .then(cache => Promise.allSettled(
-        [...STATIC_ASSETS, ...FIREBASE_SDK_ASSETS, ...CDN_LIB_ASSETS].map(asset =>
+      .then(cache => Promise.allSettled([
+        ...[...STATIC_ASSETS, ...FIREBASE_SDK_ASSETS, ...CDN_LIB_ASSETS].map(asset =>
           cache.add(asset).catch(e => console.warn('[SW] Pre-cache failed:', asset, e))
-        )
-      ))
+        ),
+        precacheAppWorkoutPhotos(cache),
+      ]))
       .then(() => self.skipWaiting())
   );
 });

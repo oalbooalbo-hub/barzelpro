@@ -379,10 +379,30 @@ body.desktop-mode .pages-wrap {
    page (no circle): it and #today-week-main (This Week + the circle pages)
    slide side by side — .on-welcome = Welcome in view (_todayHomeGoTo). No
    workout completed this week (.week-welcome): Welcome alone, the rest hidden. */
-#today-week-welcome{display:flex;position:absolute;inset:0;z-index:2;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-family:'DM Sans';font-size:56px;font-weight:900;line-height:1.1;color:var(--text-strong);pointer-events:none;transition:transform .3s cubic-bezier(.2,.8,.3,1);}
+#today-week-welcome{display:flex;position:absolute;inset:0;z-index:2;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-family:'DM Sans';font-size:40px;font-weight:900;line-height:1.1;color:var(--text-strong);pointer-events:none;transition:transform .3s cubic-bezier(.2,.8,.3,1);}
 #today-week-main{width:100%;display:flex;flex-direction:column;align-items:center;gap:6px;transition:transform .3s cubic-bezier(.2,.8,.3,1);}
 #today-week-progress:not(.on-welcome) #today-week-welcome{transform:translateX(-100%);}
 #today-week-progress.on-welcome #today-week-main{transform:translateX(100%);}
+/* The title sits 50px below the header logo, above the box's top on most
+   phones (--welcome-y, _syncWelcomeLine; not via transform — that's used by the
+   slide / welcome-in animation). So the box clips the sliding pages at its
+   sides and bottom only: clip-path in place of its overflow:hidden. */
+#today-week-welcome{color:#fff;justify-content:flex-start;box-sizing:border-box;}
+#today-week-welcome-line{position:relative;top:var(--welcome-y,0px);}
+/* Black pill behind the carousel dots, readable on the home photo. A pseudo-element
+   so it adds no layout: the home column keeps its exact spacing. */
+#today-carousel-dots{position:relative;}
+#today-carousel-dots::before{content:'';position:absolute;inset:-6px -10px;background:#000;border-radius:100px;z-index:-1;}
+#today-week-progress{overflow:visible!important;clip-path:inset(-100vh 0 0 0);}
+/* Home's background photo (images/welcome.webp): fills #today-start-screen, which
+   stops above the bottom buttons. -1 keeps it behind the screen's content. */
+#today-welcome-bg{position:absolute;inset:0;z-index:-1;pointer-events:none;background:url(images/welcome.webp) center/cover no-repeat;}
+/* Dark layer over the photo on the circle pages, for contrast (fades as the page slides; _syncHomeBgDim). */
+#today-welcome-bg::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,.6);opacity:0;transition:opacity .3s ease;}
+#today-welcome-bg.dim::after{opacity:1;}
+/* Welcome page only: gradient, darker toward the bottom (swaps with the flat dark layer above). */
+#today-welcome-bg::before{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,transparent 35%,rgba(0,0,0,.8) 100%);transition:opacity .3s ease;}
+#today-welcome-bg.dim::before{opacity:0;}
 #today-week-progress.home-instant #today-week-welcome,#today-week-progress.home-instant #today-week-main{transition:none;}
 #today-week-progress.week-welcome > :not(#today-week-welcome),#today-carousel-dots.week-welcome{visibility:hidden;}
 #today-week-progress.week-welcome #today-week-welcome{transform:none;animation:weekWelcomeIn .5s ease both;}
@@ -413,7 +433,9 @@ body.ex-note-editing #workout-finish-bar{display:none!important;}
    the same width. */
 #ex-detail-overlay-body > .exercise-card{margin-left:2px;margin-right:2px;}
 /* Active exercise's top progress bar: darker empty segments (were --g33). */
-#ex-detail-progress-wrap > div{background:var(--g00)!important;}
+#ex-detail-progress-wrap > div{background:var(--g00)!important;outline:1px solid transparent;outline-offset:-1px;transition:outline-color .25s ease;}
+/* The open exercise's segment (see _syncExOpenSeg) — same green as .progress-seg-fill. */
+#ex-detail-progress-wrap > div.ex-seg-open{outline-color:#39FF14;}
 #ex-detail-finish-fade.home-bg-match-bottom{background:var(--home-bg) bottom/100% 100vh no-repeat;background-size:100% 100dvh;}
 #ex-detail-overlay:not(.ex-tab-mode) #ex-detail-overlay-body.ex-photo-bg{background:var(--home-bg) scroll;}
 #ex-detail-overlay:not(.ex-tab-mode) #ex-detail-overlay-body.ex-photo-bg #ex-detail-photo-wrap{background:transparent;}
@@ -431,7 +453,9 @@ body.workout-home-bg #workout-finish-bar,body.workout-home-bg #today-info-close-
 body.ex-finish-docked #ex-detail-overlay-body{padding-bottom:calc(226px + env(safe-area-inset-bottom));}
 /* Active exercise's SAVE & DONE: every set ✓ and at least one isn't a warm-up
    → solid --accent with black text, 0.4s fade (_syncExFinishReady). */
-#ex-detail-finish-btn{transition:background-color .4s ease,border-color .4s ease;}
+#ex-detail-finish-btn{transition:background-color .4s ease,border-color .4s ease,opacity .25s ease,transform .25s ease;}
+/* CLOSE while Note/Timer is open (see _syncExFinishReady): keeps its space. */
+#ex-detail-finish-btn.ex-close-hidden{opacity:0;transform:translateY(8px);pointer-events:none;}
 #ex-detail-finish-btn > span{transition:color .4s ease;}
 #ex-detail-finish-btn.ex-fin-ready{background-color:var(--accent) !important;}
 #ex-detail-finish-btn.ex-fin-ready > span{color:#000 !important;}
@@ -608,6 +632,9 @@ html.bodymap-mode #newExPhotoSection{display:none!important;}
   animation:exFadeScaleIn .42s cubic-bezier(0.2,0.8,0.3,1) forwards;
 }
 #ex-detail-overlay.ex-overlay-open{display:block !important;}
+/* Closing, list already showing through: the fading page must not catch taps
+   meant for the list / SAVE WORKOUT (z-index 200 vs the bar's 150). */
+#ex-detail-overlay.ex-overlay-closing,#ex-detail-overlay.ex-overlay-closing *{pointer-events:none!important;}
 #ex-detail-overlay.ex-overlay-out{
   display:block !important;
   animation:exFadeScaleOut .28s cubic-bezier(.4,0,.2,1) forwards;
@@ -1580,6 +1607,8 @@ window._fbModuleReady = true;
     <!-- Weekly strength progress ring / muscle heatmap carousel — swipe area is
          exactly this box (bounded above by the header via the screen's own
          top padding, below by the dots row that immediately follows it). -->
+    <!-- Home's background photo (see #today-welcome-bg). -->
+    <div id="today-welcome-bg"></div>
     <div id="today-week-progress" class="on-welcome" style="display:none;position:relative;width:100%;max-width:380px;flex-direction:column;align-items:center;gap:6px;margin-top:70px;padding-top:10px;padding-bottom:4px;margin-bottom:-14px;transform:translateY(-20px);overflow:hidden;-webkit-tap-highlight-color:transparent;touch-action:pan-y;">
       <!-- The carousel's first page, "Welcome" / "Welcome Back" (no circle) —
            and, with no workout completed this week, shown alone instead of
@@ -1774,7 +1803,7 @@ window._fbModuleReady = true;
          _syncWorkoutFinishBar. -->
     <div id="workout-finish-bar" class="home-bg-match-bottom" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;padding:46px 20px calc(20px + env(safe-area-inset-bottom));z-index:150;box-sizing:border-box;pointer-events:none;">
       <div style="display:flex;gap:10px;">
-        <button id="workout-finish-btn" onclick="_workoutFinishBtnTap()" style="flex:1;padding:17px;background:var(--g00);color:var(--gcc);border:1px solid var(--gcc);border-radius:100px;font-family:'DM Sans';font-size:18px;font-weight:700;cursor:pointer;letter-spacing:.3px;-webkit-tap-highlight-color:transparent;transition:transform .15s,background-color .4s ease,color .4s ease,border-color .4s ease;pointer-events:auto;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">
+        <button id="workout-finish-btn" onclick="_workoutFinishBtnTap()" style="flex:1;padding:17px;background:var(--g00);color:var(--gcc);border:1px solid var(--gcc);border-radius:100px;font-family:'DM Sans';font-size:18px;font-weight:700;cursor:pointer;letter-spacing:.3px;-webkit-tap-highlight-color:transparent;transition:transform .15s,background-color .4s ease,color .4s ease,border-color .4s ease;pointer-events:auto;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="_finishBtnTouchStart(event,this)" ontouchend="_finishBtnTouchEnd(event,this)" ontouchcancel="this.style.transform=''">
           SAVE WORKOUT
         </button>
       </div>
@@ -3040,7 +3069,30 @@ function _syncWorkoutFinishBtnLabel(anyDone) {
   btn.dataset.mode = close ? 'close' : 'save';
   btn.textContent = close ? 'CLOSE' : 'SAVE WORKOUT';
 }
+// The button acts on the touch itself: Android can drop the click of a tap made
+// while the list is still coasting after a scroll (the tap only stops the
+// scroll). _workoutFinishBtnTap ignores the click that may follow a handled touch.
+let _finishBtnTouch = null;
+let _finishBtnLastTap = 0;
+function _finishBtnTouchStart(e, btn) {
+  btn.style.transform = 'scale(0.97)';
+  const t = e.changedTouches[0];
+  _finishBtnTouch = t ? { x: t.clientX, y: t.clientY } : null;
+}
+function _finishBtnTouchEnd(e, btn) {
+  btn.style.transform = '';
+  const s = _finishBtnTouch, t = e.changedTouches[0];
+  _finishBtnTouch = null;
+  if (!s || !t || Math.hypot(t.clientX - s.x, t.clientY - s.y) > 12) return; // a drag, not a tap
+  const r = btn.getBoundingClientRect();
+  if (t.clientX < r.left || t.clientX > r.right || t.clientY < r.top || t.clientY > r.bottom) return;
+  if (e.cancelable) e.preventDefault();
+  _workoutFinishBtnTap();
+}
 function _workoutFinishBtnTap() {
+  const _now = Date.now();
+  if (_now - _finishBtnLastTap < 500) return;
+  _finishBtnLastTap = _now;
   // Re-check live state (label sync is debounced 80ms behind checkFinishReady)
   const anyDone = !!document.querySelector('#exerciseList .exercise-card.completed, #exerciseList .set-done-btn.done');
   if (_isCloseOnlyWorkout(anyDone)) closeActiveWorkout();
@@ -4353,6 +4405,38 @@ function _todayHomeGoTo(p, instant) {
   else _todaySyncDots();
 }
 window._todayHomeGoTo = _todayHomeGoTo;
+// "Welcome" / "Welcome Back": 50px below the header logo on every phone. The
+// carousel box's own height depends on the screen, so the offset is measured.
+function _syncWelcomeLine() {
+  const box = document.getElementById('today-week-progress');
+  const logo = document.getElementById('brand-logo-img');
+  if (!box || !logo) return;
+  const b = box.getBoundingClientRect(), l = logo.getBoundingClientRect();
+  if (!b.height || !l.height) return;
+  box.style.setProperty('--welcome-y', (l.bottom + 50 - b.top).toFixed(1) + 'px');
+}
+// Home photo: darkened on every carousel page except "Welcome" / "Welcome Back".
+function _syncHomeBgDim() {
+  const box = document.getElementById('today-week-progress');
+  const welcome = box?.classList.contains('on-welcome') || box?.classList.contains('week-welcome');
+  document.getElementById('today-welcome-bg')?.classList.toggle('dim', !!box && !welcome);
+}
+(function _watchWelcomeLine() {
+  const box = document.getElementById('today-week-progress');
+  if (!box) { document.addEventListener('DOMContentLoaded', _watchWelcomeLine, { once: true }); return; }
+  new MutationObserver(_syncHomeBgDim).observe(box, { attributes: true, attributeFilter: ['class'] });
+  _syncHomeBgDim();
+  let raf = 0;
+  const sync = () => { if (raf) return; raf = requestAnimationFrame(() => { raf = 0; _syncWelcomeLine(); }); };
+  // The start screen centres its column, so any sibling resizing moves the box.
+  if (window.ResizeObserver) {
+    const ro = new ResizeObserver(sync);
+    [...(box.parentElement?.children || [box])].forEach(el => ro.observe(el));
+  }
+  if (box.parentElement) new MutationObserver(sync).observe(box.parentElement, { attributes: true, attributeFilter: ['class', 'style'] });
+  window.addEventListener('resize', sync);
+  window.addEventListener('load', sync);
+})();
 function _todaySyncDots() {
   const act = _todayHomePage();
   document.querySelectorAll('#today-carousel-dots .today-carousel-dot').forEach((d, i) => {
@@ -6075,6 +6159,18 @@ function _syncSaveBtnDone(allDone) {
   btn.style.color = allDone ? '#000' : 'var(--gcc)';
   btn.style.borderColor = allDone ? 'var(--accent)' : 'var(--gcc)';
 }
+// Active exercise's top bar: outline the segment of the open exercise. Segments
+// aren't tied to specific exercises (they fill left-to-right as exercises are
+// completed), so that's the next empty one — the one finishing this exercise
+// fills. An already completed exercise has no empty segment of its own: none.
+function _syncExOpenSeg() {
+  const wrap = document.getElementById('ex-detail-progress-wrap');
+  if (!wrap) return;
+  const card = window._exDetailCardId ? document.getElementById(window._exDetailCardId) : null;
+  const idx = (!card || card.classList.contains('completed')) ? -1
+    : document.querySelectorAll('#exerciseList .exercise-card.completed').length;
+  [...wrap.children].forEach((seg, i) => seg.classList.toggle('ex-seg-open', i === idx));
+}
 function _updateWorkoutProgress() {
   const section  = document.getElementById('workout-progress-section');
   const wrap     = document.getElementById('workout-hero-progress-wrap');
@@ -6120,7 +6216,14 @@ function _updateWorkoutProgress() {
   _renderProgressSegments(wrap, total, done);
   wrap.style.display = total > 0 ? 'flex' : 'none';
   const exWrap = document.getElementById('ex-detail-progress-wrap');
-  if (exWrap) { _renderProgressSegments(exWrap, total, done); exWrap.style.display = (total > 0 && !window._isNewWorkoutFlow) ? 'flex' : 'none'; }
+  if (exWrap) {
+    // The open card sits in the overlay, outside #exerciseList — still one of the workout's exercises.
+    const _openCard = window._exDetailCardId ? document.getElementById(window._exDetailCardId) : null;
+    const _away = !!_openCard && !_openCard.closest('#exerciseList');
+    _renderProgressSegments(exWrap, total + (_away ? 1 : 0), done + (_away && _openCard.classList.contains('completed') ? 1 : 0));
+    exWrap.style.display = (total > 0 && !window._isNewWorkoutFlow) ? 'flex' : 'none';
+    _syncExOpenSeg();
+  }
   if (prStars) {
     let weightPRs = 0, volPRs = 0, volumePRs = 0;
     document.querySelectorAll('#exerciseList .exercise-card').forEach(c => {
@@ -7716,8 +7819,10 @@ function _updatePickModeDoneBtn() {
   if (!btn || !btnsWrap) return;
   const n = _pickModeSelected.length;
   btnsWrap.style.display = _pickMode ? 'flex' : 'none';
-  // Creating / editing a workout: "ADD TO WORKOUT" / "ADD 3 TO WORKOUT".
-  btn.textContent = window._isNewWorkoutFlow
+  // Adding to a workout, new or active: "ADD TO WORKOUT" / "ADD 3 TO WORKOUT".
+  // Replacing an exercise / editing a past session keep the plain wording.
+  const _toWorkout = window._isNewWorkoutFlow || (!window._pickModeIsReplace && !window._editHistPickerMode);
+  btn.textContent = _toWorkout
     ? (n > 0 ? `ADD ${n} TO WORKOUT` : 'ADD TO WORKOUT')
     : (n > 0 ? `ADD ${n} EXERCISES` : 'ADD EXERCISES');
   btn.style.opacity = '1';
@@ -8775,7 +8880,7 @@ function toggleExTabCard(safeIdOrEl) {
 
   document.body.classList.add('ex-detail-open');
 
-  overlay.classList.remove('ex-overlay-out', 'ex-overlay-open');
+  overlay.classList.remove('ex-overlay-out', 'ex-overlay-open', 'ex-overlay-closing');
   overlay.classList.add('ex-overlay-in');
   overlay.addEventListener('animationend', () => {
     overlay.classList.remove('ex-overlay-in');
@@ -14278,6 +14383,9 @@ function _exCardNameClose(overlay, card, r0, frame, state, A, onDone) {
   // Name settled → the card fills in around it → the workout page fades in.
   A(ghost, [{ opacity: 0 }, { opacity: 1 }], { delay: _EX_NAME_MS, duration: _EX_CARD_IN_MS, easing: 'ease-out', fill: 'both' });
   A(overlay, [{ opacity: 1 }, { opacity: 0 }], { delay: _EX_NAME_MS + _EX_CARD_IN_MS, duration: _EX_LAND_FADE_MS, easing: 'ease-out' });
+  // The list shows from here on, so taps go to it, not the fading page. Not
+  // earlier: while the page still covers it, a tap would hit a button unseen.
+  setTimeout(() => { if (overlay._exFly === state) overlay.classList.add('ex-overlay-closing'); }, _EX_NAME_MS + _EX_CARD_IN_MS);
   _exFlyRun(overlay, state, onDone);
 }
 
@@ -14291,6 +14399,7 @@ function _exCardFlyClose(overlay, card, to, onDone) {
   overlay._exFly = state;
   if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
     state.cleanup = () => {};
+    overlay.classList.add('ex-overlay-closing');
     A(overlay, [{ opacity: 1 }, { opacity: 0 }], { duration: 200 });
     _exFlyRun(overlay, state, onDone);
     return;
@@ -14366,6 +14475,7 @@ function openExDetail(id) {
   const _flyGhost = _morphFrom ? _exFlyGhost(card, _morphFrom.rect) : null;
   unlockExerciseCard(id);
   window._exDetailCardId = id;
+  _syncExOpenSeg();
   if (window._historyPush) window._historyPush('ex-detail');
 
   const overlay = document.getElementById('ex-detail-overlay');
@@ -14424,7 +14534,7 @@ function openExDetail(id) {
   if (_flyGhost) setTimeout(_hideChips, _EX_OPEN_FADE_MS + 50); else _hideChips();
 
   if (!_flyGhost) { _exFlyCancel(overlay); _exMorphCancel(overlay); }
-  overlay.classList.remove('ex-overlay-out', 'ex-overlay-open');
+  overlay.classList.remove('ex-overlay-out', 'ex-overlay-open', 'ex-overlay-closing');
   const _onOpened = () => {
     overlay.classList.remove('ex-overlay-in');
     overlay.classList.add('ex-overlay-open');
@@ -14532,6 +14642,15 @@ function _syncExFinishReady() {
       && rows.some(r => (r.dataset.setType || 'regular') !== 'warmup');
   }
   btn.classList.toggle('ex-fin-ready', ready);
+  // Active workout: CLOSE steps aside while Note/Timer is open (fades back when
+  // deselected, or as SAVE & DONE once a set is done). No card = the page is
+  // closing: left as is so it doesn't reappear on the way out; cleared on close.
+  if (card) {
+    const panelOpen = window._exCloseHideHold
+      || document.getElementById(`comment-area-${card.id}`)?.classList.contains('open')
+      || document.getElementById(`timer-panel-${card.id}`)?.classList.contains('open');
+    btn.classList.toggle('ex-close-hidden', !!panelOpen && !window._isNewWorkoutFlow && btn.dataset.mode === 'close');
+  }
 }
 (function _watchExFinishReady() {
   const body = document.getElementById('ex-detail-overlay-body');
@@ -14672,6 +14791,7 @@ function closeExDetailOverlay() {
 
   const _wasCompleted = card?.classList.contains('completed');
   window._exDetailCardId = null;
+  _syncExOpenSeg();
   document.body.classList.remove('ex-detail-open');
   const _cw = document.getElementById('todayMuscleChipsWrap');
   if (_cw) _cw.style.display = 'flex';
@@ -14710,7 +14830,8 @@ function closeExDetailOverlay() {
   overlay.classList.remove('ex-overlay-in');
   if (_morphTo) {
     _exCardFlyClose(overlay, card, _morphTo, () => {
-      overlay.classList.remove('ex-overlay-open');
+      overlay.classList.remove('ex-overlay-open', 'ex-overlay-closing');
+      document.getElementById('ex-detail-finish-btn')?.classList.remove('ex-close-hidden');
       // No return glow on the card (user removed it). Held list moves (the
       // completed card's reposition + scroll) run _EX_DONE_SCROLL_WAIT_MS after
       // the card reappeared — it did so _EX_LAND_FADE_MS ago (the page fade).
@@ -14727,9 +14848,10 @@ function closeExDetailOverlay() {
     _exFlyCancel(overlay);
     _exMorphCancel(overlay);
     overlay.classList.remove('ex-overlay-open');
-    overlay.classList.add('ex-overlay-out');
+    overlay.classList.add('ex-overlay-out', 'ex-overlay-closing');
     overlay.addEventListener('animationend', () => {
-      overlay.classList.remove('ex-overlay-out');
+      overlay.classList.remove('ex-overlay-out', 'ex-overlay-closing');
+      document.getElementById('ex-detail-finish-btn')?.classList.remove('ex-close-hidden');
     }, { once: true });
   }
 }
@@ -26309,7 +26431,6 @@ function buildExerciseLibraryHtml(selectedMuscle) {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
         </button>
         <div id="extab-card-menu-libex-${ex.id}" style="display:none;position:absolute;top:calc(100% + 4px);right:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;z-index:999;min-width:120px;box-shadow:0 8px 24px rgba(0,0,0,.4);">
-          <button onclick="event.stopPropagation();document.getElementById('extab-card-menu-libex-${ex.id}').style.display='none';renameLibraryExercise('${ex.id}')" style="width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);font-family:'DM Sans';font-size:14px;font-weight:600;padding:12px 16px;cursor:pointer;text-align:left;">Rename</button>
           <button onclick="event.stopPropagation();document.getElementById('extab-card-menu-libex-${ex.id}').style.display='none';deleteLibraryExercise('${ex.id}')" style="width:100%;background:transparent;border:none;color:#ff4747;font-family:'DM Sans';font-size:14px;font-weight:600;padding:12px 16px;cursor:pointer;text-align:left;">Delete</button>
         </div>
       </div>` : '';
@@ -27104,43 +27225,6 @@ function syncExploreExercisesToFirestore() {
   }).catch(e => {
     if (libBtn) { libBtn.style.opacity = '1'; libBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 38 36" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 22 Q4 14 12 14 Q13 8 20 8 Q28 8 28 16 Q34 16 34 22 Q34 28 28 28 L8 28 Q4 28 4 22Z"/></svg> Library'; libBtn.style.pointerEvents = ''; }
   });
-}
-
-function renameLibraryExercise(id) {
-  const ex = _libraryExercises.find(e => e.id === id);
-  if (!ex) return;
-  const overlay = document.createElement('div');
-  overlay.className = 'delete-confirm-overlay';
-  overlay.innerHTML = `<div class="delete-confirm-sheet">
-    <div class="delete-confirm-title" style="margin-bottom:12px;">Rename Exercise</div>
-    <input id="_renameLibExInput" type="text" value="${ex.name}" style="width:100%;background:var(--g1a);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans';font-size:15px;padding:12px;outline:none;box-sizing:border-box;margin-bottom:16px;" onkeydown="if(event.key==='Enter')confirmRenameLibEx('${id}',this)"/>
-    <div class="delete-confirm-btns">
-      <button class="btn-del-cancel" onclick="this.closest('.delete-confirm-overlay').remove()">Cancel</button>
-      <button class="btn-del-yes" onclick="confirmRenameLibEx('${id}',this)">Save</button>
-    </div>
-  </div>`;
-  document.body.appendChild(overlay);
-  setTimeout(() => { const inp = overlay.querySelector('#_renameLibExInput'); inp?.focus(); inp?.select(); }, 100);
-}
-
-function confirmRenameLibEx(id, el) {
-  const overlay = el.closest('.delete-confirm-overlay');
-  const name = overlay.querySelector('#_renameLibExInput').value.trim();
-  if (!name) { showToast('Enter a name'); return; }
-  const ex = _libraryExercises.find(e => e.id === id);
-  if (!ex) return;
-  ex.name = name; ex.label = name; ex._local = true;
-  window._exploreExLocalItems = window._exploreExLocalItems || [];
-  const localIdx = window._exploreExLocalItems.findIndex(x => x.id === id);
-  if (localIdx >= 0) window._exploreExLocalItems[localIdx] = { ...ex };
-  else window._exploreExLocalItems.push({ ...ex });
-  window._exploreExLocalPending = true;
-  overlay.remove();
-  renderExercisesTab();
-  setTimeout(() => {
-    const libBtn = document.getElementById('extab-library-sync-btn');
-    if (libBtn) { libBtn.style.opacity = '1'; libBtn.style.borderColor = '#34d399'; libBtn.style.background = 'rgba(52,211,153,.1)'; libBtn.style.pointerEvents = ''; libBtn.style.cursor = 'pointer'; }
-  }, 50);
 }
 
 function deleteLibraryExercise(id) {
@@ -29198,10 +29282,6 @@ function deleteCoachWorkout(id) {
     <span style="width:24px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></span>
     <span style="flex:1;text-align:left;">Share</span>
   </button>
-  <button onclick="closeWorkoutMenu();openWorkoutNameModal()" style="width:100%;background:transparent;border:none;border-top:1px solid var(--g2a);color:var(--gff);font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
-    <span style="width:24px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span>
-    <span style="flex:1;text-align:left;">Rename</span>
-  </button>
   <button id="workout-menu-change-image-btn" onclick="closeWorkoutMenu();_openChangeWorkoutImage()" style="width:100%;background:transparent;border:none;border-top:1px solid var(--g2a);color:var(--gff);font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;display:none;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
     <span style="width:24px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></span>
     <span style="flex:1;text-align:left;">Change Image</span>
@@ -29941,6 +30021,9 @@ function exFloatAction(action) {
 
   // Wait for close animation only when something was open and we are opening a different panel
   const _hadOpen = _anyOpen();
+  // Note ⇄ Timer: CLOSE stays hidden through the gap between the two panels.
+  const _swapNoteTimer = (action === 'note' || action === 'timer') && !_targetWasOpen && (_isNoteOpen() || _isTimerOpen());
+  if (_swapNoteTimer) window._exCloseHideHold = true;
   _closeAll();
 
   const _ANIM_MS = 350; // longest CSS close transition is comment-area at 400ms; 350 gives safe overlap
@@ -29962,6 +30045,7 @@ function exFloatAction(action) {
         else if (document.body.classList.contains('ex-detail-open')) _toggleExDetailStats();
         else openExtabExOverlay(_exName, 'stats');
       }
+      if (_swapNoteTimer) { window._exCloseHideHold = false; _syncExFinishReady(); }
     }, _delay);
   }
 
