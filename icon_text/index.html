@@ -16946,6 +16946,7 @@ function saveWorkoutToList() {
 
     // Data URL, if a hero photo was set during this creation/edit — uploaded to
     // Storage (not embedded in the Firestore doc) by syncExploreToFirestore.
+    if (!_wasEditingWorkout) _saveNwfSuggestedPhoto(name);
     const _explorePhoto = localStorage.getItem(`ironlog_workout_photo_${name}`) || null;
     if (editId) {
       const existing = _libraryWorkouts.find(x => x.id === editId);
@@ -17752,17 +17753,20 @@ async function _suggestNwfPhoto() {
   img.onload = () => {
     const page = document.getElementById('nwf-name-page');
     if (!page || page.style.display === 'none' || window._editingWorkoutIdx != null) return;
+    if (window._nwfSuggestedPhoto?.picked) return; // the user chose while this was loading
     window._nwfSuggestedPhoto = { file, img, src };
     const bg = document.getElementById('nwf-hero-bg');
     if (bg) bg.src = src;
   };
   img.src = src;
 }
-// The suggestion as the saved photo — stored as its path, same as a pick.
+// The suggestion as the saved photo — stored as its path, same as a pick. Also
+// stores a photo the user picked before naming the workout (picked: true),
+// which wins over anything an old workout of that name left under the key.
 function _saveNwfSuggestedPhoto(name) {
   const s = window._nwfSuggestedPhoto;
   window._nwfSuggestedPhoto = null;
-  if (!s || !name || localStorage.getItem(`ironlog_workout_photo_${name}`)) return;
+  if (!s || !name || (!s.picked && localStorage.getItem(`ironlog_workout_photo_${name}`))) return;
   _saveWorkoutPhotoWithRetry(`ironlog_workout_photo_${name}`, s.src);
 }
 function _backToWorkoutNameStep() {
@@ -32113,6 +32117,8 @@ function saveExPhotoCrop() {
       const _nwfName = (document.getElementById('nwf-hero-name')?.dataset?.name || document.getElementById('workoutName')?.value || '').trim();
       if (_nwfName) {
         try { localStorage.setItem(`ironlog_workout_photo_${_nwfName}`, url32); } catch(e) { showToast('Storage full — photo not saved'); }
+      } else {
+        window._nwfSuggestedPhoto = { src: url32, picked: true }; // no name yet — see saveWorkoutRectCrop
       }
       const nwfBg = document.getElementById('nwf-hero-bg');
       if (nwfBg) nwfBg.src = url32;
@@ -33576,6 +33582,9 @@ function saveWorkoutRectCrop(srcPath) {
       const _nwfName = (document.getElementById('nwf-hero-name')?.dataset?.name || document.getElementById('workoutName')?.value || '').trim();
       if (_nwfName) {
         _saveWorkoutPhotoWithRetry(`ironlog_workout_photo_${_nwfName}`, url);
+      } else {
+        // No name yet, so no key to store it under: held until the save (_saveNwfSuggestedPhoto).
+        window._nwfSuggestedPhoto = { src: url, picked: true };
       }
       const nwfBg = document.getElementById('nwf-hero-bg');
       if (nwfBg) nwfBg.src = url;
