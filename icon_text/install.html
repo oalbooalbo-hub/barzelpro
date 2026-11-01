@@ -89,18 +89,20 @@
     /* ── FEATURE LIST ── */
 
     /* ── BOTTOM CTA ── */
+    /* Same spot as Home's START WORKOUT (#today-load-btn), which is 100px tall
+       with its top at 50% + 183px on every phone; this 64px button is centred on
+       that. Fixed, so it stays out of the flow and the logo doesn't move. */
     .bottom{
-      width:100%;
-      max-width:400px;
+      position:fixed;
+      left:0;
+      right:0;
+      top:calc(50dvh + 201px);
       display:flex;
-      flex-direction:column;
-      gap:14px;
-      align-items:center;
+      justify-content:center;
     }
 
     .btn-install{
-      width:100%;
-      max-width:380px;
+      width:min(100vw - 32px,380px);
       height:64px;
       padding:0;
       background:var(--accent);
@@ -122,29 +124,17 @@
     .btn-install:active{transform:scale(.97);opacity:.9;}
     .btn-install svg{flex-shrink:0;}
 
-    .btn-open{
-      width:100%;
-      height:48px;
-      padding:0;
-      background:transparent;
-      color:var(--muted);
-      border:1px solid var(--border);
-      border-radius:14px;
-      font-family:inherit;
-      font-size:14px;
-      font-weight:600;
-      cursor:pointer;
-      transition:border-color .2s,color .2s;
-      -webkit-tap-highlight-color:transparent;
-    }
-    .btn-open:active{border-color:var(--accent);color:var(--accent);}
-
     /* Shimmer for perceived speed */
     @keyframes shimmer{
       0%{background-position:-400px 0;}
       100%{background-position:400px 0;}
     }
   </style>
+  <!-- --accent: the brand's colour, same source as the app -->
+  <script src="./config.js"></script>
+  <script>
+    if (window.BRAND_CONFIG?.accentColor) document.documentElement.style.setProperty('--accent', window.BRAND_CONFIG.accentColor);
+  </script>
 </head>
 <body>
 
@@ -159,14 +149,9 @@
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 2v13M7 11l5 5 5-5"/><line x1="3" y1="19" x2="21" y2="19"/>
       </svg>
-      INSTALL APP
+      INSTALL
     </button>
 </div>
-
-    <!-- Already installed / open in browser -->
-    <button class="btn-open" id="btn-open" onclick="openApp()">
-      Open in Browser
-    </button>
 
   </div>
 </div>
@@ -198,8 +183,9 @@
     
   });
 
-  // iOS Safari: show bottom sheet with slide-up animation
-  if (isIOS && isSafari) {
+  // iOS Safari: show bottom sheet with slide-up animation. Waits for the page:
+  // the sheet's markup comes after this script.
+  if (isIOS && isSafari) document.addEventListener('DOMContentLoaded', () => {
     const sheet = document.getElementById('ios-install-sheet');
     if (sheet) {
       sheet.style.display = 'block';
@@ -214,10 +200,8 @@
     }
     // Hide Android-only elements
     const btnInstall = document.getElementById('btn-install');
-    const btnOpen = document.getElementById('btn-open');
     if (btnInstall) btnInstall.style.display = 'none';
-    if (btnOpen) btnOpen.style.display = 'none';
-  }
+  });
 
   function triggerInstall() {
     if (!_deferredPrompt) return;
@@ -231,11 +215,6 @@
       }
       _deferredPrompt = null;
     });
-  }
-
-  function openApp() {
-    sessionStorage.setItem('bp_skip_install', '1');
-    window.location.href = './index.html';
   }
 
   // ── Service Worker registration ───────────────────────────────────────────

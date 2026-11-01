@@ -14706,6 +14706,9 @@ function closeExDetailOverlay() {
   const overlay = document.getElementById('ex-detail-overlay');
   const overlayBody = document.getElementById('ex-detail-overlay-body');
   if (!overlay) return;
+  // Note still being typed in: end it now. Safari fires no blur when the card
+  // moves back to the list below, leaving note mode (and SAVE WORKOUT's bar off) stuck.
+  if (document.activeElement?.classList.contains('comment-box')) document.activeElement.blur();
   window._extabSess?.exit(); // stats ALL SESSIONS select mode + its bottom bar
   // List moves/scrolls and the "… exercises done !" message wait for the card's
   // return flow (released at its end) — started first, since closing the
@@ -16604,7 +16607,9 @@ function hideNoteToolbar() {
     }
     // Re-enable finishing the workout
     const _finishBtn = document.getElementById('workout-finish-btn');
-    if (_finishBtn) { _finishBtn.disabled = false; _finishBtn.style.opacity = ''; _finishBtn.style.pointerEvents = ''; }
+    // 'auto', not '': its bar is pointer-events:none, so the button's own inline
+    // auto is what makes it tappable — clearing that left it dead.
+    if (_finishBtn) { _finishBtn.disabled = false; _finishBtn.style.opacity = ''; _finishBtn.style.pointerEvents = 'auto'; }
     document.body.classList.remove('ex-editor-open');
     window._noteEditingId = null;
     document.body.classList.remove('ex-note-editing');
@@ -17038,6 +17043,13 @@ function saveWorkoutToList() {
     const existing = workouts[window._editingWorkoutIdx];
     const _prevName = existing.name;
     existing.name = name;
+    // Photos are stored by workout name: a rename takes the photo with it.
+    if (_prevName !== name) {
+      const _prevPhoto = localStorage.getItem(`ironlog_workout_photo_${_prevName}`);
+      if (_prevPhoto && _saveWorkoutPhotoWithRetry(`ironlog_workout_photo_${name}`, _prevPhoto)) {
+        localStorage.removeItem(`ironlog_workout_photo_${_prevName}`);
+      }
+    }
     existing.exercises = exercises;
     existing.description = description;
     _touchWorkout(existing);
