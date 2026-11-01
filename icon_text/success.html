@@ -8,6 +8,7 @@
   <link rel="icon" href="./logo.svg" type="image/svg+xml">
   <style>
     *{box-sizing:border-box;margin:0;padding:0;}
+    :root{--accent:#e8ff47;}
     html,body{
       height:100%;
       background:#0a0a0a;
@@ -98,7 +99,7 @@
       width:100%;
       max-width:380px;
       padding:20px;
-      background:#e8ff47;
+      background:var(--accent);
       color:#000;
       border:none;
       border-radius:14px;
@@ -111,7 +112,16 @@
       transition:opacity .15s;
     }
     .btn-got-it:active{opacity:.85;}
+    /* Shown by gotIt() when the browser won't let the page close itself. */
+    .done-msg{display:none;position:fixed;inset:0;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;text-align:center;animation:fadeInScale 500ms cubic-bezier(.22,1,.36,1) forwards;}
+    .done-title{font-size:30px;font-weight:900;color:#fff;}
+    .done-text{font-size:17px;font-weight:500;color:#888;line-height:1.4;max-width:300px;}
   </style>
+  <!-- --accent: the brand's colour, same source as the app -->
+  <script src="./config.js"></script>
+  <script>
+    if (window.BRAND_CONFIG?.accentColor) document.documentElement.style.setProperty('--accent', window.BRAND_CONFIG.accentColor);
+  </script>
 </head>
 <body>
 <div class="screen">
@@ -126,8 +136,8 @@
     <div class="hero">
       <div class="checkmark">
         <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
-          <circle cx="36" cy="36" r="34" stroke="#e8ff47" stroke-width="1.5" opacity=".3"/>
-          <polyline points="18,36 30,50 54,22" stroke="#e8ff47" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="36" cy="36" r="34" style="stroke:var(--accent)" stroke-width="1.5" opacity=".3"/>
+          <polyline points="18,36 30,50 54,22" style="stroke:var(--accent)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </div>
       <div class="title">INSTALLATION<br>SUCCESSFUL!</div>
@@ -146,7 +156,7 @@
           <rect x="25" y="13" width="9" height="9" rx="2.5" fill="#2a2a2a"/>
           <rect x="40" y="13" width="9" height="9" rx="2.5" fill="#2a2a2a"/>
           <rect x="10" y="27" width="9" height="9" rx="2.5" fill="#2a2a2a"/>
-          <rect x="25" y="27" width="9" height="9" rx="2.5" fill="#e8ff47" opacity=".9"/>
+          <rect x="25" y="27" width="9" height="9" rx="2.5" style="fill:var(--accent)" opacity=".9"/>
           <rect x="40" y="27" width="9" height="9" rx="2.5" fill="#2a2a2a"/>
           <rect x="10" y="41" width="9" height="9" rx="2.5" fill="#2a2a2a"/>
           <rect x="25" y="41" width="9" height="9" rx="2.5" fill="#2a2a2a"/>
@@ -154,12 +164,12 @@
         </svg>
         <!-- Arrow -->
         <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-          <path d="M4 14h20M18 8l6 6-6 6" stroke="#e8ff47" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M4 14h20M18 8l6 6-6 6" style="stroke:var(--accent)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
         <!-- App icon -->
         <div class="app-icon-wrap">
           <img src="./icons/icon-192.png" alt="app icon"
-            onerror="this.src='./icons/icon-512.png';this.onerror=function(){this.src='./logo.svg';this.onerror=function(){this.parentElement.style.background='#e8ff47';this.style.display='none';}}">
+            onerror="this.src='./icons/icon-512.png';this.onerror=function(){this.src='./logo.svg';this.onerror=function(){this.parentElement.style.background='var(--accent)';this.style.display='none';}}">
         </div>
       </div>
     </div>
@@ -167,16 +177,25 @@
   </div>
 
   <!-- GOT IT button -->
-  <button class="btn-got-it" onclick="gotIt()">GOT IT, CONTINUE</button>
+  <button class="btn-got-it" onclick="gotIt()">GOT IT</button>
 
 </div>
 
+<div class="done-msg" id="done-msg">
+  <div class="done-title">All set</div>
+  <div class="done-text">Open the app from your home screen.</div>
+</div>
+
 <script>
+  // Browsers only let a page close itself if a script opened it, so this usually
+  // does nothing; the page is still here a moment later → point to the home
+  // screen instead. Never opens the app here: the installed icon is the way in.
   function gotIt() {
-    sessionStorage.setItem('bp_skip_install', '1');
-    // Fade out before navigating
-    document.querySelector('.screen').style.cssText += ';animation:none;transition:opacity 300ms ease,transform 300ms ease;opacity:0;transform:scale(.96)';
-    setTimeout(() => window.location.replace('./index.html'), 320);
+    window.close();
+    setTimeout(() => {
+      document.querySelector('.screen').style.display = 'none';
+      document.getElementById('done-msg').style.display = 'flex';
+    }, 300);
   }
 
   // Apply brand name if config is available
