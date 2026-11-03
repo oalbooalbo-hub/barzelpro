@@ -987,8 +987,8 @@ body.ex-tab-detail-open #ex-float-bar{display:none !important;}
 /* Day numbers are all white (--gff) — a workout day keeps its accent ring only. */
 .cal-day.has-workout{background:transparent;border:2px solid var(--accent);border-radius:50%;color:var(--gff);cursor:pointer;font-size:16px;}
 .cal-day.has-workout:hover{background:rgba(232,255,71,.08);}
-.cal-day.today{border:1px solid var(--gff);color:var(--text);}
-.cal-day.today.selected{border-color:transparent;}
+/* Today has no marking of its own — a completed workout today gets the same
+   accent circle as any other day (.has-workout). */
 .cal-day.selected{outline:2px solid #ff8c42;outline-offset:1px;border-radius:50%;}
 .cal-day.empty{opacity:0;}
 .cal-day.future{cursor:pointer;}
@@ -35427,6 +35427,31 @@ function _updateKgDisplay(val, isBWMode) {
     }, { passive: true, capture: true });
     document.addEventListener('touchcancel', () => { sx = null; live = false; hide(); }, { passive: true, capture: true });
   }
+})();
+
+// ── Android: keyboard hidden with the phone's own arrow/back ───────────────
+// That closes the keyboard but leaves the field focused, so no blur ran and
+// the app's Delete / Done bar (#note-kbd-done-bar) stayed on screen. When the
+// visible viewport grows back after having shrunk for the keyboard, blur the
+// field — its own blur handler then hides the bar exactly as Done does.
+(function() {
+  const vv = window.visualViewport;
+  if (!vv || document.documentElement.classList.contains('is-ios')) return;
+  let base = vv.height, seenOpen = false;
+  const field = () => {
+    const a = document.activeElement;
+    return a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.isContentEditable) ? a : null;
+  };
+  vv.addEventListener('resize', () => {
+    const f = field();
+    if (!f) { base = vv.height; seenOpen = false; return; }    // no keyboard: track full height (rotation etc.)
+    if (vv.height < base - 120) { seenOpen = true; return; }  // keyboard is up
+    if (seenOpen && vv.height >= base - 60) {                 // keyboard went away, field still focused
+      seenOpen = false;
+      const bar = document.getElementById('note-kbd-done-bar');
+      if (bar && bar.style.display !== 'none') f.blur();
+    }
+  });
 })();
 
 // ── Dashed buttons: one dash size app-wide ─────────────────────────────────
