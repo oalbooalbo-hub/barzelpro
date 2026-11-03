@@ -403,7 +403,7 @@ body.desktop-mode .pages-wrap {
    stops above the bottom buttons. -1 keeps it behind the screen's content. */
 #today-welcome-bg{position:absolute;inset:0;z-index:-1;pointer-events:none;background:url(images/welcome.webp) center/cover no-repeat;}
 /* Dark layer over the photo on the circle pages, for contrast (fades as the page slides; _syncHomeBgDim). */
-#today-welcome-bg::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,.6);opacity:0;transition:opacity .3s ease;}
+#today-welcome-bg::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,.8);opacity:0;transition:opacity .3s ease;}
 #today-welcome-bg.dim::after{opacity:1;}
 /* Welcome page only: gradient, darker toward the bottom (swaps with the flat dark layer above). */
 #today-welcome-bg::before{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,transparent 35%,rgba(0,0,0,.8) 100%);transition:opacity .3s ease;}
@@ -3651,7 +3651,7 @@ function showTodayStartScreen(skipGoalReplay) {
   window._isNewWorkoutFlow = false;
   document.getElementById('today-start-screen').style.display = 'flex';
   // Keeps the Home carousel's page (Welcome only on app start — _todayHomeGoTo).
-  if (window._todayCarouselReady) _todayHomeGoTo(_todayHomePage(), true);
+  if (window._todayCarouselReady) _todayHomeGoTo(_todayHomeStartPage(), true);
   _syncShareBtn();
   document.getElementById('today-workout-area').style.display = 'none';
   const _pageLogC = document.getElementById('page-log');
@@ -4351,7 +4351,7 @@ function _setTodayCarouselOrder(alt) {
   TODAY_PRS_PAGE = order.indexOf('prs');
   TODAY_HEATMAP_PAGE = order.indexOf('heatmap');
   TODAY_RING_PAGE = order.indexOf('ring');
-  _todayCarouselGoTo(0, true);
+  _todayCarouselGoTo(window._todayWantSets ? TODAY_HEATMAP_PAGE : 0, true);
 }
 // Decides the order from this week's workout count (renderTodayWeekProgress)
 // and new-records total (_buildTodayWeekPRStars — computed on idle, so the last
@@ -4418,9 +4418,16 @@ window._todayCarouselGoTo = _todayCarouselGoTo;
 function _todayHomePage() {
   return window._todayOnWelcome ? 0 : window._todayCarouselIdx + 1;
 }
+// Page to show when Home appears: right after a completed workout it's always
+// Sets progress (_todayWantSets, set in doSaveWorkout; cleared by the user's
+// own swipe / dot tap), otherwise the page Home was left on.
+function _todayHomeStartPage() {
+  return window._todayWantSets ? TODAY_HEATMAP_PAGE + 1 : _todayHomePage();
+}
 // After a workout is completed this session (_todaySkipWelcome, set in
 // doSaveWorkout) the Welcome page and its dot are gone — pages 1–3 only.
 function _todayHomeGoTo(p, instant) {
+  if (!instant) window._todayWantSets = false; // user swiped / tapped a dot
   p = Math.max(window._todaySkipWelcome ? 1 : 0, Math.min(TODAY_CAROUSEL_PAGES, p));
   const box = document.getElementById('today-week-progress');
   window._todayOnWelcome = p === 0;
@@ -11299,7 +11306,7 @@ function switchTab(tab) {
       _resetWeekProgressForReplay();
       renderTodayWeekProgress(true);
       // Back on Home: same page as when it was left (Welcome only on app start).
-      if (window._todayCarouselReady) _todayHomeGoTo(_todayHomePage(), true);
+      if (window._todayCarouselReady) _todayHomeGoTo(_todayHomeStartPage(), true);
     }
   }
   if (tab !== 'log' && tab !== 'exercises') { if (!window._createNewMode) window._activeTabHighlight = null; if (tab !== 'workouts') { window._loadFromToday = false; window._isChangingWorkout = false; } }
@@ -17428,6 +17435,7 @@ function doSaveWorkout() {
   // A workout completed this session → the Home carousel drops its Welcome
   // Back page until the app is next opened (_todayHomeGoTo).
   window._todaySkipWelcome = true;
+  window._todayWantSets = true; // back on Home → open on Sets progress (_todayHomeStartPage)
   window._pendingPRs = [];
   clearDraft();
   // Remove all draft workouts from history and recycle bin
@@ -35257,11 +35265,48 @@ function _updateKgDisplay(val, isBWMode) {
   }
   window._bpFindBack = _findBack;
 
+  // The guard now stays armed all the time (back on Workouts/Profile goes
+  // home; back on home shows "Press back again to exit"). It is only left
+  // un-armed during that 2s exit window, so the 2nd back really leaves.
+  // Never pushed before the user's first tap: Chrome skips history entries
+  // added without any user activation.
+  let _exitUntil = 0, _exitT = null;
   const _armed = () => history.state?.bp === 'guard';
   function _sync() {
-    const open = !!_findBack();
-    if (open && !_armed()) history.pushState({ bp: 'guard' }, '', '');
-    else if (!open && _armed()) { window._suppressNextPopstate = true; history.back(); }
+    if (Date.now() < _exitUntil || _armed()) return;
+    if (navigator.userActivation && !navigator.userActivation.hasBeenActive) return;
+    history.pushState({ bp: 'guard' }, '', '');
+  }
+  function _exitPill() {
+    let el = document.getElementById('bp-exit-pill');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'bp-exit-pill';
+      el.textContent = 'Press back again to exit';
+      el.style.cssText = "position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 100px);transform:translateX(-50%) translateY(8px);opacity:0;pointer-events:none;background:#2a2a2a;color:var(--gff);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;padding:11px 22px;border-radius:28px;white-space:nowrap;z-index:2147483000;transition:opacity .25s ease, transform .25s ease;";
+      document.body.appendChild(el);
+    }
+    requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateX(-50%) translateY(0)'; });
+    return el;
+  }
+  // Back with nothing open: other tab → home; home → arm the exit window.
+  function _backAtRoot() {
+    const tab = window._activeTab || 'log';
+    if (tab !== 'log') {
+      const homeBtn = document.getElementById('tab-log-btn');
+      if (homeBtn && homeBtn.offsetParent) homeBtn.click(); else if (typeof switchTab === 'function') switchTab('log');
+      history.pushState({ bp: 'guard' }, '', '');
+      return;
+    }
+    // Home: leave the guard un-pushed for 2s — a 2nd back now exits the app.
+    _exitUntil = Date.now() + 2000;
+    const pill = _exitPill();
+    clearTimeout(_exitT);
+    _exitT = setTimeout(() => {
+      pill.style.opacity = '0'; pill.style.transform = 'translateX(-50%) translateY(8px)';
+      _exitUntil = 0;
+      _sync();                                             // stayed — re-arm
+    }, 2000);
   }
   let _syncT = [];
   function _syncSoon() {
@@ -35282,10 +35327,10 @@ function _updateKgDisplay(val, isBWMode) {
   window.addEventListener('popstate', function(e) {
     if (window._suppressNextPopstate) { window._suppressNextPopstate = false; return; }
     if (e.state?.bp === 'guard') return;                   // forward nav
-    if (window._bpBack()) {
-      history.pushState({ bp: 'guard' }, '', '');          // keep catching quick repeated backs
-      _syncSoon();                                         // drop it if nothing is left open
-    }
+    const lo = document.getElementById('app-loading-overlay');
+    if (lo && lo.style.display !== 'none' && lo.dataset.hidden !== '1') { history.pushState({ bp: 'guard' }, '', ''); return; }
+    if (window._bpBack()) history.pushState({ bp: 'guard' }, '', '');   // closed the top layer
+    else _backAtRoot();
   });
   document.addEventListener('click', _syncSoon, true);
   setInterval(() => { if (document.visibilityState === 'visible') _sync(); }, 1500);
