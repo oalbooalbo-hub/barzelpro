@@ -13,6 +13,11 @@
       window.location.replace('./install.html');
     }
   })();
+  // iPhone / iPad (iPadOS reports itself as a Mac with touch): html.is-ios —
+  // iOS's own keyboard bar replaces the app's Delete / Done bar (#note-kbd-done-bar).
+  if (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) {
+    document.documentElement.classList.add('is-ios');
+  }
 </script>
 <meta charset="UTF-8">
 <link rel="icon" href="./logo.svg" type="image/svg+xml">
@@ -410,6 +415,8 @@ body.desktop-mode .pages-wrap {
 /* Active workout's FINISH WORKOUT bottom bar (~125px + safe area): body already reserves 90px + safe area, this adds the rest so the last card scrolls clear. Hidden while a note's keyboard is up (it would ride above the keyboard). */
 body.workout-finish-bar-on #today-workout-area{padding-bottom:40px;}
 body.ex-note-editing #workout-finish-bar{display:none!important;}
+/* iOS: its own keyboard bar has Done — the app's Delete / Done bar is Android-only. */
+html.is-ios #note-kbd-done-bar{display:none!important;}
 /* Fade behind the docked button: 46px transparent → page bg above it, solid down to the screen bottom (height set by _syncExFinishDock). Under the dock/float bar (210), over the overlay (200). */
 #ex-detail-finish-fade{position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;z-index:209;display:none;pointer-events:none;}
 /* Home's gradient (--home-bg) behind the active workout's exercise list (below
@@ -1190,6 +1197,7 @@ window._uploadLibraryWorkoutPhoto = _uploadLibraryWorkoutPhoto;
 // Load brand config from Firestore and apply to UI
 async function loadBrandConfig() {
   if (BRAND_ID === 'super') return;
+  window._brandConfigLoadFailed = false;
   try {
     const snap = await getDoc(doc(db, 'brands', BRAND_ID));
     if (snap.exists()) {
@@ -1203,6 +1211,9 @@ async function loadBrandConfig() {
     }
   } catch(e) {
     console.warn('Brand config load failed:', e.message);
+    // Retried in onAuthStateChanged once createUserDoc has run: a brand-new
+    // user isn't a brand member yet, so the rules refuse this first read.
+    window._brandConfigLoadFailed = true;
     window._brandConfig = BRAND_DEFAULTS;
     // keepCached: offline / failed load must not re-show a Coach list the
     // brand has turned off — leave the last-known (cached) value in place.
@@ -1311,6 +1322,10 @@ onAuthStateChanged(auth, async (user) => {
       const _expired = await _withTimeout((async () => {
         await loadBrandConfig();
         const userData = await createUserDoc(user);
+        // First sign-in: the brand read above was refused (not a member until
+        // createUserDoc) — now it's allowed, so the admin's Branding switches
+        // (Progress, Coach list, …) apply instead of their defaults.
+        if (window._brandConfigLoadFailed) await loadBrandConfig();
         window._currentUser = { ...user, role: userData.role };
         window._currentUserData = userData;
         loadUserBW();
@@ -2378,6 +2393,7 @@ window._fbModuleReady = true;
     </div>
   <!-- Fixed save button -->
   <div id="newExBottomBar" style="position:fixed;bottom:0;left:0;right:0;padding:46px 8px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(to bottom,transparent,var(--surface) 40%);z-index:10;max-width:calc(100vw);box-sizing:border-box;display:flex;gap:10px;">
+    <div id="newExWarnToast" style="position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%) translateY(8px);opacity:0;pointer-events:none;background:#ff4747;color:var(--gff);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;padding:11px 22px;border-radius:28px;white-space:nowrap;transition:opacity .25s ease, transform .25s ease;"></div>
     <button id="newExSaveBtn" onclick="confirmNewEx()" style="flex:1;padding:18px;background:var(--g00);color:var(--accent);border:1px solid var(--accent);border-radius:100px;font-family:'DM Sans';font-size:18px;font-weight:900;cursor:pointer;letter-spacing:.3px;-webkit-tap-highlight-color:transparent;transition:transform .15s;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">SAVE</button>
   </div>
 </div>
@@ -7990,8 +8006,8 @@ function _renderExercisesTabKeepScroll() {
 function openNewExModal(muscle) {
   document.getElementById('wtab-menu-fade')?.remove();
   _setNewExHeaderIcon('close');
-  // Creating: no body part preselected — the user picks one (SAVE stays dimmed
-  // until they do; _newExSyncSave). The muscle arg is no longer used for it.
+  // Creating: no body part preselected — the user picks one (SAVE before then
+  // shows "Select a body part"; _newExWarn). The muscle arg is no longer used for it.
   window._newExMuscle = null;
   window._newExCompoundMuscles = [];
   window._newExPhoto = null;
@@ -8354,16 +8370,27 @@ function _selectNewExMuscle(muscle) {
   }
   _newExSyncSave();
 }
-// SAVE lit only with a name, no duplicate-name note, and a body part picked.
-// Dimmed is just a look — a tap still runs confirmNewEx, which says what's missing.
+// SAVE always looks active (never dimmed) — an early tap runs confirmNewEx,
+// which says what's missing (_newExWarn).
 function _newExSyncSave() {
   const btn = document.getElementById('newExSaveBtn');
   if (!btn) return;
-  const name = (document.getElementById('newExInput')?.value || '').trim();
-  const dup = document.getElementById('newExDuplicateNote')?.style.display === 'inline';
-  const ok = !!name && !dup && !!window._newExMuscle;
-  btn.style.opacity = ok ? '1' : '0.35';
-  btn.style.cursor = ok ? 'pointer' : 'not-allowed';
+  btn.style.opacity = '1';
+  btn.style.cursor = 'pointer';
+}
+// Red pill above SAVE — same look/timing as the exercise picker's
+// "Select at least 1 exercise" (#pick-mode-warn-toast, donePickMode).
+function _newExWarn(text) {
+  const warn = document.getElementById('newExWarnToast');
+  if (!warn) return;
+  warn.textContent = text;
+  warn.style.opacity = '1';
+  warn.style.transform = 'translateX(-50%) translateY(0)';
+  clearTimeout(warn._hideTimer);
+  warn._hideTimer = setTimeout(() => {
+    warn.style.opacity = '0';
+    warn.style.transform = 'translateX(-50%) translateY(8px)';
+  }, 1800);
 }
 
 function openNewExPhotoSheet() {
@@ -8527,6 +8554,7 @@ function confirmNewEx() {
   if (!name) {
     const _inp = document.getElementById('newExInput');
     _newExNameBoxBorder('#ff4747');
+    _newExWarn('Enter a name');
     _inp.scrollIntoView({ behavior: 'smooth', block: 'center' });
     _inp.focus();
     return;
@@ -8536,6 +8564,7 @@ function confirmNewEx() {
   if (!window._newExMuscle) {
     const _bpNote = document.getElementById('newExBodyPartNote');
     if (_bpNote) _bpNote.style.visibility = 'visible';
+    _newExWarn('Select a body part');
     _renderNewExPills(null, true);
     document.getElementById('newExMusclePills')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     return;
@@ -9276,6 +9305,28 @@ function _prRelTimeLabel(ts) {
 // is left untouched; this is a scoped copy (no diagram-slide state machine, no
 // touch-swipe between slides, no built-in CLOSE button) so _toggleExDetailStats can
 // mount it inline without depending on openExtabExOverlay's full-screen layout.
+// Statistics needs this many recorded sessions of an exercise; below it, the
+// Stats box (active exercise, and the Exercises tab's Stats view) shows only
+// _exStatsFewEl instead of its carousel. A session = a day with ≥1 completed
+// set of the exercise in a saved workout (the one in progress isn't saved yet).
+const _EX_STATS_MIN_SESSIONS = 3;
+function _exStatsSessionCount(exName) {
+  const days = new Set();
+  (workouts || []).filter(w => !w._draft).forEach(w => {
+    if ((w.exercises || []).some(e => e.name === exName && doneSets(e.sets || []).length)) days.add(new Date(w.date).setHours(0, 0, 0, 0));
+  });
+  return days.size;
+}
+function _exStatsFewEl(n) {
+  const d = document.createElement('div');
+  d.className = 'ex-stats-few';
+  d.style.cssText = 'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 24px;gap:8px;';
+  d.innerHTML = `<div style="font-family:'DM Sans';font-size:18px;font-weight:800;color:var(--gff);">Not enough data yet</div>
+    <div style="font-family:'DM Sans';font-size:15px;font-weight:500;color:var(--gcc);line-height:1.5;max-width:240px;">Complete this exercise in ${_EX_STATS_MIN_SESSIONS} workouts to see your statistics.</div>
+    <div style="font-family:'DM Sans';font-size:13px;font-weight:700;color:var(--accent);margin-top:4px;">${n} of ${_EX_STATS_MIN_SESSIONS} done</div>`;
+  return d;
+}
+
 function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
   const muscle = exDef?.muscle || 'Other';
   const mainColor = W2_MUSCLE_COLORS[muscle];
@@ -9880,7 +9931,11 @@ function _toggleExDetailStats() {
   title.id = 'ex-detail-stats-title';
   title.style.cssText = "font-family:'Bebas Neue';font-size:26px;letter-spacing:1px;text-align:center;padding:4px 10px 2px;";
   titleRow.appendChild(title);
-  const { dots, panesContainer, periodWrap } = _buildExDetailStatsCarousel(exDef, exName, title);
+  // Too few sessions → just the message (no title, pages, dots or period button).
+  const _statsSessions = _exStatsSessionCount(exName);
+  const { dots, panesContainer, periodWrap } = _statsSessions < _EX_STATS_MIN_SESSIONS
+    ? { dots: document.createElement('div'), panesContainer: _exStatsFewEl(_statsSessions), periodWrap: document.createElement('div') }
+    : _buildExDetailStatsCarousel(exDef, exName, title);
   periodWrap.style.position  = 'absolute';
   periodWrap.style.right     = '16px';
   periodWrap.style.top       = '50%';
@@ -10824,7 +10879,13 @@ function openExtabExOverlay(exName, musclesOnly, instant, knownPhoto) {
       tablePane.innerHTML = _noRec;
     }
     carousel.appendChild(dots);
-    if (musclesOnly !== true) { body.appendChild(progPane); body.appendChild(tablePane); }
+    // Stats view with too few sessions → just the message (no title, pages or dots).
+    const _statsFew = musclesOnly === 'stats' ? _exStatsSessionCount(exName) : _EX_STATS_MIN_SESSIONS;
+    if (_statsFew < _EX_STATS_MIN_SESSIONS) {
+      dots.style.display = 'none';
+      if (_titleEl) _titleEl.style.visibility = 'hidden';
+      body.appendChild(_exStatsFewEl(_statsFew));
+    } else if (musclesOnly !== true) { body.appendChild(progPane); body.appendChild(tablePane); }
     if (musclesOnly !== true && musclesOnly !== 'stats') body.appendChild(sessionsPane);
     overlay.appendChild(carousel);
     // Refreshed after deleting sessions (_extabRefreshOnSessions) — land back
@@ -11409,9 +11470,23 @@ function renderWorkoutsTab2() {
     // changes, so no rAF-timing guess is needed here.
   }
 
+  // "Create New Workout" under the last workout of every list — does exactly
+  // what the top bar's + does, and is left out wherever that + is hidden
+  // (plan-a-day pick, long-press select, publish pick). Same row padding and
+  // width as a card, 2/3 of its 21:9 height (= 21:6).
+  const _wtabCreateBtn = (window._planStrengthKey || _isDeleteMode || _isPubPickMode) ? '' : `<div style="padding:5px 2px;">
+      <button onclick="startNewWorkout(true)" style="position:relative;width:100%;aspect-ratio:21/6;box-sizing:border-box;background:#000;border:none;border-radius:14px;color:var(--accent);font-family:'DM Sans';font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;padding:0;-webkit-tap-highlight-color:transparent;transition:transform .15s;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''" ontouchcancel="this.style.transform=''">
+        <!-- Dashed border drawn as SVG: CSS 'dashed' can't set the dash length.
+             Stroke 3px, half clipped at the edge = 1.5px; 10px dashes, 6px gaps. -->
+        <svg aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;"><rect width="100%" height="100%" rx="14" ry="14" fill="none" style="stroke:var(--accent);" stroke-width="3" stroke-dasharray="10 6"/></svg>
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+        Create New Workout
+      </button>
+    </div>`;
+
   // ── Coach view ────────────────────────────────────────
   if (_wTabView === 'coach') {
-    el.innerHTML = `<div id="wtab-coach-list" style="margin-top:4px;"></div>`;
+    el.innerHTML = `<div id="wtab-coach-list" style="margin-top:4px;"></div>${_wtabCreateBtn}`;
     return;
   }
 
@@ -11530,10 +11605,7 @@ function renderWorkoutsTab2() {
     el.innerHTML = _isPubPickMode
       ? `<div class="empty-state" style="margin-top:24px;"><span style="color:var(--gff);">You have no saved workouts to publish.</span></div>`
       : `<div class="empty-state" style="margin-top:24px;"><span style="color:var(--gff);">No workouts yet.</span></div>
-      ${window._currentUserData?.role === 'super_admin' ? '' /* PENDING: create via the top bar's + only */ : `<button onclick="startNewWorkout(true);" style="width:100%;margin-top:12px;background:transparent;border:1px dashed var(--border);border-radius:12px;color:var(--muted);font-family:'DM Sans';font-size:15px;font-weight:700;padding:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
-        <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-        Create New Workout
-      </button>`}`;
+      <div style="margin-top:7px;">${_wtabCreateBtn}</div>`;
     // Publish pick-mode's Cancel bar still needs to appear here — the normal
     // flow builds it much further below, past this early return.
     let _pubBarEmpty = document.getElementById('wtab-publish-bar');
@@ -11856,7 +11928,7 @@ function renderWorkoutsTab2() {
   // margin-top:5px here + the first row's own padding:5px 2px (index.html
   // ~8073) = 10px from divider to first card, matching the 5px+5px=10px
   // gap between every other pair of card rows.
-  el.innerHTML = `<div style="margin-top:5px;">${_wtabEmptyMsg}${rowsHtml}${_libRowsHtml}</div>${_bottomBtns}`;
+  el.innerHTML = `<div style="margin-top:5px;">${_wtabEmptyMsg}${rowsHtml}${_libRowsHtml}${_wtabCreateBtn}</div>${_bottomBtns}`;
 
   // Plan-strength Cancel/Save bar — body-level (see comment above _bottomBtns).
   let _planBar = document.getElementById('wtab-planstrength-bar');
@@ -12802,6 +12874,8 @@ function updateTodayMuscleChips() {
     const _prevChipsScroll = scrollEl.firstElementChild?.scrollLeft || 0;
     scrollEl.innerHTML = _chipsRowHtml;
     if (scrollEl.firstElementChild) scrollEl.firstElementChild.scrollLeft = _prevChipsScroll;
+    // Whole workout is one body part → its lone button isn't shown; its space stays.
+    scrollEl.style.visibility = _entries.length === 1 ? 'hidden' : '';
 
     // Cancel / Save fixed at bottom
     const _nwfBar = document.getElementById('nwf-bottom-bar');
@@ -12916,6 +12990,8 @@ function updateTodayMuscleChips() {
   } else {
     scrollEl.innerHTML = _chipsHtml.join('');
   }
+  // Whole workout is one body part → its lone button isn't shown; its space stays.
+  scrollEl.style.visibility = entries.length === 1 ? 'hidden' : '';
   if (entries.length === 4) {
     scrollEl.style.justifyContent = 'space-between';
     scrollEl.style.overflowX = 'hidden';
