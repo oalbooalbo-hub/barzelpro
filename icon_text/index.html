@@ -182,6 +182,9 @@ if ('serviceWorker' in navigator) {
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;}
 button{cursor:pointer;touch-action:manipulation;-webkit-appearance:none;outline:none;}
 *:focus{outline:none;}
+/* Home logo temporarily hidden (user request) — delete this line to bring it back.
+   visibility (not display) keeps its space, so the Welcome title stays put. */
+.header .logo{visibility:hidden;pointer-events:none;}
 /* No scroll indicator anywhere — scrolling itself is unchanged. */
 html,body,*{scrollbar-width:none;-ms-overflow-style:none;}
 html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{display:none;width:0;height:0;background:transparent;}
@@ -3011,15 +3014,27 @@ let workoutWeekTarget = _readWorkoutTarget();
 
 // Weekly sets target per body part (Home page 2 heatmap colours each muscle
 // area by its sets ÷ its body part's target). Per user, synced to the cloud
-// as settings.setsTargets. Default 12 sets per body part.
+// as settings.setsTargets. Default 16 sets per body part.
 const SETS_TARGET_PARTS = ['Chest', 'Back', 'Legs', 'Shoulders', 'Arms', 'Core'];
-const SETS_TARGET_DEFAULT = 12;
+const SETS_TARGET_DEFAULT = 16;
+// Saved before _v:2 (old default 12): the app stored/uploaded the full list
+// incl. untouched defaults, so a 12 there is the old default → 16. Anything
+// saved from now on carries _v:2 and is kept exactly (a chosen 12 stays 12).
+function _normSetsTargets(o) {
+  const r = {};
+  SETS_TARGET_PARTS.forEach(p => {
+    let v = parseInt(o && o[p]);
+    if (!(v > 0)) v = SETS_TARGET_DEFAULT;
+    else if (o._v !== 2 && v === 12) v = SETS_TARGET_DEFAULT;
+    r[p] = v;
+  });
+  r._v = 2;
+  return r;
+}
 function _getSetsTargets() {
   let o = {};
   try { o = JSON.parse(_LS.get('ironlog_sets_targets') || '{}') || {}; } catch (e) {}
-  const r = {};
-  SETS_TARGET_PARTS.forEach(p => { const v = parseInt(o[p]); r[p] = v > 0 ? v : SETS_TARGET_DEFAULT; });
-  return r;
+  return _normSetsTargets(o);
 }
 function _saveSetsTargets(t) { _LS.set('ironlog_sets_targets', JSON.stringify(t)); }
 
@@ -19701,7 +19716,7 @@ function importData(input) {
       if (data.settings) {
         const s = data.settings;
         if (typeof s.workoutWeekTarget === 'number' && s.workoutWeekTarget >= 0) { workoutWeekTarget = s.workoutWeekTarget; localStorage.setItem('ironlog_workout_target', s.workoutWeekTarget); }
-        if (s.setsTargets && typeof s.setsTargets === 'object') _saveSetsTargets({ ..._getSetsTargets(), ...s.setsTargets });
+        if (s.setsTargets && typeof s.setsTargets === 'object') _saveSetsTargets(_normSetsTargets(s.setsTargets));
         if (s.lastTimerSecs)     { lastTimerSecs     = s.lastTimerSecs;     localStorage.setItem('ironlog_last_timer',     s.lastTimerSecs); }
         if (s.miniChartRange)    { miniChartRange    = s.miniChartRange;    localStorage.setItem('ironlog_mini_range',     s.miniChartRange); }
       }
@@ -24297,7 +24312,7 @@ function _applyCloudUserData(data) {
     if (data.settings) {
       const s = data.settings;
       if (typeof s.workoutWeekTarget === 'number' && s.workoutWeekTarget >= 0) { workoutWeekTarget = s.workoutWeekTarget; localStorage.setItem('ironlog_workout_target', s.workoutWeekTarget); }
-      if (s.setsTargets && typeof s.setsTargets === 'object') _saveSetsTargets({ ..._getSetsTargets(), ...s.setsTargets });
+      if (s.setsTargets && typeof s.setsTargets === 'object') _saveSetsTargets(_normSetsTargets(s.setsTargets));
       if (s.lastTimerSecs) { lastTimerSecs = s.lastTimerSecs; localStorage.setItem('ironlog_last_timer', s.lastTimerSecs); }
       if (s.miniChartRange) { miniChartRange = s.miniChartRange; localStorage.setItem('ironlog_mini_range', s.miniChartRange); }
     }
@@ -35240,6 +35255,15 @@ function _updateKgDisplay(val, isBWMode) {
   function _findBack() {
     const lo = document.getElementById('app-loading-overlay');
     if (lo && lo.style.display !== 'none' && lo.dataset.hidden !== '1') return null;
+    // Active exercise with its Note / Timer box open: back = tap that float
+    // button again (deselects → closes the box), not the exercise's back arrow.
+    const fid = (typeof _exFloatCardId !== 'undefined' && _exFloatCardId) || window._exFloatCardId;
+    if (fid) {
+      const box = document.getElementById(`comment-area-${fid}`)?.classList.contains('open') ? 'ex-float-note'
+                : document.getElementById(`timer-panel-${fid}`)?.classList.contains('open') ? 'ex-float-timer' : null;
+      const fb = box && document.getElementById(box);
+      if (fb && fb.getClientRects().length && !document.querySelector('.delete-confirm-overlay')) return fb;
+    }
     const cands = [];
     const consider = (el, kind) => {
       const r = el.getBoundingClientRect();
