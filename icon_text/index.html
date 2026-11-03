@@ -185,6 +185,9 @@ button{cursor:pointer;touch-action:manipulation;-webkit-appearance:none;outline:
 /* Home logo temporarily hidden (user request) — delete this line to bring it back.
    visibility (not display) keeps its space, so the Welcome title stays put. */
 .header .logo{visibility:hidden;pointer-events:none;}
+/* Dashed buttons: native dashed border hidden, SVG 10/6 dash drawn instead (see dashify). */
+.bp-dashed{border-style:solid!important;border-color:transparent!important;}
+.bp-dashed-rel{position:relative!important;}
 /* No scroll indicator anywhere — scrolling itself is unchanged. */
 html,body,*{scrollbar-width:none;-ms-overflow-style:none;}
 html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{display:none;width:0;height:0;background:transparent;}
@@ -35413,6 +35416,61 @@ function _updateKgDisplay(val, isBWMode) {
     }, { passive: true, capture: true });
     document.addEventListener('touchcancel', () => { sx = null; live = false; hide(); }, { passive: true, capture: true });
   }
+})();
+
+// ── Dashed buttons: one dash size app-wide ─────────────────────────────────
+// CSS 'dashed' can't set dash length, so every dashed-border button gets the
+// Workouts tab "Create New Workout" dash (SVG: 10px dashes, 6px gaps, 1.5px
+// visible line). Colour and corner radius stay each button's own.
+(function() {
+  const SEL = 'button[style*="dashed"], .btn-add-exercise, .edit-add-set-btn, button[data-bp-dash]';
+  const NS = 'http://www.w3.org/2000/svg';
+  function dashify(btn) {
+    // Already converted: only re-add the outline if the button's content was
+    // rewritten (textContent / innerHTML wipes the SVG).
+    if (btn.dataset.bpDash) {
+      if (btn.dataset.bpDash === 'skip') return;
+      if (!btn.classList.contains('bp-dashed')) classes(btn);   // className was rewritten
+      if (!btn.querySelector(':scope > .bp-dash-svg')) draw(btn, btn.dataset.bpDash, +btn.dataset.bpDashBw, +btn.dataset.bpDashR);
+      return;
+    }
+    const cs = getComputedStyle(btn);
+    if (cs.borderTopStyle !== 'dashed') return;
+    const color = cs.borderTopColor, bw = parseFloat(cs.borderTopWidth) || 0;
+    if (/rgba\(.*,\s*0\)$|transparent/.test(color)) { btn.dataset.bpDash = 'skip'; return; } // invisible placeholder
+    const rad = parseFloat(cs.borderTopLeftRadius) || 0;
+    btn.dataset.bpDash = color; btn.dataset.bpDashBw = bw; btn.dataset.bpDashR = rad;
+    if (cs.position === 'static') btn.dataset.bpDashRel = '1';
+    classes(btn);
+    draw(btn, color, bw, rad);
+  }
+  // Via !important classes, not inline style: app code resets buttons' inline
+  // style (e.g. ADD EXERCISES), which brought the native dashed border back
+  // underneath the SVG one — two overlapping dash patterns.
+  function classes(btn) {
+    btn.classList.add('bp-dashed');
+    if (btn.dataset.bpDashRel) btn.classList.add('bp-dashed-rel');
+  }
+  function draw(btn, color, bw, rad) {
+    const svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('class', 'bp-dash-svg');
+    svg.style.cssText = `position:absolute;left:${-bw}px;top:${-bw}px;width:calc(100% + ${2 * bw}px);height:calc(100% + ${2 * bw}px);pointer-events:none;overflow:hidden;`;
+    const rect = document.createElementNS(NS, 'rect');
+    rect.setAttribute('width', '100%'); rect.setAttribute('height', '100%');
+    rect.setAttribute('rx', rad); rect.setAttribute('ry', rad);
+    rect.setAttribute('fill', 'none');
+    rect.setAttribute('stroke', color);
+    rect.setAttribute('stroke-width', '3');                  // half clipped = 1.5px, as Create New Workout
+    rect.setAttribute('stroke-dasharray', '10 6');
+    svg.appendChild(rect);
+    btn.appendChild(svg);
+  }
+  let queued = false;
+  const scan = () => { queued = false; document.querySelectorAll(SEL).forEach(dashify); };
+  const queue = () => { if (!queued) { queued = true; requestAnimationFrame(scan); } };
+  new MutationObserver(queue).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+  queue();
 })();
 
 // Legacy per-view closer map (kept only for code that still writes to it).
