@@ -35300,17 +35300,23 @@ function _updateKgDisplay(val, isBWMode) {
   }
   window._bpFindBack = _findBack;
 
-  // The guard now stays armed all the time (back on Workouts/Profile goes
-  // home; back on home shows "Press back again to exit"). It is only left
-  // un-armed during that 2s exit window, so the 2nd back really leaves.
-  // Never pushed before the user's first tap: Chrome skips history entries
-  // added without any user activation.
-  let _exitUntil = 0, _exitT = null;
-  const _armed = () => history.state?.bp === 'guard';
-  function _sync() {
-    if (Date.now() < _exitUntil || _armed()) return;
-    if (navigator.userActivation && !navigator.userActivation.hasBeenActive) return;
-    history.pushState({ bp: 'guard' }, '', '');
+  // History "reserve": a stack of guard entries {bp:'guard', d:1..MAX}.
+  // Chrome (Android) silently SKIPS an entry on back if no user tap happened
+  // between landing on it and the next pushState — so re-pushing inside
+  // popstate made the base entry skippable and the 2nd back left the app.
+  // Rule now: push only from a real (trusted) tap, one entry per tap, up to
+  // MAX; each back press just consumes one entry — never re-pushed there.
+  const MAX = 10;
+  let _exitT = null, _exitFwd = 0;
+  const _depth = () => (history.state?.bp === 'guard' ? (history.state.d || 1) : 0);
+  let _cur = _depth();
+  function _topUp(e) {
+    if (e && !e.isTrusted) return;                         // _bpBack()'s el.click() — no activation
+    if (_exitFwd) { _exitFwd = 0; _hidePill(); }           // tapped during the exit window: stay
+    const d = _depth();
+    if (d >= MAX) return;
+    history.pushState({ bp: 'guard', d: d + 1 }, '', '');
+    _cur = d + 1;
   }
   function _exitPill() {
     let el = document.getElementById('bp-exit-pill');
@@ -35324,29 +35330,30 @@ function _updateKgDisplay(val, isBWMode) {
     requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateX(-50%) translateY(0)'; });
     return el;
   }
-  // Back with nothing open: other tab → home; home → arm the exit window.
+  function _hidePill() {
+    clearTimeout(_exitT);
+    const el = document.getElementById('bp-exit-pill');
+    if (el) { el.style.opacity = '0'; el.style.transform = 'translateX(-50%) translateY(8px)'; }
+  }
+  // Back with nothing open: other tab → home; home → "Press back again to exit".
   function _backAtRoot() {
     const tab = window._activeTab || 'log';
     if (tab !== 'log') {
       const homeBtn = document.getElementById('tab-log-btn');
       if (homeBtn && homeBtn.offsetParent) homeBtn.click(); else if (typeof switchTab === 'function') switchTab('log');
-      history.pushState({ bp: 'guard' }, '', '');
       return;
     }
-    // Home: leave the guard un-pushed for 2s — a 2nd back now exits the app.
-    _exitUntil = Date.now() + 2000;
-    const pill = _exitPill();
+    // Home: step down to the base entry (scripted back, no skip rules), so the
+    // next back really exits. After 2s, step forward again to the same
+    // (already-valid) entries instead of pushing new ones.
+    const d = _depth();
+    _exitPill();
     clearTimeout(_exitT);
+    if (d > 0) { _exitFwd = d; window._suppressNextPopstate = true; history.go(-d); _cur = 0; }
     _exitT = setTimeout(() => {
-      pill.style.opacity = '0'; pill.style.transform = 'translateX(-50%) translateY(8px)';
-      _exitUntil = 0;
-      _sync();                                             // stayed — re-arm
+      _hidePill();
+      if (_exitFwd && _depth() === 0) { const f = _exitFwd; _exitFwd = 0; window._suppressNextPopstate = true; history.go(f); _cur = f; }
     }, 2000);
-  }
-  let _syncT = [];
-  function _syncSoon() {
-    _syncT.forEach(clearTimeout);
-    _syncT = [450, 1200].map(ms => setTimeout(_sync, ms));
   }
   // Runs the on-screen X; returns true if something was closed.
   window._bpBack = function() {
@@ -35357,18 +35364,22 @@ function _updateKgDisplay(val, isBWMode) {
   };
 
   // Old per-overlay hook — opening is now detected generically.
-  window._historyPush = function() { _syncSoon(); };
+  window._historyPush = function() {};
 
-  window.addEventListener('popstate', function(e) {
+  window.addEventListener('popstate', function() {
+    const d = _depth(), prev = _cur;
+    _cur = d;
     if (window._suppressNextPopstate) { window._suppressNextPopstate = false; return; }
-    if (e.state?.bp === 'guard') return;                   // forward nav
+    if (d > prev) return;                                  // forward nav
+    if (_exitFwd) { _exitFwd = 0; _hidePill(); }
     const lo = document.getElementById('app-loading-overlay');
-    if (lo && lo.style.display !== 'none' && lo.dataset.hidden !== '1') { history.pushState({ bp: 'guard' }, '', ''); return; }
-    if (window._bpBack()) history.pushState({ bp: 'guard' }, '', '');   // closed the top layer
-    else _backAtRoot();
+    if (lo && lo.style.display !== 'none' && lo.dataset.hidden !== '1') return;
+    if (!window._bpBack()) _backAtRoot();                  // closed the top layer, or root behaviour
   });
-  document.addEventListener('click', _syncSoon, true);
-  setInterval(() => { if (document.visibilityState === 'visible') _sync(); }, 1500);
+  // Trusted taps only, once per tap: pointerup is the touch activation event
+  // and still fires when a handler cancels the click (e.g. SAVE WORKOUT).
+  // Pushing on click too would spend this tap's activation twice.
+  document.addEventListener('pointerup', _topUp, true);
   if (!history.state) history.replaceState({ view: null }, '', '');
 
   // iPhone installed app: no browser back, so swipe right from the left edge.
