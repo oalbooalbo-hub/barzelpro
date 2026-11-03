@@ -1492,7 +1492,19 @@ window._fbModuleReady = true;
      display:none like the other overlays) so there's no flash of the app
      shell/auth screen underneath before auth + data have actually resolved. -->
 <div id="app-loading-overlay" style="position:fixed;inset:0;z-index:100000;background:var(--g0a);display:flex;align-items:center;justify-content:center;opacity:1;transition:opacity .35s ease;">
-  <div style="font-family:'DM Sans';font-size:16px;font-weight:700;color:var(--gff);letter-spacing:.9px;">LOADING</div>
+  <style>
+    @keyframes appLoadTagIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+    #app-load-tag{display:flex;flex-direction:column;align-items:center;gap:10px;padding:0 16px;animation:appLoadTagIn .3s ease-out both;}
+    /* vw-scaled + nowrap: always one line, any phone width */
+    #app-load-tag-main{font-family:'DM Sans';font-size:clamp(20px,8.6vw,44px);font-weight:900;color:var(--gff);white-space:nowrap;letter-spacing:-.3px;line-height:1.1;}
+    #app-load-tag-main span{color:var(--accent,#e8ff47);}
+    #app-load-tag-sub{font-family:'DM Sans';font-size:clamp(15px,4.4vw,20px);font-weight:600;color:var(--g88);white-space:nowrap;margin-bottom:26px;}
+  </style>
+  <div id="app-load-tag">
+    <div id="app-load-tag-main">Create <span>•</span> Plan <span>•</span> Record</div>
+    <div id="app-load-tag-sub">Your Workouts</div>
+    <div style="font-family:'DM Sans';font-size:16px;font-weight:700;color:var(--gff);letter-spacing:.9px;">LOADING</div>
+  </div>
 </div>
 <script>window._appLoadStart = performance.now();</script>
 
@@ -31743,7 +31755,7 @@ function _checkImportWorkoutFromURL() {
   // this same check later in the session must never re-trigger the import.
   params.delete('importWorkout');
   const rest = params.toString();
-  history.replaceState(null, '', location.pathname + (rest ? '?' + rest : ''));
+  history.replaceState(history.state, '', location.pathname + (rest ? '?' + rest : ''));
   // Back-compat: a link/QR made before the id-based sharing rework (see
   // _writeSharedWorkout) still has the whole workout base64-encoded directly
   // in this param — try decoding it that way first. A short share id won't
@@ -34788,14 +34800,14 @@ function closeW2Sheet() {
 }
 
 // App-boot loading screen (#app-loading-overlay, visible from first paint) —
-// hides once auth + data are ready, but never before 800ms so it doesn't just
-// flash, and the home screen's goal-ring ends up fully rendered with final
+// hides once auth + data are ready, but never before 2s (time to read the
+// "Create • Plan • Record" tagline), and the home screen's goal-ring ends up fully rendered with final
 // data behind it instead of visibly popping/jumping into place after reveal.
 function _hideAppLoadingOverlay() {
   const el = document.getElementById('app-loading-overlay');
   if (!el || el.dataset.hidden === '1') return;
   el.dataset.hidden = '1';
-  const MIN_MS = 800;
+  const MIN_MS = 2000;
   const elapsed = performance.now() - (window._appLoadStart || 0);
   const remain = Math.max(0, MIN_MS - elapsed);
   setTimeout(() => {
@@ -35158,13 +35170,176 @@ function _updateKgDisplay(val, isBWMode) {
 // ── History API — Back Button Handler ────────────────────────────────────────
 // Tracks open sub-views so hardware back button closes them instead of exiting
 
+// ── System back (Android) + left-edge swipe (installed iPhone) ──────────────
+// Generic: back = tap the topmost visible X / back arrow / Cancel on screen,
+// so it always does exactly what that button does (incl. its confirmations).
+// One "guard" history entry exists only while something closable is open;
+// at home with nothing open, back leaves the app as before.
 (function() {
-  // Push a state when opening a sub-view
-  window._historyPush = function(viewId) {
-    history.pushState({ view: viewId }, '', '');
+  // Close-ish calls in an onclick count; anything else in the same handler
+  // (open / save / act) disqualifies it — those are menu items, not X's.
+  const CLOSE_NAME = /(close|cancel|exit|back|dismiss)/i;
+  const NEUTRAL = /^(if|typeof|switchTab|remove|contains|closest|getElementById|querySelector|document\.getElementById|this\.closest)$|\.(contains|remove|closest|getElementById)$/;
+  const NOT_BACK = /^(kgPadBack|repsEditorBack|exitCoachMode|exitDebugRole|dismissNotification)$/;
+  // X / Cancel buttons wired with addEventListener / el.onclick (no attribute)
+  const EXTRA_SEL = '[data-bp-back], .delete-confirm-overlay .btn-del-cancel, #_wipClose, #_syncCloudClose, #_delAllClose';
+  const ICON_SEL = 'polyline[points="11,6 5,12 11,18"], line[x1="18"][y1="6"][x2="6"][y2="18"], line[x1="19"][y1="5"][x2="5"][y2="19"]';
+  function _kind(code) {
+    if (!code) return null;
+    if (/event\.target\s*===?\s*this/.test(code)) {
+      const rest = code.replace(/if\s*\(\s*event\.target\s*===?\s*this\s*\)/, '');
+      return _kind(rest) ? 'backdrop' : null;
+    }
+    if (/\(\s*true\s*\)/.test(code)) return null;           // closeX(true) = save
+    const names = code.match(/[\w$.]+(?=\s*\()/g) || [];
+    let close = false;
+    for (const n of names) {
+      if (NEUTRAL.test(n)) continue;
+      const base = n.replace(/^window\./, '');
+      if (NOT_BACK.test(base) || !CLOSE_NAME.test(base)) return null;
+      close = true;
+    }
+    if (!close && /this\.closest\([^)]*\)\.remove\(\)/.test(code)) close = true;
+    return close ? 'button' : null;
+  }
+  function _visible(el) {
+    for (let n = el; n && n.nodeType === 1; n = n.parentElement) {
+      if (parseFloat(getComputedStyle(n).opacity) < 0.1) return false;
+    }
+    return true;
+  }
+  function _hitAt(el, x, y, exact) {
+    if (x < 0 || y < 0 || x >= innerWidth || y >= innerHeight) return false;
+    const h = document.elementFromPoint(x, y);
+    return !!h && (exact ? h === el : (h === el || el.contains(h)));
+  }
+  function _layerZ(el) {
+    let z = 0;
+    for (let n = el; n && n.nodeType === 1; n = n.parentElement) {
+      const cs = getComputedStyle(n);
+      if (cs.position !== 'static' && cs.zIndex !== 'auto') z = Math.max(z, +cs.zIndex || 0);
+    }
+    return z;
+  }
+  function _findBack() {
+    const lo = document.getElementById('app-loading-overlay');
+    if (lo && lo.style.display !== 'none' && lo.dataset.hidden !== '1') return null;
+    const cands = [];
+    const consider = (el, kind) => {
+      const r = el.getBoundingClientRect();
+      if (r.width < 2 || r.height < 2 || r.bottom <= 0 || r.top >= innerHeight) return;
+      let ok;
+      if (kind === 'backdrop') {
+        const pts = [[r.left + 6, r.top + 6], [r.right - 6, r.top + 6], [r.left + r.width / 2, r.top + 6], [r.left + 6, r.bottom - 6], [r.right - 6, r.bottom - 6]];
+        ok = pts.some(([x, y]) => _hitAt(el, x, y, true));
+      } else {
+        ok = _hitAt(el, r.left + r.width / 2, r.top + r.height / 2, false);
+      }
+      if (ok && _visible(el)) cands.push(el);
+    };
+    document.querySelectorAll('[onclick]').forEach(el => { const k = _kind(el.getAttribute('onclick')); if (k) consider(el, k); });
+    document.querySelectorAll(EXTRA_SEL).forEach(el => consider(el, 'button'));
+    // By icon: the app's back arrow / X glyphs inside a small tappable control
+    document.querySelectorAll(ICON_SEL).forEach(shape => {
+      const svg = shape.closest('svg');
+      if (!svg || svg.closest('#bp-edge-back')) return;
+      if (/ff4747/i.test(svg.outerHTML)) return;           // red status X, not a control
+      const btn = svg.closest('button, [onclick]');
+      if (!btn || btn.disabled) return;
+      const r = btn.getBoundingClientRect();
+      if (r.width > 140 || r.height > 140) return;         // icon inside a big card, not an X button
+      consider(btn, 'button');
+    });
+    document.querySelectorAll('button').forEach(btn => { if (/^[✕×✖]$/.test(btn.textContent.trim())) consider(btn, 'button'); });
+    if (!cands.length) return null;
+    cands.sort((a, b) => (_layerZ(a) - _layerZ(b)) || ((a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1));
+    return cands[cands.length - 1];
+  }
+  window._bpFindBack = _findBack;
+
+  const _armed = () => history.state?.bp === 'guard';
+  function _sync() {
+    const open = !!_findBack();
+    if (open && !_armed()) history.pushState({ bp: 'guard' }, '', '');
+    else if (!open && _armed()) { window._suppressNextPopstate = true; history.back(); }
+  }
+  let _syncT = [];
+  function _syncSoon() {
+    _syncT.forEach(clearTimeout);
+    _syncT = [450, 1200].map(ms => setTimeout(_sync, ms));
+  }
+  // Runs the on-screen X; returns true if something was closed.
+  window._bpBack = function() {
+    const el = _findBack();
+    if (!el) return false;
+    el.click();
+    return true;
   };
 
-  // Map of view IDs to their close functions
+  // Old per-overlay hook — opening is now detected generically.
+  window._historyPush = function() { _syncSoon(); };
+
+  window.addEventListener('popstate', function(e) {
+    if (window._suppressNextPopstate) { window._suppressNextPopstate = false; return; }
+    if (e.state?.bp === 'guard') return;                   // forward nav
+    if (window._bpBack()) {
+      history.pushState({ bp: 'guard' }, '', '');          // keep catching quick repeated backs
+      _syncSoon();                                         // drop it if nothing is left open
+    }
+  });
+  document.addEventListener('click', _syncSoon, true);
+  setInterval(() => { if (document.visibilityState === 'visible') _sync(); }, 1500);
+  if (!history.state) history.replaceState({ view: null }, '', '');
+
+  // iPhone installed app: no browser back, so swipe right from the left edge.
+  // (In Safari itself the browser's own edge swipe already triggers popstate.)
+  const _iosStandalone = document.documentElement.classList.contains('is-ios') && (navigator.standalone || matchMedia('(display-mode: standalone)').matches);
+  if (_iosStandalone) {
+    const EDGE = 20, TRIGGER = 70;
+    let sx = null, sy = 0, live = false, ind = null;
+    const indicator = () => {
+      if (!ind) {
+        ind = document.createElement('div');
+        ind.id = 'bp-edge-back';
+        ind.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>';
+        ind.style.cssText = 'position:fixed;left:0;top:50%;width:40px;height:40px;margin-top:-20px;border-radius:50%;background:var(--accent,#e8ff47);display:flex;align-items:center;justify-content:center;z-index:2147483000;pointer-events:none;opacity:0;transform:translateX(-44px);';
+        document.body.appendChild(ind);
+      }
+      return ind;
+    };
+    const hide = () => { if (ind) { ind.style.transition = 'opacity .2s, transform .2s'; ind.style.opacity = '0'; ind.style.transform = 'translateX(-44px)'; } };
+    document.addEventListener('touchstart', e => {
+      const t = e.touches[0];
+      sx = (e.touches.length === 1 && t.clientX <= EDGE && _findBack()) ? t.clientX : null;
+      sy = t ? t.clientY : 0; live = false;
+    }, { passive: true, capture: true });
+    document.addEventListener('touchmove', e => {
+      if (sx == null) return;
+      const t = e.touches[0], dx = t.clientX - sx, dy = Math.abs(t.clientY - sy);
+      if (!live) {
+        if (dy > 12 && dy > dx) { sx = null; return; }       // vertical scroll — not a back swipe
+        if (dx < 12) return;
+        live = true;
+      }
+      const p = Math.min(dx / TRIGGER, 1), el = indicator();
+      el.style.transition = 'none';
+      el.style.top = sy + 'px';
+      el.style.opacity = String(p);
+      el.style.transform = `translateX(${-44 + p * 56}px) scale(${p >= 1 ? 1.1 : 1})`;
+    }, { passive: true, capture: true });
+    document.addEventListener('touchend', e => {
+      if (sx == null) return;
+      const t = e.changedTouches[0], dx = t.clientX - sx;
+      const go = live && dx >= TRIGGER;
+      sx = null; live = false; hide();
+      if (go) window._bpBack();
+    }, { passive: true, capture: true });
+    document.addEventListener('touchcancel', () => { sx = null; live = false; hide(); }, { passive: true, capture: true });
+  }
+})();
+
+// Legacy per-view closer map (kept only for code that still writes to it).
+(function() {
   const _closers = {
     'nwf-name':         () => { if (typeof window._cancelNwfNamePage === 'function') window._cancelNwfNamePage(); },
     'calendar':         () => { if (typeof closeCalendar === 'function') closeCalendar(); },
@@ -35191,23 +35366,6 @@ function _updateKgDisplay(val, isBWMode) {
   };
 
   window._closers = _closers;
-
-  // Handle back button
-  window.addEventListener('popstate', function(e) {
-    if (window._suppressNextPopstate) { window._suppressNextPopstate = false; return; }
-    const view = e.state?.view;
-    if (view && _closers[view]) {
-      _closers[view]();
-    } else {
-      // No known view — push a neutral state to prevent PWA exit
-      history.pushState(null, '', '');
-    }
-  });
-
-  // Push initial state so first back press doesn't exit PWA
-  if (!history.state) {
-    history.replaceState({ view: null }, '', '');
-  }
 })();
 </script>
 
