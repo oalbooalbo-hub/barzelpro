@@ -188,6 +188,19 @@ button{cursor:pointer;touch-action:manipulation;-webkit-appearance:none;outline:
 /* Dashed buttons: native dashed border hidden, SVG 10/6 dash drawn instead (see dashify). */
 .bp-dashed{border-style:solid!important;border-color:transparent!important;}
 .bp-dashed-rel{position:relative!important;}
+/* New / edit exercise: muscle ✓ list beside the body diagram (_nExRenderMuscleList). */
+#nex-muscle-list{position:absolute;box-sizing:border-box;display:flex;flex-direction:column;justify-content:flex-start;gap:2px;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;--ft:0px;--fb:0px;-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 var(--ft),#000 calc(100% - var(--fb)),transparent 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 var(--ft),#000 calc(100% - var(--fb)),transparent 100%);opacity:0;transform:translateX(14px);pointer-events:none;transition:opacity .28s ease .1s, transform .32s cubic-bezier(.2,.8,.3,1) .1s;}
+#nex-muscle-list.show{opacity:1;transform:none;pointer-events:auto;}
+#nex-muscle-list.fade-top{--ft:34px;}
+#nex-muscle-list.fade-bottom{--fb:34px;}
+#nex-muscle-list > .nex-ml-item:first-child{margin-top:auto;}
+#nex-muscle-list > .nex-ml-item:last-child{margin-bottom:auto;}
+.nex-ml-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 0;cursor:pointer;-webkit-tap-highlight-color:transparent;flex-shrink:0;}
+.nex-ml-name{font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;white-space:nowrap;color:var(--g55);transition:color .15s;}
+.nex-ml-item.on .nex-ml-name{color:var(--mc);}
+.nex-ml-check{width:26px;height:26px;flex-shrink:0;box-sizing:border-box;border-radius:8px;border:1.5px solid var(--g44);color:transparent;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.nex-ml-item.on .nex-ml-check{border-color:#34d399;color:#34d399;}
+.nex-ml-item:active .nex-ml-check{transform:scale(.92);}
 /* No scroll indicator anywhere — scrolling itself is unchanged. */
 html,body,*{scrollbar-width:none;-ms-overflow-style:none;}
 html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{display:none;width:0;height:0;background:transparent;}
@@ -2451,7 +2464,7 @@ window._fbModuleReady = true;
       <button class="kg-pad-btn" onclick="kgPadPress('9')">9</button>
       <button class="kg-pad-btn" onclick="kgPadPress('.')">.</button>
       <button class="kg-pad-btn" onclick="kgPadPress('0')">0</button>
-      <button class="kg-pad-btn" onclick="kgPadBack()" style="font-size:18px;">⌫</button>
+      <button class="kg-pad-btn" onclick="kgPadBack()" style="font-size:18px;" aria-label="Delete"><svg width="24" height="18" viewBox="0 0 24 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" style="display:block;margin:auto;pointer-events:none"><path d="M7.5 1.5H21a1.5 1.5 0 0 1 1.5 1.5v12a1.5 1.5 0 0 1-1.5 1.5H7.5L1.5 9z"/><line x1="11" y1="5.5" x2="18" y2="12.5"/><line x1="18" y1="5.5" x2="11" y2="12.5"/></svg></button>
     </div>
     <div style="display:flex;gap:10px;">
       <button onclick="closeKgEditor()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:13px;font-weight:700;padding:13px;cursor:pointer;">Cancel</button>
@@ -6789,6 +6802,8 @@ function renderExercisesTab() {
     _renderCoachExercisesTab(el);
     return;
   }
+  // Client users: one list — the "App Library" switch replaced the view picker.
+  if (window._currentUserData?.role !== 'super_admin' && _exTabView !== 'all') _exTabView = 'all';
 
   const exMap = {};
   const hiddenEx = JSON.parse(_LS.get('ironlog_hidden_ex') || '[]');
@@ -7062,13 +7077,18 @@ function renderExercisesTab() {
               </div>
     </div>`;
   };
-  let _exAllListHtml = _allExes.length
-    ? _allExes.map(_exAllRow).join('')
-    : `<div class="empty-state"><span style="color:var(--muted);">No ${_exSuper ? 'published ' : ''}exercises found for ${selected}</span></div>`;
   // Clients' APP EXERCISES: the brand library + brand defaults for this
   // muscle (not deleted/hidden by the user, not already in MY EXERCISES).
   const _exMyNames = new Set(_customExes.map(e => e.name));
   const _exAppExes = _exSuper ? [] : _allExes.filter(e => !_exMyNames.has(e.name) && (_exLibDef(e.name) || _exIsDefaultName(e.name)));
+  // "App Library" switch: app rows are tagged (data-bp-lib) so the switch can
+  // collapse them; rendered hidden while it's off.
+  const _exAppSet = new Set(_exAppExes.map(e => e.name));
+  const _exLibOn = _exSuper || _libShown('ex');
+  const _exTagLib = html => html.replace(/^<div /, '<div data-bp-lib="1" ').replace(/(style=")/, _exLibOn ? '$1' : '$1display:none;');
+  let _exAllListHtml = _allExes.length
+    ? _allExes.map(ex => _exAppSet.has(ex.name) ? _exTagLib(_exAllRow(ex)) : _exAllRow(ex)).join('')
+    : `<div class="empty-state"><span style="color:var(--muted);">No ${_exSuper ? 'published ' : ''}exercises found for ${selected}</span></div>`;
   const _exAppListHtml = _exAppExes.length
     ? _exAppExes.map(_exAllRow).join('')
     : `<div class="empty-state"><span style="color:var(--muted);">No app exercises for ${selected}</span></div>`;
@@ -7116,28 +7136,10 @@ function renderExercisesTab() {
   const _exViewPicker = window._currentUserData?.role !== 'super_admin';
   const _exViewPickerHtml = (() => {
     if (!_exViewPicker) return '';
-    // Views: ALL / MY EXERCISES ('custom') / APP EXERCISES ('app') / COACH;
-    // MY and APP are shaded while empty for the selected muscle.
-    const _vLabels = { all: 'ALL', custom: 'MY EXERCISES', app: 'APP EXERCISES', coach: 'COACH' };
-    const _vColor = v => v === 'coach' ? '#7ec8e3' : 'var(--accent)';
-    const _customEmpty = !_customExes.length;
-    const _pickViews = _hasCoach ? ['all', 'app', 'coach', 'custom'] : ['all', 'app', 'custom']; // MY last
-    // List: every option white; the selected one gets an accent ✓. Only an
-    // empty MY EXERCISES is shaded (APP is never shaded, even with brand
-    // content off). The label under the title (_vColor) stays accent.
-    const _opts = _pickViews.map((v, i) => {
-      const _off = v === 'custom' && _customEmpty && _exTabView !== v;
-      return `<button ${_off ? 'disabled' : `onclick="_extabPickView('${v}')"`} style="width:100%;background:transparent;border:none;${i ? 'border-top:1px solid var(--g2a);' : ''}color:var(--gff);font-family:'DM Sans';font-size:14px;font-weight:700;padding:14px 16px;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:${_off ? 'default' : 'pointer'};opacity:${_off ? '0.3' : '1'};-webkit-tap-highlight-color:transparent;"><span style="white-space:nowrap;">${_vLabels[v]}</span>${_viewCheckSvg(v === _exTabView)}</button>`;
-    }).join('');
-    return `<div style="position:relative;display:flex;align-items:center;justify-content:center;min-height:34px;">
-      <!-- Symmetric padding + chevron inside the right padding, so the label
-           TEXT itself is dead-center on screen (see the Workouts tab's). -->
-      <button id="extab-view-btn" onclick="event.stopPropagation();${_exDelMode ? '' : '_extabToggleViewMenu()'}" style="${_exDelMode ? 'cursor:default;' : ''}position:relative;padding:8px 24px;border:none;background:transparent;color:${_vColor(_exTabView)};font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;cursor:pointer;-webkit-tap-highlight-color:transparent;">
-        ${_vLabels[_exTabView] || 'ALL'}
-        <svg id="extab-view-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="${_exDelMode ? 'visibility:hidden;' : ''}position:absolute;right:6px;top:50%;margin-top:-6px;transition:transform .2s;"><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
-      <div id="extab-view-menu" style="display:none;position:absolute;top:100%;left:50%;transform:translateX(-50%);min-width:160px;width:max-content;background:var(--g1a);border:1px solid var(--g2a);border-radius:12px;overflow:hidden;z-index:600;box-shadow:0 8px 24px rgba(0,0,0,.5);">${_opts}</div>
-      <button id="ex-add-btn" onclick="openNewExModal(window._exTabMuscle||'Chest')" ${_exDelMode ? 'tabindex="-1" aria-hidden="true" ' : ''}style="${_exDelMode ? 'visibility:hidden;pointer-events:none;' : ''}position:absolute;right:0;top:50%;transform:translateY(-50%);padding:4px 8px 4px 12px;border:none;background:transparent;color:${_exTabView==='custom'?'var(--accent)':'var(--g55)'};cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;"><svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></button>
+    // "App Library" switch (left) replaced the ALL ▾ picker; + stays right.
+    return `<div style="position:relative;display:flex;align-items:center;justify-content:flex-start;min-height:34px;">
+      ${_libSwitchHtml('ex', _exDelMode)}
+      <button id="ex-add-btn" onclick="openNewExModal(window._exTabMuscle||'Chest')" ${_exDelMode ? 'tabindex="-1" aria-hidden="true" ' : ''}style="${_exDelMode ? 'visibility:hidden;pointer-events:none;' : ''}position:absolute;right:0;top:50%;transform:translateY(-50%);padding:4px 8px 4px 12px;border:none;background:transparent;color:var(--g55);cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;"><svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></button>
     </div>`;
   })();
   // Long-press select mode keeps this normal top bar (same as the Workouts
@@ -7181,7 +7183,7 @@ function renderExercisesTab() {
 
   // Select-to-delete: eligible = the list currently shown (this view + muscle).
   if (_exDelMode) {
-    window._exDelEligible = (_exTabView === 'custom' ? _customExes : _exTabView === 'app' ? _exAppExes : _allExes).map(e => e.name).filter(_exSelectable);
+    window._exDelEligible = (_exTabView === 'custom' ? _customExes : _exTabView === 'app' ? _exAppExes : _allExes.filter(e => _exLibOn || !_exAppSet.has(e.name))).map(e => e.name).filter(_exSelectable);
     const _allSel = window._exDelEligible.length > 0 && window._exDelEligible.every(n => window._exDelSelected?.has(n));
     const _sa = document.getElementById('extab-selectall-btn');
     if (_sa) {
@@ -7290,8 +7292,13 @@ function renderExercisesTab() {
     // yet): same as the "+" at the top. Not in select mode (the + is hidden
     // there too), nor where the list already has its own (coach's library).
     const _createExBtn = (_exDelMode || _coachHtml.includes('openNewExModal(')) ? '' :
-      `<button class="extab-create-btn" onclick="openNewExModal(window._exTabMuscle||'Chest')" style="width:100%;margin:4px 0 12px;background:transparent;border:1px dashed ${_exEmpty ? 'var(--accent)' : 'var(--g66)'};border-radius:10px;color:${_exEmpty ? 'var(--accent)' : 'var(--gcc)'};font-family:'DM Sans';font-size:16px;font-weight:600;height:64px;box-sizing:border-box;padding:0 13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;-webkit-tap-highlight-color:transparent;"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Create New Exercise</button>`; // 64px = 2/3 of an exercise row (min-height 96px)
-    el.innerHTML = (_exTabView === 'all' ? _pc + _exAllListHtml : _exTabView === 'app' ? _pc + _exAppListHtml :_exTabView === 'created' ? searchHtml + _pc + listBox + (_pickMode ? '' : addBtnHtml) : _exTabView === 'custom' ? _pc + _exCustomListHtml : _exTabView === 'coach' ? _coachHtml : _pc + (_pickMode ? `<div id="pickModeListBox" style="border:1px solid var(--border);border-radius:12px;padding:6px 0;">` + _exLibListHtml.replace(/<button[^>]*Add to Library[^<]*<\/button>/g,'') + `</div>` : _exLibListHtml + _exLibAddBtns)) + _createExBtn;
+      `<button class="extab-create-btn" onclick="openNewExModal(window._exTabMuscle||'Chest')" style="width:100%;margin:4px 0 12px;background:#000;border:1px dashed var(--accent);border-radius:10px;color:var(--accent);font-family:'DM Sans';font-size:16px;font-weight:600;height:64px;box-sizing:border-box;padding:0 13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;-webkit-tap-highlight-color:transparent;"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Create New Exercise</button>`; // 64px = 2/3 of an exercise row (min-height 96px)
+    // Clients with a coach: the coach's exercises (former COACH view) stay
+    // under the list — not app library, so the switch doesn't hide them.
+    const _exCoachSection = (_exTabView === 'all' && _hasCoach && !_exSuper && !_pickMode && !_exDelMode)
+      ? `<div style="font-family:'DM Sans';font-size:12px;font-weight:700;color:#7ec8e3;letter-spacing:.5px;margin:14px 2px 8px;">FROM YOUR COACH</div>${buildCoachExercisesHtml()}`
+      : '';
+    el.innerHTML = (_exTabView === 'all' ? _pc + _exAllListHtml + _exCoachSection : _exTabView === 'app' ? _pc + _exAppListHtml :_exTabView === 'created' ? searchHtml + _pc + listBox + (_pickMode ? '' : addBtnHtml) : _exTabView === 'custom' ? _pc + _exCustomListHtml : _exTabView === 'coach' ? _coachHtml : _pc + (_pickMode ? `<div id="pickModeListBox" style="border:1px solid var(--border);border-radius:12px;padding:6px 0;">` + _exLibListHtml.replace(/<button[^>]*Add to Library[^<]*<\/button>/g,'') + `</div>` : _exLibListHtml + _exLibAddBtns)) + _createExBtn;
     // Pick mode / long-press select mode: line the rows' circles up with the
     // workout cards' (and the select-all circle over them).
     if (_pickMode || _exDelMode) requestAnimationFrame(_alignPickCircles);
@@ -7309,6 +7316,65 @@ function switchCoachPickView(view) {
 // (prefix 'wtab', see renderWorkoutsTab2) and the Exercises tab (prefix
 // 'extab', see renderExercisesTab). Elements: #<prefix>-view-btn/-menu/-chev.
 // Any tap outside the open menu closes it.
+// ── "App Library" switch (client users, Exercises + Workouts tabs) ──
+// Replaces the ALL ▾ view picker. On (default): the list shows the user's own
+// items AND the app library's; off: app-library rows (tagged data-bp-lib) are
+// collapsed away with an animation. Saved per tab ('ex' / 'w').
+function _libShown(kind) { return localStorage.getItem('bp_lib_show_' + kind) !== '0'; }
+function _libSwitchHtml(kind, locked) {
+  // Delete All Data without loading the brand library → no app content to toggle.
+  if (typeof _isBrandContentOff === 'function' && _isBrandContentOff()) return '';
+  const on = _libShown(kind);
+  return `<div id="${kind}-lib-switch" onclick="${locked ? '' : `_libToggle('${kind}')`}" style="display:inline-flex;align-items:center;gap:10px;padding:4px 0;cursor:${locked ? 'default' : 'pointer'};opacity:${locked ? '.35' : '1'};-webkit-tap-highlight-color:transparent;">
+      <span style="position:relative;display:inline-block;width:44px;height:26px;flex-shrink:0;">
+        <span class="bp-lib-track" style="position:absolute;inset:0;background:${on ? 'var(--accent)' : 'var(--g33)'};border-radius:13px;transition:background .2s;">
+          <span class="bp-lib-thumb" style="position:absolute;left:${on ? '21px' : '3px'};top:3px;width:20px;height:20px;background:${on ? 'var(--g00)' : 'var(--g66)'};border-radius:50%;transition:left .2s,background .2s;"></span>
+        </span>
+      </span>
+      <span style="font-family:'DM Sans';font-size:13px;font-weight:700;color:var(--gaa);white-space:nowrap;">App Library</span>
+    </div>`;
+}
+function _libRowsAnimate(root, show) {
+  const rows = [...root.querySelectorAll('[data-bp-lib]')];
+  const D = 300, ease = 'cubic-bezier(.4,0,.2,1)';
+  rows.forEach(r => {
+    clearTimeout(r._bpLibT);
+    const cs = getComputedStyle(r);
+    if (show) {
+      r.style.display = '';
+      const h = r.offsetHeight, mb = cs.marginBottom;
+      Object.assign(r.style, { overflow: 'hidden', height: '0px', marginBottom: '0px', paddingTop: '0px', paddingBottom: '0px', opacity: '0', transition: 'none' });
+      void r.offsetHeight;
+      r.style.transition = `height ${D}ms ${ease}, margin-bottom ${D}ms ${ease}, padding ${D}ms ${ease}, opacity ${D}ms ease`;
+      Object.assign(r.style, { height: h + 'px', marginBottom: mb, paddingTop: '', paddingBottom: '', opacity: '1' });
+      r._bpLibT = setTimeout(() => { ['overflow', 'height', 'marginBottom', 'transition', 'opacity'].forEach(p => r.style[p] = ''); }, D + 20);
+    } else {
+      Object.assign(r.style, { overflow: 'hidden', height: r.offsetHeight + 'px', transition: 'none' });
+      void r.offsetHeight;
+      r.style.transition = `height ${D}ms ${ease}, margin-bottom ${D}ms ${ease}, padding ${D}ms ${ease}, opacity ${D * 0.7}ms ease`;
+      Object.assign(r.style, { height: '0px', marginBottom: '0px', paddingTop: '0px', paddingBottom: '0px', opacity: '0' });
+      r._bpLibT = setTimeout(() => {
+        ['overflow', 'height', 'marginBottom', 'paddingTop', 'paddingBottom', 'transition', 'opacity'].forEach(p => r.style[p] = '');
+        r.style.display = 'none';
+      }, D + 20);
+    }
+  });
+}
+function _libToggle(kind) {
+  const on = !_libShown(kind);
+  localStorage.setItem('bp_lib_show_' + kind, on ? '1' : '0');
+  const sw = document.getElementById(kind + '-lib-switch');
+  if (sw) {
+    const tr = sw.querySelector('.bp-lib-track'), th = sw.querySelector('.bp-lib-thumb');
+    if (tr) tr.style.background = on ? 'var(--accent)' : 'var(--g33)';
+    if (th) { th.style.left = on ? '21px' : '3px'; th.style.background = on ? 'var(--g00)' : 'var(--g66)'; }
+  }
+  const root = document.getElementById(kind === 'ex' ? 'exercisesTabContent' : (document.getElementById('workouts2TabContent') ? 'workouts2TabContent' : 'workoutsTabContent'));
+  if (root) _libRowsAnimate(root, on);
+}
+window._libShown = _libShown;
+window._libToggle = _libToggle;
+
 let _viewMenuOpenPrefix = null;
 function _viewMenuToggle(prefix, forceOpen) {
   const menu = document.getElementById(prefix + '-view-menu');
@@ -8200,7 +8266,166 @@ const _COMP_COLORS = { ...BP_COLORS.muscles };
 const _BP_ORDER = ['Chest','Back','Legs','Shoulders','Arms','Core'];
 function _bpRank(bp) { const i = _BP_ORDER.indexOf(bp); return i === -1 ? 999 : i; }
 
+// ── Muscle list (replaces the old slider) ──────────────────────────────────
+// Body part picked → the body diagram slides left (as big as still fits) and
+// a ✓ list of that part's muscles appears on its right, all checked by
+// default; unchecking removes a muscle (min 1). _newExSelectedSubMuscles = []
+// still means "all", so saving (confirmNewEx) is unchanged.
+const NEX_BODY_SCALE = 0.77;              // the diagram's resting scale (centred)
+function _nExSubList(bp) {
+  return bp === 'Mix' ? _COMP_SUBS.map(s => s.n) : (NEX_BODY_SUBMUSCLES[bp] || []);
+}
+function _nExChecked(bp) {
+  const all = _nExSubList(bp);
+  const sel = (window._newExSelectedSubMuscles || []).filter(n => all.includes(n));
+  return sel.length ? sel : all.slice();
+}
+function _nExColorOf(bp, name) {
+  if (bp === 'Mix') { const s = _COMP_SUBS.find(x => x.n === name); return (s && _COMP_COLORS[s.bp]) || '#aaa'; }
+  return W2_MUSCLE_COLORS[bp] || '#aaa';
+}
+function _nExPaint(bp) {
+  W2_ALL_MUSCLE_IDS.forEach(id => {
+    const el = document.getElementById('nex-' + id);
+    if (el) { el.setAttribute('fill', '#2a2a2a'); el.setAttribute('opacity', '1'); }
+  });
+  if (!bp) return;
+  const all = _nExSubList(bp);
+  if (!all.length) {
+    (W2_BODY_IDS[bp] || []).forEach(id => {
+      const el = document.getElementById('nex-' + id);
+      if (el) { el.setAttribute('fill', W2_MUSCLE_COLORS[bp] || '#aaa'); el.setAttribute('opacity', '0.9'); }
+    });
+    return;
+  }
+  _nExChecked(bp).forEach(name => {
+    const c = _nExColorOf(bp, name);
+    (NEX_SUB_MUSCLE_IDS[name] || []).forEach(id => {
+      const el = document.getElementById('nex-' + id);
+      if (el) { el.setAttribute('fill', c); el.setAttribute('opacity', '0.9'); }
+    });
+  });
+}
+function _nExListEl() {
+  let list = document.getElementById('nex-muscle-list');
+  if (!list) {
+    const c = document.getElementById('nex-body-container');
+    if (!c) return null;
+    c.parentElement.style.position = 'relative';
+    list = document.createElement('div');
+    list.id = 'nex-muscle-list';
+    list.addEventListener('scroll', () => _nExListFade(list), { passive: true });
+    c.insertAdjacentElement('afterend', list);
+  }
+  return list;
+}
+// Edge fades hint that the list continues (scroll bars are hidden app-wide).
+function _nExListFade(list) {
+  const more = list.scrollHeight - list.clientHeight > 2;
+  list.classList.toggle('fade-top', more && list.scrollTop > 2);
+  list.classList.toggle('fade-bottom', more && list.scrollTop < list.scrollHeight - list.clientHeight - 2);
+}
+function _nExRenderMuscleList(bp) {
+  const list = _nExListEl();
+  if (!list) return;
+  const all = bp ? _nExSubList(bp) : [];
+  if (!all.length) { list.classList.remove('show'); return; }
+  const chk = _nExChecked(bp);
+  list.innerHTML = all.map(n => {
+    const on = chk.includes(n);
+    return `<div class="nex-ml-item${on ? ' on' : ''}" data-m="${n}" onclick="_nExToggleSub(this.dataset.m)" style="--mc:${_nExColorOf(bp, n)}"><span class="nex-ml-name">${n}</span><span class="nex-ml-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></div>`;
+  }).join('');
+}
+function _nExToggleSub(name) {
+  const bp = window._newExMuscle;
+  if (!bp) return;
+  const all = _nExSubList(bp);
+  let chk = _nExChecked(bp);
+  if (chk.includes(name)) {
+    if (chk.length === 1) { _newExWarn('Select at least 1 muscle'); return; }
+    chk = chk.filter(n => n !== name);
+  } else chk.push(name);
+  window._newExSelectedSubMuscles = chk.length === all.length ? [] : all.filter(n => chk.includes(n));
+  document.querySelectorAll('#nex-muscle-list .nex-ml-item').forEach(it => it.classList.toggle('on', chk.includes(it.dataset.m)));
+  _nExPaint(bp);
+}
+window._nExToggleSub = _nExToggleSub;
+// Visible figures' box in the diagram's own (unscaled) coordinates — the SVGs
+// carry empty margins, so fitting by this box lets the figures stay bigger.
+function _nExFigureBox(c) {
+  const prevT = c.style.transform, prevTr = c.style.transition;
+  c.style.transition = 'none'; c.style.transform = 'none';
+  const cr = c.getBoundingClientRect();
+  let l = Infinity, t = Infinity, r = -Infinity, b = -Infinity;
+  c.querySelectorAll('path, polygon, ellipse, circle').forEach(el => {
+    const q = el.getBoundingClientRect();
+    if (q.width < 0.5 && q.height < 0.5) return;
+    l = Math.min(l, q.left); t = Math.min(t, q.top); r = Math.max(r, q.right); b = Math.max(b, q.bottom);
+  });
+  c.style.transform = prevT; c.getBoundingClientRect(); c.style.transition = prevTr;
+  if (!isFinite(l) || !cr.width) return null;
+  return { x: l - cr.left, y: t - cr.top, w: r - l, h: b - t, cw: cr.width };
+}
+let _nExLayoutTries = 0;
+function _nExLayoutBody(on) {
+  const c = document.getElementById('nex-body-container');
+  const list = _nExListEl();
+  if (!c || !list) return;
+  const S = NEX_BODY_SCALE, cw = c.offsetWidth;
+  if (!cw) { if (_nExLayoutTries++ < 20) setTimeout(() => _nExLayoutBody(on), 80); return; } // modal not shown yet
+  _nExLayoutTries = 0;
+  c.style.transformOrigin = '0 0';
+  c.style.transition = 'transform .38s cubic-bezier(.2,.8,.3,1), margin-bottom .38s cubic-bezier(.2,.8,.3,1)';
+  if (!on) {
+    c.style.transform = `translate(${cw * (1 - S) / 2}px,0) scale(${S}) translateZ(0)`;
+    c.style.marginBottom = '';
+    list.classList.remove('show');
+    return;
+  }
+  if (!c._nexBox || c._nexBox.cw !== cw) c._nexBox = _nExFigureBox(c);
+  const f = c._nexBox;
+  if (!f) return;
+  // Longest name decides the list width (measured, not guessed), so every
+  // name fits; the figures then take all the width that's left, up to S.
+  list.style.width = 'auto';
+  const lw = Math.ceil(list.scrollWidth);
+  const GAP = 10;
+  const s = Math.min(S, (cw - lw - GAP) / f.w);
+  const tx = -s * f.x, ty = (S - s) * (f.y + f.h / 2);   // left-aligned, same vertical centre
+  c.style.transform = `translate(${tx}px,${ty}px) scale(${s}) translateZ(0)`;
+  list.style.width = lw + 'px';
+  list.style.left = (c.offsetLeft + cw - lw) + 'px';
+  // Spans the body section's height; a longer list (Mix) scrolls inside it,
+  // short lists stay centred (auto margins on first/last item).
+  list.style.minHeight = '';
+  list.style.top = c.offsetTop + 'px';
+  list.style.height = c.offsetHeight + 'px';
+  // Only a scrolling list (Mix) touches the top — give it room under the body-part buttons.
+  if (list.scrollHeight > list.clientHeight + 1) {
+    const TOP_GAP = 20;
+    list.style.top = (c.offsetTop + TOP_GAP) + 'px';
+    list.style.height = (c.offsetHeight - TOP_GAP) + 'px';
+  }
+  c.style.marginBottom = '';
+  list.scrollTop = 0;
+  _nExListFade(list);
+  requestAnimationFrame(() => list.classList.add('show'));
+}
+window.addEventListener('resize', () => {
+  const c = document.getElementById('nex-body-container');
+  if (c && c.offsetWidth) _nExLayoutBody(!!window._newExMuscle && !!document.getElementById('nex-muscle-list')?.classList.contains('show'));
+});
+
 function _nExHighlightMuscle(bodyPart, preserveSubMuscles) {
+  // List replaces the slider (#nex-slider-wrap stays hidden).
+  const _sw = document.getElementById('nex-slider-wrap');
+  if (_sw) _sw.style.display = 'none';
+  if (bodyPart && !preserveSubMuscles) window._newExSelectedSubMuscles = [];
+  _nExPaint(bodyPart);
+  _nExRenderMuscleList(bodyPart);
+  _nExLayoutBody(!!bodyPart && _nExSubList(bodyPart).length > 0);
+}
+function _nExHighlightMuscleOld(bodyPart, preserveSubMuscles) {
   // No body part picked yet (new exercise): nothing lit, and the slider with
   // its "Muscles (optional)" title (inside #nex-slider-wrap) hidden below.
   const _mt = document.getElementById('nex-muscles-title');
@@ -11408,6 +11633,8 @@ function renderWorkoutsTab2() {
   // in this same script, not a window property; switchWTabView itself
   // assigns it the same way.
   if (_isPubPickMode) _wTabView = 'custom';
+  // Client users: one list — the "App Library" switch replaced the view picker.
+  else if (window._currentUserData?.role !== 'super_admin' && _wTabView !== 'all') _wTabView = 'all';
 
   // Long-press-to-delete (CUSTOM only) — never active alongside any of the
   // other single-purpose pick modes, since they all repurpose a card's own
@@ -11470,32 +11697,11 @@ function renderWorkoutsTab2() {
     // it. The + button sits absolutely on the right so the label stays
     // centered on screen. Super admin keeps the PUBLISHED/PENDING segments.
     ? (() => {
-        // Views: ALL / MY WORKOUTS ('custom') / APP WORKOUTS ('app') / COACH.
-        const _vLabels = { all: 'ALL', custom: 'MY WORKOUTS', app: 'APP WORKOUTS', coach: 'COACH' };
-        const _vColor = v => v === 'coach' ? '#7ec8e3' : 'var(--accent)';
-        const _dtn = JSON.parse(_LS.get('ironlog_deleted_tab_names') || '[]');
-        const _appNames = _wAppNameSet();
-        const _k = s => (s || '').trim().toLowerCase();
-        const _customEmpty = !workouts.some(w => !w._draft && !_dtn.includes(w.name) && !_appNames.has(_k(w.name)));
-        const _pickViews = _wHasCoach ? ['all', 'app', 'coach', 'custom'] : ['all', 'app', 'custom']; // MY last
-        // List: every option white; the selected one gets an accent ✓. Only an
-        // empty MY WORKOUTS is shaded (APP is never shaded, even with brand
-        // content off). The label under the title (_vColor) stays accent.
-        const _opts = _pickViews.map((v, i) => {
-          const _off = v === 'custom' && _customEmpty && _wTabView !== v;
-          return `<button ${_off ? 'disabled' : `onclick="_wtabPickView('${v}')"`} style="width:100%;background:transparent;border:none;${i ? 'border-top:1px solid var(--g2a);' : ''}color:var(--gff);font-family:'DM Sans';font-size:14px;font-weight:700;padding:14px 16px;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:${_off ? 'default' : 'pointer'};opacity:${_off ? '0.3' : '1'};-webkit-tap-highlight-color:transparent;"><span style="white-space:nowrap;">${_vLabels[v]}</span>${_viewCheckSvg(v === _wTabView)}</button>`;
-        }).join('');
+        // "App Library" switch (left) replaced the ALL ▾ picker; + stays right.
         return `${_wTitleRowHtml}
-    <div style="position:relative;display:flex;align-items:center;justify-content:center;min-height:34px;">
-      <!-- Symmetric padding + chevron absolutely placed inside the right
-           padding, so the label TEXT itself (not label+chevron as a group)
-           is what sits dead-center on screen. -->
-      <button id="wtab-view-btn" onclick="event.stopPropagation();${_isDeleteMode ? '' : '_wtabToggleViewMenu()'}" style="${_isDeleteMode ? 'cursor:default;' : ''}position:relative;padding:8px 24px;border:none;background:transparent;color:${_vColor(_wTabView)};font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;cursor:pointer;-webkit-tap-highlight-color:transparent;">
-        ${_vLabels[_wTabView] || 'ALL'}
-        <svg id="wtab-view-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="${_isDeleteMode ? 'visibility:hidden;' : ''}position:absolute;right:6px;top:50%;margin-top:-6px;transition:transform .2s;"><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
-      <div id="wtab-view-menu" style="display:none;position:absolute;top:100%;left:50%;transform:translateX(-50%);min-width:160px;width:max-content;background:var(--g1a);border:1px solid var(--g2a);border-radius:12px;overflow:hidden;z-index:600;box-shadow:0 8px 24px rgba(0,0,0,.5);">${_opts}</div>
-      ${window._planStrengthKey ? '' : `<button id="w2-add-btn" onclick="startNewWorkout(true)" ${_isDeleteMode ? 'tabindex="-1" aria-hidden="true" ' : ''}style="${_isDeleteMode ? 'visibility:hidden;pointer-events:none;' : ''}position:absolute;right:0;top:50%;transform:translateY(-50%);padding:4px 8px 4px 12px;border:none;background:transparent;color:${_wTabView==='custom'?'var(--accent)':'var(--g55)'};cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;"><svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></button>`}
+    <div style="position:relative;display:flex;align-items:center;justify-content:flex-start;min-height:34px;">
+      ${_libSwitchHtml('w', _isDeleteMode)}
+      ${window._planStrengthKey ? '' : `<button id="w2-add-btn" onclick="startNewWorkout(true)" ${_isDeleteMode ? 'tabindex="-1" aria-hidden="true" ' : ''}style="${_isDeleteMode ? 'visibility:hidden;pointer-events:none;' : ''}position:absolute;right:0;top:50%;transform:translateY(-50%);padding:4px 8px 4px 12px;border:none;background:transparent;color:var(--g55);cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;"><svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></button>`}
     </div>`;
       })()
     : `${_wTitleRowHtml}<div style="display:flex;gap:0;align-items:center;">
@@ -11551,6 +11757,7 @@ function renderWorkoutsTab2() {
     : null;
   // Clients: MY WORKOUTS ('custom') vs APP WORKOUTS ('app') — see _wAppNameSet.
   const _wAppNames = _wSuperSplit ? null : _wAppNameSet();
+  const _wLibOn = _wSuperSplit || _libShown('w'); // "App Library" switch
   const sorted = [...all].sort((a,b) => b.date - a.date).filter(w => {
     if (_deletedTabNames.includes(w.name)) return false;
     if (_wSuperSplit) {
@@ -11592,7 +11799,7 @@ function renderWorkoutsTab2() {
     }
   };
   if (_isDeleteMode) {
-    window._wtabDelEligibleIds = sorted.map(w => w.id);
+    window._wtabDelEligibleIds = sorted.filter(w => _wLibOn || !_wAppNames.has((w.name||'').trim().toLowerCase())).map(w => w.id); // hidden app rows aren't selectable
     _syncSelectAllBtn();
   }
   // Publish pick-mode's own select-all circle (header built above).
@@ -11846,7 +12053,9 @@ function renderWorkoutsTab2() {
         </div>
       </div>`;
 
-    rowsHtml += `<div style="padding:5px 2px;${_isDimmed?'opacity:0.25;pointer-events:none;':''}">
+    // Unedited copy of an app workout = app library → the "App Library" switch hides it.
+    const _wIsLibRow = !_wSuperSplit && !_isPubPickMode && _wAppNames.has((w.name||'').trim().toLowerCase());
+    rowsHtml += `<div ${_wIsLibRow ? 'data-bp-lib="1" ' : ''}style="padding:5px 2px;${_wIsLibRow && !_wLibOn ? 'display:none;' : ''}${_isDimmed?'opacity:0.25;pointer-events:none;':''}">
       ${cardInner}
     </div>`;
   });
@@ -11928,7 +12137,7 @@ function renderWorkoutsTab2() {
         const _tap = _isPlanStrengthMode ? `_wtabToggleStrengthPick(${_planKeyJs})`
           : (_isLibSelMode && _sel) ? `_wtabToggleDeletePick(${_idJs})` : `openW2Sheet(null,'${safeId}')`;
         const _dimmed = _isLibSelMode && !_sel;
-        return `<div data-wlibname="${(w.name||'').replace(/"/g,'&quot;')}" style="padding:5px 2px;${_dimmed ? 'opacity:0.25;pointer-events:none;' : ''}">
+        return `<div data-wlibname="${(w.name||'').replace(/"/g,'&quot;')}" ${_wSuperSplit ? '' : 'data-bp-lib="1" '}style="padding:5px 2px;${!_wSuperSplit && !_wLibOn ? 'display:none;' : ''}${_dimmed ? 'opacity:0.25;pointer-events:none;' : ''}">
           <div style="position:relative;-webkit-tap-highlight-color:transparent;transition:transform .15s;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" onmouseleave="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''" ontouchmove="this.style.transform=''" ontouchcancel="this.style.transform=''">
             ${_isTodayPlannedLib ? `<span style="position:absolute;top:0;left:14px;transform:translateY(-50%);background:var(--bg);color:var(--accent);font-family:'DM Sans';font-size:10px;font-weight:800;letter-spacing:.4px;padding:0 6px;line-height:1.4;white-space:nowrap;z-index:4;">Today's Plan</span>` : ''}
             <div${_lpAttrs} oncontextmenu="return false;" style="position:relative;display:flex;border-radius:14px;overflow:hidden;aspect-ratio:21/9;background:var(--g1a);-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;${_accent ? 'border:1px solid transparent;background-clip:padding-box;' : 'border:1px solid var(--g2a);'}">
@@ -11960,7 +12169,7 @@ function renderWorkoutsTab2() {
         </div>`;
       }).join('');
       if (_isLibSelMode) {
-        window._wtabDelEligibleIds = [...window._wtabDelEligibleIds, ..._allLibWs.filter(_libSelectable).map(w => w.id)];
+        window._wtabDelEligibleIds = [...window._wtabDelEligibleIds, ...(_wLibOn ? _allLibWs.filter(_libSelectable).map(w => w.id) : [])];
         _syncSelectAllBtn();
       }
     }
@@ -30470,7 +30679,7 @@ function openRepsPopup(span, exId) {
         <button class="kg-pad-btn" onclick="repsEditorPress('9')">9</button>
         <button class="kg-pad-btn" style="opacity:0.15;pointer-events:none;"></button>
         <button class="kg-pad-btn" onclick="repsEditorPress('0')">0</button>
-        <button class="kg-pad-btn" onclick="repsEditorBack()" style="font-size:18px;">⌫</button>
+        <button class="kg-pad-btn" onclick="repsEditorBack()" style="font-size:18px;" aria-label="Delete"><svg width="24" height="18" viewBox="0 0 24 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" style="display:block;margin:auto;pointer-events:none"><path d="M7.5 1.5H21a1.5 1.5 0 0 1 1.5 1.5v12a1.5 1.5 0 0 1-1.5 1.5H7.5L1.5 9z"/><line x1="11" y1="5.5" x2="18" y2="12.5"/><line x1="18" y1="5.5" x2="11" y2="12.5"/></svg></button>
       </div>
       <div style="display:flex;gap:8px;">
         <button class="editor-action-btn editor-tap-btn" onclick="cancelRepsEditor()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:18px;font-weight:700;padding:0 11px;cursor:pointer;-webkit-tap-highlight-color:transparent;">Cancel</button>
@@ -31311,7 +31520,7 @@ closeInlineKgEditor(false);
         <button class="kg-pad-btn" onclick="kgPadPress('9')">9</button>
         <button class="kg-pad-btn" onclick="kgPadPress('.')">.</button>
         <button class="kg-pad-btn" onclick="kgPadPress('0')">0</button>
-        <button class="kg-pad-btn" onclick="kgPadBack()" style="font-size:18px;">⌫</button>
+        <button class="kg-pad-btn" onclick="kgPadBack()" style="font-size:18px;" aria-label="Delete"><svg width="24" height="18" viewBox="0 0 24 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" style="display:block;margin:auto;pointer-events:none"><path d="M7.5 1.5H21a1.5 1.5 0 0 1 1.5 1.5v12a1.5 1.5 0 0 1-1.5 1.5H7.5L1.5 9z"/><line x1="11" y1="5.5" x2="18" y2="12.5"/><line x1="18" y1="5.5" x2="11" y2="12.5"/></svg></button>
       </div>
       <div style="display:flex;gap:8px;">
         <button class="editor-action-btn editor-tap-btn" onclick="cancelInlineKgEditor()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans';font-size:18px;font-weight:700;padding:0 11px;cursor:pointer;">Cancel</button>
