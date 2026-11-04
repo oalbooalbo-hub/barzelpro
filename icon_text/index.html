@@ -1507,11 +1507,10 @@ window._fbModuleReady = true;
     /* vw-scaled + nowrap: always one line, any phone width */
     #app-load-tag-main{font-family:'DM Sans';font-size:clamp(20px,8.6vw,44px);font-weight:900;color:var(--gff);white-space:nowrap;letter-spacing:-.3px;line-height:1.1;}
     #app-load-tag-main span{color:var(--accent,#e8ff47);}
-    #app-load-tag-sub{font-family:'DM Sans';font-size:clamp(15px,4.4vw,20px);font-weight:600;color:var(--g88);white-space:nowrap;margin-bottom:26px;}
+    #app-load-tag-main{margin-bottom:26px;}
   </style>
   <div id="app-load-tag">
     <div id="app-load-tag-main">Create <span>•</span> Plan <span>•</span> Record</div>
-    <div id="app-load-tag-sub">Your Workouts</div>
     <div style="font-family:'DM Sans';font-size:16px;font-weight:700;color:var(--gff);letter-spacing:.9px;">LOADING</div>
   </div>
 </div>
@@ -34834,14 +34833,14 @@ function closeW2Sheet() {
 }
 
 // App-boot loading screen (#app-loading-overlay, visible from first paint) —
-// hides once auth + data are ready, but never before 2s (time to read the
+// hides once auth + data are ready, but never before 3s (time to read the
 // "Create • Plan • Record" tagline), and the home screen's goal-ring ends up fully rendered with final
 // data behind it instead of visibly popping/jumping into place after reveal.
 function _hideAppLoadingOverlay() {
   const el = document.getElementById('app-loading-overlay');
   if (!el || el.dataset.hidden === '1') return;
   el.dataset.hidden = '1';
-  const MIN_MS = 2000;
+  const MIN_MS = 3000;
   const elapsed = performance.now() - (window._appLoadStart || 0);
   const remain = Math.max(0, MIN_MS - elapsed);
   setTimeout(() => {
