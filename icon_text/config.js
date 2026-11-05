@@ -6,7 +6,7 @@
 // (copies them into manifest.json, index.html, install.html, offline.html).
 window.BRAND_CONFIG = {
   id: 'icon_test_1',
-  name: 'icon_test_2',
+  name: 'ALBO',
   shortName: 'ALBO',
   subtitle: 'icon_test_3',
   tagline: 'icon_test_4',
