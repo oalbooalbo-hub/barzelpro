@@ -7,7 +7,7 @@
 window.BRAND_CONFIG = {
   id: 'icon_test_1',
   name: 'icon_test_2',
-  shortName: 'icon_test_2',
+  shortName: 'ALBO',
   subtitle: 'icon_test_3',
   tagline: 'icon_test_4',
   accentColor: '#7CD9D7'
