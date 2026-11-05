@@ -28,7 +28,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="BARZELPRO">
+<meta name="apple-mobile-web-app-title" content="icon_test_2">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0a0a0a">
 <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)">
@@ -48,7 +48,7 @@ if ('serviceWorker' in navigator) {
 
 <link rel="apple-touch-icon" href="logo.svg">
 <link rel="icon" type="image/svg+xml" href="logo.svg">
-<title>BARZELPRO</title>
+<title>icon_test_2</title>
 <!-- localForage: IndexedDB-backed offline storage -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700;900&family=Rubik:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
@@ -237,6 +237,9 @@ body.ss-detail #ex-detail-photo-wrap .ex-detail-bodymap-name{display:none!import
 .ss-group .ex-header > div:last-child{padding-top:7px!important;padding-bottom:7px!important;}
 #exerciseList.ss-flow .exercise-card,#exerciseList.ss-flow .ss-group{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;}
 body.ss-sel #exerciseList .nw-trash-btn{display:none!important;}
+body.ss-sel .btn-add-exercise{visibility:hidden!important;pointer-events:none!important;}
+/* Home header: icons only — no text under the Share / Calendar icons. */
+#share-app-wrap > span,#dateBadgeText{display:none!important;}
 .ss-check{width:26px;height:26px;box-sizing:border-box;border-radius:8px;border:2px solid var(--accent);background:transparent;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s;animation:tapPopScale .3s cubic-bezier(.175,.885,.32,1.275);}
 .ss-check.on{background:var(--accent);}
 .ss-check svg{opacity:0;}
@@ -245,7 +248,10 @@ body.ss-sel #exerciseList .exercise-card,body.ss-sel #exerciseList .ss-group{cur
 /* Active workout select mode: the check box takes the status circle's place. */
 .ss-ck-slot{display:flex;align-items:center;justify-content:center;width:28px;flex-shrink:0;align-self:center;margin-left:var(--ex-circle-ml,12px);}
 body.ss-sel #exerciseList [id^="no-done-check-"],body.ss-sel #exerciseList [id^="in-progress-check-"],body.ss-sel #exerciseList [id^="done-check-"],body.ss-sel #exerciseList .ss-act-ring{display:none!important;}
-#exerciseList .exercise-card,#exerciseList .ss-group{-webkit-touch-callout:none;}
+#exerciseList .exercise-card,#exerciseList .ss-group{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;}
+#exerciseList input,#exerciseList textarea{-webkit-user-select:text;user-select:text;}
+/* Active workout: sideways finger moves on a card are the swipe-to-delete, not a page pan. */
+#exerciseList:not(.ss-flow) > .exercise-card,#exerciseList:not(.ss-flow) > .ss-group{touch-action:pan-y;}
 #nex-muscle-list.fade-top{--ft:34px;}
 #nex-muscle-list.fade-bottom{--fb:34px;}
 #nex-muscle-list > .nex-ml-item:first-child{margin-top:auto;}
@@ -1151,6 +1157,9 @@ body.ex-tab-detail-open #ex-float-bar{display:none !important;}
     const metaTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
     if (metaTitle) metaTitle.setAttribute('content', name);
   })();
+  // The app's name (config.js → BRAND_CONFIG.name) for texts and file names.
+  function _appName() { return (window.BRAND_CONFIG && window.BRAND_CONFIG.name) || document.title || 'App'; }
+  function _appFileBase() { return _appName().trim().replace(/[\\/:*?"<>|\s]+/g, '_') || 'App'; }
 </script>
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
@@ -6215,13 +6224,13 @@ function _alignPickCircles() {
   const host = document.getElementById('exercisesTabContent');
   if (target == null || !host) return;
   [['.picker-check', '--pick-circle-ml'], ['.extab-del-circle', '--exsel-circle-ml']].forEach(([sel, v]) => {
-    const el = host.querySelector(sel);
-    if (!el || !el.offsetParent) return;
+    const el = [...host.querySelectorAll(sel)].find(e => e.offsetParent); // first visible row (hidden preset rows skipped)
+    if (!el) return;
     const cur = parseFloat(host.style.getPropertyValue(v)) || 12;
     host.style.setProperty(v, Math.max(0, cur + target - _layoutCenterX(el)).toFixed(1) + 'px');
   });
   const saBtn = document.getElementById('extab-selectall-btn');
-  const rowCirc = host.querySelector('.extab-del-circle');
+  const rowCirc = [...host.querySelectorAll('.extab-del-circle')].find(e => e.offsetParent);
   if (saBtn && rowCirc) _alignSelectAllCircle(saBtn, rowCirc);
 }
 window._exPickCircleHtml = _exPickCircleHtml;
@@ -6795,6 +6804,7 @@ let _wTabView = 'created'; // 'created' or 'library'
 function _exSwipeStartOk(e) {
   const page = document.getElementById('page-exercises');
   if (!page || !page.classList.contains('active')) return false;
+  if (_exFiltersOff()) return false;   // one long list — no body part to swipe to
   const t = e.target;
   if (!(t === document.body || t === document.documentElement || page.contains(t))) return false;
   const bar = document.getElementById('exercisesToggleBar');
@@ -6945,6 +6955,8 @@ function renderExercisesTab() {
     ">${MUSCLE_LABELS[muscle]}</div>`;
   });
   pillsHtml += `<div id="exTab-muscle-indicator" style="position:absolute;bottom:0;height:2px;left:calc(100%/${pillMuscles.length}*${_muscleIdx});width:calc(100%/${pillMuscles.length});background:${MUSCLE_COLORS[selected]};transition:none;"></div></div></div>`;
+  // "Filters" switch off: no body-part buttons — one long list (see below).
+  if (_exFiltersOff()) pillsHtml = '';
 
   // SVG fallback icons per muscle (shared by Favorites and All views)
   const _svgFallbacks = {
@@ -7119,7 +7131,7 @@ function renderExercisesTab() {
   const _exBrandOff = _isBrandContentOff();
   (_exBrandOff ? [] : (typeof _libraryExercises !== 'undefined' ? _libraryExercises : [])).filter(e => e.muscle === selected && !_hiddenEx.includes(e.name)).forEach(e => { if (!_allExMap.has(e.name)) _allExMap.set(e.name, { name: e.name, muscle: selected, lastDate: 0 }); });
   (_exBrandOff ? [] : (_defaultExercises[selected] || [])).filter(e => !_hiddenEx.includes(e.name)).forEach(e => { if (!_allExMap.has(e.name)) _allExMap.set(e.name, { name: e.name, muscle: selected, lastDate: 0 }); });
-  const _allExes = _exSuper ? _exSuperL.published : [..._allExMap.values()].sort((a, b) => (b.lastDate || 0) - (a.lastDate || 0));
+  let _allExes = _exSuper ? _exSuperL.published : [..._allExMap.values()].sort((a, b) => (b.lastDate || 0) - (a.lastDate || 0));
   // One row renderer shared by ALL and (clients) APP EXERCISES.
   const _exAllRow = ex => {
       const _isPickSel = _pickMode && _pickModeSelected.some(s => s.name === ex.name);
@@ -7147,6 +7159,35 @@ function renderExercisesTab() {
   let _exAllListHtml = _allExes.length
     ? _allExes.map(ex => _exAppSet.has(ex.name) ? _exTagLib(_exAllRow(ex)) : _exAllRow(ex)).join('')
     : `<div class="empty-state"><span style="color:var(--muted);">No ${_exSuper ? 'published ' : ''}exercises found for ${selected}</span></div>`;
+  // "Filters" switch off: every body part's exercises in one long list, each
+  // body part under its own title (its button's name + color). Empty body
+  // parts get no title; a section of preset rows only folds away with them
+  // (its title is tagged too) when Preset Library is off.
+  if (_exFiltersOff()) {
+    const _longAll = [], _secs = [];
+    MUSCLE_ORDER.forEach(m => {
+      const map = new Map();
+      (byMuscle[m] || []).forEach(ex => map.set(ex.name, { name: ex.name, muscle: ex.muscle || m, lastDate: ex.lastDate || 0 }));
+      (_exBrandOff ? [] : (typeof _libraryExercises !== 'undefined' ? _libraryExercises : [])).filter(e => e.muscle === m && !_hiddenEx.includes(e.name)).forEach(e => { if (!map.has(e.name)) map.set(e.name, { name: e.name, muscle: m, lastDate: 0 }); });
+      (_exBrandOff ? [] : (_defaultExercises[m] || [])).filter(e => !_hiddenEx.includes(e.name)).forEach(e => { if (!map.has(e.name)) map.set(e.name, { name: e.name, muscle: m, lastDate: 0 }); });
+      const all = [...map.values()].sort((a, b) => (b.lastDate || 0) - (a.lastDate || 0));
+      if (!all.length) return;
+      const mine = new Set(customExercises.filter(e => e.muscle === m && !hiddenEx.includes(e.name)).map(e => e.name));
+      (byMuscle[m] || []).forEach(ex => { if (!_exLibDef(ex.name) && !_exIsDefaultName(ex.name)) mine.add(ex.name); });
+      const app = all.filter(e => !mine.has(e.name) && (_exLibDef(e.name) || _exIsDefaultName(e.name)));
+      app.forEach(e => _exAppSet.add(e.name));
+      _longAll.push(...all);
+      _secs.push({ m, all, appOnly: app.length === all.length });
+    });
+    _allExes = _longAll;
+    const _secTitle = (s, first) => {
+      const h = `<div class="extab-sec-title" style="font-family:'DM Sans';font-size:14px;font-weight:700;letter-spacing:.2px;color:${MUSCLE_COLORS[s.m] || '#888'};margin:${first ? '8px' : '18px'} 2px 8px;">${MUSCLE_LABELS[s.m] || s.m}</div>`;
+      return s.appOnly ? _exTagLib(h) : h;
+    };
+    _exAllListHtml = _secs.length
+      ? _secs.map((s, i) => _secTitle(s, i === 0) + s.all.map(ex => _exAppSet.has(ex.name) ? _exTagLib(_exAllRow(ex)) : _exAllRow(ex)).join('')).join('')
+      : `<div class="empty-state"><span style="color:var(--muted);">No exercises found</span></div>`;
+  }
   const _exAppListHtml = _exAppExes.length
     ? _exAppExes.map(_exAllRow).join('')
     : `<div class="empty-state"><span style="color:var(--muted);">No app exercises for ${selected}</span></div>`;
@@ -7195,9 +7236,9 @@ function renderExercisesTab() {
   const _exViewPickerHtml = (() => {
     if (!_exViewPicker) return '';
     // "App Library" switch (left) replaced the ALL ▾ picker; + stays right.
-    return `<div style="position:relative;display:flex;align-items:center;justify-content:flex-start;min-height:34px;">
-      ${_libSwitchHtml('ex', _exDelMode)}
-      <button id="ex-add-btn" onclick="openNewExModal(window._exTabMuscle||'Chest')" ${_exDelMode ? 'tabindex="-1" aria-hidden="true" ' : ''}style="${_exDelMode ? 'visibility:hidden;pointer-events:none;' : ''}position:absolute;right:0;top:50%;transform:translateY(-50%);padding:4px 8px 4px 12px;border:none;background:transparent;color:var(--g55);cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;"><svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></button>
+    return `<div style="position:relative;display:flex;align-items:center;justify-content:flex-start;gap:18px;min-height:34px;">
+      ${_libSwitchHtml('ex', _exDelMode)}${_exFiltSwitchHtml(_exDelMode)}
+      <button id="ex-add-btn" onclick="openNewExModal(window._exTabMuscle||'Chest')" ${_exDelMode ? 'tabindex="-1" aria-hidden="true" ' : ''}style="${_exDelMode ? 'visibility:hidden;pointer-events:none;' : ''}position:absolute;right:0;top:50%;transform:translateY(-50%);padding:4px 8px 4px 12px;border:none;background:transparent;color:var(--gcc);cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;"><svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></button>
     </div>`;
   })();
   // Long-press select mode keeps this normal top bar (same as the Workouts
@@ -7219,7 +7260,7 @@ function renderExercisesTab() {
       ${_hasCoach ? `<button onclick="switchExTabView('coach')" id="exTab-seg-coach" style="${_exDelMode && _exTabView !== 'coach' ? 'visibility:hidden;pointer-events:none;' : ''}flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_exTabView==='coach'?'#7ec8e3':'var(--g55)'};transition:color .15s;">COACH</button>` : ''}
       <div id="exTab-seg-indicator" style="position:absolute;bottom:0;height:2px;left:calc(100%/${_segViews.length}*${_segIdx});width:calc(100%/${_segViews.length});background:${_segIndicatorColor};transition:none;"></div>
     </div>
-    <button id="ex-add-btn" onclick="openNewExModal(window._exTabMuscle||'Chest')" ${_exDelMode ? 'tabindex="-1" aria-hidden="true" ' : ''}style="${_exDelMode ? 'visibility:hidden;pointer-events:none;' : ''}flex-shrink:0;padding:4px 8px 4px 12px;border:none;background:transparent;color:${_exTabView==='custom'?'var(--accent)':'var(--g55)'};cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;"><svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></button>
+    <button id="ex-add-btn" onclick="openNewExModal(window._exTabMuscle||'Chest')" ${_exDelMode ? 'tabindex="-1" aria-hidden="true" ' : ''}style="${_exDelMode ? 'visibility:hidden;pointer-events:none;' : ''}flex-shrink:0;padding:4px 8px 4px 12px;border:none;background:transparent;color:${_exTabView==='custom'?'var(--accent)':'var(--gcc)'};cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;"><svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></button>
   </div>`}${_exSubtitle()}`;
   const exToggleBar = document.getElementById('exercisesToggleBar');
   if (exToggleBar) {
@@ -7432,6 +7473,67 @@ function _libToggle(kind) {
 }
 window._libShown = _libShown;
 window._libToggle = _libToggle;
+
+// ── "Filters" switch (client users, Exercises tab) — beside Preset Library ──
+// On (default): body-part buttons + one body part's list. Off: the buttons
+// fold away and every exercise shows in one long list, in sections titled
+// with the body part (same name/color as its button). Saved on the device.
+function _exFiltersOff() {
+  return window._currentUserData?.role !== 'super_admin' && !window._coachMode && localStorage.getItem('bp_ex_filters') === '0';
+}
+function _exFiltSwitchHtml(locked) {
+  const on = !_exFiltersOff();
+  return `<div id="ex-filt-switch" onclick="${locked ? '' : '_exFiltToggle()'}" style="display:inline-flex;align-items:center;gap:10px;padding:4px 0;cursor:${locked ? 'default' : 'pointer'};opacity:${locked ? '.35' : '1'};-webkit-tap-highlight-color:transparent;">
+      <span style="position:relative;display:inline-block;width:44px;height:26px;flex-shrink:0;">
+        <span class="bp-lib-track" style="position:absolute;inset:0;background:${on ? 'var(--accent)' : 'var(--g33)'};border-radius:13px;transition:background .2s;">
+          <span class="bp-lib-thumb" style="position:absolute;left:${on ? '21px' : '3px'};top:3px;width:20px;height:20px;background:${on ? 'var(--g00)' : 'var(--g66)'};border-radius:50%;transition:left .2s,background .2s;"></span>
+        </span>
+      </span>
+      <span style="font-family:'DM Sans';font-size:13px;font-weight:700;color:var(--gaa);white-space:nowrap;">Filters</span>
+    </div>`;
+}
+function _exFiltToggle() {
+  const on = _exFiltersOff();               // currently off → turning on
+  localStorage.setItem('bp_ex_filters', on ? '1' : '0');
+  const sw = document.getElementById('ex-filt-switch');
+  if (sw) {
+    const tr = sw.querySelector('.bp-lib-track'), th = sw.querySelector('.bp-lib-thumb');
+    if (tr) tr.style.background = on ? 'var(--accent)' : 'var(--g33)';
+    if (th) { th.style.left = on ? '21px' : '3px'; th.style.background = on ? 'var(--g00)' : 'var(--g66)'; }
+  }
+  const D = 260, ease = 'cubic-bezier(.4,0,.2,1)';
+  const pillBar = () => document.getElementById('exTab-muscle-wrap')?.parentElement;
+  const listIn = () => document.getElementById('exercisesTabContent')?.animate?.([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: D, easing: 'ease-out' });
+  const sync = () => { try { _syncExToggleBarHeight(); } catch (e) {} };
+  if (!on) {
+    // Off: the body-part buttons fold up, then the long list comes in.
+    const pb = pillBar();
+    if (pb) {
+      pb.style.overflow = 'hidden';
+      const a = pb.animate([{ height: pb.offsetHeight + 'px', opacity: 1 }, { height: '0px', opacity: 0 }], { duration: D, easing: ease, fill: 'forwards' });
+      const t0 = performance.now();
+      const step = () => { sync(); if (performance.now() - t0 < D) requestAnimationFrame(step); };
+      requestAnimationFrame(step);
+      a.onfinish = () => { _renderExercisesTabKeepScroll(); sync(); listIn(); };
+    } else { _renderExercisesTabKeepScroll(); sync(); }
+  } else {
+    // On: re-render with the buttons, which unfold from nothing.
+    _renderExercisesTabKeepScroll();
+    const pb = pillBar();
+    if (pb) {
+      const h = pb.offsetHeight;
+      pb.style.overflow = 'hidden';
+      const a = pb.animate([{ height: '0px', opacity: 0 }, { height: h + 'px', opacity: 1 }], { duration: D, easing: ease });
+      const t0 = performance.now();
+      const step = () => { sync(); if (performance.now() - t0 < D + 40) requestAnimationFrame(step); };
+      requestAnimationFrame(step);
+      a.onfinish = () => { pb.style.overflow = ''; sync(); };
+    }
+    sync(); listIn();
+  }
+}
+window._exFiltToggle = _exFiltToggle;
+window._exFiltersOff = _exFiltersOff;
 
 let _viewMenuOpenPrefix = null;
 function _viewMenuToggle(prefix, forceOpen) {
@@ -11759,7 +11861,7 @@ function renderWorkoutsTab2() {
         return `${_wTitleRowHtml}
     <div style="position:relative;display:flex;align-items:center;justify-content:flex-start;min-height:34px;">
       ${_libSwitchHtml('w', _isDeleteMode)}
-      ${window._planStrengthKey ? '' : `<button id="w2-add-btn" onclick="startNewWorkout(true)" ${_isDeleteMode ? 'tabindex="-1" aria-hidden="true" ' : ''}style="${_isDeleteMode ? 'visibility:hidden;pointer-events:none;' : ''}position:absolute;right:0;top:50%;transform:translateY(-50%);padding:4px 8px 4px 12px;border:none;background:transparent;color:var(--g55);cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;"><svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></button>`}
+      ${window._planStrengthKey ? '' : `<button id="w2-add-btn" onclick="startNewWorkout(true)" ${_isDeleteMode ? 'tabindex="-1" aria-hidden="true" ' : ''}style="${_isDeleteMode ? 'visibility:hidden;pointer-events:none;' : ''}position:absolute;right:0;top:50%;transform:translateY(-50%);padding:4px 8px 4px 12px;border:none;background:transparent;color:var(--gcc);cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;"><svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></button>`}
     </div>`;
       })()
     : `${_wTitleRowHtml}<div style="display:flex;gap:0;align-items:center;">
@@ -11769,7 +11871,7 @@ function renderWorkoutsTab2() {
       ${_wHasCoach ? `<button onclick="switchWTabView('coach')" id="wTab-seg-coach" style="${_isDeleteMode && _wTabView !== 'coach' ? 'visibility:hidden;pointer-events:none;' : ''}flex:1;text-align:center;padding:8px 4px;cursor:pointer;border:none;background:transparent;font-family:'DM Sans';font-size:13px;font-weight:700;letter-spacing:0;color:${_wTabView==='coach'?'#7ec8e3':'var(--g55)'};transition:color .15s;">COACH</button>` : ''}
       <div id="wTab-seg-indicator" style="position:absolute;bottom:0;height:2px;left:calc(100%/${_wSegViews.length}*${_wSegIdx});width:calc(100%/${_wSegViews.length});background:${_wSegIndicatorColor};transition:none;"></div>
     </div>
-    ${window._planStrengthKey ? '' : `<button id="w2-add-btn" onclick="startNewWorkout(true)" ${_isDeleteMode ? 'tabindex="-1" aria-hidden="true" ' : ''}style="${_isDeleteMode ? 'visibility:hidden;pointer-events:none;' : ''}flex-shrink:0;padding:4px 8px 4px 12px;border:none;background:transparent;color:${_wTabView==='custom'?'var(--accent)':'var(--g55)'};cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;"><svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></button>`}
+    ${window._planStrengthKey ? '' : `<button id="w2-add-btn" onclick="startNewWorkout(true)" ${_isDeleteMode ? 'tabindex="-1" aria-hidden="true" ' : ''}style="${_isDeleteMode ? 'visibility:hidden;pointer-events:none;' : ''}flex-shrink:0;padding:4px 8px 4px 12px;border:none;background:transparent;color:${_wTabView==='custom'?'var(--accent)':'var(--gcc)'};cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;"><svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></button>`}
   </div>`;
   if (toggleBar) {
     toggleBar.innerHTML = _wToggleHtml;
@@ -12359,6 +12461,12 @@ function _alignSelectAllCircle(headerBtn, rowCircle) {
   if (!headerBtn) return;
   headerBtn.style.position = 'relative';
   headerBtn.style.transform = '';
+  // The first row may be hidden (e.g. Preset Library off hides the preset
+  // rows) — measure the first circle that's actually on screen instead.
+  if (rowCircle && !rowCircle.getClientRects().length) {
+    const cls = rowCircle.classList[0];
+    rowCircle = cls ? [...document.querySelectorAll('.' + cls)].find(e => e.getClientRects().length) || null : null;
+  }
   if (!rowCircle) {
     if (headerBtn.id in _selectAllLeftCache) headerBtn.style.left = _selectAllLeftCache[headerBtn.id] + 'px';
     return;
@@ -13451,17 +13559,17 @@ function _ssTagLast(exData) {
     const cols = mus.map(m => (BP_COLORS.muscles || {})[m] || '#888');
     // A body part selected (filter chips): its arc is highlighted, the others fade back.
     const fsel = typeof _todayMuscleFilter !== 'undefined' ? _todayMuscleFilter : null;
-    const R = 11, C = 2 * Math.PI * R, n = cols.length, seg = C / n, gap = n > 1 ? 2.2 : 0;
+    const R = 12.75, C = 2 * Math.PI * R, n = cols.length, seg = C / n, gap = n > 1 ? 2.2 : 0;
     const p = total ? done / total : 0;
     let arcs = '';
     cols.forEach((col, i) => {
-      const len = Math.max(0.1, seg - gap), start = i * seg;
+      const len = Math.max(0.1, seg - gap), start = i * seg + gap / 2; // gaps centred on the boundaries → first one at 12 o'clock
       const lit = Math.max(0, Math.min(len, p * C - start));
       const on = !fsel || mus[i] === fsel, sw = fsel && on ? 3.2 : 2.5;
       arcs += `<circle cx="14" cy="14" r="${R}" fill="none" stroke="${fsel ? (on ? col : bpAlpha(col, .18)) : bpAlpha(col, .5)}" stroke-width="${sw}" stroke-dasharray="${len} ${C}" stroke-dashoffset="${-start}"/>`;
       if (lit > 0) arcs += `<circle cx="14" cy="14" r="${R}" fill="none" stroke="${on ? col : bpAlpha(col, .35)}" stroke-width="${sw}" stroke-dasharray="${lit} ${C}" stroke-dashoffset="${-start}"/>`;
     });
-    ring.innerHTML = `<svg width="28" height="28" viewBox="0 0 28 28" style="transform:rotate(-90deg);display:block;">${arcs}</svg>${done > 0 ? `<span class="ss-act-frac">${done}/${total}</span>` : ''}`;
+    ring.innerHTML = `<svg width="28" height="28" viewBox="0 0 28 28" style="transform:rotate(-90deg);display:block;overflow:visible;">${arcs}</svg>${done > 0 ? `<span class="ss-act-frac">${done}/${total}</span>` : ''}`;
   }
 
   // Make the DOM match the cards' data-ss: one frame per superset (2+ cards).
@@ -13620,6 +13728,7 @@ function _ssTagLast(exData) {
     try { saveSession?.(); } catch (e) {}
     try { updateTodayMuscleChips(); } catch (e) {}
     try { checkFinishReady(); } catch (e) {}
+    try { _updateWorkoutProgress(); } catch (e) {}   // "N exercises" + progress segments (after a delete / undo)
   }
   function go() {
     const picked = units().filter(u => sel.has(keyOf(u)));
@@ -13658,18 +13767,377 @@ function _ssTagLast(exData) {
 
   // ── Long press (delegated on the list) ──
   let lpT = null, lpX = 0, lpY = 0, lpFired = false;
+  // Select mode: a tap is detected on finger-up (not from "click" — phones can
+  // drop the first click after a long-press, so it seemed to do nothing).
+  let tap = null;
   function onDown(e) {
-    if (sel || det || (e.button && e.button !== 0)) return;
+    if (sel) {
+      const u = unitOf(e.target);
+      tap = u && L().contains(u) ? { u, x: e.clientX, y: e.clientY, t: Date.now(), id: e.pointerId } : null;
+      return;
+    }
+    if (det || (e.button && e.button !== 0)) return;
     const u = unitOf(e.target);
     if (!u || e.target.closest('.nw-trash-btn') || !L().contains(u)) return;
+    swDown(e, u);
     lpX = e.clientX; lpY = e.clientY; lpFired = false;
     clearTimeout(lpT);
-    lpT = setTimeout(() => { lpT = null; lpFired = true; try { navigator.vibrate?.(15); } catch (e) {} enterSel(u); }, 500);
+    // Held 500ms → the card lifts. Then: drag → reorder; let go without
+    // moving → superset select mode.
+    lpT = setTimeout(() => { lpT = null; lpFired = true; try { navigator.vibrate?.(15); } catch (e) {} lift(u, e.pointerId); }, 500);
   }
-  function onMove(e) { if (lpT && Math.hypot(e.clientX - lpX, e.clientY - lpY) > 10) { clearTimeout(lpT); lpT = null; } }
-  function onUp() { clearTimeout(lpT); lpT = null; }
+
+  // ── Reorder: long-press, then drag ──
+  // `armed` = lifted, finger still down, not moved yet; `drag` = being dragged.
+  let armed = null, drag = null;
+  const EASE = 'cubic-bezier(.2,.8,.3,1)';
+  const shownUnits = () => units().filter(u => u.offsetParent && u.dataset.filterState !== 'hidden' && u.style.display !== 'none');
+  // Nearest scrolling ancestor of the list (the page itself in the active workout).
+  function scroller() {
+    for (let n = L()?.parentElement; n && n !== document.body && n !== document.documentElement; n = n.parentElement) {
+      const oy = getComputedStyle(n).overflowY;
+      if ((oy === 'auto' || oy === 'scroll') && n.scrollHeight > n.clientHeight + 1) return n;
+    }
+    return null;
+  }
+  const scrollTopOf = s => s ? s.scrollTop : window.scrollY;
+  // The screen band where the list can actually be seen: below whatever stays
+  // fixed at the top (sticky header, image, body-part buttons…) and above the
+  // fixed bottom bar. Measured by probing what's on screen down/up the list's column.
+  function visibleBand(sc, dragged) {
+    const list = L(), lr = list.getBoundingClientRect();
+    const x = Math.round(lr.left + Math.min(40, lr.width / 2));
+    const H = window.innerHeight;
+    const covered = y => {
+      const el = document.elementFromPoint(x, y);
+      if (!el) return true;
+      if (dragged.contains(el) || list.contains(el)) return false;
+      if (sc && !sc.contains(el)) return true;
+      for (let n = el; n && n !== document.body; n = n.parentElement) {
+        const p = getComputedStyle(n).position;
+        if ((p === 'fixed' || p === 'sticky') && !n.contains(list)) return true;
+      }
+      return false;
+    };
+    let top = sc ? Math.max(0, sc.getBoundingClientRect().top) : 0;
+    while (top < H * 0.6 && covered(top + 1)) top += 4;
+    let bot = sc ? Math.min(H, sc.getBoundingClientRect().bottom) : H;
+    while (bot > H * 0.4 && covered(bot - 1)) bot -= 4;
+    return { top, bot };
+  }
+  function lift(u, pid) {
+    armed = { u, pid, x: lpX, y: lpY };
+    try { L().setPointerCapture(pid); } catch (e) {}   // keep getting the finger's moves even off the list
+    u.style.transition = `transform .18s ${EASE}, box-shadow .18s ease`;
+    u.style.position = 'relative';
+    u.style.zIndex = '40';
+    u.style.transform = 'scale(1.03)';
+    u.style.boxShadow = '0 10px 28px rgba(0,0,0,.55)';
+  }
+  function unlift(u) {
+    u.style.transition = `transform .2s ${EASE}, box-shadow .2s ease`;
+    u.style.transform = '';
+    u.style.boxShadow = '';
+    setTimeout(() => { if (!drag || drag.u !== u) { u.style.transition = ''; u.style.zIndex = ''; u.style.position = ''; } }, 220);
+  }
+  function startDrag() {
+    const u = armed.u, sc = scroller();
+    const all = shownUnits();
+    const s0 = scrollTopOf(sc);
+    const rects = all.map(x => { const r = x.getBoundingClientRect(); return { top: r.top + s0, h: r.height }; });
+    const i0 = all.indexOf(u);
+    if (i0 < 0) { armed = null; unlift(u); return; }
+    const cs = getComputedStyle(u);
+    const shift = rects[i0].h + (parseFloat(cs.marginTop) || 0) + (parseFloat(cs.marginBottom) || 0);
+    const edges = visibleBand(sc, u);
+    drag = { u, pid: armed.pid, all, rects, i0, idx: i0, shift, sc, s0, y0: armed.y, y: armed.y, raf: 0, top: edges.top, bot: edges.bot };
+    armed = null;
+    all.forEach(x => { if (x !== u) x.style.transition = `transform .22s ${EASE}`; });
+    u.style.transition = 'box-shadow .18s ease';
+    autoScroll();
+  }
+  function dragTo(y) {
+    const d = drag; d.y = y;
+    // The card never goes above the fixed top area (body-part buttons' bottom):
+    // its on-screen top is held there — the page scrolls under it instead.
+    const lift = d.rects[d.i0].h * 0.015 + 2;          // the 1.03 scale grows it a little upward
+    const yc = Math.max(y, d.y0 + d.top + lift - (d.rects[d.i0].top - d.s0));
+    const dy = (yc - d.y0) + (scrollTopOf(d.sc) - d.s0);
+    d.u.style.transform = `translateY(${dy}px) scale(1.03)`;
+    // New slot: moving up, it passes a card once its TOP edge crosses that
+    // card's middle; moving down, once its BOTTOM edge does — so a tall card
+    // (a superset) can still pass a short one (its middle alone couldn't,
+    // being held under the top area).
+    const top = d.rects[d.i0].top + dy, bot = top + d.rects[d.i0].h;
+    let idx = d.i0;
+    for (let i = d.i0 - 1; i >= 0; i--) { if (top < d.rects[i].top + d.rects[i].h / 2) idx = i; else break; }
+    if (idx === d.i0) for (let i = d.i0 + 1; i < d.all.length; i++) { if (bot > d.rects[i].top + d.rects[i].h / 2) idx = i; else break; }
+    d.idx = idx;
+    d.all.forEach((x, i) => {
+      if (i === d.i0) return;
+      const t = (i > d.i0 && i <= idx) ? -d.shift : (i < d.i0 && i >= idx) ? d.shift : 0;
+      x.style.transform = t ? `translateY(${t}px)` : '';
+    });
+  }
+  // Near the top/bottom edge: the page scrolls along.
+  function autoScroll() {
+    const d = drag;
+    if (!d) return;
+    // Zones start at the edges of the part of the list actually on screen —
+    // under the fixed top area (header, image, body-part buttons) and above
+    // the bottom bar — faster the closer the finger gets (and beyond).
+    const topZ = d.top + 60, botZ = d.bot - 60;
+    let v = 0;
+    if (d.y < topZ) v = -Math.min(16, 2 + (topZ - d.y) / 4);
+    else if (d.y > botZ) v = Math.min(16, 2 + (d.y - botZ) / 4);
+    if (v) { if (d.sc) d.sc.scrollTop += v; else window.scrollBy(0, v); dragTo(d.y); }
+    d.raf = requestAnimationFrame(autoScroll);
+  }
+  function endDrag() {
+    const d = drag; drag = null;
+    cancelAnimationFrame(d.raf);
+    const u = d.u;
+    const vis = u.getBoundingClientRect().top;          // where it's shown now
+    // Put it in its new place, then let it settle there from where it was dropped.
+    d.all.forEach(x => { x.style.transition = 'none'; if (x !== u) x.style.transform = ''; });
+    const others = d.all.filter(x => x !== u);
+    if (d.idx !== d.i0) { if (d.idx < others.length) others[d.idx].before(u); else others[others.length - 1].after(u); }
+    u.style.transform = 'scale(1.03)';
+    const now = u.getBoundingClientRect().top;
+    u.style.transform = `translateY(${vis - now}px) scale(1.03)`;
+    void u.offsetHeight;
+    u.style.transition = `transform .26s ${EASE}, box-shadow .26s ease`;
+    u.style.transform = '';
+    u.style.boxShadow = '';
+    setTimeout(() => { d.all.forEach(x => { x.style.transition = ''; }); if (!drag || drag.u !== u) { u.style.zIndex = ''; u.style.position = ''; } }, 280);
+    if (d.idx !== d.i0) afterChange();
+  }
+  // While a card is lifted / dragged / swiped, the finger must not scroll the page.
+  function onTouchMove(e) { if (armed || drag || (sw && sw.on)) e.preventDefault(); }
+
+  // ── Active workout: swipe a card LEFT → its delete button; long fast swipe
+  // → deleted at once. Then "… removed · UNDO" for 4s (no confirm popup).
+  let sw = null;       // finger down on a card — maybe a swipe
+  let swOpen = null;   // card left open on its delete button
+  let swAt = 0;        // a swipe/close just ended → swallow its click
+  const SW_BTN = 84, SW_EDGE = 24, SW_EASE = 'cubic-bezier(.2,.8,.3,1)';
+  const TRASH_W = TRASH.replace('width="18" height="18"', 'width="22" height="22"');
+  function swBg(u) {
+    let bg = document.getElementById('ss-sw-bg');
+    if (!bg) {
+      bg = document.createElement('button');
+      bg.id = 'ss-sw-bg';
+      bg.setAttribute('aria-label', 'Delete');
+      bg.style.cssText = 'position:absolute;z-index:0;display:flex;align-items:center;justify-content:center;overflow:hidden;box-sizing:border-box;padding:0;margin:0;border:none;border-radius:var(--radius,12px);background:#ff4747;color:#fff;cursor:pointer;-webkit-tap-highlight-color:transparent;';
+      bg.innerHTML = TRASH_W;
+      bg.addEventListener('pointerdown', e => e.stopPropagation(), true);
+      bg.addEventListener('click', e => { e.stopPropagation(); if (swOpen) removeUnit(swOpen.u); });
+    }
+    const list = L();
+    if (getComputedStyle(list).position === 'static') list.style.position = 'relative';
+    u.before(bg);
+    u.style.position = 'relative';
+    u.style.zIndex = '1';
+    bg._u = u;
+    bgFit(bg);
+    // Locked to the card every frame while it shows — anything above that
+    // changes height afterwards (an animation ending, a card updating) moves
+    // the card, and the red would otherwise peek out under it.
+    cancelAnimationFrame(bg._raf);
+    const loop = () => { if (!bg.isConnected) return; bgFit(bg); bg._raf = requestAnimationFrame(loop); };
+    bg._raf = requestAnimationFrame(loop);
+    return bg;
+  }
+  function bgFit(bg) {
+    const u = bg._u;
+    if (!u || !u.isConnected) return;
+    // A superset's frame starts at its border (the middle of the "Superset"
+    // label above it), not at the label's top.
+    const lg = u.classList.contains('ss-group') ? u.querySelector(':scope > legend') : null;
+    const off = lg ? Math.round(lg.offsetHeight / 2) : 0;
+    const top = (u.offsetTop + off) + 'px', h = (u.offsetHeight - off) + 'px';
+    if (bg.style.top !== top) bg.style.top = top;
+    if (bg.style.height !== h) bg.style.height = h;
+    // Its own rounded button in the space the card has slid out of — never
+    // behind the card (the red would show through the card's rounded corners).
+    const GAP = 8;
+    const ul = L().getBoundingClientRect().left;
+    const cardRight = u.getBoundingClientRect().right - ul;          // where the card ends now
+    const end = u.offsetLeft + u.offsetWidth;                          // the card's resting right edge
+    const left = Math.min(end, cardRight + GAP);
+    bg.style.left = left + 'px';
+    bg.style.width = Math.max(0, end - left) + 'px';
+    bg.style.visibility = end - left < 2 ? 'hidden' : '';
+  }
+  function swSet(u, x, anim) {
+    u.style.transition = anim ? `transform .26s ${SW_EASE}` : 'none';
+    u.style.transform = x ? `translateX(${x}px)` : '';
+  }
+  function swClose() {
+    if (!swOpen) return;
+    const u = swOpen.u; swOpen = null;
+    swSet(u, 0, true);
+    setTimeout(() => { if (swOpen || (sw && sw.on)) return; document.getElementById('ss-sw-bg')?.remove(); u.style.transition = ''; u.style.position = ''; u.style.zIndex = ''; }, 270);
+  }
+  // Tap anywhere else → an open card slides back (that tap does nothing else on the list).
+  document.addEventListener('pointerdown', e => {
+    if (!swOpen || swOpen.u.contains(e.target) || e.target.closest?.('#ss-sw-bg')) return;
+    if (L()?.contains(e.target)) swAt = Date.now() + 600;
+    swClose();
+  }, true);
+
+  let undo = null, undoT = 0;
+  function removeUnit(u) {
+    swOpen = null;
+    const bg = document.getElementById('ss-sw-bg');
+    const prev = u.previousElementSibling === bg ? bg.previousElementSibling : u.previousElementSibling, next = u.nextElementSibling;
+    const label = u.classList.contains('ss-group') ? 'Superset removed' : 'Exercise removed';
+    // 1) slides out to the left, 2) the gap closes up.
+    u.style.transition = 'transform .2s ease-in';
+    u.style.transform = `translateX(${-(u.offsetWidth + 40)}px)`;
+    setTimeout(() => {
+      bg?.remove();
+      const h = u.offsetHeight;
+      u.style.overflow = 'hidden';
+      u.style.transition = 'none';
+      u.style.height = h + 'px';
+      void u.offsetHeight;
+      u.style.transition = 'height .26s ease, margin .26s ease, opacity .2s ease';
+      u.style.height = '0px'; u.style.marginTop = '0px'; u.style.marginBottom = '0px'; u.style.opacity = '0';
+      setTimeout(() => {
+        u.remove();
+        ['transition', 'transform', 'height', 'overflow', 'marginTop', 'marginBottom', 'opacity', 'position', 'zIndex'].forEach(p => { u.style[p] = ''; });
+        afterChange();
+        try { if (_todayMuscleFilter) _updateAllExCircleColors(); } catch (e) {}
+        showUndo({ u, prev, next }, label);
+      }, 270);
+    }, 200);
+  }
+  function commitUndo() {
+    clearTimeout(undoT); undoT = 0;
+    if (undo) { cardsOf(undo.u).forEach(c => { try { stopTimer(c.id); } catch (e) {} }); undo = null; }
+    const t = document.getElementById('ss-undo');
+    if (t) { t.style.transition = 'opacity .2s ease, transform .2s ease'; t.style.opacity = '0'; t.style.transform = 'translateY(8px)'; setTimeout(() => t.remove(), 220); }
+  }
+  function showUndo(rec, label) {
+    if (undo) commitUndo();
+    document.getElementById('ss-undo')?.remove();
+    undo = rec;
+    const t = document.createElement('div');
+    t.id = 'ss-undo';
+    // Above the bottom bar's button (CLOSE / SAVE WORKOUT) when it's showing.
+    const H = window.innerHeight;
+    const bar = document.getElementById('workout-finish-bar');
+    const bb = bar && bar.getClientRects().length ? [...bar.querySelectorAll('button')].find(b => b.getClientRects().length) : null;
+    const barTop = bb ? Math.min(H, bb.getBoundingClientRect().top) : H;
+    t.style.cssText = `position:fixed;left:16px;right:16px;bottom:${Math.round(H - barTop) + 10}px;max-width:398px;margin:0 auto;z-index:650;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 6px 6px 16px;background:var(--g1a,#1a1a1a);border:1px solid var(--g33,#333);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.5);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;color:var(--gff,#fff);animation:sheetUp .25s ease;`;
+    // Time left to undo: a hollow accent ring beside UNDO that empties
+    // clockwise from 12 o'clock over the 4s.
+    const UNDO_MS = 4000, R = 8, C = +(2 * Math.PI * R).toFixed(2);
+    t.innerHTML = `<span>${label}</span><button style="display:flex;align-items:center;gap:9px;background:transparent;border:none;color:var(--accent);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:800;letter-spacing:.5px;padding:10px 12px;cursor:pointer;-webkit-tap-highlight-color:transparent;"><svg width="20" height="20" viewBox="0 0 20 20" style="transform:rotate(-90deg);flex-shrink:0;"><circle cx="10" cy="10" r="${R}" fill="none" stroke="var(--accent)" stroke-opacity=".18" stroke-width="2"/><circle class="ss-undo-ring" cx="10" cy="10" r="${R}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="butt"stroke-dasharray="${C} ${C}" stroke-dashoffset="0"/></svg>UNDO</button>`;
+    t.querySelector('button').onclick = () => doUndo();
+    document.body.appendChild(t);
+    const ring = t.querySelector('.ss-undo-ring');
+    try { ring.animate([{ strokeDashoffset: 0 }, { strokeDashoffset: -C }], { duration: UNDO_MS, easing: 'linear', fill: 'forwards' }); } catch (e) {}
+    undoT = setTimeout(commitUndo, UNDO_MS);
+  }
+  function doUndo() {
+    const r = undo; undo = null;
+    commitUndo();
+    const list = L();
+    if (!r || !list || !list.offsetParent) return;      // the workout is gone
+    const u = r.u;
+    if (r.next && r.next.parentNode === list) r.next.before(u);
+    else if (r.prev && r.prev.parentNode === list) r.prev.after(u);
+    else list.prepend(u);
+    // The gap opens back up and the card fades in.
+    const h = u.offsetHeight;
+    u.style.overflow = 'hidden'; u.style.transition = 'none'; u.style.height = '0px'; u.style.opacity = '0';
+    void u.offsetHeight;
+    u.style.transition = 'height .26s ease, opacity .26s ease';
+    u.style.height = h + 'px'; u.style.opacity = '1';
+    setTimeout(() => { ['transition', 'height', 'overflow', 'opacity'].forEach(p => { u.style[p] = ''; }); }, 290);
+    afterChange();
+    try { if (_todayMuscleFilter) _updateAllExCircleColors(); } catch (e) {}
+  }
+  function swDown(e, u) {
+    if (inFlow() || e.clientX < SW_EDGE || e.clientX > window.innerWidth - SW_EDGE) return;
+    sw = { u, pid: e.pointerId, x: e.clientX, y: e.clientY, t: Date.now(), on: false, base: swOpen && swOpen.u === u ? -SW_BTN : 0, cur: 0 };
+  }
+  function swMove(e) {
+    const s = sw;
+    if (!s || e.pointerId !== s.pid || armed || drag) return;
+    const dx = e.clientX - s.x, dy = e.clientY - s.y;
+    if (!s.on) {
+      if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) * 1.3 && (dx < 0 || s.base)) {
+        s.on = true;
+        clearTimeout(lpT); lpT = null;
+        if (swOpen && swOpen.u !== s.u) swClose();
+        swBg(s.u);
+      } else if (Math.abs(dy) > 10) { sw = null; return; }
+      else return;
+    }
+    let x = s.base + dx;
+    if (x > 0) x = x / 4;                                   // a little give past closed
+    x = Math.max(x, -s.u.offsetWidth);
+    s.cur = x;
+    swSet(s.u, x, false);
+  }
+  // Returns true when this finger-up belonged to a swipe (handled here).
+  function swUp(e) {
+    const s = sw; sw = null;
+    if (!s) return false;
+    if (!s.on) {
+      // A tap on the open card itself just slides it back.
+      if (swOpen && swOpen.u === s.u && e.type === 'pointerup' && !lpFired) { swAt = Date.now() + 400; swClose(); return true; }
+      return false;
+    }
+    swAt = Date.now() + 400;
+    const W = s.u.offsetWidth, v = (s.cur - s.base) / Math.max(1, Date.now() - s.t);   // px/ms
+    if (s.cur < -W * 0.55 || (v < -0.9 && s.cur < -110)) removeUnit(s.u);
+    else if (s.cur < -SW_BTN / 2) { swSet(s.u, -SW_BTN, true); swOpen = { u: s.u }; }
+    else { swOpen = { u: s.u }; swClose(); }
+    return true;
+  }
+
+  function onMove(e) {
+    if (lpT && Math.hypot(e.clientX - lpX, e.clientY - lpY) > 10) { clearTimeout(lpT); lpT = null; }
+    if (tap && Math.hypot(e.clientX - tap.x, e.clientY - tap.y) > 10) tap = null;   // a scroll, not a tap
+    if (armed && e.pointerId === armed.pid && Math.hypot(e.clientX - armed.x, e.clientY - armed.y) > 8) startDrag();
+    if (drag && e.pointerId === drag.pid) dragTo(e.clientY);
+    swMove(e);
+  }
+  let lpUpAt = 0;
+  function onUp(e) {
+    clearTimeout(lpT); lpT = null;
+    if (lpFired) lpUpAt = Date.now();
+    if (sw && e.pointerId === sw.pid && !armed && !drag && swUp(e)) return;
+    sw = null;
+    if (drag) { if (e.pointerId === drag.pid) endDrag(); return; }
+    if (armed) {
+      const a = armed; armed = null;
+      unlift(a.u);
+      if (e.type === 'pointerup' && L().contains(a.u)) enterSel(a.u);   // held without moving → select mode
+      return;
+    }
+    const t = tap; tap = null;
+    if (!sel || !t || e.type !== 'pointerup' || e.pointerId !== t.id || Date.now() - t.t > 800) return;
+    if (Math.hypot(e.clientX - t.x, e.clientY - t.y) > 10 || !L().contains(t.u)) return;
+    const k = keyOf(t.u);
+    if (sel.has(k)) sel.delete(k); else sel.add(k);
+    syncChecks();
+    lpFired = false;
+  }
   function onClick(e) {
-    if (lpFired) { lpFired = false; e.preventDefault(); e.stopPropagation(); return; }
+    // The click ending a swipe (or the tap that slid an open card back) does nothing else.
+    if (Date.now() < swAt) { swAt = 0; e.preventDefault(); e.stopPropagation(); return; }
+    // Swallow only the click that ends the long-press itself (desktop-style).
+    // Phones usually send no click after a long-press — then the flag must not
+    // eat the user's next real tap.
+    if (lpFired) {
+      lpFired = false;
+      if (Date.now() - lpUpAt < 350) { e.preventDefault(); e.stopPropagation(); return; }
+    }
     if (!sel) {
       if (inFlow()) return;
       // Active workout: tapping a superset card opens its first unfinished exercise.
@@ -13679,12 +14147,9 @@ function _ssTagLast(exData) {
       openDetail(g);
       return;
     }
-    const u = unitOf(e.target);
-    if (!u) return;
-    e.preventDefault(); e.stopPropagation();
-    const k = keyOf(u);
-    if (sel.has(k)) sel.delete(k); else sel.add(k);
-    syncChecks();
+    // Select mode: the tap was already handled on finger-up (onUp) — just
+    // keep the card's own click (open exercise etc.) from running.
+    if (unitOf(e.target)) { e.preventDefault(); e.stopPropagation(); }
   }
 
   // ── Superset exercise page (active workout) ──
@@ -14015,6 +14480,7 @@ function _ssTagLast(exData) {
     list.addEventListener('pointermove', onMove, true);
     list.addEventListener('pointerup', onUp, true);
     list.addEventListener('pointercancel', onUp, true);
+    list.addEventListener('touchmove', onTouchMove, { passive: false });
     list.addEventListener('click', onClick, true);
     list.addEventListener('contextmenu', e => e.preventDefault());
     let raf = 0;
@@ -16392,11 +16858,14 @@ function _scrollToNextExercise(wait = 80) {
     // yank the page out from under a tap they're mid-making inside it.
     if (window._exDetailCardId) return;
     const all = [...document.querySelectorAll('#exerciseList .exercise-card:not(.completed)')];
-    const visible = all.filter(c => c.offsetParent !== null && c.dataset.filterState !== 'hidden');
-    const nextCard = _todayMuscleFilter
+    // A superset's exercises are hidden inside its card — the superset card stands in for them.
+    const unit = c => c.closest('#exerciseList > .ss-group.ss-act') || c;
+    const visible = all.filter(c => { const u = unit(c); return u.offsetParent !== null && u.dataset.filterState !== 'hidden'; });
+    const _next = _todayMuscleFilter
       ? visible.find(c => c.dataset.exmuscle === _todayMuscleFilter || c.dataset.muscle === _todayMuscleFilter)
       : visible[0];
-    if (!nextCard) return;
+    if (!_next) return;
+    const nextCard = unit(_next);
     const hdr = document.getElementById('workout-sticky-header');
     const margin = hdr ? hdr.offsetHeight + 8 : 78;
     nextCard.style.scrollMarginTop = margin + 'px';
@@ -20420,7 +20889,7 @@ async function _backupSaveViaPicker(blob, filename) {
     } catch(e) { handle = null; }
   }
   const pick = async () => {
-    const h = await window.showSaveFilePicker({ suggestedName: filename, types: [{ description: 'Barzel Pro backup', accept: { 'application/json': ['.json'] } }] });
+    const h = await window.showSaveFilePicker({ suggestedName: filename, types: [{ description: _appName() + ' backup', accept: { 'application/json': ['.json'] } }] });
     await _backupHandleSet(filename, h);
     return h;
   };
@@ -20561,7 +21030,7 @@ function exportData(merged = false) {
       }
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    _saveBackupFile(blob, 'Barzel_Pro_my_data.json'); // overwrites the same file where possible
+    _saveBackupFile(blob, _appFileBase() + '_my_data.json'); // overwrites the same file where possible
     return;
   }
 
@@ -20587,7 +21056,7 @@ function exportData(merged = false) {
     }
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  _saveBackupFile(blob, 'Barzel_Pro_merged_backup.json'); // overwrites the same file where possible
+  _saveBackupFile(blob, _appFileBase() + '_merged_backup.json'); // overwrites the same file where possible
 }
 
 function importData(input) {
@@ -20601,7 +21070,7 @@ function importData(input) {
         // showToast is a disabled no-op app-wide (see index.html:5349) — this
         // would otherwise fail completely silently, reading as "loading a
         // backup file does nothing", so use a real alert here instead.
-        alert('This doesn\'t look like a BARZELPRO backup file — nothing recognizable was found in it.');
+        alert('This doesn\'t look like a ' + _appName() + ' backup file — nothing recognizable was found in it.');
         input.value = '';
         return;
       }
@@ -32465,7 +32934,7 @@ function openShareQR() {
   window._shareQRUrl = url;
   if (document.getElementById('share-qr-url')) document.getElementById('share-qr-url').textContent = url;
   // Set title and tagline from BRAND_CONFIG if available
-  const appName = window.BRAND_CONFIG?.name || 'BARZELPRO';
+  const appName = window.BRAND_CONFIG?.name || document.title || 'App';
   const tagline = window.BRAND_CONFIG?.tagline || 'Track your workouts, monitor progress.';
   const titleEl = document.getElementById('share-qr-title');
   const tagEl = document.getElementById('share-qr-tagline');
@@ -32514,7 +32983,7 @@ function _renderQR(el, url) {
 }
 function shareQRLink() {
   const url = window._shareQRUrl || window.location.href;
-  const appName = window.BRAND_CONFIG?.name || 'BARZELPRO';
+  const appName = window.BRAND_CONFIG?.name || document.title || 'App';
   if (navigator.share) {
     navigator.share({ title: appName, text: 'Try ' + appName + ' — workout tracker', url });
   } else {

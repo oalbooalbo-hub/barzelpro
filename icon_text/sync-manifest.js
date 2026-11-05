@@ -203,10 +203,19 @@ HTML_FILES.forEach(file => {
     if (changed) log(`  ✓ Updated app name in install.html → "${resolvedName}"`, green);
   }
 
-  // Update <title> in index.html
+  // Update <title> + the iPhone home-screen name in index.html (written into the
+  // file itself, so it's right even before the page's scripts run).
   if (file === 'index.html' && resolvedName) {
     const t = html.replace(/<title>[^<]*<\/title>/, `<title>${resolvedName}</title>`);
     if (t !== html) { html = t; changed = true; log(`  ✓ Updated <title> in index.html → "${resolvedName}"`, green); }
+    const m = html.replace(/(<meta\s+name="apple-mobile-web-app-title"\s+content=")[^"]*(")/, `$1${resolvedName}$2`);
+    if (m !== html) { html = m; changed = true; log(`  ✓ Updated iPhone home-screen name in index.html → "${resolvedName}"`, green); }
+  }
+
+  // Update <title> in offline.html ("<name> — Offline")
+  if (file === 'offline.html' && resolvedName) {
+    const t = html.replace(/<title>[^<]*<\/title>/, `<title>${resolvedName} — Offline</title>`);
+    if (t !== html) { html = t; changed = true; log(`  ✓ Updated <title> in offline.html → "${resolvedName} — Offline"`, green); }
   }
 
   if (changed) {

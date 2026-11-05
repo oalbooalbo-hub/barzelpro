@@ -1,6 +1,13 @@
+// ── App name: change it HERE only ─────────────────────────────────────────
+// name      → full name: browser tab, install screen, iPhone home screen,
+//             Share text, backup file names.
+// shortName → label under the icon on Android (keep it short, ~12 characters).
+// After changing either one, run:  node sync-manifest.js
+// (copies them into manifest.json, index.html, install.html, offline.html).
 window.BRAND_CONFIG = {
   id: 'icon_test_1',
   name: 'icon_test_2',
+  shortName: 'icon_test_2',
   subtitle: 'icon_test_3',
   tagline: 'icon_test_4',
   accentColor: '#7CD9D7'
