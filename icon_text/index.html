@@ -191,6 +191,61 @@ button{cursor:pointer;touch-action:manipulation;-webkit-appearance:none;outline:
 /* New / edit exercise: muscle ✓ list beside the body diagram (_nExRenderMuscleList). */
 #nex-muscle-list{position:absolute;box-sizing:border-box;display:flex;flex-direction:column;justify-content:flex-start;gap:2px;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;--ft:0px;--fb:0px;-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 var(--ft),#000 calc(100% - var(--fb)),transparent 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 var(--ft),#000 calc(100% - var(--fb)),transparent 100%);opacity:0;transform:translateX(14px);pointer-events:none;transition:opacity .28s ease .1s, transform .32s cubic-bezier(.2,.8,.3,1) .1s;}
 #nex-muscle-list.show{opacity:1;transform:none;pointer-events:auto;}
+/* ── Supersets (workout builder, Step 2 of 2) ── */
+/* A <fieldset>: its <legend> cuts the border natively, so "Superset" sits in the top border with nothing painted behind it. */
+fieldset.ss-group{min-width:0;min-inline-size:0;padding:0;margin:6px 0 8px;background:var(--surface);border:1px solid var(--g55);border-radius:var(--radius);}
+.ss-g-inner{display:flex;align-items:stretch;margin-top:-6px;}
+.ss-g-side{display:flex;align-items:center;justify-content:center;margin:0 10px;flex-shrink:0;}
+.ss-group:not(.ss-act) .ss-act-only{display:none!important;}
+.ss-group.ss-act .ss-flow-only,.ss-group.ss-act .ss-g-body{display:none!important;}
+.ss-group.ss-act{cursor:pointer;}
+.ss-group.ss-act .ss-g-side{margin:0 0 0 var(--ex-circle-ml,12px);}
+.ss-act-ring{position:relative;width:28px;height:28px;}
+.ss-act-ring > svg[width="26"]{margin:1px;}
+.ss-act-frac{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'DM Sans';font-size:9px;font-weight:800;color:var(--gcc);}
+.ss-act-list{display:flex;flex-direction:column;align-items:flex-end;gap:6px;padding:8px 12px 4px;}
+.ss-act-name{display:flex;align-items:center;gap:6px;max-width:100%;font-family:'DM Sans',sans-serif;font-size:17px;font-weight:600;color:var(--text);}
+.ss-act-name span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ss-act-name span.ss-act-dot{display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0;overflow:visible;transition:background .2s;}
+/* Superset exercise page: each exercise's name above its set box; the box last
+   touched (Note / Timer / Stats apply to it) is full strength, the others dimmed. */
+.ss-det-name{font-family:'DM Sans',sans-serif;font-size:18px;font-weight:800;text-align:right;color:var(--text);padding:16px 12px 8px;opacity:.5;transition:opacity .2s;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.ss-det-name.on{opacity:1;}
+body.ss-detail #ex-detail-bestset{display:none!important;}
+/* Superset page: its exercises listed on the top image (bottom-right, over a soft shade). */
+.ss-photo-list{position:absolute;left:0;right:0;bottom:0;z-index:3;display:flex;flex-direction:column;align-items:flex-end;gap:2px;padding:26px var(--bm-pr,16px) 10px 14px;text-align:right;background:linear-gradient(to bottom,transparent,rgba(0,0,0,.7));pointer-events:none;font-family:'DM Sans',sans-serif;font-size:24px;font-weight:900;letter-spacing:0;line-height:1.2;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6);} /* same type as the normal exercise name on the image */
+.ss-photo-list > div{max-width:100%;word-break:break-word;}
+body:not(.ss-detail) .ss-photo-list{display:none;}
+/* Superset page, body-map mode: "Superset" centred below the image (drops in with the set boxes). */
+.ss-det-title{font-family:'DM Sans',sans-serif;font-size:20px;font-weight:800;letter-spacing:.3px;color:var(--text);text-align:center;padding:14px 0 0;}
+html:not(.bodymap-mode) .ss-det-title{display:none;}
+/* Superset page, Note/Timer open (they're the whole superset's, on its first exercise): only that box shows.
+   Stats open: the names/title step aside too (Stats already hides the boxes). */
+body.ss-detail.ss-panel #ex-detail-overlay-body > .ss-det-name,body.ss-detail.ss-panel #ex-detail-overlay-body > .ss-det-title,
+body.ss-detail.ex-detail-stats-open #ex-detail-overlay-body > .ss-det-name,body.ss-detail.ex-detail-stats-open #ex-detail-overlay-body > .ss-det-title,
+body.ss-detail.ss-panel #ex-detail-overlay-body > .exercise-card:not(.ss-panel-host){display:none!important;}
+body.ss-detail.ss-panel .ss-panel-host > :not(.ex-card-body):not(.comment-area):not(.timer-panel),body.ss-detail.ss-panel .ss-panel-host .ex-card-body > :not(.ex-footer):not(.comment-area):not(.timer-panel),body.ss-detail.ss-panel .ss-panel-host .ex-footer-row{display:none!important;}
+body.ss-detail.ss-panel .ss-panel-host{border-color:transparent!important;background:transparent!important;box-shadow:none!important;}
+/* Body-map image (exercise without a photo): its own big faded name would sit under the list. */
+body.ss-detail #ex-detail-photo-wrap .ex-detail-bodymap-name{display:none!important;}
+.ss-act-sum{font-family:'DM Sans';font-size:13px;font-weight:600;color:var(--g55);text-align:right;padding:2px 12px 10px;}
+.ss-g-main{flex:1;min-width:0;padding:6px 0;}
+
+.ss-g-label{margin-left:10px;padding:0 6px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:.3px;line-height:1.4;color:var(--gcc);white-space:nowrap;pointer-events:none;}
+.ss-group .exercise-card{border:none!important;background:transparent!important;margin:0!important;box-shadow:none!important;}
+.ss-group .nw-trash-wrap{display:none!important;}
+.ss-group .ex-header > div:last-child{padding-top:7px!important;padding-bottom:7px!important;}
+#exerciseList.ss-flow .exercise-card,#exerciseList.ss-flow .ss-group{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;}
+body.ss-sel #exerciseList .nw-trash-btn{display:none!important;}
+.ss-check{width:26px;height:26px;box-sizing:border-box;border-radius:8px;border:2px solid var(--accent);background:transparent;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s;animation:tapPopScale .3s cubic-bezier(.175,.885,.32,1.275);}
+.ss-check.on{background:var(--accent);}
+.ss-check svg{opacity:0;}
+.ss-check.on svg{opacity:1;}
+body.ss-sel #exerciseList .exercise-card,body.ss-sel #exerciseList .ss-group{cursor:pointer;}
+/* Active workout select mode: the check box takes the status circle's place. */
+.ss-ck-slot{display:flex;align-items:center;justify-content:center;width:28px;flex-shrink:0;align-self:center;margin-left:var(--ex-circle-ml,12px);}
+body.ss-sel #exerciseList [id^="no-done-check-"],body.ss-sel #exerciseList [id^="in-progress-check-"],body.ss-sel #exerciseList [id^="done-check-"],body.ss-sel #exerciseList .ss-act-ring{display:none!important;}
+#exerciseList .exercise-card,#exerciseList .ss-group{-webkit-touch-callout:none;}
 #nex-muscle-list.fade-top{--ft:34px;}
 #nex-muscle-list.fade-bottom{--fb:34px;}
 #nex-muscle-list > .nex-ml-item:first-child{margin-top:auto;}
@@ -5697,7 +5752,7 @@ function _proceedFromNwfNamePage() {
           name: exData.name, muscle: exData.muscle,
           sets: (exData.sets||[]).map(s => ({...s, done: false})),
           comment: exData.comment||'', completed: false, open: false
-        });
+        }); _ssTagLast(exData);
       });
       const _ps = document.getElementById('workout-progress-section');
       if (_ps) _ps.style.display = 'none';
@@ -6116,7 +6171,7 @@ function _alignExCardCircles() {
   // before any workout screen this session.
   window._exCircleCenterX = cx(btn);
   try { localStorage.setItem('ironlog_ex_circle_cx', JSON.stringify({ w: window.innerWidth, x: window._exCircleCenterX })); } catch(e) {}
-  const card = list.querySelector('.exercise-card');
+  const card = [...list.querySelectorAll('.exercise-card')].find(c => c.offsetParent); // skips a superset's hidden members
   if (!card) return;
   const circ = [...card.querySelectorAll('[id^="no-done-check-"],[id^="in-progress-check-"],[id^="done-check-"]')].find(el => el.offsetParent);
   if (!circ) return;
@@ -6511,7 +6566,8 @@ function saveSession() {
             sets,
       comment: card.querySelector('.comment-box')?.value || '',
       completed: card.classList.contains('completed'),
-      open: card.dataset.open === 'true'
+      open: card.dataset.open === 'true',
+      ...(card.dataset.ss ? { superset: card.dataset.ss } : {})
     });
   });
   _LS.set('ironlog_session', JSON.stringify({name, cards}));
@@ -7333,7 +7389,7 @@ function _libSwitchHtml(kind, locked) {
           <span class="bp-lib-thumb" style="position:absolute;left:${on ? '21px' : '3px'};top:3px;width:20px;height:20px;background:${on ? 'var(--g00)' : 'var(--g66)'};border-radius:50%;transition:left .2s,background .2s;"></span>
         </span>
       </span>
-      <span style="font-family:'DM Sans';font-size:13px;font-weight:700;color:var(--gaa);white-space:nowrap;">App Library</span>
+      <span style="font-family:'DM Sans';font-size:13px;font-weight:700;color:var(--gaa);white-space:nowrap;">Preset Library</span>
     </div>`;
 }
 function _libRowsAnimate(root, show) {
@@ -13301,13 +13357,678 @@ function _cardSubMuscles(card) {
   try { const s = JSON.parse(card.dataset.exsubs || '[]'); if (s.length) return s; } catch(e) {}
   return _exDefSubMuscles(card.dataset.exname || '');
 }
-// Spread into a saved exercise object: adds subMuscles only when there are any.
+// Spread into a saved exercise object: adds subMuscles only when there are any,
+// and the superset group id when the card is linked into one (every place that
+// serializes cards already spreads this, so supersets save/load for free).
 function _subsField(card) {
   const s = _cardSubMuscles(card);
-  return s.length ? { subMuscles: s } : {};
+  const o = s.length ? { subMuscles: s } : {};
+  if (card.dataset.ss) o.superset = card.dataset.ss;
+  return o;
 }
 window._exDefSubMuscles = _exDefSubMuscles;
 window._cardSubMuscles = _cardSubMuscles;
+
+// ── Supersets (workout builder, Step 2 of 2) ──────────────────────────────
+// Each exercise stays its own .exercise-card (so saving, the active workout
+// and every `#exerciseList .exercise-card` query keep working); linked cards
+// share data-ss="<group id>" and, while building/editing a workout, are
+// wrapped in one .ss-group frame (one trash, "SUPERSET" label, names listed).
+// Outside the builder the frames are removed and the cards show as normal.
+// Long-press a card → select mode: check boxes replace the trash icons and
+// the SAVE bar becomes CANCEL / SUPERSET (SPLIT when only a superset is checked).
+function _ssTagLast(exData) {
+  if (!exData || !exData.superset) return;
+  const c = document.getElementById('ex_' + exerciseCounter);
+  if (c) c.dataset.ss = exData.superset;
+}
+(function () {
+  const L = () => document.getElementById('exerciseList');
+  const inFlow = () => !!window._isNewWorkoutFlow;
+  const TRASH = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>';
+  const CHECK = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+  let sel = null;          // Set of unit keys while select mode is on
+  let obs = null;
+
+  const unitOf = el => el && (el.closest('#exerciseList > .ss-group') || el.closest('#exerciseList .exercise-card'));
+  const keyOf = u => u.classList.contains('ss-group') ? 'g:' + u.dataset.ss : 'c:' + u.id;
+  const units = () => [...(L()?.children || [])].filter(u => u.classList.contains('ss-group') || u.classList.contains('exercise-card'));
+  const cardsOf = u => u.classList.contains('ss-group') ? [...u.querySelectorAll('.exercise-card')] : [u];
+
+  function makeGroup(id) {
+    const g = document.createElement('fieldset');
+    g.className = 'ss-group';
+    g.dataset.ss = id;
+    // Builder parts (.ss-flow-only: trash, the member cards) and active-workout
+    // parts (.ss-act-only: status ring, ✓ name list, summary line) — CSS shows one set.
+    g.innerHTML = `<legend class="ss-g-label">Superset</legend><div class="ss-g-inner"><div class="ss-g-side"><button class="nw-trash-btn ss-g-trash ss-flow-only" style="background:rgba(255,71,71,0.15);border:none;border-radius:50%;width:32px;height:32px;color:#ff4747;cursor:pointer;padding:2px;display:flex;align-items:center;justify-content:center;flex-shrink:0;-webkit-tap-highlight-color:transparent;">${TRASH}</button><div class="ss-act-ring ss-act-only"></div></div><div class="ss-g-main"><div class="ss-act-list ss-act-only"></div><div class="ss-act-sum ss-act-only"></div><div class="ss-g-body"></div></div></div>`;
+    g.querySelector('.ss-g-trash').onclick = e => { e.stopPropagation(); confirmDeleteGroup(g); };
+    return g;
+  }
+
+  // Active workout: the superset card's ring / name list / summary line, from
+  // its (hidden) member cards' live set rows.
+  const _rows = c => [...c.querySelectorAll('tr.set-row:not(.ignored)')];
+  function renderAct(g) {
+    const cs = cardsOf(g).concat([...g.querySelectorAll('[id$="_ph"]')].map(ph => document.getElementById(ph.id.slice(0, -3))).filter(c => c && c.dataset.ss === g.dataset.ss && !g.contains(c)));
+    const order = [...g.querySelector('.ss-g-body').children].map(n => n.classList.contains('exercise-card') ? n : document.getElementById(n.id.slice(0, -3))).filter(Boolean);
+    const members = order.length ? order : cs;
+    let total = 0, done = 0, rounds = 0; const reps = [];
+    members.forEach(c => {
+      const rs = _rows(c);
+      total += rs.length; rounds = Math.max(rounds, rs.length);
+      done += rs.filter(r => r.querySelector('.set-done-btn.done')).length;
+      rs.forEach(r => { const n = parseInt(r.querySelector('.reps-spin-val')?.dataset.reps); if (n > 0) reps.push(n); });
+    });
+    const allDone = members.length > 0 && members.every(c => c.classList.contains('completed'));
+    // Body part selected (filter chips): a dot right of each name in its body-part
+    // color — full for the exercises that match, faded for the others. No filter → no dots.
+    const _fs = typeof _todayMuscleFilter !== 'undefined' ? _todayMuscleFilter : null;
+    const dotFor = c => {
+      if (!_fs) return '';
+      const m = c.dataset.muscle || c.dataset.exmuscle || 'Chest', col = (BP_COLORS.muscles || {})[m] || '#888';
+      return `<span class="ss-act-dot" style="background:${m === _fs ? col : bpAlpha(col, .25)};"></span>`;
+    };
+    const esc = s => String(s || '').replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+    g.querySelector('.ss-act-list').innerHTML = members.map(c => `<div class="ss-act-name">${c.classList.contains('completed') ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><polyline points="20 6 9 17 4 12"/></svg>' : ''}<span dir="auto">${esc(c.dataset.exname)}</span>${dotFor(c)}</div>`).join('');
+    const repTxt = reps.length ? (Math.min(...reps) === Math.max(...reps) ? Math.min(...reps) : `${Math.min(...reps)}-${Math.max(...reps)}`) : '—';
+    g.querySelector('.ss-act-sum').innerHTML = (done > 0 || allDone)
+      ? `<span style="color:#34d399;font-weight:600;">${done}/${total} sets</span>${allDone ? `<span style="color:var(--g55);font-weight:400;margin:0 6px;">|</span><span style="color:var(--accent);font-weight:700;">Done</span>` : ''}`
+      : `<span>${rounds} sets · ${repTxt} reps</span>`;
+    // Ring: one arc per body part (its color), dim → bright as sets get done.
+    const ring = g.querySelector('.ss-act-ring');
+    // Finished with no set done at all → red ✗, like a normal card.
+    const anyDone = members.some(c => c.querySelector('tr.set-row .set-done-btn.done'));
+    if (allDone && !anyDone) {
+      ring.innerHTML = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ff4747" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+      return;
+    }
+    if (allDone) {
+      ring.innerHTML = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+      return;
+    }
+    const mus = [...new Set(members.map(c => c.dataset.muscle || c.dataset.exmuscle || 'Chest'))];
+    const cols = mus.map(m => (BP_COLORS.muscles || {})[m] || '#888');
+    // A body part selected (filter chips): its arc is highlighted, the others fade back.
+    const fsel = typeof _todayMuscleFilter !== 'undefined' ? _todayMuscleFilter : null;
+    const R = 11, C = 2 * Math.PI * R, n = cols.length, seg = C / n, gap = n > 1 ? 2.2 : 0;
+    const p = total ? done / total : 0;
+    let arcs = '';
+    cols.forEach((col, i) => {
+      const len = Math.max(0.1, seg - gap), start = i * seg;
+      const lit = Math.max(0, Math.min(len, p * C - start));
+      const on = !fsel || mus[i] === fsel, sw = fsel && on ? 3.2 : 2.5;
+      arcs += `<circle cx="14" cy="14" r="${R}" fill="none" stroke="${fsel ? (on ? col : bpAlpha(col, .18)) : bpAlpha(col, .5)}" stroke-width="${sw}" stroke-dasharray="${len} ${C}" stroke-dashoffset="${-start}"/>`;
+      if (lit > 0) arcs += `<circle cx="14" cy="14" r="${R}" fill="none" stroke="${on ? col : bpAlpha(col, .35)}" stroke-width="${sw}" stroke-dasharray="${lit} ${C}" stroke-dashoffset="${-start}"/>`;
+    });
+    ring.innerHTML = `<svg width="28" height="28" viewBox="0 0 28 28" style="transform:rotate(-90deg);display:block;">${arcs}</svg>${done > 0 ? `<span class="ss-act-frac">${done}/${total}</span>` : ''}`;
+  }
+
+  // Make the DOM match the cards' data-ss: one frame per superset (2+ cards).
+  // In the builder it shows the member cards (trash / check); in an active
+  // workout it hides them and shows the summary card instead. Idempotent.
+  function regroup() {
+    const list = L();
+    if (!list) return;
+    const flow = inFlow();
+    list.classList.toggle('ss-flow', flow);
+    if (sel && !listShown()) exitSel();
+    const groups = new Map();
+    const add = (id, c, real) => { if (!groups.has(id)) groups.set(id, { real: [], n: 0 }); const e = groups.get(id); e.n++; if (real) e.real.push(c); };
+    list.querySelectorAll('.exercise-card').forEach(c => { if (c.dataset.ss) add(c.dataset.ss, c, true); });
+    // A member opened in the exercise page sits outside the list (its
+    // placeholder stays) — it still counts, so the frame doesn't fall apart.
+    list.querySelectorAll('[id$="_ph"]').forEach(ph => { const c = document.getElementById(ph.id.slice(0, -3)); if (c && c.dataset.ss && !list.contains(c)) add(c.dataset.ss, c, false); });
+    groups.forEach((e, id) => { if (e.n < 2) groups.delete(id); });
+    list.querySelectorAll(':scope > .ss-group').forEach(g => {
+      const id = g.dataset.ss;
+      g.querySelectorAll('.exercise-card').forEach(c => { if (c.dataset.ss !== id || !groups.has(id)) g.before(c); });
+      if (!groups.has(id)) { g.querySelectorAll('[id$="_ph"]').forEach(ph => g.before(ph)); g.remove(); }
+    });
+    groups.forEach((e, id) => {
+      const cs = e.real;
+      let g = list.querySelector(`:scope > .ss-group[data-ss="${id}"]`);
+      if (!g) { if (cs.length < 2) return; g = makeGroup(id); cs[0].before(g); }
+      const body = g.querySelector('.ss-g-body');
+      const cur = [...body.children].filter(n => n.classList.contains('exercise-card'));
+      if (!body.querySelector('[id$="_ph"]') && (cur.length !== cs.length || cur.some((c, i) => c !== cs[i]))) cs.forEach(c => body.appendChild(c));
+      g.classList.toggle('ss-act', !flow);
+      if (!flow) renderAct(g);
+      // Body-part filter hides cards one by one — hide the frame once all are.
+      // (Active workout: the filter's own animation does it — syncFilter.)
+      if (flow) g.style.display = cs.length && cs.every(c => c.style.display === 'none') ? 'none' : '';
+    });
+    if (sel) syncChecks();
+    if (!flow) syncFilter(false);
+    obs && obs.takeRecords();
+  }
+  window._ssRegroup = regroup;
+
+  // Active workout body-part filter: it hides/shows each exercise card (with an
+  // animation) — a superset's are inside its card, so the superset card follows:
+  // shown while any of its exercises passes the filter, else collapsed the same way.
+  function syncFilter(animate) {
+    document.querySelectorAll('#exerciseList > .ss-group.ss-act').forEach(g => {
+      const cs = cardsOf(g);
+      if (!cs.length) return;
+      const want = cs.some(c => c.dataset.filterState ? c.dataset.filterState !== 'hidden' : c.style.display !== 'none');
+      const hidden = g.dataset.filterState === 'hidden';
+      if (want === !hidden) return;
+      if (animate && typeof _animateFilterHide === 'function') { if (want) _animateFilterShow(g, 0); else _animateFilterHide(g, 0); }
+      else { g.dataset.filterState = want ? 'visible' : 'hidden'; g.style.display = want ? '' : 'none'; }
+    });
+  }
+
+  // FLIP: animate every unit from where it was to where it is now.
+  function measure() {
+    const m = new Map();
+    L()?.querySelectorAll('.exercise-card, .ss-group').forEach(el => m.set(el.classList.contains('ss-group') ? 'g:' + el.dataset.ss : 'c:' + el.id, el.getBoundingClientRect()));
+    return m;
+  }
+  function flip(before, newGroupId) {
+    const ease = 'cubic-bezier(.2,.8,.3,1)';
+    units().forEach(u => {
+      const k = keyOf(u);
+      const now = u.getBoundingClientRect();
+      if (k === 'g:' + newGroupId) {
+        // New superset: grows from the first member's spot into its full height.
+        const first = before.get('c:' + cardsOf(u)[0].id);
+        const h0 = first ? first.height : now.height;
+        u.style.transition = 'none';
+        u.style.height = h0 + 'px';
+        u.style.transform = first ? `translateY(${first.top - now.top}px)` : '';
+        void u.offsetHeight;
+        u.style.transition = `height .38s ${ease}, transform .38s ${ease}`;
+        u.style.height = now.height + 'px';
+        u.style.transform = '';
+        setTimeout(() => { u.style.height = ''; u.style.transition = ''; }, 420);
+        return;
+      }
+      const was = before.get(k);
+      if (!was) { u.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, easing: 'ease' }); return; }
+      const dy = was.top - now.top;
+      if (Math.abs(dy) > 0.5) u.animate([{ transform: `translateY(${dy}px)` }, { transform: 'none' }], { duration: 380, easing: ease });
+    });
+  }
+
+  // ── Select mode ──
+  // The list is on screen (builder or active workout) with something in it.
+  const listShown = () => { const l = L(); return !!(l && l.offsetParent && units().length); };
+  let selWatch = 0;
+  function syncChecks() {
+    units().forEach(u => {
+      let slot = u.classList.contains('ss-group') ? u.querySelector('.ss-g-side') : (u.querySelector('.nw-trash-wrap') || u.querySelector('.ss-ck-slot'));
+      // Active workout card (no trash): a slot where its status circle sits.
+      if (!slot && !u.classList.contains('ss-group')) {
+        const hd = u.querySelector('.ex-header');
+        if (hd) { slot = document.createElement('div'); slot.className = 'ss-ck-slot'; hd.prepend(slot); }
+      }
+      if (!slot) return;
+      let ck = slot.querySelector('.ss-check');
+      if (!ck) { ck = document.createElement('div'); ck.className = 'ss-check'; ck.innerHTML = CHECK; slot.appendChild(ck); }
+      ck.classList.toggle('on', sel.has(keyOf(u)));
+    });
+    [...sel].forEach(k => { if (!units().some(u => keyOf(u) === k)) sel.delete(k); });
+    syncBar();
+  }
+  function syncBar() {
+    let bar = document.getElementById('ss-sel-bar');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'ss-sel-bar';
+      bar.style.cssText = 'position:fixed;left:0;right:0;bottom:0;max-width:430px;margin:0 auto;z-index:600;background:linear-gradient(to bottom,transparent,var(--g11) 40%);box-sizing:border-box;padding:46px 16px calc(env(safe-area-inset-bottom,0px) + 16px);display:flex;gap:10px;animation:sheetUp .25s ease;';
+      const bb = "flex:1;min-width:0;box-sizing:border-box;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:15px;padding:14px 6px;white-space:nowrap;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .15s,opacity .15s;";
+      bar.innerHTML = `<button id="ss-cancel-btn" data-bp-back style="${bb}background:transparent;border:1px solid var(--g55);color:var(--gff);font-weight:600;">CANCEL</button><button id="ss-go-btn" style="${bb}background:var(--accent);border:1px solid var(--accent);color:var(--g00);font-weight:700;">SUPERSET</button>`;
+      bar.querySelectorAll('button').forEach(b => {
+        b.addEventListener('touchstart', () => { if (!b.disabled) b.style.transform = 'scale(0.97)'; }, { passive: true });
+        b.addEventListener('touchend', () => { b.style.transform = ''; });
+      });
+      bar.querySelector('#ss-cancel-btn').onclick = () => exitSel();
+      bar.querySelector('#ss-go-btn').onclick = () => go();
+      document.body.appendChild(bar);
+    }
+    const picked = units().filter(u => sel.has(keyOf(u)));
+    const split = picked.length === 1 && picked[0].classList.contains('ss-group');
+    const ok = split || picked.length >= 2;
+    const b = bar.querySelector('#ss-go-btn');
+    b.textContent = split ? 'SPLIT' : 'SUPERSET';
+    b.disabled = !ok;
+    b.style.opacity = ok ? '1' : '0.4';
+  }
+  function enterSel(u) {
+    sel = new Set([keyOf(u)]);
+    document.body.classList.add('ss-sel');
+    const nb = document.getElementById('nwf-bottom-bar');
+    if (nb) nb.style.visibility = 'hidden';
+    syncChecks();
+    // Workout ended / left the page while selecting → select mode ends too.
+    clearInterval(selWatch);
+    selWatch = setInterval(() => { if (sel && !listShown()) exitSel(); }, 700);
+  }
+  function exitSel() {
+    sel = null;
+    clearInterval(selWatch); selWatch = 0;
+    document.body.classList.remove('ss-sel');
+    document.querySelectorAll('#exerciseList .ss-check, #exerciseList .ss-ck-slot').forEach(c => c.remove());
+    document.getElementById('ss-sel-bar')?.remove();
+    const nb = document.getElementById('nwf-bottom-bar');
+    if (nb) nb.style.visibility = '';
+  }
+  window._ssExitSel = exitSel;
+
+  function afterChange() {
+    try { saveSession?.(); } catch (e) {}
+    try { updateTodayMuscleChips(); } catch (e) {}
+    try { checkFinishReady(); } catch (e) {}
+  }
+  function go() {
+    const picked = units().filter(u => sel.has(keyOf(u)));
+    const before = measure();
+    if (picked.length === 1 && picked[0].classList.contains('ss-group')) {
+      cardsOf(picked[0]).forEach(c => delete c.dataset.ss);   // SPLIT
+      exitSel(); regroup(); flip(before, null);
+    } else if (picked.length >= 2) {
+      const id = 'ss' + Date.now().toString(36);
+      const cards = picked.flatMap(cardsOf);           // list order
+      // The superset takes the place of the highest checked item.
+      const mark = document.createElement('div');
+      picked[0].before(mark);
+      cards.forEach(c => { c.dataset.ss = id; mark.before(c); });
+      mark.remove();
+      exitSel(); regroup(); flip(before, id);
+    } else return;
+    afterChange();
+  }
+
+  function confirmDeleteGroup(g) {
+    const names = cardsOf(g).map(c => c.dataset.exname);
+    const ov = document.createElement('div');
+    ov.className = 'delete-confirm-overlay';
+    ov.style.zIndex = '700';
+    ov.innerHTML = `<div class="delete-confirm-sheet"><div class="delete-confirm-title">Delete Superset ?</div><div class="delete-confirm-sub">${names.length} exercises will be removed from this workout.</div><div class="delete-confirm-btns"><button class="btn-del-cancel" id="_ssDelCancel">Cancel</button><button class="btn-del-yes-solid" id="_ssDelYes">Delete</button></div></div>`;
+    document.body.appendChild(ov);
+    ov.querySelector('#_ssDelCancel').onclick = () => ov.remove();
+    ov.querySelector('#_ssDelYes').onclick = () => {
+      ov.remove();
+      g.remove();
+      afterChange();
+      try { if (_todayMuscleFilter) _updateAllExCircleColors(); } catch (e) {}
+    };
+  }
+
+  // ── Long press (delegated on the list) ──
+  let lpT = null, lpX = 0, lpY = 0, lpFired = false;
+  function onDown(e) {
+    if (sel || det || (e.button && e.button !== 0)) return;
+    const u = unitOf(e.target);
+    if (!u || e.target.closest('.nw-trash-btn') || !L().contains(u)) return;
+    lpX = e.clientX; lpY = e.clientY; lpFired = false;
+    clearTimeout(lpT);
+    lpT = setTimeout(() => { lpT = null; lpFired = true; try { navigator.vibrate?.(15); } catch (e) {} enterSel(u); }, 500);
+  }
+  function onMove(e) { if (lpT && Math.hypot(e.clientX - lpX, e.clientY - lpY) > 10) { clearTimeout(lpT); lpT = null; } }
+  function onUp() { clearTimeout(lpT); lpT = null; }
+  function onClick(e) {
+    if (lpFired) { lpFired = false; e.preventDefault(); e.stopPropagation(); return; }
+    if (!sel) {
+      if (inFlow()) return;
+      // Active workout: tapping a superset card opens its first unfinished exercise.
+      const g = e.target.closest && e.target.closest('#exerciseList > .ss-group.ss-act');
+      if (!g) return;
+      e.preventDefault(); e.stopPropagation();
+      openDetail(g);
+      return;
+    }
+    const u = unitOf(e.target);
+    if (!u) return;
+    e.preventDefault(); e.stopPropagation();
+    const k = keyOf(u);
+    if (sel.has(k)) sel.delete(k); else sel.add(k);
+    syncChecks();
+  }
+
+  // ── Superset exercise page (active workout) ──
+  // The normal exercise page, opened on the first unfinished member, with every
+  // other member card moved in too: one set box per exercise, each under its
+  // name. Note / Timer / Stats (the float bar) follow the box last touched;
+  // SAVE & DONE finishes all of them; closing puts every card back.
+  let det = null;   // { ids: [...member card ids], gid }
+  let tidyT = 0;
+  // Leftovers of a closed superset page (its styles, names, image list).
+  function ssTidy() {
+    clearTimeout(tidyT); tidyT = 0;
+    if (det) return;
+    document.body.classList.remove('ss-detail');
+    document.querySelectorAll('#ex-detail-overlay-body .ss-det-name, #ex-detail-photo-tap-wrap .ss-photo-list, #ex-detail-overlay-body .ss-det-title').forEach(n => n.remove());
+  }
+  const _stampX = c => c.querySelectorAll('.set-row').forEach(row => {
+    const db = row.querySelector('.set-done-btn');
+    if (!db || db.classList.contains('done')) return;
+    const num = row.querySelector('.set-num');
+    if (!num || num.querySelector('.set-num-x')) return;
+    num.style.position = 'relative';
+    const x = document.createElement('span');
+    x.className = 'set-num-x';
+    x.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;margin-top:-3px;color:#ff4747;font-size:42px;font-weight:100;line-height:1;pointer-events:none;';
+    x.textContent = '×';
+    num.appendChild(x);
+  });
+  function setActive(id) {
+    if (!det || !det.ids.includes(id)) return;
+    document.querySelectorAll('#ex-detail-overlay-body .ss-det-name').forEach(n => n.classList.toggle('on', n.dataset.for === id));
+    if (window._exDetailCardId === id) return;
+    window._exDetailCardId = id;
+    try { _syncExOpenSeg(); } catch (e) {}
+    try { window.showExFloatBar && showExFloatBar(id); } catch (e) {}
+  }
+  function setTitle() {
+    if (!det) return;
+    const t = document.getElementById('ex-detail-overlay-title');
+    if (t) t.textContent = 'Superset';
+  }
+  function openDetail(g) {
+    ssTidy();
+    const cs = cardsOf(g);
+    if (!cs.length) return;
+    const primary = cs.find(x => !x.classList.contains('completed')) || cs[0];
+    openExDetail(primary.id);
+    const ob = document.getElementById('ex-detail-overlay-body');
+    if (window._exDetailCardId !== primary.id || !ob) return;
+    // Finished state at open: closing without SAVE & DONE keeps it (like a normal exercise).
+    det = { ids: cs.map(c => c.id), gid: g.dataset.ss, was: new Map(cs.map(c => [c.id, c.classList.contains('completed')])) };
+    document.body.classList.add('ss-detail');
+    cs.forEach(c => {
+      if (c === primary) return;
+      const ph = document.createElement('div');
+      ph.id = c.id + '_ph';
+      ph.style.cssText = 'height:0;';
+      c.before(ph);
+      c.dataset.open = 'true';
+      const b = c.querySelector('.ex-card-body');
+      if (b) { b.style.maxHeight = '4000px'; b.style.opacity = '1'; b.classList.remove('collapsed'); b.classList.add('open'); }
+      document.getElementById(`add-set-outer-${c.id}`)?.classList.add('open');
+    });
+    // "Superset" title, centred, below the image (body-map mode — with a photo
+    // it's already the title beside CLOSE); then every member in order, each under its name.
+    const tt = document.createElement('div');
+    tt.className = 'ss-det-title';
+    tt.textContent = 'Superset';
+    ob.appendChild(tt);
+    cs.forEach(c => {
+      const h = document.createElement('div');
+      h.className = 'ss-det-name';
+      h.dataset.for = c.id;
+      h.textContent = c.dataset.exname || '';
+      ob.appendChild(h);
+      ob.appendChild(c);
+    });
+    // The superset's exercises, listed on the top image.
+    const pw = document.getElementById('ex-detail-photo-tap-wrap');
+    if (pw) {
+      pw.querySelector('.ss-photo-list')?.remove();
+      const pl = document.createElement('div');
+      pl.className = 'ss-photo-list';
+      cs.forEach(c => { const d = document.createElement('div'); d.dir = 'auto'; d.textContent = c.dataset.exname || ''; pl.appendChild(d); });
+      pw.appendChild(pl);
+    }
+    setActive(primary.id);
+    try { _syncExFinishReady(); } catch (e) {}
+    // Same right edge as the normal exercise name on the body-map image: that
+    // offset (--bm-pr, lined up with the ✓ buttons) is measured on the body map,
+    // which may be drawn a moment later — copy it over once it's there.
+    const syncPr = () => {
+      const pl = document.querySelector('#ex-detail-photo-tap-wrap .ss-photo-list');
+      const bm = document.querySelector('#ex-detail-photo-wrap .ex-detail-bodymap');
+      const v = bm && bm.style.getPropertyValue('--bm-pr');
+      if (pl) { if (v) pl.style.setProperty('--bm-pr', v); else pl.style.removeProperty('--bm-pr'); }
+    };
+    [0, 120, 400, 900].forEach(ms => setTimeout(() => { if (det) { setTitle(); syncPr(); } }, ms));
+    setTitle(); syncPr();
+    regroup();
+  }
+  function onDetailDown(e) {
+    if (!det) return;
+    const n = e.target.closest('.ss-det-name');
+    const c = n ? document.getElementById(n.dataset.for) : e.target.closest('#ex-detail-overlay-body > .exercise-card');
+    if (c) setActive(c.id);
+  }
+  function wrapDetail() {
+    const _close = window.closeExDetailOverlay, _done = window.markExDetailDone;
+    if (typeof _close !== 'function' || typeof _done !== 'function' || _close._ss) return;
+    window.markExDetailDone = function () {
+      if (det) det.ids.forEach(id => {
+        if (id === window._exDetailCardId) return;      // the original handles this one
+        const c = document.getElementById(id);
+        if (!c) return;
+        _stampX(c);
+        if (!c.classList.contains('completed')) toggleDone(id);
+      });
+      return _done.apply(this, arguments);
+    };
+    window.closeExDetailOverlay = function () {
+      if (!det) return _close.apply(this, arguments);
+      const d = det, act = window._exDetailCardId, tapped = !!window._exDetailFinishTapped;
+      det = null;
+      document.body.classList.remove('ss-panel');
+      document.querySelectorAll('.ss-panel-host').forEach(c => c.classList.remove('ss-panel-host'));
+      // The superset page's styles + image list stay until the closing animation
+      // (names fly back) is over — see ssTidy.
+      clearTimeout(tidyT); tidyT = setTimeout(ssTidy, 1600);
+      // Grab the other members first — closing clears the page's contents,
+      // detaching them (getElementById can't find them after that).
+      const others = d.ids.filter(id => id !== act).map(id => [id, document.getElementById(id), document.getElementById(id + '_ph')]);
+      const r = _close.apply(this, arguments);          // restores the active card
+      others.forEach(([id, c, ph]) => {
+        if (!c) return;
+        const b = c.querySelector('.ex-card-body');
+        if (b) { b.style.maxHeight = '0'; b.style.opacity = '0'; b.classList.add('collapsed'); b.classList.remove('open'); }
+        document.getElementById(`add-set-outer-${id}`)?.classList.remove('open');
+        c.querySelector('.comment-area')?.classList.remove('open', 'note-active');
+        c.dataset.open = 'false';
+        if (ph) { ph.parentNode.insertBefore(c, ph); ph.remove(); }
+        // Same completion re-check the exercise page does for its own card.
+        const rows = [...c.querySelectorAll('tr.set-row:not(.ignored)')];
+        const all = rows.length > 0 && rows.every(rw => rw.querySelector('.set-done-btn.done'));
+        const was = c.classList.contains('completed');
+        if (all && !was) toggleDone(id);
+        else if (!all && was && !tapped && !d.was.get(id)) {
+          c.dataset.open = 'true'; toggleDone(id); c.dataset.open = 'false';
+          if (b) { b.style.maxHeight = '0'; b.style.opacity = '0'; b.classList.add('collapsed'); b.classList.remove('open'); }
+        }
+        try { _updateExSetCount(id); _updatePartialDoneIndicator(id); updateVolProgressBar(id); _refreshExPRSlots(id); } catch (e) {}
+      });
+      // Not finished via SAVE & DONE: anything finished when the page opened stays finished.
+      if (!tapped) d.ids.forEach(id => { const c = document.getElementById(id); if (c && d.was.get(id) && !c.classList.contains('completed')) { try { toggleDone(id); _updatePartialDoneIndicator(id); _updateExSetCount(id); } catch (e) {} } });
+      regroup();
+      return r;
+    };
+    window.closeExDetailOverlay._ss = true;
+    // Open / close animation: it starts from (and lands on) the tapped card —
+    // a superset's member cards are hidden inside its card, so use the
+    // superset card itself instead (it flies in and back like a normal card).
+    const host = c => (c && c.closest && c.closest('#exerciseList > .ss-group.ss-act')) || c;
+    const wrapArg = (name, idx) => {
+      const f = window[name];
+      if (typeof f !== 'function' || f._ss) return;
+      window[name] = function (...a) { a[idx] = host(a[idx]); return f.apply(this, a); };
+      window[name]._ss = true;
+    };
+    // Any other exercise opened before that tidy-up ran: tidy up first.
+    const _open = window.openExDetail;
+    if (typeof _open === 'function' && !_open._ss) {
+      window.openExDetail = function () { if (tidyT) ssTidy(); return _open.apply(this, arguments); };
+      window.openExDetail._ss = true;
+    }
+    wrapArg('_exMorphRect', 0);
+    wrapArg('_exFlyGhost', 0);
+    // The superset card's flying copy: drop its hidden member cards — their
+    // .ex-name would otherwise be picked up as "the card's name" and fly from 0,0.
+    const _ghost = window._exFlyGhost;
+    window._exFlyGhost = function (card, rect) {
+      const gh = _ghost.apply(this, arguments);
+      const h = host(card);
+      if (h && h.classList && h.classList.contains('ss-group')) gh.querySelectorAll('.ss-g-body').forEach(b => b.remove());
+      return gh;
+    };
+    window._exFlyGhost._ss = true;
+    // Closing a superset: the exact reverse of its opening (which is one fade —
+    // there's no single exercise name to travel): the superset card fades back
+    // in at its spot while the page fades out, same time and easing.
+    const _nameClose = window._exCardNameClose;
+    if (typeof _nameClose === 'function' && !_nameClose._ss) {
+      window._exCardNameClose = function (overlay, card, r0, frame, state, A, onDone) {
+        const g = host(card);
+        if (g === card) return _nameClose.apply(this, arguments);
+        const ghost = _exFlyGhost(g, r0);
+        g.style.visibility = 'hidden';
+        const D = typeof _EX_OPEN_FADE_MS === 'number' ? _EX_OPEN_FADE_MS : 300;
+        const NM = typeof _EX_NAME_MS === 'number' ? _EX_NAME_MS : 450;
+        // 1) The names fly from the image back down to their lines on the card
+        //    (page still showing), 2) then the card fades in as the page fades out.
+        const flies = namePairs(ghost).map(([cardName, pageName]) => {
+          const f = _exFlyNameEl(cardName, pageName, false);
+          cardName.style.visibility = 'hidden';
+          pageName.style.opacity = '0';
+          A(f.el, [{ transform: f.landed }, { transform: 'none' }], { duration: NM, easing: _EX_FLY_EASE });
+          return { f, cardName, pageName };
+        });
+        state.cleanup = () => { ghost.remove(); g.style.visibility = ''; flies.forEach(x => { x.f.el.remove(); x.pageName.style.opacity = ''; }); };
+        const at = flies.length ? NM : 0;
+        setTimeout(() => { if (overlay._exFly === state) overlay.classList.add('ex-overlay-closing'); }, at); // the list takes taps from here on
+        A(ghost, [{ opacity: 0 }, { opacity: 1 }], { delay: at, duration: D, easing: 'ease-out', fill: 'both' });
+        A(overlay, [{ opacity: 1 }, { opacity: 0 }], { delay: at, duration: D, easing: 'ease-out' });
+        _exFlyRun(overlay, state, onDone);
+      };
+      window._exCardNameClose._ss = true;
+    }
+    // Opening a superset: after the page has faded in (same as a normal card),
+    // each exercise name flies from its line on the card to its line on the
+    // top image — a normal card's name flies to the page title the same way.
+    const _flyOpen = window._exCardFlyOpen;
+    if (typeof _flyOpen === 'function' && !_flyOpen._ss) {
+      window._exCardFlyOpen = function (overlay, ghost, from, onDone) {
+        const r = _flyOpen.apply(this, arguments);
+        if (!ghost || !ghost.querySelector('.ss-group.ss-act') || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return r;
+        const st = overlay._exFly;
+        setTimeout(() => {           // runs after the original's own tick (page laid out)
+          if (overlay._exFly !== st) return;
+          const D = typeof _EX_OPEN_FADE_MS === 'number' ? _EX_OPEN_FADE_MS : 300;
+          const NM = typeof _EX_NAME_MS === 'number' ? _EX_NAME_MS : 450;
+          const els = [];
+          namePairs(ghost).forEach(([cardName, pageName]) => {
+            const f = _exFlyNameEl(cardName, pageName, false);
+            els.push(f.el);
+            cardName.style.visibility = 'hidden';
+            pageName.style.opacity = '0';
+            const a = f.el.animate([{ transform: 'none' }, { transform: f.landed }], { delay: D, duration: NM, easing: _EX_FLY_EASE, fill: 'both' });
+            const done = () => { f.el.remove(); pageName.style.opacity = ''; };
+            a.onfinish = done; a.oncancel = done;
+            st.anims && st.anims.push(a);
+          });
+          // The "Superset" title, every name and every set box drop in together
+          // once the names land — the same drop the page gives its first box.
+          const DROP = typeof _EX_SETS_DROP_MS === 'number' ? _EX_SETS_DROP_MS : 380;
+          const first = document.querySelector('#ex-detail-overlay-body > .exercise-card');
+          const drops = [...document.querySelectorAll('#ex-detail-overlay-body > .ss-det-title, #ex-detail-overlay-body > .ss-det-name, #ex-detail-overlay-body > .exercise-card')]
+            .filter(el => el !== first && el.offsetParent)
+            .map(el => el.animate([
+              { clipPath: 'inset(0px 0px 100% 0px)', webkitClipPath: 'inset(0px 0px 100% 0px)', opacity: 0, transform: 'translateY(-8px)' },
+              { clipPath: 'inset(0px 0px 0px 0px)', webkitClipPath: 'inset(0px 0px 0px 0px)', opacity: 1, transform: 'none' },
+            ], { delay: D + NM, duration: DROP, easing: _EX_FLY_EASE, fill: 'backwards' }));
+          drops.forEach(a => st.anims && st.anims.push(a));
+          const skip = () => drops.forEach(a => { try { a.finish(); } catch (e) {} });   // a tap skips to the end, like the first box
+          overlay.addEventListener('pointerdown', skip, { capture: true, once: true });
+          const _cl = st.cleanup;
+          st.cleanup = () => { overlay.removeEventListener('pointerdown', skip, { capture: true }); els.forEach(e => e.remove()); document.querySelectorAll('.ss-photo-list > div').forEach(d => d.style.opacity = ''); _cl && _cl(); };
+        }, 0);
+        return r;
+      };
+      window._exCardFlyOpen._ss = true;
+    }
+    // [card name element, matching line on the top image], in order.
+    function namePairs(ghost) {
+      const cardNames = [...ghost.querySelectorAll('.ss-act-name span[dir]')]; // the names only — not the filter dots
+      const pageNames = [...document.querySelectorAll('#ex-detail-photo-tap-wrap .ss-photo-list > div')];
+      return cardNames.map((c, i) => [c, pageNames[i]]).filter(p => p[1] && p[1].offsetParent && p[0].getBoundingClientRect().width > 0);
+    }
+  }
+  window._ssOpenDetail = openDetail;
+
+  // ── Superset page: Note / Timer / Stats (superset pages only) ──
+  // Note and Timer belong to the whole superset: both live on its FIRST
+  // exercise (so the note is saved/recalled with it). While one is open the set
+  // boxes, names and title step aside and only that box shows — like Stats.
+  const firstId = () => det && det.ids[0];
+  function syncPanel() {
+    const fid = firstId();
+    const open = !!fid && !!(document.getElementById(`comment-area-${fid}`)?.classList.contains('open')
+      || document.getElementById(`timer-panel-${fid}`)?.classList.contains('open'));
+    document.body.classList.toggle('ss-panel', open);
+    document.querySelectorAll('#ex-detail-overlay-body > .exercise-card').forEach(c => c.classList.toggle('ss-panel-host', open && c.id === fid));
+  }
+  function wrapFloat() {
+    const _fa = window.exFloatAction;
+    if (typeof _fa === 'function' && !_fa._ss) {
+      window.exFloatAction = function (action) {
+        if (!det || (action !== 'note' && action !== 'timer')) return _fa.apply(this, arguments);
+        // Note / Timer always act on the superset's first exercise.
+        const fid = firstId(), cur = window._exDetailCardId;
+        if (cur && cur !== fid) {
+          // Close a Note/Timer/Stats still open on the box last touched, first.
+          if (document.getElementById('ex-detail-stats-section')) _toggleExDetailStats();
+        }
+        setActive(fid);
+        const r = _fa.apply(this, arguments);
+        [0, 60, 420, 800].forEach(ms => setTimeout(syncPanel, ms));
+        return r;
+      };
+      window.exFloatAction._ss = true;
+    }
+    // Stats looks the exercise up by the page title — "Superset" here, so use
+    // the box last touched for the lookup.
+    const _st = window._toggleExDetailStats;
+    if (typeof _st === 'function' && !_st._ss) {
+      window._toggleExDetailStats = function () {
+        const t = document.getElementById('ex-detail-overlay-title');
+        if (!det || !t) return _st.apply(this, arguments);
+        const c = document.getElementById(window._exDetailCardId);
+        const prev = t.textContent;
+        t.textContent = c?.dataset.exname || prev;
+        try { return _st.apply(this, arguments); } finally { t.textContent = prev; }
+      };
+      window._toggleExDetailStats._ss = true;
+    }
+  }
+
+  function init() {
+    const list = L();
+    if (!list) return;
+    wrapDetail();
+    wrapFloat();
+    const _atf = window.applyTodayFilters;
+    if (typeof _atf === 'function' && !_atf._ss) {
+      window.applyTodayFilters = function () { const r = _atf.apply(this, arguments); syncFilter(true); regroup(); return r; }; // regroup → ring highlight follows the selected body part
+      window.applyTodayFilters._ss = true;
+    }
+    document.getElementById('ex-detail-overlay-body')?.addEventListener('pointerdown', onDetailDown, true);
+    list.addEventListener('pointerdown', onDown, true);
+    list.addEventListener('pointermove', onMove, true);
+    list.addEventListener('pointerup', onUp, true);
+    list.addEventListener('pointercancel', onUp, true);
+    list.addEventListener('click', onClick, true);
+    list.addEventListener('contextmenu', e => e.preventDefault());
+    let raf = 0;
+    obs = new MutationObserver(() => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; regroup(); }); });
+    obs.observe(list, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] }); // class: sets done / exercise completed → active superset card refresh
+    // The body-part filter shows/hides cards via style — re-check frames after it.
+    if (typeof window.filterTodayByMuscle === 'function') {
+      const _f = window.filterTodayByMuscle;
+      window.filterTodayByMuscle = function () { const r = _f.apply(this, arguments); regroup(); return r; };
+    }
+    regroup();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else setTimeout(init, 0);
+})();
 
 function addExerciseCard(ex, asDone=false, sessionData=null) {
   const id = 'ex_' + (++exerciseCounter);
@@ -13325,6 +14046,7 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
   // Sub-muscles travel with the card so a saved workout/session keeps them
   // even if the exercise is later deleted from the list (see _cardSubMuscles).
   if (Array.isArray(ex.subMuscles) && ex.subMuscles.length) card.dataset.exsubs = JSON.stringify(ex.subMuscles);
+  if (ex.superset) card.dataset.ss = ex.superset; // superset group id (see _ss* below)
   card.dataset.open = (sessionData ? sessionData.open : false) ? 'true' : 'false';
 
   // HEADER
@@ -13406,6 +14128,7 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
 
   if (window._isNewWorkoutFlow) {
     const trashWrap = document.createElement('div');
+    trashWrap.className = 'nw-trash-wrap'; // superset select mode puts its check box here
     trashWrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;margin-right:10px;margin-left:10px;';
     const trashBtn = document.createElement('button');
     trashBtn.className = 'nw-trash-btn';
@@ -14972,9 +15695,12 @@ function _syncExFinishReady() {
   const card = window._exDetailCardId ? document.getElementById(window._exDetailCardId) : null;
   let ready = false;
   if (card && !window._isNewWorkoutFlow && btn.dataset.mode === 'finish') {
-    const rows = [...card.querySelectorAll('tr.set-row')]
-      .filter(r => r.dataset.ignored !== '1' && !r.classList.contains('ignored'));
-    ready = rows.length > 0
+    // Superset page: --accent only once every set of EVERY exercise in it is done.
+    const _cards = document.body.classList.contains('ss-detail')
+      ? [...document.querySelectorAll('#ex-detail-overlay-body > .exercise-card')] : [card];
+    const _live = c => [...c.querySelectorAll('tr.set-row')].filter(r => r.dataset.ignored !== '1' && !r.classList.contains('ignored'));
+    const rows = _cards.flatMap(_live);
+    ready = rows.length > 0 && _cards.every(c => _live(c).length > 0)
       && rows.every(r => r.querySelector('.set-done-btn.done'))
       && rows.some(r => (r.dataset.setType || 'regular') !== 'warmup');
   }
@@ -18541,7 +19267,7 @@ function loadWorkout(idx) {
       // still restores the note text and marks its .comment-area ready to show
       // once the user actually opens that exercise.
       const sessionDataOverride = sourceSets.length || _resolvedComment ? {sets:sourceSets, completed:isDraft&&exData.sets?.every(s=>s.ignored||s.done), comment:_resolvedComment, open:false} : null;
-      addExerciseCard(ex, false, sessionDataOverride);
+      addExerciseCard(ex, false, sessionDataOverride); _ssTagLast(exData);
       const cards = document.querySelectorAll('#exerciseList .exercise-card');
       const card = cards[cards.length-1];
       if (card) {
@@ -20116,7 +20842,7 @@ function restoreWorkout(wi) {
       // workout's exercise list should load collapsed, not auto-expand cards that
       // happen to have sets/a note.
       const sessionDataOverride = sourceSets.length || exData.comment ? {sets:sourceSets, completed:isDraft&&exData.sets?.every(s=>s.ignored||s.done), comment:exData.comment||'', open:false} : null;
-      addExerciseCard(ex, false, sessionDataOverride);
+      addExerciseCard(ex, false, sessionDataOverride); _ssTagLast(exData);
       const cards = document.querySelectorAll('#exerciseList .exercise-card');
       const card = cards[cards.length-1];
       if (card) {
@@ -22462,7 +23188,7 @@ function calLoadWorkout(wi) {
     w.exercises.forEach(exData => {
       const ex = getAllExercises().find(e=>e.label===exData.name||e.name===exData.name)
         || {name:exData.name,label:exData.name,muscle:exData.muscle||'Chest',subMuscles:exData.subMuscles||[],custom:true};
-      addExerciseCard(ex);
+      addExerciseCard(ex); _ssTagLast(exData);
       const cards = document.querySelectorAll('#exerciseList .exercise-card');
       const card = cards[cards.length-1];
       if (card) setTimeout(()=>{ if(card.dataset.open==='true') toggleCardCollapse(card.id); }, 50);
@@ -22600,7 +23326,7 @@ function loadPlannedWorkout(planId) {
     document.getElementById('workoutName').value = plan.name;
     plan.exercises.forEach(exData => {
       const ex = getAllExercises().find(e=>e.name===exData.name||e.label===exData.name) || {name:exData.name,label:exData.name,muscle:exData.muscle||'Chest',subMuscles:exData.subMuscles||[],custom:true};
-      addExerciseCard(ex);
+      addExerciseCard(ex); _ssTagLast(exData);
     });
     localStorage.setItem('ironlog_wip_plan_id', planId);
     closeCalendar(); switchTab('log');  };
@@ -27760,7 +28486,7 @@ function editLibraryWorkout(id) {
   (w.exercises||[]).forEach(exData => {
     const ex = getAllExercises().find(e=>e.name===exData.name||e.label===exData.name)
       || {name:exData.name, label:exData.name, muscle:exData.muscle||'Chest', subMuscles:exData.subMuscles||[], custom:true};
-    addExerciseCard(ex, false, { name:exData.name, muscle:exData.muscle, sets:exData.sets||[], comment:'', completed:false, open:false });
+    addExerciseCard(ex, false, { name:exData.name, muscle:exData.muscle, sets:exData.sets||[], comment:'', completed:false, open:false }); _ssTagLast(exData);
   });
   // Black screen transition
   let _sb = document.getElementById('_saveBlackScreen');
@@ -29173,7 +29899,7 @@ function editCoachWorkout(wid) {
     addExerciseCard(ex, false, {
       name: exData.name, muscle: exData.muscle, sets: exData.sets||[], comment: exData.comment||'',
       completed: false, open: false
-    });
+    }); _ssTagLast(exData);
   });
   switchTab('log');
   setTimeout(() => checkFinishReady(), 50);
@@ -34586,15 +35312,16 @@ function _w2BuildExerciseList(workout) {
   }
   const W2_EX_COLORS = { ...BP_COLORS.muscles, Other:'#888' };
   let html = ``;
-  workout.exercises.forEach((ex, i) => {
+  const exs = workout.exercises;
+  // Superset: consecutive exercises sharing a superset id (2+) — framed together
+  // under a "Superset" label in the top-left border, like the builder's card.
+  const ssRun = i => { const id = exs[i]?.superset; if (!id) return 0; let n = 0; while (exs[i + n]?.superset === id) n++; return n; };
+  const row = (ex, i, sep) => {
     const muscle = ex.muscle || getAllExercises().find(x=>x.name===ex.name||x.label===ex.name)?.muscle || 'Other';
     const color = W2_EX_COLORS[muscle] || '#888';
-    const words = (ex.name||ex.label||'').trim().split(/\s+/);
-    const initials = ((words[0]||'')[0]||'') + ((words[1]||'')[0]||'');
     const sets = ex.sets?.length || ex.targetSets || '—';
     const reps = ex.sets?.[0]?.reps || ex.targetReps || '—';
-    const isLast = i === workout.exercises.length - 1;
-    html += `<div style="display:flex;flex-direction:row-reverse;align-items:center;gap:10px;padding:8px 0;${isLast ? '' : 'border-bottom:1px solid var(--g1e);'}">
+    return `<div style="display:flex;flex-direction:row-reverse;align-items:center;gap:10px;padding:8px 0;${sep ? 'border-bottom:1px solid var(--g1e);' : ''}">
       <span style="font-family:'DM Sans';font-size:12px;font-weight:700;color:var(--g88);width:16px;text-align:left;flex-shrink:0;">${i+1}</span>
       <div style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0;"></div>
       <div style="flex:1;min-width:0;text-align:right;">
@@ -34602,7 +35329,20 @@ function _w2BuildExerciseList(workout) {
         <div style="font-family:'DM Sans';font-size:13px;color:var(--g88);margin-top:1px;">${sets} sets · ${reps} reps</div>
       </div>
     </div>`;
-  });
+  };
+  for (let i = 0; i < exs.length;) {
+    const n = ssRun(i);
+    if (n >= 2) {
+      let inner = '';
+      for (let k = 0; k < n; k++) inner += row(exs[i + k], i + k, k < n - 1);
+      html += `<fieldset style="min-width:0;margin:6px -10px;padding:0 10px;border:1px solid var(--g55);border-radius:var(--radius,12px);"><legend style="margin-left:0;padding:0 6px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:.3px;color:var(--gcc);">Superset</legend><div style="margin-top:-6px;">${inner}</div></fieldset>`;
+      i += n;
+    } else {
+      const nextSS = ssRun(i + 1) >= 2;
+      html += row(exs[i], i, i < exs.length - 1 && !nextSS);
+      i++;
+    }
+  }
   el.innerHTML = html;
 }
 
