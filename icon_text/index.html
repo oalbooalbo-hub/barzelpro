@@ -209,7 +209,7 @@ fieldset.ss-group{min-width:0;min-inline-size:0;padding:0;margin:6px 0 8px;backg
 .ss-act-name span.ss-act-dot{display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0;overflow:visible;transition:background .2s;}
 /* Superset exercise page: each exercise's name above its set box; the box last
    touched (Note / Timer / Stats apply to it) is full strength, the others dimmed. */
-.ss-det-name{font-family:'DM Sans',sans-serif;font-size:18px;font-weight:800;text-align:right;color:var(--text);padding:16px 12px 8px;opacity:.5;transition:opacity .2s;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.ss-det-name{font-family:'DM Sans',sans-serif;font-size:18px;font-weight:800;text-align:right;color:var(--gff);padding:16px 12px 8px;cursor:pointer;-webkit-tap-highlight-color:transparent;}
 .ss-det-name.on{opacity:1;}
 body.ss-detail #ex-detail-bestset{display:none!important;}
 /* Superset page: its exercises listed on the top image (bottom-right, over a soft shade). */
@@ -217,7 +217,7 @@ body.ss-detail #ex-detail-bestset{display:none!important;}
 .ss-photo-list > div{max-width:100%;word-break:break-word;}
 body:not(.ss-detail) .ss-photo-list{display:none;}
 /* Superset page, body-map mode: "Superset" centred below the image (drops in with the set boxes). */
-.ss-det-title{font-family:'DM Sans',sans-serif;font-size:20px;font-weight:800;letter-spacing:.3px;color:var(--text);text-align:center;padding:14px 0 0;}
+.ss-det-title{font-family:'DM Sans',sans-serif;font-size:20px;font-weight:700;letter-spacing:.3px;color:var(--text);text-align:center;padding:14px 0 0;}
 html:not(.bodymap-mode) .ss-det-title{display:none;}
 /* Superset page, Note/Timer open (they're the whole superset's, on its first exercise): only that box shows.
    Stats open: the names/title step aside too (Stats already hides the boxes). */
@@ -238,6 +238,14 @@ body.ss-detail #ex-detail-photo-wrap .ex-detail-bodymap-name{display:none!import
 #exerciseList.ss-flow .exercise-card,#exerciseList.ss-flow .ss-group{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;}
 body.ss-sel #exerciseList .nw-trash-btn{display:none!important;}
 body.ss-sel .btn-add-exercise{visibility:hidden!important;pointer-events:none!important;}
+/* …and while a card is lifted for reordering (fades; its space is kept, so nothing shifts). */
+body .btn-add-exercise{transition:color .2s,border-color .2s,opacity .2s ease;}
+body.ss-lifting .btn-add-exercise{opacity:0!important;pointer-events:none!important;}
+/* Superset select mode / a card lifted for reordering: the bottom CLOSE /
+   SAVE bar steps aside (fades out) until it's over. */
+#workout-finish-bar,#nwf-bottom-bar{transition:opacity .2s ease;}
+body.ss-sel #workout-finish-bar,body.ss-lifting #workout-finish-bar,body.ss-lifting #nwf-bottom-bar{opacity:0!important;pointer-events:none!important;}
+body.ss-sel #workout-finish-bar *,body.ss-lifting #workout-finish-bar *,body.ss-lifting #nwf-bottom-bar *{pointer-events:none!important;}
 /* Home header: icons only — no text under the Share / Calendar icons. */
 #share-app-wrap > span,#dateBadgeText{display:none!important;}
 .ss-check{width:26px;height:26px;box-sizing:border-box;border-radius:8px;border:2px solid var(--accent);background:transparent;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s;animation:tapPopScale .3s cubic-bezier(.175,.885,.32,1.275);}
@@ -2614,22 +2622,22 @@ window._fbModuleReady = true;
         <div style="display:flex;gap:12px;align-items:flex-start;">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" style="color:var(--pr-max);flex-shrink:0;"><polygon points="12,2 22,9.27 18.18,21.02 5.82,21.02 2,9.27"/></svg>
           <div>
-            <div style="font-family:'DM Sans';font-size:14px;font-weight:800;color:var(--pr-max);letter-spacing:.5px;">MAX</div>
-            <div style="font-family:'DM Sans';font-size:13px;font-weight:500;color:var(--muted);line-height:1.5;margin-top:2px;"><span style="color:var(--gff);">Heaviest weight</span> you've ever lifted in a single set.</div>
+            <div style="font-family:'DM Sans';font-size:18px;font-weight:800;color:var(--pr-max);letter-spacing:.5px;">MAX</div>
+            <div style="font-family:'DM Sans';font-size:16px;font-weight:500;color:var(--gcc);line-height:1.5;margin-top:2px;"><span style="color:var(--gff);text-decoration:underline;text-decoration-color:var(--pr-max);text-decoration-thickness:2px;text-underline-offset:4px;">Heaviest weight</span> you've ever lifted in a single set.</div>
           </div>
         </div>
         <div style="display:flex;gap:12px;align-items:flex-start;">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" style="color:var(--pr-best);flex-shrink:0;"><polygon points="12,2 22,9.27 18.18,21.02 5.82,21.02 2,9.27"/></svg>
           <div>
-            <div style="font-family:'DM Sans';font-size:14px;font-weight:800;color:var(--pr-best);letter-spacing:.5px;">BEST SET</div>
-            <div style="font-family:'DM Sans';font-size:13px;font-weight:500;color:var(--muted);line-height:1.5;margin-top:2px;"><span style="color:var(--gff);">Your best set</span> for strength calculation.<br>Formula: max(weight × (1+reps/30))</div>
+            <div style="font-family:'DM Sans';font-size:18px;font-weight:800;color:var(--pr-best);letter-spacing:.5px;">BEST SET</div>
+            <div style="font-family:'DM Sans';font-size:16px;font-weight:500;color:var(--gcc);line-height:1.5;margin-top:2px;"><span style="color:var(--gff);text-decoration:underline;text-decoration-color:var(--pr-best);text-decoration-thickness:2px;text-underline-offset:4px;">Your best set</span> for strength calculation.<br>Formula: max(weight × (1+reps/30))</div>
           </div>
         </div>
         <div style="display:flex;gap:12px;align-items:flex-start;">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" style="color:var(--pr-vol);flex-shrink:0;"><polygon points="12,2 22,9.27 18.18,21.02 5.82,21.02 2,9.27"/></svg>
           <div>
-            <div style="font-family:'DM Sans';font-size:14px;font-weight:800;color:var(--pr-vol);letter-spacing:.5px;">VOL</div>
-            <div style="font-family:'DM Sans';font-size:13px;font-weight:500;color:var(--muted);line-height:1.5;margin-top:2px;"><span style="color:var(--gff);">Total volume</span> lifted across all sets combined.</div>
+            <div style="font-family:'DM Sans';font-size:18px;font-weight:800;color:var(--pr-vol);letter-spacing:.5px;">VOL</div>
+            <div style="font-family:'DM Sans';font-size:16px;font-weight:500;color:var(--gcc);line-height:1.5;margin-top:2px;"><span style="color:var(--gff);text-decoration:underline;text-decoration-color:var(--pr-vol);text-decoration-thickness:2px;text-underline-offset:4px;">Total volume</span> lifted across all sets combined.</div>
           </div>
         </div>
       </div>
@@ -6949,8 +6957,8 @@ function renderExercisesTab() {
     const isActive = muscle === selected;
     pillsHtml += `<div onclick="selectExTabMuscle('${muscle}')" style="
       flex:1;text-align:center;padding:8px 4px;cursor:pointer;
-      font-family:'DM Sans';font-size:14px;font-weight:700;letter-spacing:0;
-      color:${isActive ? color : 'var(--g44)'};
+      font-family:'DM Sans';font-size:14px;font-weight:600;letter-spacing:0;
+      color:${isActive ? color : 'var(--g88)'};
       transition:color .15s;
     ">${MUSCLE_LABELS[muscle]}</div>`;
   });
@@ -7430,7 +7438,7 @@ function _libSwitchHtml(kind, locked) {
           <span class="bp-lib-thumb" style="position:absolute;left:${on ? '21px' : '3px'};top:3px;width:20px;height:20px;background:${on ? 'var(--g00)' : 'var(--g66)'};border-radius:50%;transition:left .2s,background .2s;"></span>
         </span>
       </span>
-      <span style="font-family:'DM Sans';font-size:13px;font-weight:700;color:var(--gaa);white-space:nowrap;">Preset Library</span>
+      <span style="font-family:'DM Sans';font-size:13px;font-weight:600;color:var(--gaa);white-space:nowrap;">Preset</span>
     </div>`;
 }
 function _libRowsAnimate(root, show) {
@@ -7483,13 +7491,13 @@ function _exFiltersOff() {
 }
 function _exFiltSwitchHtml(locked) {
   const on = !_exFiltersOff();
-  return `<div id="ex-filt-switch" onclick="${locked ? '' : '_exFiltToggle()'}" style="display:inline-flex;align-items:center;gap:10px;padding:4px 0;cursor:${locked ? 'default' : 'pointer'};opacity:${locked ? '.35' : '1'};-webkit-tap-highlight-color:transparent;">
+  return `<div id="ex-filt-switch" onclick="${locked ? '' : '_exFiltToggle()'}" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:inline-flex;align-items:center;gap:10px;padding:4px 0;cursor:${locked ? 'default' : 'pointer'};opacity:${locked ? '.35' : '1'};-webkit-tap-highlight-color:transparent;">
       <span style="position:relative;display:inline-block;width:44px;height:26px;flex-shrink:0;">
         <span class="bp-lib-track" style="position:absolute;inset:0;background:${on ? 'var(--accent)' : 'var(--g33)'};border-radius:13px;transition:background .2s;">
           <span class="bp-lib-thumb" style="position:absolute;left:${on ? '21px' : '3px'};top:3px;width:20px;height:20px;background:${on ? 'var(--g00)' : 'var(--g66)'};border-radius:50%;transition:left .2s,background .2s;"></span>
         </span>
       </span>
-      <span style="font-family:'DM Sans';font-size:13px;font-weight:700;color:var(--gaa);white-space:nowrap;">Filters</span>
+      <span style="font-family:'DM Sans';font-size:13px;font-weight:600;color:var(--gaa);white-space:nowrap;">Filters</span>
     </div>`;
 }
 function _exFiltToggle() {
@@ -7520,6 +7528,22 @@ function _exFiltToggle() {
     // On: re-render with the buttons, which unfold from nothing.
     _renderExercisesTabKeepScroll();
     const pb = pillBar();
+    // The whole row comes in WHITE — every body-part name, the line under the
+    // row and the selected one's line — then settles to its normal colors, so
+    // it's clear the list is filtered again.
+    const wrap = document.getElementById('exTab-muscle-wrap');
+    const ind = document.getElementById('exTab-muscle-indicator');
+    const whites = [];
+    if (pb) {
+      [...(wrap ? wrap.children : [])].filter(n => n !== ind).forEach(n => whites.push([n, 'color', n.style.color, n.style.transition]));
+      whites.push([pb, 'borderBottom', pb.style.borderBottom, pb.style.transition]);
+      if (ind) whites.push([ind, 'background', ind.style.background, ind.style.transition]);
+      whites.forEach(([n, p]) => { n.style.transition = 'none'; n.style[p] = p === 'borderBottom' ? '1px solid #fff' : '#fff'; });
+    }
+    const settle = () => {
+      whites.forEach(([n, p, v]) => { n.style.transition = `${p === 'color' ? 'color' : p === 'background' ? 'background' : 'border-bottom-color'} .6s ease`; n.style[p] = v; });
+      setTimeout(() => whites.forEach(([n, , , t]) => { n.style.transition = t; }), 650);
+    };
     if (pb) {
       const h = pb.offsetHeight;
       pb.style.overflow = 'hidden';
@@ -7527,7 +7551,7 @@ function _exFiltToggle() {
       const t0 = performance.now();
       const step = () => { sync(); if (performance.now() - t0 < D + 40) requestAnimationFrame(step); };
       requestAnimationFrame(step);
-      a.onfinish = () => { pb.style.overflow = ''; sync(); };
+      a.onfinish = () => { pb.style.overflow = ''; sync(); setTimeout(settle, 150); };
     }
     sync(); listIn();
   }
@@ -13566,7 +13590,7 @@ function _ssTagLast(exData) {
       const len = Math.max(0.1, seg - gap), start = i * seg + gap / 2; // gaps centred on the boundaries → first one at 12 o'clock
       const lit = Math.max(0, Math.min(len, p * C - start));
       const on = !fsel || mus[i] === fsel, sw = fsel && on ? 3.2 : 2.5;
-      arcs += `<circle cx="14" cy="14" r="${R}" fill="none" stroke="${fsel ? (on ? col : bpAlpha(col, .18)) : bpAlpha(col, .5)}" stroke-width="${sw}" stroke-dasharray="${len} ${C}" stroke-dashoffset="${-start}"/>`;
+      arcs += `<circle cx="14" cy="14" r="${R}" fill="none" stroke="${fsel ? (on ? col : bpAlpha(col, .18)) : (liftHi ? col : bpAlpha(col, .5))}" stroke-width="${sw}" stroke-dasharray="${len} ${C}" stroke-dashoffset="${-start}"/>`;
       if (lit > 0) arcs += `<circle cx="14" cy="14" r="${R}" fill="none" stroke="${on ? col : bpAlpha(col, .35)}" stroke-width="${sw}" stroke-dasharray="${lit} ${C}" stroke-dashoffset="${-start}"/>`;
     });
     ring.innerHTML = `<svg width="28" height="28" viewBox="0 0 28 28" style="transform:rotate(-90deg);display:block;overflow:visible;">${arcs}</svg>${done > 0 ? `<span class="ss-act-frac">${done}/${total}</span>` : ''}`;
@@ -13734,7 +13758,15 @@ function _ssTagLast(exData) {
     const picked = units().filter(u => sel.has(keyOf(u)));
     const before = measure();
     if (picked.length === 1 && picked[0].classList.contains('ss-group')) {
-      cardsOf(picked[0]).forEach(c => delete c.dataset.ss);   // SPLIT
+      cardsOf(picked[0]).forEach(c => {                       // SPLIT
+        delete c.dataset.ss;
+        // Back to a normal closed card (nothing of the superset page left open).
+        if (!inFlow()) {
+          c.querySelector(`#add-set-outer-${c.id}`)?.classList.remove('open');
+          const b = c.querySelector('.ex-card-body');
+          if (b && c.dataset.open !== 'true') { b.style.maxHeight = '0'; b.style.opacity = '0'; b.classList.add('collapsed'); b.classList.remove('open'); }
+        }
+      });
       exitSel(); regroup(); flip(before, null);
     } else if (picked.length >= 2) {
       const id = 'ss' + Date.now().toString(36);
@@ -13825,7 +13857,25 @@ function _ssTagLast(exData) {
     while (bot > H * 0.4 && covered(bot - 1)) bot -= 4;
     return { top, bot };
   }
+  // Active workout: while a card is lifted / dragged, every status circle (and
+  // superset ring) shows its full body-part color — where each body part sits.
+  let liftHi = false;
+  function circlesHi(on) {
+    if (inFlow() || liftHi === on) return;
+    liftHi = on;
+    const mc = (typeof BP_COLORS !== 'undefined' && BP_COLORS.muscles) || {};
+    document.querySelectorAll('#exerciseList .exercise-card').forEach(c => {
+      const ci = document.getElementById(`no-done-check-${c.id}`);
+      if (!ci) return;
+      ci.style.transition = 'border-color .2s ease';
+      if (on) ci.style.borderColor = mc[c.dataset.muscle || c.dataset.exmuscle] || '#888';
+    });
+    if (!on) { try { _updateAllExCircleColors(); } catch (e) {} }
+    document.querySelectorAll('#exerciseList > .ss-group.ss-act').forEach(renderAct);
+  }
   function lift(u, pid) {
+    circlesHi(true);
+    document.body.classList.add('ss-lifting');   // bottom CLOSE / SAVE bar out of the way
     armed = { u, pid, x: lpX, y: lpY };
     try { L().setPointerCapture(pid); } catch (e) {}   // keep getting the finger's moves even off the list
     u.style.transition = `transform .18s ${EASE}, box-shadow .18s ease`;
@@ -13835,6 +13885,8 @@ function _ssTagLast(exData) {
     u.style.boxShadow = '0 10px 28px rgba(0,0,0,.55)';
   }
   function unlift(u) {
+    circlesHi(false);
+    document.body.classList.remove('ss-lifting');
     u.style.transition = `transform .2s ${EASE}, box-shadow .2s ease`;
     u.style.transform = '';
     u.style.boxShadow = '';
@@ -13894,6 +13946,8 @@ function _ssTagLast(exData) {
     d.raf = requestAnimationFrame(autoScroll);
   }
   function endDrag() {
+    circlesHi(false);
+    document.body.classList.remove('ss-lifting');
     const d = drag; drag = null;
     cancelAnimationFrame(d.raf);
     const u = d.u;
@@ -14030,7 +14084,7 @@ function _ssTagLast(exData) {
     const bar = document.getElementById('workout-finish-bar');
     const bb = bar && bar.getClientRects().length ? [...bar.querySelectorAll('button')].find(b => b.getClientRects().length) : null;
     const barTop = bb ? Math.min(H, bb.getBoundingClientRect().top) : H;
-    t.style.cssText = `position:fixed;left:16px;right:16px;bottom:${Math.round(H - barTop) + 10}px;max-width:398px;margin:0 auto;z-index:650;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 6px 6px 16px;background:var(--g1a,#1a1a1a);border:1px solid var(--g33,#333);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.5);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;color:var(--gff,#fff);animation:sheetUp .25s ease;`;
+    t.style.cssText = `position:fixed;left:16px;right:16px;bottom:${Math.round(H - barTop) + 10}px;max-width:398px;margin:0 auto;z-index:650;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 6px 6px 16px;background:var(--g1a,#1a1a1a);border:1px solid var(--g88,#888);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.5);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;color:var(--gff,#fff);animation:sheetUp .25s ease;`;
     // Time left to undo: a hollow accent ring beside UNDO that empties
     // clockwise from 12 o'clock over the 4s.
     const UNDO_MS = 4000, R = 8, C = +(2 * Math.PI * R).toFixed(2);
@@ -14200,8 +14254,16 @@ function _ssTagLast(exData) {
     const ob = document.getElementById('ex-detail-overlay-body');
     if (window._exDetailCardId !== primary.id || !ob) return;
     // Finished state at open: closing without SAVE & DONE keeps it (like a normal exercise).
-    det = { ids: cs.map(c => c.id), gid: g.dataset.ss, was: new Map(cs.map(c => [c.id, c.classList.contains('completed')])) };
+    det = { ids: cs.map(c => c.id), gid: g.dataset.ss, was: new Map(cs.map(c => [c.id, c.classList.contains('completed')])), disp: new Map() };
     document.body.classList.add('ss-detail');
+    // A body part selected hides the superset's other exercises (filter) — on
+    // the superset page every set box shows; the filter's state is put back on close.
+    cs.forEach(c => {
+      if (c.style.display !== 'none' && c.dataset.filterState !== 'hidden') return;
+      det.disp.set(c.id, c.style.display);
+      clearTimeout(c._filterAnimTimer);
+      ['display', 'height', 'overflow', 'opacity', 'transform', 'marginBottom', 'transition'].forEach(p => { c.style[p] = ''; });
+    });
     cs.forEach(c => {
       if (c === primary) return;
       const ph = document.createElement('div');
@@ -14287,7 +14349,8 @@ function _ssTagLast(exData) {
         if (!c) return;
         const b = c.querySelector('.ex-card-body');
         if (b) { b.style.maxHeight = '0'; b.style.opacity = '0'; b.classList.add('collapsed'); b.classList.remove('open'); }
-        document.getElementById(`add-set-outer-${id}`)?.classList.remove('open');
+        // Looked up inside the card: it's detached right now (getElementById can't see it).
+        (c.querySelector(`#add-set-outer-${id}`) || document.getElementById(`add-set-outer-${id}`))?.classList.remove('open');
         c.querySelector('.comment-area')?.classList.remove('open', 'note-active');
         c.dataset.open = 'false';
         if (ph) { ph.parentNode.insertBefore(c, ph); ph.remove(); }
@@ -14304,6 +14367,11 @@ function _ssTagLast(exData) {
       });
       // Not finished via SAVE & DONE: anything finished when the page opened stays finished.
       if (!tapped) d.ids.forEach(id => { const c = document.getElementById(id); if (c && d.was.get(id) && !c.classList.contains('completed')) { try { toggleDone(id); _updatePartialDoneIndicator(id); _updateExSetCount(id); } catch (e) {} } });
+      // Back in the list: exercises the body-part filter had hidden are hidden again.
+      d.disp && d.disp.forEach((v, id) => {
+        const c = document.getElementById(id) || others.find(o => o[0] === id)?.[1];
+        if (c && c.dataset.filterState === 'hidden') c.style.display = 'none';
+      });
       regroup();
       return r;
     };
@@ -14668,7 +14736,7 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
             </button>
           </div>
           <div style="display:flex;justify-content:center;margin-top:14px;">
-            <button id="timer-plus30-${id}" onclick="timerAdd30('${id}')" style="display:none;background:transparent;border:1px solid var(--g33);border-radius:10px;color:var(--gaa);font-family:'DM Sans';font-size:15px;font-weight:700;padding:8px 18px;cursor:pointer;-webkit-tap-highlight-color:transparent;opacity:0;transform:scale(.85) translateY(6px);">+30 Sec</button>
+            <button id="timer-plus30-${id}" onclick="timerAdd30('${id}')" style="display:none;background:transparent;border:1px solid var(--g33);border-radius:10px;color:var(--gaa);font-family:'DM Sans';font-size:15px;font-weight:700;padding:10px 18px;cursor:pointer;-webkit-tap-highlight-color:transparent;opacity:0;transform:scale(.85) translateY(6px);">+30 Sec</button>
           </div>
         </div>
       </div>
@@ -29783,7 +29851,7 @@ function _renderCoachExercisesTab(el) {
   MUSCLE_ORDER.forEach(muscle => {
     const color = MUSCLE_COLORS[muscle];
     const isActive = muscle === selected;
-    pillsHtml += `<div onclick="selectExTabMuscle('${muscle}')" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;font-family:'DM Sans';font-size:14px;font-weight:700;color:${isActive ? color : 'var(--g44)'};transition:color .15s;">${MUSCLE_LABELS[muscle]}</div>`;
+    pillsHtml += `<div onclick="selectExTabMuscle('${muscle}')" style="flex:1;text-align:center;padding:8px 4px;cursor:pointer;font-family:'DM Sans';font-size:14px;font-weight:600;color:${isActive ? color : 'var(--g88)'};transition:color .15s;">${MUSCLE_LABELS[muscle]}</div>`;
   });
   pillsHtml += `<div id="exTab-muscle-indicator" style="position:absolute;bottom:0;height:2px;left:calc(100%/${MUSCLE_ORDER.length}*${_muscleIdx});width:calc(100%/${MUSCLE_ORDER.length});background:${MUSCLE_COLORS[selected]};transition:none;"></div></div></div>`;
 
