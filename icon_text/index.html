@@ -2646,21 +2646,21 @@ window._fbModuleReady = true;
           <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" style="color:var(--pr-max);flex-shrink:0;"><polygon points="12,2 22,9.27 18.18,21.02 5.82,21.02 2,9.27"/></svg>
           <div>
             <div style="font-family:'DM Sans';font-size:18px;font-weight:800;color:var(--pr-max);letter-spacing:.5px;">MAX</div>
-            <div style="font-family:'DM Sans';font-size:16px;font-weight:500;color:var(--gcc);line-height:1.5;margin-top:2px;"><span style="color:var(--gff);text-decoration:underline;text-decoration-color:var(--pr-max);text-decoration-thickness:2px;text-underline-offset:4px;">Heaviest weight</span> you've ever lifted in a single set.</div>
+            <div style="font-family:'DM Sans';font-size:16px;font-weight:500;color:var(--gcc);line-height:1.5;margin-top:2px;"><span style="color:var(--gff);">Heaviest weight</span> you've ever lifted in a single set.</div>
           </div>
         </div>
         <div style="display:flex;gap:12px;align-items:flex-start;">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" style="color:var(--pr-best);flex-shrink:0;"><polygon points="12,2 22,9.27 18.18,21.02 5.82,21.02 2,9.27"/></svg>
           <div>
             <div style="font-family:'DM Sans';font-size:18px;font-weight:800;color:var(--pr-best);letter-spacing:.5px;">BEST SET</div>
-            <div style="font-family:'DM Sans';font-size:16px;font-weight:500;color:var(--gcc);line-height:1.5;margin-top:2px;"><span style="color:var(--gff);text-decoration:underline;text-decoration-color:var(--pr-best);text-decoration-thickness:2px;text-underline-offset:4px;">Your best set</span> for strength calculation.<br>Formula: max(weight × (1+reps/30))</div>
+            <div style="font-family:'DM Sans';font-size:16px;font-weight:500;color:var(--gcc);line-height:1.5;margin-top:2px;"><span style="color:var(--gff);">Your best set</span> for strength calculation.<br>Formula: max(weight × (1+reps/30))</div>
           </div>
         </div>
         <div style="display:flex;gap:12px;align-items:flex-start;">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" style="color:var(--pr-vol);flex-shrink:0;"><polygon points="12,2 22,9.27 18.18,21.02 5.82,21.02 2,9.27"/></svg>
           <div>
             <div style="font-family:'DM Sans';font-size:18px;font-weight:800;color:var(--pr-vol);letter-spacing:.5px;">VOL</div>
-            <div style="font-family:'DM Sans';font-size:16px;font-weight:500;color:var(--gcc);line-height:1.5;margin-top:2px;"><span style="color:var(--gff);text-decoration:underline;text-decoration-color:var(--pr-vol);text-decoration-thickness:2px;text-underline-offset:4px;">Total volume</span> lifted across all sets combined.</div>
+            <div style="font-family:'DM Sans';font-size:16px;font-weight:500;color:var(--gcc);line-height:1.5;margin-top:2px;"><span style="color:var(--gff);">Total volume</span> lifted across all sets combined.</div>
           </div>
         </div>
       </div>
@@ -4793,6 +4793,9 @@ function _getWeekStatusData() {
     });
     days.push({
       completed: dayWorkouts.length > 0,
+      count: dayWorkouts.length,
+      // Every workout that day, in the order they were done.
+      names: dayWorkouts.slice().sort((a, b) => new Date(a.date) - new Date(b.date)).map(w => w.name || 'Workout'),
       name: dayWorkouts.length ? (dayWorkouts[dayWorkouts.length - 1].name || 'Workout') : null,
       isToday: i === dayOfWeek
     });
@@ -4808,7 +4811,8 @@ function renderWeekStatus() {
   const days = _getWeekStatusData();
   window._weekStatusData = days;
   const countEl = document.getElementById('week-status-completed-count');
-  if (countEl) countEl.textContent = days.filter(d => d.completed).length;
+  // Every workout this week (2 on the same day = 2) — same as the home ring.
+  if (countEl) countEl.textContent = days.reduce((s, d) => s + (d.count || 0), 0);
   const labels = _WEEK_DAY_LABELS;
   wrap.innerHTML = days.map((d, i) => `
     <div class="week-status-day" data-completed="${d.completed ? '1' : '0'}" onclick="event.stopPropagation();selectWeekStatusDay(${i})" style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:5px 0;border-radius:10px;cursor:pointer;-webkit-tap-highlight-color:transparent;">
@@ -4851,7 +4855,9 @@ function selectWeekStatusDay(idx) {
   if (dayLabel) dayLabel.textContent = _WEEK_DAY_FULL_LABELS[idx] || '';
   const detail = document.getElementById('week-status-detail');
   if (!detail || !d) return;
-  detail.textContent = d.completed ? d.name : '-';
+  // One line per workout done that day.
+  detail.style.whiteSpace = 'pre-line';
+  detail.textContent = d.completed ? (d.names && d.names.length ? d.names.join('\n') : d.name) : '-';
   detail.style.color = d.completed ? 'var(--accent)' : 'var(--g99)';
   detail.style.fontSize = '20px';
 }
@@ -6964,8 +6970,13 @@ function renderExercisesTab() {
 
   const available = MUSCLE_ORDER.filter(m => byMuscle[m]?.length);
 
-  // Default to first muscle or keep current selection
-  if (!window._exTabMuscle) window._exTabMuscle = available[0] || MUSCLE_ORDER[0];
+  // Keep current selection; else the last one the user picked (saved on the
+  // device, survives closing the app); first time ever = Legs. (All body-part
+  // buttons always show, so any saved one is valid.)
+  if (!window._exTabMuscle) {
+    let _sv = null; try { _sv = localStorage.getItem('bp_ex_muscle'); } catch (e) {}
+    window._exTabMuscle = MUSCLE_ORDER.includes(_sv) ? _sv : 'Legs';
+  }
   if (!MUSCLE_ORDER.includes(window._exTabMuscle)) window._exTabMuscle = available[0] || MUSCLE_ORDER[0];
   const selected = window._exTabMuscle;
   // Show all muscles (dim those without data)
@@ -7469,31 +7480,30 @@ function _libRowsAnimate(root, show) {
   const D = 300, ease = 'cubic-bezier(.4,0,.2,1)';
   rows.forEach(r => {
     clearTimeout(r._bpLibT);
-    // The row's own inline padding (e.g. Workouts tab cards: padding:5px 2px)
-    // — restored after the animation; clearing it to '' would delete it and
+    // The row's own inline styles (Exercises cards: margin-bottom:8px +
+    // overflow:hidden; Workouts cards: padding:5px 2px…) — saved once and put
+    // back after the animation. Clearing them to '' would delete them and
     // leave those rows closer together than the rest.
-    if (!r._bpLibPad) r._bpLibPad = [r.style.paddingTop, r.style.paddingBottom];
-    const [pt, pb] = r._bpLibPad;
-    const cs = getComputedStyle(r);
+    const P = ['boxSizing', 'overflow', 'height', 'marginBottom', 'paddingTop', 'paddingBottom', 'opacity', 'transition'];
+    if (!r._bpLibOrig) r._bpLibOrig = Object.fromEntries(P.map(p => [p, r.style[p]]));
+    const o = r._bpLibOrig;
+    const restore = () => P.forEach(p => { r.style[p] = o[p]; });
     if (show) {
       r.style.display = '';
-      Object.assign(r.style, { paddingTop: pt, paddingBottom: pb });
-      const h = r.offsetHeight, mb = cs.marginBottom;
+      restore();
+      const cs = getComputedStyle(r);
+      const h = r.offsetHeight, mb = cs.marginBottom, pt = cs.paddingTop, pb = cs.paddingBottom, op = cs.opacity;
       Object.assign(r.style, { boxSizing: 'border-box', overflow: 'hidden', height: '0px', marginBottom: '0px', paddingTop: '0px', paddingBottom: '0px', opacity: '0', transition: 'none' });
       void r.offsetHeight;
       r.style.transition = `height ${D}ms ${ease}, margin-bottom ${D}ms ${ease}, padding ${D}ms ${ease}, opacity ${D}ms ease`;
-      Object.assign(r.style, { height: h + 'px', marginBottom: mb, paddingTop: pt, paddingBottom: pb, opacity: '1' });
-      r._bpLibT = setTimeout(() => { ['boxSizing', 'overflow', 'height', 'marginBottom', 'transition', 'opacity'].forEach(p => r.style[p] = ''); }, D + 20);
+      Object.assign(r.style, { height: h + 'px', marginBottom: mb, paddingTop: pt, paddingBottom: pb, opacity: op });
+      r._bpLibT = setTimeout(restore, D + 20);
     } else {
       Object.assign(r.style, { boxSizing: 'border-box', overflow: 'hidden', height: r.offsetHeight + 'px', transition: 'none' });
       void r.offsetHeight;
       r.style.transition = `height ${D}ms ${ease}, margin-bottom ${D}ms ${ease}, padding ${D}ms ${ease}, opacity ${D * 0.7}ms ease`;
       Object.assign(r.style, { height: '0px', marginBottom: '0px', paddingTop: '0px', paddingBottom: '0px', opacity: '0' });
-      r._bpLibT = setTimeout(() => {
-        ['boxSizing', 'overflow', 'height', 'marginBottom', 'transition', 'opacity'].forEach(p => r.style[p] = '');
-        Object.assign(r.style, { paddingTop: pt, paddingBottom: pb });
-        r.style.display = 'none';
-      }, D + 20);
+      r._bpLibT = setTimeout(() => { restore(); r.style.display = 'none'; }, D + 20);
     }
   });
 }
@@ -7517,7 +7527,7 @@ window._libToggle = _libToggle;
 // fold away and every exercise shows in one long list, in sections titled
 // with the body part (same name/color as its button). Saved on the device.
 function _exFiltersOff() {
-  return window._currentUserData?.role !== 'super_admin' && !window._coachMode && localStorage.getItem('bp_ex_filters') === '0';
+  return window._currentUserData?.role !== 'super_admin' && !window._coachMode && localStorage.getItem('bp_ex_filters') !== '1';   // first open (nothing saved) = off
 }
 function _exFiltSwitchHtml(locked) {
   const on = !_exFiltersOff();
@@ -7726,6 +7736,7 @@ function selectExTabMuscle(muscle) {
   const _oldColor = _oldIndicator ? getComputedStyle(_oldIndicator).backgroundColor : null;
 
   window._exTabMuscle = muscle;
+  try { localStorage.setItem('bp_ex_muscle', muscle); } catch (e) {}   // remembered for next time
   renderExercisesTab();
 
   const indicator = document.getElementById('exTab-muscle-indicator');
@@ -13867,6 +13878,7 @@ function _ssTagLast(exData) {
   // drop the first click after a long-press, so it seemed to do nothing).
   let tap = null;
   function onDown(e) {
+    touchOwn = false;
     if (sel) {
       const u = unitOf(e.target);
       tap = u && L().contains(u) ? { u, x: e.clientX, y: e.clientY, t: Date.now(), id: e.pointerId } : null;
@@ -13937,7 +13949,26 @@ function _ssTagLast(exData) {
     if (!on) { try { _updateAllExCircleColors(); } catch (e) {} }
     document.querySelectorAll('#exerciseList > .ss-group.ss-act').forEach(renderAct);
   }
+  // While a card is lifted, the page can't be scrolled by the finger — only by
+  // the drag's own auto-scroll (from code, which still works with overflow
+  // hidden). Needed where the phone sends touches the app can't cancel (seen
+  // on a Pixel 10): the browser would scroll the whole list along with the
+  // finger. Restored when the card is put down.
+  let scLock = null;
+  function lockScroll(on) {
+    if (on) {
+      if (scLock) return;
+      const sc = scroller();
+      const els = [document.documentElement, document.body, sc].filter(Boolean);
+      scLock = { sc, saved: els.map(el => [el, el.style.overflow]) };
+      els.forEach(el => { el.style.overflow = 'hidden'; });
+    } else if (scLock) {
+      scLock.saved.forEach(([el, v]) => { el.style.overflow = v; });
+      scLock = null;
+    }
+  }
   function lift(u, pid) {
+    lockScroll(true);
     circlesHi(true);
     document.body.classList.add('ss-lifting');   // bottom CLOSE / SAVE bar out of the way
     armed = { u, pid, x: lpX, y: lpY };
@@ -13949,6 +13980,7 @@ function _ssTagLast(exData) {
     u.style.boxShadow = '0 10px 28px rgba(0,0,0,.55)';
   }
   function unlift(u) {
+    lockScroll(false);
     circlesHi(false);
     document.body.classList.remove('ss-lifting');
     u.style.transition = `transform .2s ${EASE}, box-shadow .2s ease`;
@@ -13957,7 +13989,7 @@ function _ssTagLast(exData) {
     setTimeout(() => { if (!drag || drag.u !== u) { u.style.transition = ''; u.style.zIndex = ''; u.style.position = ''; } }, 220);
   }
   function startDrag() {
-    const u = armed.u, sc = scroller();
+    const u = armed.u, sc = scLock ? scLock.sc : scroller();
     const all = shownUnits();
     const s0 = scrollTopOf(sc);
     const rects = all.map(x => { const r = x.getBoundingClientRect(); return { top: r.top + s0, h: r.height }; });
@@ -13977,8 +14009,18 @@ function _ssTagLast(exData) {
     // The card never goes above the fixed top area (body-part buttons' bottom):
     // its on-screen top is held there — the page scrolls under it instead.
     const lift = d.rects[d.i0].h * 0.015 + 2;          // the 1.03 scale grows it a little upward
-    const yc = Math.max(y, d.y0 + d.top + lift - (d.rects[d.i0].top - d.s0));
-    const dy = (yc - d.y0) + (scrollTopOf(d.sc) - d.s0);
+    const sd = scrollTopOf(d.sc) - d.s0;
+    const dyRaw = (y - d.y0) + sd;
+    const dyTop = d.top + lift - (d.rects[d.i0].top - d.s0) + sd;
+    // …and never below the end of the list: its bottom stops at the last
+    // card's bottom (the last slot), however far the finger goes.
+    const endBot = d.rects[d.rects.length - 1].top + d.rects[d.rects.length - 1].h;
+    const dyEnd = endBot - (d.rects[d.i0].top + d.rects[d.i0].h) - lift;
+    const dy = Math.max(dyTop, Math.min(dyRaw, dyEnd));
+    // Held at a stop: the card is re-grabbed where the finger is now, so
+    // turning back moves it at once (not only after the finger returns over
+    // the distance it went past the stop).
+    if (dy !== dyRaw) d.y0 += dyRaw - dy;
     d.u.style.transform = `translateY(${dy}px) scale(1.03)`;
     // New slot: moving up, it passes a card once its TOP edge crosses that
     // card's middle; moving down, once its BOTTOM edge does — so a tall card
@@ -14006,10 +14048,25 @@ function _ssTagLast(exData) {
     let v = 0;
     if (d.y < topZ) v = -Math.min(16, 2 + (topZ - d.y) / 4);
     else if (d.y > botZ) v = Math.min(16, 2 + (d.y - botZ) / 4);
+    // No scrolling down past the end of the list (its last card fully shown).
+    // The end is where the last card sits just above the CLOSE / SAVE bar's
+    // shaded area (hidden while dragging, back after the drop) — so it scrolls
+    // that far, and no further.
+    if (v > 0) {
+      const last = d.rects[d.rects.length - 1];
+      const bar = [document.getElementById('workout-finish-bar'), document.getElementById('nwf-bottom-bar')].find(b => b && b.getClientRects().length && getComputedStyle(b).display !== 'none');
+      const lim = Math.min(d.bot, bar ? bar.getBoundingClientRect().top : d.bot) - 8;
+      // …and the "+ ADD EXERCISES" button right after the list too (hidden while
+      // dragging, back after the drop) when it's there.
+      const add = [...document.querySelectorAll('.btn-add-exercise')].find(b => b.getClientRects().length && b.offsetHeight);
+      const endY = add ? add.getBoundingClientRect().bottom : last.top + last.h - scrollTopOf(d.sc);
+      if (endY <= lim) v = 0;
+    }
     if (v) { if (d.sc) d.sc.scrollTop += v; else window.scrollBy(0, v); dragTo(d.y); }
     d.raf = requestAnimationFrame(autoScroll);
   }
   function endDrag() {
+    lockScroll(false);
     circlesHi(false);
     document.body.classList.remove('ss-lifting');
     const d = drag; drag = null;
@@ -14031,7 +14088,38 @@ function _ssTagLast(exData) {
     if (d.idx !== d.i0) afterChange();
   }
   // While a card is lifted / dragged / swiped, the finger must not scroll the page.
-  function onTouchMove(e) { if (armed || drag || (sw && sw.on)) e.preventDefault(); }
+  // During the 500ms hold, the finger's small drift (≤10px, still a
+  // long-press) is kept from starting a scroll (Android starts one at ~8px); a
+  // real scroll (>10px) cancels the long-press and scrolls as usual. (Not on
+  // iPhone: there, blocking the first move would lock that touch's scrolling.)
+  //
+  // Some phones (seen on a Pixel 10) send every touch as NOT cancelable, so
+  // the browser takes the gesture over right after the card lifts and sends
+  // "pointercancel". Then the drag carries on from the touch events themselves
+  // (touchOwn) — they keep coming to the card — until the finger lifts.
+  const _isIOS = () => document.documentElement.classList.contains('is-ios');
+  let touchOwn = false;
+  function onTouchMove(e) {
+    if (armed || drag || (sw && sw.on)) {
+      if (e.cancelable) e.preventDefault();
+      const t = e.touches && e.touches[0];
+      if (touchOwn && t) {
+        if (armed && Math.hypot(t.clientX - armed.x, t.clientY - armed.y) > 8) startDrag();
+        if (drag) dragTo(t.clientY);
+      }
+      return;
+    }
+    const t = e.touches && e.touches[0];
+    if (lpT && t && e.cancelable && !_isIOS() && Math.hypot(t.clientX - lpX, t.clientY - lpY) <= 10) e.preventDefault();
+  }
+  function onTouchEnd(e) {
+    if (!touchOwn) return;
+    if (e.touches && e.touches.length) return;            // another finger still down
+    touchOwn = false;
+    const t = e.changedTouches && e.changedTouches[0];
+    const pid = (drag || armed)?.pid;
+    onUp({ type: e.type === 'touchend' ? 'pointerup' : 'pointercancel', pointerId: pid, clientX: t ? t.clientX : 0, clientY: t ? t.clientY : 0 });
+  }
 
   // ── Active workout: swipe a card LEFT → its delete button; long fast swipe
   // → deleted at once. Then "… removed · UNDO" for 4s (no confirm popup).
@@ -14228,6 +14316,9 @@ function _ssTagLast(exData) {
   let lpUpAt = 0;
   function onUp(e) {
     clearTimeout(lpT); lpT = null;
+    // The browser took the touch over while a card is lifted / dragged — keep
+    // going from the touch events (see onTouchMove / onTouchEnd).
+    if (e.type === 'pointercancel' && (armed || drag) && !touchOwn) { touchOwn = true; return; }
     if (lpFired) lpUpAt = Date.now();
     if (sw && e.pointerId === sw.pid && !armed && !drag && swUp(e)) return;
     sw = null;
@@ -14613,6 +14704,8 @@ function _ssTagLast(exData) {
     list.addEventListener('pointerup', onUp, true);
     list.addEventListener('pointercancel', onUp, true);
     list.addEventListener('touchmove', onTouchMove, { passive: false });
+    list.addEventListener('touchend', onTouchEnd, true);
+    list.addEventListener('touchcancel', onTouchEnd, true);
     list.addEventListener('click', onClick, true);
     list.addEventListener('contextmenu', e => e.preventDefault());
     let raf = 0;
@@ -30935,11 +31028,11 @@ function deleteCoachWorkout(id) {
 <div id="strength-target-overlay" onclick="closeStrengthTargetSheet()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);z-index:8999;"></div>
 <div id="strength-target-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;z-index:9000;background:var(--g1a);border-top:1px solid var(--g2a);border-radius:20px 20px 0 0;padding:12px 20px calc(28px + env(safe-area-inset-bottom,0px));box-sizing:border-box;">
   <div style="width:36px;height:4px;border-radius:2px;background:var(--g44);margin:0 auto 18px;"></div>
-  <div id="week-status-day-label" style="text-align:center;font-family:'DM Sans';font-size:12px;font-weight:700;color:#ff8c42;letter-spacing:.8px;min-height:14px;margin-bottom:4px;"></div>
-  <div id="week-status-detail" style="text-align:center;font-family:'DM Sans';font-size:20px;font-weight:600;color:var(--muted);min-height:18px;margin-bottom:10px;"></div>
-  <div style="border-top:1px solid var(--g44);margin-bottom:30px;"></div>
   <div id="week-status-completed-count" style="font-family:'DM Sans';font-size:54px;font-weight:800;color:var(--text);text-align:center;line-height:1;margin-bottom:10px;"></div>
-  <div style="font-family:'DM Sans';font-size:18px;font-weight:800;color:var(--text);text-align:center;margin-bottom:20px;letter-spacing:.3px;">COMPLETED WORKOUTS</div>
+  <div style="font-family:'DM Sans';font-size:18px;font-weight:800;color:var(--text);text-align:center;margin-bottom:10px;letter-spacing:.3px;">COMPLETED WORKOUTS</div>
+  <div style="border-top:1px solid var(--g44);margin-bottom:30px;"></div>
+  <div id="week-status-day-label" style="text-align:center;font-family:'DM Sans';font-size:12px;font-weight:700;color:#ff8c42;letter-spacing:.8px;min-height:14px;margin-bottom:4px;"></div>
+  <div id="week-status-detail" style="text-align:center;font-family:'DM Sans';font-size:20px;font-weight:600;color:var(--muted);min-height:18px;margin-bottom:20px;"></div>
   <div id="week-status-days" style="display:flex;justify-content:space-between;gap:2px;padding-bottom:30px;"></div>
   <div style="border-top:1px solid var(--g44);padding-bottom:30px;"></div>
   <div style="font-family:'DM Sans';font-size:18px;font-weight:800;color:var(--text);text-align:center;margin-bottom:18px;letter-spacing:.3px;">MY WEEKLY TARGET</div>
