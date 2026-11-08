@@ -2365,6 +2365,22 @@ window._fbModuleReady = true;
     </div>
   </div>
 
+  <!-- WORKOUTS PER MONTH -->
+  <div class="chart-card prog-accordion" id="acc-monthly">
+    <div class="prog-acc-header" onclick="toggleProgressCard('acc-monthly')">
+      <span class="chart-title" style="margin-bottom:0;">WORKOUTS PER MONTH</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="prog-acc-info-btn" onclick="event.stopPropagation();toggleProgInfo('monthly-info','acc-monthly',this)" style="align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid #34d399;color:#34d399;font-family:'DM Sans';font-size:10px;font-weight:700;cursor:pointer;flex-shrink:0;">i</span>
+        <span class="prog-acc-chev"><svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" width="12" height="12"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      </div>
+    </div>
+    <div class="prog-acc-body" style="display:none;">
+      <div id="monthly-info" style="display:none;margin-bottom:8px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;font-family:'DM Sans';font-size:12px;color:var(--muted);line-height:1.8;font-weight:500;">
+        <div style="color:var(--text);font-size:12px;">Completed workouts in each month of the year (2 on the same day count as 2). The dashed line is your average per month this year (months so far). Tap a month to see its workouts.</div>
+      </div>
+      <div id="monthly-mount"></div>
+    </div>
+  </div>
   <!-- WORK CAPACITY -->
   <div class="chart-card prog-accordion" id="acc-capacity">
     <div class="prog-acc-header" onclick="toggleProgressCard('acc-capacity')">
@@ -2418,7 +2434,7 @@ window._fbModuleReady = true;
       <div id="heatmap-empty" style="display:none;text-align:center;padding:24px 0;font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.5px;">No data for this range</div>
       <div style="display:flex;align-items:center;gap:8px;padding:10px 16px 4px;justify-content:center;">
         <span style="font-family:'DM Sans';font-size:10px;font-weight:700;color:var(--muted);">LESS</span>
-        <div style="flex:1;max-width:140px;height:6px;border-radius:3px;background:linear-gradient(to right, #5a1a1a 0%, #ff0000 100%);"></div>
+        <div style="flex:1;max-width:140px;height:6px;border-radius:3px;background:linear-gradient(to right, #3c0606 0%, #ff0000 100%);"></div>
         <span style="font-family:'DM Sans';font-size:10px;font-weight:700;color:var(--muted);">MORE</span>
       </div>
     </div>
@@ -7581,13 +7597,18 @@ function _exFiltToggle() {
       whites.push([pb, 'borderBottom', pb.style.borderBottom, pb.style.transition]);
       whites.forEach(([n, p]) => { n.style.transition = 'none'; n.style[p] = p === 'borderBottom' ? '1px solid #fff' : '#fff'; });
       if (ind) ind.style.opacity = '0';
-      if (content) content.style.opacity = '0';
+      // (A body-part tap leaves its slide-in animation on the list, held at
+      // full opacity — it would override this hiding, so it's cleared.)
+      if (content) { content.style.animation = 'none'; content.style.opacity = '0'; }
     }
     const settle = () => {
       whites.forEach(([n, p, v]) => { n.style.transition = `${p === 'color' ? 'color' : 'border-bottom-color'} .6s ease`; n.style[p] = v; });
       if (ind) { ind.style.transition = 'opacity .6s ease'; ind.style.opacity = ''; }
-      if (content) { content.style.opacity = ''; listIn(); }
-      setTimeout(() => { whites.forEach(([n, , , t]) => { n.style.transition = t; }); if (ind) ind.style.transition = 'none'; }, 650);
+      // The list comes in only once the buttons have fully settled.
+      setTimeout(() => {
+        whites.forEach(([n, , , t]) => { n.style.transition = t; }); if (ind) ind.style.transition = 'none';
+        if (content) { content.style.opacity = ''; listIn(); }
+      }, 650);
     };
     if (pb) {
       const h = pb.offsetHeight;
@@ -14945,7 +14966,8 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
       <div class="comment-area" id="comment-area-${id}">
         <div class="comment-area-inner" id="comment-area-inner-${id}" style="position:relative;border:1px solid var(--accent);border-radius:9px;padding:18px 11px 10px;margin-top:6px;transition:border-color .2s;width:calc(min(430px,100vw) - 32px);max-width:398px;box-sizing:border-box;">
           <span class="comment-area-label" style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:var(--bg);padding:0 5px;font-size:12px;font-weight:700;color:var(--accent);letter-spacing:.3px;pointer-events:none;">Note</span>
-          <textarea class="comment-box" id="comment-${id}" autocomplete="off" spellcheck="false" placeholder="Tap to edit" oninput="updateNoteBtn('${id}');saveSession();if(window._isNewWorkoutFlow)updateWflowCloseBtn('${id}');_noteDir(this);this.style.height='auto';this.style.height=this.scrollHeight+'px'" onfocus="_noteDir(this);showNoteToolbar('${id}');this.closest('.comment-area')?.classList.add('note-active')" onblur="hideNoteToolbar();if(!this.value.trim())this.closest('.comment-area')?.classList.remove('note-active')"></textarea>
+          <span class="comment-area-label note-date" id="note-date-${id}" style="display:none;position:absolute;top:-8px;left:12px;background:var(--bg);padding:0 5px;font-size:11px;font-weight:600;color:var(--g88);letter-spacing:.2px;pointer-events:none;"></span>
+          <textarea class="comment-box" id="comment-${id}" autocomplete="off" spellcheck="false" placeholder="Tap to edit" oninput="_noteTouch('${id}');if(window._markExDetailModified)_markExDetailModified();updateNoteBtn('${id}');saveSession();if(window._isNewWorkoutFlow)updateWflowCloseBtn('${id}');_noteDir(this);this.style.height='auto';this.style.height=this.scrollHeight+'px'" onfocus="_noteDir(this);showNoteToolbar('${id}');this.closest('.comment-area')?.classList.add('note-active')" onblur="hideNoteToolbar();if(!this.value.trim())this.closest('.comment-area')?.classList.remove('note-active')"></textarea>
         </div>
       </div>
 
@@ -15084,7 +15106,7 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
         // load collapsed; a saved note shouldn't auto-expand the whole card, only be
         // ready to show once the user taps it open.
         const noteArea = document.getElementById(`comment-area-${id}`);
-        if (noteArea) noteArea.classList.add('open');
+        if (noteArea) noteArea.classList.add('open'); try { _noteDateRender(id); } catch (e) {}
       }
     }
     // Restore completed state
@@ -15157,7 +15179,7 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
         // forcing the card open \u2014 see the matching comment in the sessionData
         // restore block above. Exercise lists should load collapsed.
         const _noteArea = document.getElementById(`comment-area-${id}`);
-        if (_noteArea) _noteArea.classList.add('open');
+        if (_noteArea) _noteArea.classList.add('open'); try { _noteDateRender(id); } catch (e) {}
       }
     }
   }
@@ -15660,13 +15682,17 @@ function _enterExUpdateMode(id) {
   _exDetailSnapshot = _takeExDetailSnapshot(id);
   const btn = document.getElementById('ex-detail-finish-btn');
   if (!btn) return;
-  btn.style.background = 'var(--g1a)';
-  btn.style.border = '1px solid var(--g55)';
-  btn.style.pointerEvents = 'none';
-  btn.style.cursor = 'default';
+  // Nothing changed yet → the button is CLOSE (just closes, nothing saved);
+  // the first change turns it into SAVE & DONE (_markExDetailModified).
+  // Black background, --accent text + border.
+  btn.style.background = 'var(--g00)';
+  btn.style.border = '1px solid var(--accent)';
+  btn.style.pointerEvents = '';
+  btn.style.cursor = 'pointer';
   const spans = btn.querySelectorAll('span');
-  if (spans[0]) { spans[0].style.color = 'var(--g55)'; spans[0].textContent = 'SAVE & DONE'; }
-  if (spans[1]) { spans[1].style.color = 'var(--g55)'; spans[1].style.display = 'none'; }
+  if (spans[0]) { spans[0].style.color = 'var(--accent)'; spans[0].textContent = 'CLOSE'; }
+  if (spans[1]) { spans[1].style.color = 'var(--accent)'; spans[1].style.display = 'none'; }
+  try { _syncExFinishReady(); } catch (e) {}
 }
 
 function _exitExUpdateMode() {
@@ -15689,12 +15715,15 @@ function _markExDetailModified() {
   _exDetailModified = true;
   const btn = document.getElementById('ex-detail-finish-btn');
   if (!btn) return;
+  // Completed exercise changed → UPDATE: filled --accent, black text.
+  btn.style.background = 'var(--accent)';
   btn.style.border = '1px solid var(--accent)';
   btn.style.pointerEvents = '';
   btn.style.cursor = 'pointer';
   const spans = btn.querySelectorAll('span');
-  if (spans[0]) spans[0].style.color = 'var(--accent)';
-  if (spans[1]) spans[1].style.color = 'var(--accent)';
+  if (spans[0]) { spans[0].style.color = '#000'; spans[0].textContent = 'UPDATE'; }
+  if (spans[1]) spans[1].style.color = '#000';
+  try { _syncExFinishReady(); } catch (e) {}
 }
 window._markExDetailModified = _markExDetailModified;
 
@@ -16385,7 +16414,8 @@ function _syncExFinishReady() {
   if (!btn) return;
   const card = window._exDetailCardId ? document.getElementById(window._exDetailCardId) : null;
   let ready = false;
-  if (card && !window._isNewWorkoutFlow && btn.dataset.mode === 'finish') {
+  // Completed exercise reopened, nothing changed → CLOSE (black, --accent), not the filled look.
+  if (card && !window._isNewWorkoutFlow && btn.dataset.mode === 'finish' && !(_exDetailIsUpdate && !_exDetailModified)) {
     // Superset page: --accent only once every set of EVERY exercise in it is done.
     const _cards = document.body.classList.contains('ss-detail')
       ? [...document.querySelectorAll('#ex-detail-overlay-body > .exercise-card')] : [card];
@@ -16813,7 +16843,7 @@ function toggleCardCollapse(id) {
       // Only open note if user explicitly opened it before (noteOpen === 'true')
       // Never auto-open even if there's content — user must tap Note button
       if (noteOpen === 'true') {
-        noteArea.classList.add('open');
+        noteArea.classList.add('open'); try { _noteDateRender(id); } catch (e) {}
         // Same programmatic-value-never-fires-oninput fix as toggleComment().
         if (noteBox) { noteBox.style.height = 'auto'; noteBox.style.height = noteBox.scrollHeight + 'px'; }
       } else {
@@ -17709,6 +17739,8 @@ function _applyBWDisplayToInput(input, extra, total, exId) {
   _wrapper.appendChild(bwLabel);
 }
 function addSet(exId, defaultKg=null, defaultReps=null, defaultDone=false, defaultBwExtra=null) {
+  // A set added to an already-completed exercise (detail page open) is a change → SAVE & DONE unlocks.
+  if (window._exDetailCardId === exId && window._markExDetailModified) setTimeout(() => window._markExDetailModified(), 0);
   // Validate previous set is filled before adding a new one
   if (!window._isNewWorkoutFlow && defaultKg === null && defaultReps === null) {
     const _rows = document.querySelectorAll(`#${exId} .set-row`);
@@ -18406,6 +18438,32 @@ function hideNoteToolbar() {
     _updateExFloatBar(id || window._exFloatCardId);
   }, 150);
 }
+// ── Note: last edited date (top left of the note box) ──
+// Saved on this device per exercise, with the note's text: shown only while
+// the note still has that same text (it follows the note to the next workout,
+// where the note is carried over by exercise name). Empty note / a note
+// written before this existed (no date) → nothing shown.
+function _noteAtMap() { try { return JSON.parse(_LS.get('ironlog_note_at') || '{}') || {}; } catch (e) { return {}; } }
+function _noteTouch(id) {
+  const card = document.getElementById(id), box = document.getElementById(`comment-${id}`);
+  const name = card?.dataset.exname; if (!name || !box) return;
+  const m = _noteAtMap(), t = box.value.trim();
+  if (t) m[name] = { t, at: Date.now() }; else delete m[name];
+  try { _LS.set('ironlog_note_at', JSON.stringify(m)); } catch (e) {}
+  _noteDateRender(id);
+}
+function _noteDateRender(id) {
+  const el = document.getElementById(`note-date-${id}`);
+  if (!el) return;
+  const card = document.getElementById(id), box = document.getElementById(`comment-${id}`);
+  const t = box?.value.trim(), e = card && _noteAtMap()[card.dataset.exname];
+  if (!t || !e || e.t !== t) { el.style.display = 'none'; return; }
+  const d = new Date(e.at);
+  el.textContent = 'Edited ' + _dayMon(d) + (d.getFullYear() !== new Date().getFullYear() ? ' ' + d.getFullYear() : '');
+  el.style.display = '';
+}
+window._noteTouch = _noteTouch;
+window._noteDateRender = _noteDateRender;
 function toggleComment(id) {
   const area = document.getElementById(`comment-area-${id}`);
   const btn  = document.getElementById(`note-btn-${id}`);
@@ -18414,6 +18472,7 @@ function toggleComment(id) {
   const card = document.getElementById(id);
   if (card) card.dataset.noteOpen = isOpen ? 'true' : 'false';
   if (isOpen) {
+    _noteDateRender(id);
     const _noteBox = document.getElementById(`comment-${id}`);
     // Don't auto-focus — user must tap textarea to start editing
     _noteBox?.blur();
@@ -19976,7 +20035,7 @@ function loadWorkout(idx) {
         // Auto-expand note if comment exists
         if (_resolvedComment) setTimeout(() => {
           const noteArea = document.getElementById(`comment-area-${cid}`);
-          if (noteArea) noteArea.classList.add('open');
+          if (noteArea) noteArea.classList.add('open'); try { _noteDateRender(cid); } catch (e) {}
           updateNoteBtn(cid);
         }, 100);
       }
@@ -21546,7 +21605,7 @@ function restoreWorkout(wi) {
         // collapsed it back and hid any note it was opened to show.
         if (exData.comment) setTimeout(() => {
           const noteArea = document.getElementById(`comment-area-${card.id}`);
-          if (noteArea) noteArea.classList.add('open');
+          if (noteArea) noteArea.classList.add('open'); try { _noteDateRender(card.id); } catch (e) {}
           updateNoteBtn(card.id);
         }, 100);
       }
@@ -21832,7 +21891,7 @@ function toggleProgInfo(infoId, cardId, btn) {
 }
 
 function toggleProgressCard(id) {
-  const cards = ['acc-best','acc-exercise','acc-volume','acc-workouts','acc-capacity','acc-heatmap','acc-history'];
+  const cards = ['acc-best','acc-exercise','acc-volume','acc-workouts','acc-monthly','acc-capacity','acc-heatmap','acc-history'];
   const activeSlot = document.getElementById('acc-active-slot');
   const isOpen = document.getElementById(id).classList.contains('open');
   const openId = cards.find(cid => document.getElementById(cid)?.classList.contains('open'));
@@ -21930,6 +21989,7 @@ function toggleProgressCard(id) {
       if (id === 'acc-capacity') setTimeout(initCapacityCard, 50);
       if (id === 'acc-heatmap') setTimeout(renderMuscleHeatmap, 50);
       if (id === 'acc-history') setTimeout(renderProgHistory, 50);
+      if (id === 'acc-monthly') setTimeout(renderMonthlyWorkouts, 50);
       if (id === 'acc-exercise') setTimeout(() => {
         if (!exProgressExercise) {
           const exList = _getExercisesForMuscle(exProgressMuscle);
@@ -22014,7 +22074,7 @@ window._selfTestTimePills = function() {
 function renderProgress() {
   updateProgressWorkoutCount();
   _updateTimePillAvailability();
-  const cards = ['acc-best','acc-exercise','acc-volume','acc-workouts','acc-capacity','acc-heatmap','acc-history'];
+  const cards = ['acc-best','acc-exercise','acc-volume','acc-workouts','acc-monthly','acc-capacity','acc-heatmap','acc-history'];
   const openId = cards.find(id => document.getElementById(id)?.classList.contains('open'));
   if (openId === 'acc-workouts') renderVolumeChart();
   if (openId === 'acc-best') renderBestBodyPartChart();
@@ -22023,9 +22083,81 @@ function renderProgress() {
   if (openId === 'acc-capacity') { renderCapacityWorkoutList(); renderCapacityChart(); }
   if (openId === 'acc-heatmap') renderMuscleHeatmap();
   if (openId === 'acc-history') renderProgHistory();
+  if (openId === 'acc-monthly') renderMonthlyWorkouts();
   setTimeout(syncProgressChartDates, 50);
 }
 
+// ── Progress → WORKOUTS PER MONTH ──
+// 12 bars (Jan–Dec) of completed workouts for the chosen year — counted like
+// the Home ring / "Completed workouts" pop-up: saved, has exercises, not a
+// draft/template/deleted; 2 on the same day = 2. Current month in --accent.
+// Dashed line = the year's average per month (months so far). Tap a month
+// → its workouts listed below. ‹ year › switches years.
+const _MONTHS3 = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const _MONTHS_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+function _monthlyEsc(s) { return String(s || '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch])); }
+function renderMonthlyWorkouts() {
+  const mount = document.getElementById('monthly-mount');
+  if (!mount) return;
+  const now = new Date(), curY = now.getFullYear(), curM = now.getMonth();
+  const deletedIds = new Set((deletedWorkouts || []).map(dw => dw.id));
+  const done = (workouts || []).filter(w => !w._draft && !w._template && !deletedIds.has(w.id) && w.exercises && w.exercises.length && w.date);
+  const minY = done.reduce((m, w) => Math.min(m, new Date(w.date).getFullYear()), curY);
+  let year = window._monthlyYear || curY;
+  year = Math.max(minY, Math.min(curY, year));
+  window._monthlyYear = year;
+  const months = Array.from({ length: 12 }, () => []);
+  done.forEach(w => { const d = new Date(w.date); if (d.getFullYear() === year) months[d.getMonth()].push(w); });
+  const counts = months.map(m => m.length);
+  const total = counts.reduce((a, b) => a + b, 0);
+  const soFar = year < curY ? 12 : curM + 1;
+  const avg = soFar ? total / soFar : 0;
+  const max = Math.max(1, avg, ...counts);
+  const H = 140;
+  if (window._monthlySel == null || window._monthlySelYear !== year) { window._monthlySel = year === curY ? curM : null; window._monthlySelYear = year; }
+  const sel = window._monthlySel;
+  const arrow = (dir, on) => `<button onclick="${on ? `_monthlyYearStep(${dir})` : ''}" style="background:transparent;border:none;padding:6px 10px;cursor:${on ? 'pointer' : 'default'};opacity:${on ? 1 : .25};color:var(--gff);-webkit-tap-highlight-color:transparent;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="${dir < 0 ? '15 18 9 12 15 6' : '9 18 15 12 9 6'}"/></svg></button>`;
+  const bars = counts.map((n, i) => {
+    const future = year === curY && i > curM;
+    const isCur = year === curY && i === curM;
+    const h = n ? Math.max(4, Math.round(n / max * H)) : 0;
+    const col = isCur ? 'var(--accent)' : (i === sel ? 'var(--gaa)' : 'var(--g55)');
+    return `<div onclick="${future ? '' : `_monthlyPick(${i})`}" style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;cursor:${future ? 'default' : 'pointer'};-webkit-tap-highlight-color:transparent;">
+        <div style="height:${H + 18}px;width:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;">
+          <span style="font-family:'DM Sans';font-size:11px;font-weight:700;color:${future ? 'transparent' : (isCur ? 'var(--accent)' : (i === sel ? 'var(--gff)' : 'var(--gaa)'))};margin-bottom:3px;">${future ? '' : n}</span>
+          <div style="width:62%;max-width:18px;height:${h}px;background:${col};border-radius:4px 4px 0 0;transition:height .35s ease;"></div>
+        </div>
+        <span style="font-family:'DM Sans';font-size:10px;font-weight:${i === sel ? 800 : 600};color:${future ? 'var(--g44)' : (i === sel ? 'var(--gff)' : 'var(--g88)')};margin-top:5px;">${_MONTHS3[i]}</span>
+      </div>`;
+  }).join('');
+  // Dashed line = the year's average per month (months so far), labelled.
+  const tgtLine = total ? `<div style="position:absolute;left:0;right:0;bottom:${Math.round(avg / max * H)}px;border-top:1px dashed var(--g88);pointer-events:none;"><span style="position:absolute;right:0;bottom:2px;background:var(--surface);padding:0 3px;font-family:'DM Sans';font-size:10px;font-weight:700;color:var(--g88);">avg ${avg.toFixed(1)}</span></div>` : '';
+  let detail = '';
+  if (sel != null) {
+    const list = months[sel].slice().sort((a, b) => new Date(a.date) - new Date(b.date));
+    detail = `<div style="margin-top:14px;border-top:1px solid var(--border);padding-top:10px;">
+        <div style="font-family:'DM Sans';font-size:13px;font-weight:800;color:var(--text);margin-bottom:6px;">${_MONTHS_FULL[sel]} ${year} · ${list.length} workout${list.length === 1 ? '' : 's'}</div>
+        ${list.length ? list.map(w => `<div style="display:flex;justify-content:space-between;gap:10px;font-family:'DM Sans';font-size:13px;padding:5px 0;border-bottom:1px solid var(--g1a);"><span dir="auto" style="color:var(--gcc);font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${_monthlyEsc(w.name || 'Workout')}</span><span style="color:var(--g88);font-weight:600;flex-shrink:0;">${_dayMon(new Date(w.date))}</span></div>`).join('') : `<div style="font-family:'DM Sans';font-size:12px;color:var(--g88);">No workouts</div>`}
+      </div>`;
+  }
+  mount.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:2px;">
+      ${arrow(-1, year > minY)}
+      <span style="font-family:'DM Sans';font-size:16px;font-weight:800;color:var(--text);min-width:52px;text-align:center;">${year}</span>
+      ${arrow(1, year < curY)}
+    </div>
+    <div style="text-align:center;font-family:'DM Sans';font-size:12px;font-weight:600;color:var(--g88);margin-bottom:10px;">${total} workout${total === 1 ? '' : 's'}</div>
+    <div style="position:relative;display:flex;align-items:flex-end;gap:2px;">
+      <div style="position:absolute;left:0;right:0;bottom:19px;height:${H}px;pointer-events:none;">${tgtLine}</div>
+      ${bars}
+    </div>
+    ${detail}`;
+}
+function _monthlyYearStep(d) { window._monthlyYear = (window._monthlyYear || new Date().getFullYear()) + d; window._monthlySel = null; renderMonthlyWorkouts(); }
+function _monthlyPick(i) { window._monthlySel = i; window._monthlySelYear = window._monthlyYear; renderMonthlyWorkouts(); }
+window.renderMonthlyWorkouts = renderMonthlyWorkouts;
+window._monthlyYearStep = _monthlyYearStep;
+window._monthlyPick = _monthlyPick;
 let volumeChartMode = 'abs'; // 'abs' | 'pct'
 let volumeChartCount = 'workouts'; // 'workouts' | 'sets'
 
@@ -34462,6 +34594,7 @@ function setSetType(type) {
     updateIgnoreButtons(exId);
     checkResetBtn(exId);
     _updateExSetCount(exId);
+    if (window._markExDetailModified) window._markExDetailModified();   // completed exercise: SAVE & DONE unlocks
     return;
   }
 
@@ -34565,7 +34698,18 @@ function editExerciseDetail() {
   // Find exercise data — getAllExercises() (not just customExercises) so exercises that
   // were only ever used in a workout, never explicitly customized, still resolve their
   // real muscle (inferred from the built-in library) instead of falling back to Chest.
-  const exData = getAllExercises().find(e => e.name === name || e.label === name) || { name, muscle: 'Chest' };
+  // Brand exercises (the shared library / brand defaults) aren't in
+  // getAllExercises() unless used in a workout — and even then without their
+  // sub-muscles — so the brand's own definition comes first: the user's own
+  // edited copy, then the library, then the brand defaults, then history.
+  const _own = customExercises.find(e => e.name === name || e.label === name);
+  const _lib = typeof _exLibDef === 'function' ? _exLibDef(name) : null;
+  let _def = null;
+  for (const [m, items] of Object.entries(_defaultExercises || {})) {
+    const it = (items || []).find(i => i && _exNormName(i.name) === _exNormName(name));
+    if (it) { _def = { ...it, muscle: it.muscle || m }; break; }
+  }
+  const exData = _own || _lib || _def || getAllExercises().find(e => e.name === name || e.label === name) || { name, muscle: 'Chest' };
   // Set up edit mode
   window._editExName = name;
   window._newExPhoto32 = null;
@@ -34790,6 +34934,8 @@ window.confirmDeleteExercise = confirmDeleteExercise;
 function markExDetailDone() {
   const id = window._exDetailCardId;
   if (!id) return;
+  // Completed exercise reopened, nothing changed → the button is CLOSE.
+  if (_exDetailIsUpdate && !_exDetailModified) { closeExDetailOverlay(); return; }
   const card = document.getElementById(id);
   if (!card) return;
   // Stamp red X on every set number that was not marked done
@@ -35513,7 +35659,7 @@ function _resolveExRegionIds(exDef) {
 // Dark red (fewest sets) → red (busiest muscle). 0 sets is a separate plain
 // grey (see _redHeatColor) so "trained a little" never looks like "not trained".
 const _HEAT_GRADIENT_STOPS = [
-  [0.0, [90, 26, 26]],     // #5a1a1a
+  [0.0, [60, 6, 6]],       // #3c0606 (darker start → more difference up to full red)
   [1.0, [255, 0, 0]],      // #ff0000
 ];
 function _redHeatColor(t) {
