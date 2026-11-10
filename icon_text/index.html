@@ -219,6 +219,8 @@ body:not(.ss-detail) .ss-photo-list{display:none;}
 /* Superset page, body-map mode: "Superset" centred below the image (drops in with the set boxes). */
 .ss-det-title{font-family:'DM Sans',sans-serif;font-size:20px;font-weight:700;letter-spacing:.3px;color:var(--text);text-align:center;padding:14px 0 0;}
 html:not(.bodymap-mode) .ss-det-title{display:none;}
+/* Superset page (active exercise is a superset): no "..." exercise menu — its options are for one exercise. */
+body.ss-detail #ex-detail-menu-btn,body.ss-detail #ex-detail-menu-btn-nophoto{display:none!important;}
 /* Superset page, Note/Timer open (they're the whole superset's, on its first exercise): only that box shows.
    Stats open: the names/title step aside too (Stats already hides the boxes). */
 body.ss-detail.ss-panel #ex-detail-overlay-body > .ss-det-name,body.ss-detail.ss-panel #ex-detail-overlay-body > .ss-det-title,
@@ -7838,6 +7840,23 @@ function _exLibDef(name) {
   const k = _exNormName(name);
   return (typeof _libraryExercises !== 'undefined' ? _libraryExercises : []).find(e => _exNormName(e.name) === k) || null;
 }
+// One exercise's definition by name, brand exercises included — the user's own
+// (edited) copy first, then the brand library, then the brand defaults, then
+// workout history (which has no sub-muscles). null if unknown.
+function _exDefByName(name) {
+  if (!name) return null;
+  const own = customExercises.find(e => e.name === name || e.label === name);
+  if (own) return own;
+  const lib = _exLibDef(name);
+  if (lib) return lib;
+  const k = _exNormName(name);
+  for (const [m, items] of Object.entries(_defaultExercises || {})) {
+    const it = (items || []).find(i => i && _exNormName(i.name) === k);
+    if (it) return { ...it, muscle: it.muscle || m };
+  }
+  return getAllExercises().find(e => e.name === name || e.label === name) || null;
+}
+window._exDefByName = _exDefByName;
 function _exIsDefaultName(name) {
   const k = _exNormName(name);
   return Object.values(_defaultExercises || {}).some(items => (items || []).some(e => e && _exNormName(e.name) === k));
@@ -8248,7 +8267,7 @@ function donePickMode() {
     const card = document.getElementById(cardId);
     if (card && ex) {
       const allEx  = getAllExercises();
-      const found  = allEx.find(e => e.name === ex.name) || { name: ex.name, label: ex.label, muscle: ex.muscle };
+      const found  = _exDefByName(ex.name) || allEx.find(e => e.name === ex.name) || { name: ex.name, label: ex.label, muscle: ex.muscle };
       const nameEl = card.querySelector('.ex-name');
       if (nameEl) nameEl.textContent = ex.label || ex.name;
       card.dataset.exname      = ex.label || ex.name;
@@ -9834,15 +9853,16 @@ function _prRelTimeLabel(ts) {
 // mount it inline without depending on openExtabExOverlay's full-screen layout.
 // Statistics needs this many recorded sessions of an exercise; below it, the
 // Stats box (active exercise, and the Exercises tab's Stats view) shows only
-// _exStatsFewEl instead of its carousel. A session = a day with ≥1 completed
+// _exStatsFewEl instead of its carousel. A session = a saved workout with ≥1 completed
 // set of the exercise in a saved workout (the one in progress isn't saved yet).
 const _EX_STATS_MIN_SESSIONS = 3;
+// Counts saved WORKOUTS (not days) — 2 workouts on the same day count as 2,
+// matching "Complete this exercise in 3 workouts" (counting days kept users
+// who trained twice a day stuck on "1 of 3 done").
 function _exStatsSessionCount(exName) {
-  const days = new Set();
-  (workouts || []).filter(w => !w._draft).forEach(w => {
-    if ((w.exercises || []).some(e => e.name === exName && doneSets(e.sets || []).length)) days.add(new Date(w.date).setHours(0, 0, 0, 0));
-  });
-  return days.size;
+  const deletedIds = new Set((deletedWorkouts || []).map(dw => dw.id));
+  return (workouts || []).filter(w => !w._draft && !w._template && !deletedIds.has(w.id)
+    && (w.exercises || []).some(e => e.name === exName && doneSets(e.sets || []).length)).length;
 }
 function _exStatsFewEl(n) {
   const d = document.createElement('div');
@@ -13778,7 +13798,7 @@ function _ssTagLast(exData) {
       bar.id = 'ss-sel-bar';
       bar.style.cssText = 'position:fixed;left:0;right:0;bottom:0;max-width:430px;margin:0 auto;z-index:600;background:linear-gradient(to bottom,transparent,var(--g11) 40%);box-sizing:border-box;padding:46px 16px calc(env(safe-area-inset-bottom,0px) + 16px);display:flex;gap:10px;animation:sheetUp .25s ease;';
       const bb = "flex:1;min-width:0;box-sizing:border-box;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:15px;padding:14px 6px;white-space:nowrap;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .15s,opacity .15s;";
-      bar.innerHTML = `<button id="ss-cancel-btn" data-bp-back style="${bb}background:transparent;border:1px solid var(--g55);color:var(--gff);font-weight:600;">CANCEL</button><button id="ss-go-btn" style="${bb}background:var(--accent);border:1px solid var(--accent);color:var(--g00);font-weight:700;">SUPERSET</button>`;
+      bar.innerHTML = `<button id="ss-cancel-btn" data-bp-back style="${bb}background:transparent;border:1px solid var(--g55);color:var(--gff);font-weight:600;">CANCEL</button><button id="ss-go-btn" style="${bb}background:var(--accent);border:1px solid var(--accent);color:var(--g00);font-weight:700;">GROUP</button>`;
       bar.querySelectorAll('button').forEach(b => {
         b.addEventListener('touchstart', () => { if (!b.disabled) b.style.transform = 'scale(0.97)'; }, { passive: true });
         b.addEventListener('touchend', () => { b.style.transform = ''; });
@@ -13791,7 +13811,7 @@ function _ssTagLast(exData) {
     const split = picked.length === 1 && picked[0].classList.contains('ss-group');
     const ok = split || picked.length >= 2;
     const b = bar.querySelector('#ss-go-btn');
-    b.textContent = split ? 'SPLIT' : 'SUPERSET';
+    b.textContent = split ? 'SPLIT' : 'GROUP';
     b.disabled = !ok;
     b.style.opacity = ok ? '1' : '0.4';
   }
@@ -14757,7 +14777,11 @@ function addExerciseCard(ex, asDone=false, sessionData=null) {
   card.dataset.exmuscle = ex.muscle||'Chest';
   // Sub-muscles travel with the card so a saved workout/session keeps them
   // even if the exercise is later deleted from the list (see _cardSubMuscles).
-  if (Array.isArray(ex.subMuscles) && ex.subMuscles.length) card.dataset.exsubs = JSON.stringify(ex.subMuscles);
+  // Picked from the list (name + body part only) → the definition's sub-muscles
+  // (brand exercises included).
+  let _exSubs = ex.subMuscles;
+  if (!(Array.isArray(_exSubs) && _exSubs.length)) { try { _exSubs = _exDefByName(ex.name || ex.label)?.subMuscles; } catch (e) {} }
+  if (Array.isArray(_exSubs) && _exSubs.length) card.dataset.exsubs = JSON.stringify(_exSubs);
   if (ex.superset) card.dataset.ss = ex.superset; // superset group id (see _ss* below)
   card.dataset.open = (sessionData ? sessionData.open : false) ? 'true' : 'false';
 
@@ -22091,11 +22115,41 @@ function renderProgress() {
 // 12 bars (Jan–Dec) of completed workouts for the chosen year — counted like
 // the Home ring / "Completed workouts" pop-up: saved, has exercises, not a
 // draft/template/deleted; 2 on the same day = 2. Current month in --accent.
-// Dashed line = the year's average per month (months so far). Tap a month
-// → its workouts listed below. ‹ year › switches years.
+// Dashed line = the year's average per month (months so far). A month is
+// picked with the slider under the chart (same slider as exercise Stats →
+// Progress) or by tapping its bar → its workouts listed below. ‹ year ›
+// switches years. While sliding, only the bars + list update (the slider
+// itself isn't rebuilt, so the drag isn't interrupted).
 const _MONTHS3 = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const _MONTHS_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 function _monthlyEsc(s) { return String(s || '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch])); }
+const _MONTHLY_H = 140;
+function _monthlyBarsHtml(D) {
+  const sel = window._monthlySel, H = _MONTHLY_H;
+  const line = D.total ? `<div style="position:absolute;left:0;right:0;bottom:${Math.round(D.avg / D.max * H)}px;border-top:1px dashed var(--g88);pointer-events:none;"><span style="position:absolute;right:0;bottom:2px;background:var(--surface);padding:0 3px;font-family:'DM Sans';font-size:10px;font-weight:700;color:var(--g88);">avg ${D.avg.toFixed(1)}</span></div>` : '';
+  const bars = D.counts.map((n, i) => {
+    const future = i > D.last;
+    const isCur = D.year === D.curY && i === D.curM;
+    const isSel = i === sel;
+    const h = n ? Math.max(4, Math.round(n / D.max * H)) : 0;
+    const col = isCur ? 'var(--accent)' : (isSel ? 'var(--gcc)' : 'var(--g55)');
+    return `<div onclick="${future ? '' : `_monthlyPick(${i})`}" style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;cursor:${future ? 'default' : 'pointer'};-webkit-tap-highlight-color:transparent;">
+        <div style="height:${H + 18}px;width:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;">
+          <span style="font-family:'DM Sans';font-size:11px;font-weight:700;color:${future ? 'transparent' : (isCur ? 'var(--accent)' : (isSel ? 'var(--gff)' : 'var(--gaa)'))};margin-bottom:3px;">${future ? '' : n}</span>
+          <div style="width:62%;max-width:18px;height:${h}px;background:${col};border-radius:4px 4px 0 0;transition:height .35s ease,background .15s ease;"></div>
+        </div>
+        <span style="font-family:'DM Sans';font-size:10px;font-weight:${isSel ? 800 : 600};color:${future ? 'var(--g44)' : (isSel ? 'var(--gff)' : 'var(--g88)')};margin-top:5px;">${_MONTHS3[i]}</span>
+      </div>`;
+  }).join('');
+  return `<div style="position:absolute;left:0;right:0;bottom:19px;height:${H}px;pointer-events:none;">${line}</div>${bars}`;
+}
+function _monthlyDetailHtml(D) {
+  const sel = window._monthlySel;
+  if (sel == null) return '';
+  const list = D.months[sel].slice().sort((a, b) => new Date(a.date) - new Date(b.date));
+  return `<div style="font-family:'DM Sans';font-size:13px;font-weight:800;color:var(--text);margin-bottom:6px;">${_MONTHS_FULL[sel]} ${D.year} · ${list.length} workout${list.length === 1 ? '' : 's'}</div>
+    ${list.length ? list.map(w => `<div style="display:flex;justify-content:space-between;gap:10px;font-family:'DM Sans';font-size:13px;padding:5px 0;border-bottom:1px solid var(--g1a);"><span dir="auto" style="color:var(--gcc);font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${_monthlyEsc(w.name || 'Workout')}</span><span style="color:var(--g88);font-weight:600;flex-shrink:0;">${_dayMon(new Date(w.date))}</span></div>`).join('') : `<div style="font-family:'DM Sans';font-size:12px;color:var(--g88);">No workouts</div>`}`;
+}
 function renderMonthlyWorkouts() {
   const mount = document.getElementById('monthly-mount');
   if (!mount) return;
@@ -22110,36 +22164,17 @@ function renderMonthlyWorkouts() {
   done.forEach(w => { const d = new Date(w.date); if (d.getFullYear() === year) months[d.getMonth()].push(w); });
   const counts = months.map(m => m.length);
   const total = counts.reduce((a, b) => a + b, 0);
-  const soFar = year < curY ? 12 : curM + 1;
-  const avg = soFar ? total / soFar : 0;
-  const max = Math.max(1, avg, ...counts);
-  const H = 140;
-  if (window._monthlySel == null || window._monthlySelYear !== year) { window._monthlySel = year === curY ? curM : null; window._monthlySelYear = year; }
-  const sel = window._monthlySel;
+  const last = year < curY ? 11 : curM;               // last pickable month
+  const avg = total / (last + 1);
+  const D = { year, curY, curM, months, counts, total, last, avg, max: Math.max(1, avg, ...counts) };
+  window._monthlyData = D;
+  // Starts on the current month (a past year: December).
+  if (window._monthlySel == null || window._monthlySelYear !== year || window._monthlySel > last) { window._monthlySel = last; window._monthlySelYear = year; }
   const arrow = (dir, on) => `<button onclick="${on ? `_monthlyYearStep(${dir})` : ''}" style="background:transparent;border:none;padding:6px 10px;cursor:${on ? 'pointer' : 'default'};opacity:${on ? 1 : .25};color:var(--gff);-webkit-tap-highlight-color:transparent;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="${dir < 0 ? '15 18 9 12 15 6' : '9 18 15 12 9 6'}"/></svg></button>`;
-  const bars = counts.map((n, i) => {
-    const future = year === curY && i > curM;
-    const isCur = year === curY && i === curM;
-    const h = n ? Math.max(4, Math.round(n / max * H)) : 0;
-    const col = isCur ? 'var(--accent)' : (i === sel ? 'var(--gaa)' : 'var(--g55)');
-    return `<div onclick="${future ? '' : `_monthlyPick(${i})`}" style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;cursor:${future ? 'default' : 'pointer'};-webkit-tap-highlight-color:transparent;">
-        <div style="height:${H + 18}px;width:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;">
-          <span style="font-family:'DM Sans';font-size:11px;font-weight:700;color:${future ? 'transparent' : (isCur ? 'var(--accent)' : (i === sel ? 'var(--gff)' : 'var(--gaa)'))};margin-bottom:3px;">${future ? '' : n}</span>
-          <div style="width:62%;max-width:18px;height:${h}px;background:${col};border-radius:4px 4px 0 0;transition:height .35s ease;"></div>
-        </div>
-        <span style="font-family:'DM Sans';font-size:10px;font-weight:${i === sel ? 800 : 600};color:${future ? 'var(--g44)' : (i === sel ? 'var(--gff)' : 'var(--g88)')};margin-top:5px;">${_MONTHS3[i]}</span>
-      </div>`;
-  }).join('');
-  // Dashed line = the year's average per month (months so far), labelled.
-  const tgtLine = total ? `<div style="position:absolute;left:0;right:0;bottom:${Math.round(avg / max * H)}px;border-top:1px dashed var(--g88);pointer-events:none;"><span style="position:absolute;right:0;bottom:2px;background:var(--surface);padding:0 3px;font-family:'DM Sans';font-size:10px;font-weight:700;color:var(--g88);">avg ${avg.toFixed(1)}</span></div>` : '';
-  let detail = '';
-  if (sel != null) {
-    const list = months[sel].slice().sort((a, b) => new Date(a.date) - new Date(b.date));
-    detail = `<div style="margin-top:14px;border-top:1px solid var(--border);padding-top:10px;">
-        <div style="font-family:'DM Sans';font-size:13px;font-weight:800;color:var(--text);margin-bottom:6px;">${_MONTHS_FULL[sel]} ${year} · ${list.length} workout${list.length === 1 ? '' : 's'}</div>
-        ${list.length ? list.map(w => `<div style="display:flex;justify-content:space-between;gap:10px;font-family:'DM Sans';font-size:13px;padding:5px 0;border-bottom:1px solid var(--g1a);"><span dir="auto" style="color:var(--gcc);font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${_monthlyEsc(w.name || 'Workout')}</span><span style="color:var(--g88);font-weight:600;flex-shrink:0;">${_dayMon(new Date(w.date))}</span></div>`).join('') : `<div style="font-family:'DM Sans';font-size:12px;color:var(--g88);">No workouts</div>`}
-      </div>`;
-  }
+  // Slider: one step per month; its ends are pulled in by half a column so the
+  // handle sits under the bars. In the current year it stops at this month
+  // (its track is shortened to match, so each step still lines up).
+  const colPct = 100 / 12;
   mount.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:2px;">
       ${arrow(-1, year > minY)}
@@ -22147,14 +22182,24 @@ function renderMonthlyWorkouts() {
       ${arrow(1, year < curY)}
     </div>
     <div style="text-align:center;font-family:'DM Sans';font-size:12px;font-weight:600;color:var(--g88);margin-bottom:10px;">${total} workout${total === 1 ? '' : 's'}</div>
-    <div style="position:relative;display:flex;align-items:flex-end;gap:2px;">
-      <div style="position:absolute;left:0;right:0;bottom:19px;height:${H}px;pointer-events:none;">${tgtLine}</div>
-      ${bars}
+    <div id="monthly-bars" style="position:relative;display:flex;align-items:flex-end;gap:2px;">${_monthlyBarsHtml(D)}</div>
+    <div style="padding:10px 0 0;">
+      <div style="margin-left:calc(${colPct / 2}% - 8px);width:calc(${colPct * last}% + 16px);${last === 0 ? 'display:none;' : ''}">
+        <input type="range" id="monthly-scrub" min="0" max="${last}" step="1" value="${window._monthlySel}" oninput="_monthlyPick(parseInt(this.value), true)" style="width:100%;accent-color:var(--g55);cursor:pointer;height:3px;margin:0;">
+      </div>
     </div>
-    ${detail}`;
+    <div id="monthly-detail" style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px;">${_monthlyDetailHtml(D)}</div>`;
 }
 function _monthlyYearStep(d) { window._monthlyYear = (window._monthlyYear || new Date().getFullYear()) + d; window._monthlySel = null; renderMonthlyWorkouts(); }
-function _monthlyPick(i) { window._monthlySel = i; window._monthlySelYear = window._monthlyYear; renderMonthlyWorkouts(); }
+function _monthlyPick(i, fromSlider) {
+  const D = window._monthlyData;
+  if (!D || isNaN(i) || i < 0 || i > D.last) return;
+  window._monthlySel = i; window._monthlySelYear = D.year;
+  const bars = document.getElementById('monthly-bars'), det = document.getElementById('monthly-detail');
+  if (bars) bars.innerHTML = _monthlyBarsHtml(D);
+  if (det) det.innerHTML = _monthlyDetailHtml(D);
+  if (!fromSlider) { const s = document.getElementById('monthly-scrub'); if (s) s.value = i; }
+}
 window.renderMonthlyWorkouts = renderMonthlyWorkouts;
 window._monthlyYearStep = _monthlyYearStep;
 window._monthlyPick = _monthlyPick;
@@ -34074,8 +34119,12 @@ function _buildExBodyMapDiagram(exName) {
   const card = window._exDetailCardId ? document.getElementById(window._exDetailCardId) : null;
   let subs = [];
   try { subs = JSON.parse(card?.dataset.exsubs || '[]'); } catch (e) {}
-  const exDef = getAllExercises().find(x => x.name === exName || x.label === exName)
-    || { muscle: card?.dataset.exmuscle || card?.dataset.muscle || 'Other', subMuscles: subs };
+  // Brand exercises included (_exDefByName); the card's own sub-muscles fill in
+  // when the definition has none.
+  const _d = _exDefByName(exName);
+  const exDef = _d
+    ? { ..._d, subMuscles: (_d.subMuscles && _d.subMuscles.length) ? _d.subMuscles : subs }
+    : { muscle: card?.dataset.exmuscle || card?.dataset.muscle || 'Other', subMuscles: subs };
   const regionVal = {};
   _resolveExRegionIds(exDef).forEach(id => { regionVal[id] = 1; });
   const diagram = _buildMuscleHeatmapDiagram(regionVal);
@@ -34702,14 +34751,7 @@ function editExerciseDetail() {
   // getAllExercises() unless used in a workout — and even then without their
   // sub-muscles — so the brand's own definition comes first: the user's own
   // edited copy, then the library, then the brand defaults, then history.
-  const _own = customExercises.find(e => e.name === name || e.label === name);
-  const _lib = typeof _exLibDef === 'function' ? _exLibDef(name) : null;
-  let _def = null;
-  for (const [m, items] of Object.entries(_defaultExercises || {})) {
-    const it = (items || []).find(i => i && _exNormName(i.name) === _exNormName(name));
-    if (it) { _def = { ...it, muscle: it.muscle || m }; break; }
-  }
-  const exData = _own || _lib || _def || getAllExercises().find(e => e.name === name || e.label === name) || { name, muscle: 'Chest' };
+  const exData = _exDefByName(name) || { name, muscle: 'Chest' };
   // Set up edit mode
   window._editExName = name;
   window._newExPhoto32 = null;
