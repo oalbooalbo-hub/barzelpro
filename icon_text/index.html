@@ -342,6 +342,8 @@ body.desktop-mode .pages-wrap {
 .workouts-flow-card .set-done-btn{opacity:0!important;pointer-events:none!important;}
 .kg-editor-active .set-done-btn{opacity:0!important;pointer-events:none!important;}
 .kg-editor-active .set-num{pointer-events:none!important;cursor:default!important;}
+/* …except the set being edited: its number opens the set options inside the keyboard. */
+.kg-editor-active tr:has(.kg-box-wrap.editing) .set-num,.kg-editor-active tr:has(.rep-box-wrap.editing) .set-num{pointer-events:auto!important;cursor:pointer!important;}
 #nwf-hero-name:empty::before{content:'Workout name';color:rgba(var(--inv-rgb),0.3);pointer-events:none;}
 #nwf-description::placeholder,#nwf-video-link::placeholder,#nwf-name-input::placeholder{color:var(--g88);-webkit-text-fill-color:var(--g88);opacity:1;}
 .ex-editor-open #ex-detail-finish-btn{opacity:0.3;pointer-events:none;filter:grayscale(1);}
@@ -37005,6 +37007,162 @@ function _updateKgDisplay(val, isBWMode) {
   _tryClearSetFillError();
 }
 // ─────────────────────────────────────────────────────────────────────────
+// ── KG / REP keyboard → set options in place ──
+// With the keyboard open, tapping that set's number swaps everything above
+// Cancel / Prev / Save (numbers, ⌫, +/-, +kg, BW) for 4 set options —
+// Regular / W / D / Delete — in the exact same height (no jump). Tapping the
+// set's KG or REP value again brings the keypad back. The choice is held
+// until Save (applied with the kg/reps change); Cancel discards it. Delete
+// turns Save into a red "Delete Set". Keyboard closed → the set number still
+// opens the usual set-options window.
+(function () {
+  let kbSet = null;   // { row, exId, cur, type }
+  const inner = () => document.getElementById('kg-editor-sheet-inner');
+  const col = () => inner()?.firstElementChild;
+  const panel = () => document.getElementById('kb-set-panel');
+  const editorRow = () => _repsEditorSpan ? _repsEditorRow : (_inlineKgEditorId ? window._kgEditorInput?.closest('tr') : null);
+  const editorExId = () => _repsEditorSpan ? _repsEditorExId : window._kgEditorExId;
+  // Same look as the set-options window: SET OPTIONS title, 4 rows with
+  // dividers, green ✓ on the right of the chosen one.
+  const ROW = "width:100%;background:transparent;border:none;border-top:1px solid var(--g2a);font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:16px;-webkit-tap-highlight-color:transparent;";
+  const CHECK = '<span style="margin-left:auto;flex-shrink:0;line-height:1;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>';
+  const OPTS = [
+    { t: 'regular', color: 'var(--gff)', icon: '<span style="width:20px;text-align:center;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>', label: 'Regular set' },
+    { t: 'warmup', color: 'var(--gff)', icon: '<span style="font-size:16px;font-weight:300;color:#fbbf24;width:20px;text-align:center;flex-shrink:0;">W</span>', label: 'Warm up set' },
+    { t: 'drop', color: 'var(--gff)', icon: '<span style="font-size:16px;font-weight:300;color:#60a5fa;width:20px;text-align:center;flex-shrink:0;">D</span>', label: 'Drop set' },
+    { t: 'delete', color: '#ff4747', icon: '<span style="width:20px;flex-shrink:0;display:inline-flex;justify-content:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff4747" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></span>', label: 'Delete' },
+  ];
+  function tiles() {
+    const p = panel(); if (!p || !kbSet) return;
+    p.innerHTML = `<div style="font-family:'DM Sans';font-size:15px;font-weight:700;color:var(--gaa);letter-spacing:.8px;text-align:center;padding:2px 0 10px;">SET OPTIONS</div>`
+      + OPTS.map(o => `<button onclick="_kbSetPick('${o.t}')" style="${ROW}color:${o.color};">${o.icon}${o.label}${kbSet.type === o.t ? CHECK : ''}</button>`).join('');
+  }  function saveBtn() { const c = col(); return c ? c.lastElementChild?.lastElementChild : null; }
+  function syncSave() {
+    const b = saveBtn(); if (!b) return;
+    const del = !!(kbSet && kbSet.type === 'delete' && kbSet.row === editorRow());
+    if (del) {
+      if (!b.dataset.kbOrig) b.dataset.kbOrig = JSON.stringify([b.textContent, b.style.background, b.style.color]);
+      b.textContent = 'Delete Set'; b.style.background = '#ff4747'; b.style.color = '#fff';
+    } else if (b.dataset.kbOrig) {
+      const [t, bg, c] = JSON.parse(b.dataset.kbOrig);
+      b.textContent = t; b.style.background = bg; b.style.color = c; delete b.dataset.kbOrig;
+    }
+  }
+  function showPanel() {
+    const c = col(); if (!c || panel()) return;
+    const kids = [...c.children], actions = kids[kids.length - 1], others = kids.slice(0, -1);
+    if (!others.length) return;
+    // Height = everything above the buttons row (from the column's own top, so a
+    // first row's margin counts too) → the keyboard keeps its exact size.
+    const gap = parseFloat(getComputedStyle(c).rowGap) || 10;
+    const h = Math.round(actions.getBoundingClientRect().top - c.getBoundingClientRect().top - (parseFloat(getComputedStyle(c).paddingTop) || 0) - gap);
+    others.forEach(k => { k.dataset.kbHid = k.style.display || '-'; k.style.display = 'none'; });
+    const p = document.createElement('div');
+    p.id = 'kb-set-panel';
+    p.style.cssText = `height:${h}px;overflow:hidden;box-sizing:border-box;`;
+    c.insertBefore(p, actions);
+    tiles();
+  }
+  function hidePanel() {
+    panel()?.remove();
+    // Each row gets its own display back (e.g. display:flex), not a blank one.
+    col()?.querySelectorAll('[data-kb-hid]').forEach(k => { k.style.display = k.dataset.kbHid === '-' ? '' : k.dataset.kbHid; delete k.dataset.kbHid; });
+  }
+  // W / D / Regular show on the set's row right away (Cancel puts the old type
+  // back); Delete waits for Save ("Delete Set").
+  window._kbSetPick = function (t) {
+    if (!kbSet) return;
+    kbSet.type = t;
+    if (t !== 'delete') liveType(kbSet.row, kbSet.exId, t);
+    tiles(); syncSave();
+  };
+  // The row's look/state for a type — same as setSetType's, but without
+  // closing the set-options window or scrolling (that would disturb the
+  // open keyboard).
+  function liveType(row, exId, type) {
+    if (!row || !row.isConnected || (row.dataset.setType || 'regular') === type) return;
+    const tag = row.querySelector('.set-type-tag');
+    if (type === 'regular') {
+      delete row.dataset.setType;
+      row.style.opacity = '';
+      if (tag) { tag.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>'; tag.style.color = ''; }
+      row.dataset.ignored = '';
+      row.classList.remove('ignored');
+    } else if (type === 'warmup') {
+      row.dataset.setType = 'warmup';
+      if (tag) { tag.textContent = 'W'; tag.style.color = '#fbbf24'; tag.style.fontWeight = '300'; }
+      row.dataset.ignored = '1';
+      row.classList.add('ignored');
+    } else if (type === 'drop') {
+      row.dataset.setType = 'drop';
+      row.style.opacity = '';
+      if (tag) { tag.textContent = 'D'; tag.style.color = '#60a5fa'; tag.style.fontWeight = '300'; }
+      delete row.dataset.ignored;
+      row.classList.remove('ignored');
+    }
+    try { updateIgnoreButtons(exId); updateVolProgressBar(exId); _updateExSetCount(exId); saveSession(); } catch (e) {}
+    if (window._markExDetailModified) window._markExDetailModified();
+  }
+
+  // Set number tapped while the keyboard is open → toggle the set options (that set only).
+  const _openSetOptions = openSetOptions;
+  window.openSetOptions = function (btn, exId) {
+    if (_inlineKgEditorId || _repsEditorSpan) {
+      const row = btn?.closest('tr');
+      if (row && row === editorRow()) {
+        if (panel()) hidePanel();
+        else {
+          if (!kbSet || kbSet.row !== row) kbSet = { row, exId: editorExId(), cur: row.dataset.setType || 'regular', type: row.dataset.setType || 'regular' };
+          showPanel();
+        }
+      }
+      return;
+    }
+    return _openSetOptions.apply(this, arguments);
+  };
+  // KG / REP value tapped again with the options showing → back to the keypad.
+  const _openKg = openInlineKgEditor;
+  window.openInlineKgEditor = function (inputEl, exId) {
+    if (panel() && window._kgEditorInput === inputEl && _inlineKgEditorId) { hidePanel(); return; }
+    if (kbSet && kbSet.row !== inputEl?.closest('tr')) kbSet = null;
+    const r = _openKg.apply(this, arguments);
+    syncSave();
+    return r;
+  };
+  const _openReps = openRepsPopup;
+  window.openRepsPopup = function (span, exId) {
+    if (panel() && _repsEditorSpan === span) { hidePanel(); return; }
+    if (kbSet && kbSet.row !== span?.closest('tr')) kbSet = null;
+    const r = _openReps.apply(this, arguments);
+    syncSave();
+    return r;
+  };
+  // Save: kg/reps as usual, then the chosen type. Delete: the set is deleted
+  // (its kg/reps edit discarded).
+  const wrapSave = (orig, cancel) => function () {
+    const s = kbSet; kbSet = null;
+    if (s && s.type === 'delete' && s.row === editorRow()) {
+      cancel();
+      _setOptionsRow = s.row; _setOptionsExId = s.exId;
+      setSetType('delete');
+      return;
+    }
+    return orig.apply(this, arguments);   // W / D / Regular were already applied live
+  };
+  const _confirmKg = confirmKgEditor, _cancelKg = cancelInlineKgEditor;
+  const _confirmReps = confirmRepsEditor, _cancelReps = cancelRepsEditor;
+  window.confirmKgEditor = wrapSave(_confirmKg, () => _cancelKg());
+  window.confirmRepsEditor = wrapSave(_confirmReps, () => _cancelReps());
+  // Cancel also puts the set's type back to what it was.
+  const revert = () => { const s = kbSet; kbSet = null; if (s) liveType(s.row, s.exId, s.cur); };
+  window.cancelInlineKgEditor = function () { revert(); return _cancelKg.apply(this, arguments); };
+  window.cancelRepsEditor = function () { revert(); return _cancelReps.apply(this, arguments); };
+  // Keyboard really closing any other way → the held choice is dropped.
+  const _closeKg = closeInlineKgEditor;
+  window.closeInlineKgEditor = function (restoreFocus = true) { if (restoreFocus) kbSet = null; return _closeKg.apply(this, arguments); };
+  const _closeReps = _closeRepsEditor;
+  window._closeRepsEditor = function (silent = false, switching = false) { if (!silent && !switching) kbSet = null; return _closeReps.apply(this, arguments); };
+})();
 </script>
 
 <div id="reps-popup" style="display:none;"></div>
