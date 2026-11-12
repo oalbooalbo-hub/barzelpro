@@ -1704,6 +1704,13 @@ window._fbModuleReady = true;
   <div class="logo" onclick="openAboutModal()" style="cursor:pointer;position:absolute;left:50%;top:23px;transform:translateX(-50%);">
     <img class="brand-logo" id="brand-logo-img" src="logo.svg" alt="Brand Logo" style="height:38px;width:auto;display:block;" onerror="this.style.display='none'"/>
   </div>
+  <!-- Home stats (every user): centered graph icon, same row/size as the
+       calendar icon. Opens the full-screen #home-stats-overlay. Shown by
+       _syncShareBtn (Home start screen only). Centered with
+       left/margin (not translateX) so the tap scale can own `transform`. -->
+  <div id="home-stats-btn" class="date-badge" onclick="openHomeStats()" style="display:none;position:absolute;left:50%;top:18px;margin-left:-16px;width:32px;cursor:pointer;user-select:none;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;transition:transform .15s;" onmousedown="this.style.transform='scale(0.9)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.9)'" ontouchend="this.style.transform=''" ontouchcancel="this.style.transform=''">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="20" x2="20" y2="20"/><rect x="5" y="12" width="3" height="5"/><rect x="10.5" y="7" width="3" height="10"/><rect x="16" y="4" width="3" height="13"/></svg>
+  </div>
   <div style="display:flex;align-items:center;gap:8px;">
     <!-- Debug role badge — visible only when super_admin is viewing as another role -->
     <div id="debugRoleBadge" onclick="exitDebugRole()" style="display:none;cursor:pointer;padding:4px 10px;border-radius:20px;font-family:'DM Sans';font-size:11px;font-weight:700;letter-spacing:.5px;border:1px solid currentColor;transition:opacity .2s;" title="Tap to exit view mode"></div>
@@ -11683,6 +11690,10 @@ function _syncShareBtn() {
   const onLog = !window._activeTab || window._activeTab === 'log';
   const startVisible = document.getElementById('today-start-screen')?.style.display !== 'none';
   wrap.style.display = (onLog && startVisible) ? 'flex' : 'none';
+  // Home stats graph icon: same visibility as Share, every user.
+  const statsBtn = document.getElementById('home-stats-btn');
+  if (statsBtn) statsBtn.style.display = (onLog && startVisible) ? 'flex' : 'none';
+  if (!(onLog && startVisible) && typeof closeHomeStats === 'function') closeHomeStats();
 }
 
 // Home tab button handler: ignore taps that would just re-select the
@@ -22152,23 +22163,28 @@ function _monthlyDetailHtml(D) {
   return `<div style="font-family:'DM Sans';font-size:13px;font-weight:800;color:var(--text);margin-bottom:6px;">${_MONTHS_FULL[sel]} ${D.year} · ${list.length} workout${list.length === 1 ? '' : 's'}</div>
     ${list.length ? list.map(w => `<div style="display:flex;justify-content:space-between;gap:10px;font-family:'DM Sans';font-size:13px;padding:5px 0;border-bottom:1px solid var(--g1a);"><span dir="auto" style="color:var(--gcc);font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${_monthlyEsc(w.name || 'Workout')}</span><span style="color:var(--g88);font-weight:600;flex-shrink:0;">${_dayMon(new Date(w.date))}</span></div>`).join('') : `<div style="font-family:'DM Sans';font-size:12px;color:var(--g88);">No workouts</div>`}`;
 }
-function renderMonthlyWorkouts() {
-  const mount = document.getElementById('monthly-mount');
-  if (!mount) return;
+// The chart's numbers for `year` (clamped to the years with workouts … this
+// year). Shared with Home → Stats → Total workouts this month (_hsMonthlyRender).
+function _monthlyCompute(year) {
   const now = new Date(), curY = now.getFullYear(), curM = now.getMonth();
   const deletedIds = new Set((deletedWorkouts || []).map(dw => dw.id));
   const done = (workouts || []).filter(w => !w._draft && !w._template && !deletedIds.has(w.id) && w.exercises && w.exercises.length && w.date);
   const minY = done.reduce((m, w) => Math.min(m, new Date(w.date).getFullYear()), curY);
-  let year = window._monthlyYear || curY;
-  year = Math.max(minY, Math.min(curY, year));
-  window._monthlyYear = year;
+  year = Math.max(minY, Math.min(curY, year || curY));
   const months = Array.from({ length: 12 }, () => []);
   done.forEach(w => { const d = new Date(w.date); if (d.getFullYear() === year) months[d.getMonth()].push(w); });
   const counts = months.map(m => m.length);
   const total = counts.reduce((a, b) => a + b, 0);
   const last = year < curY ? 11 : curM;               // last pickable month
   const avg = total / (last + 1);
-  const D = { year, curY, curM, months, counts, total, last, avg, max: Math.max(1, avg, ...counts) };
+  return { year, curY, curM, minY, months, counts, total, last, avg, max: Math.max(1, avg, ...counts) };
+}
+function renderMonthlyWorkouts() {
+  const mount = document.getElementById('monthly-mount');
+  if (!mount) return;
+  const D = _monthlyCompute(window._monthlyYear);
+  const { year, curY, minY, total, last } = D;
+  window._monthlyYear = year;
   window._monthlyData = D;
   // Starts on the current month (a past year: December).
   if (window._monthlySel == null || window._monthlySelYear !== year || window._monthlySel > last) { window._monthlySel = last; window._monthlySelYear = year; }
@@ -36089,6 +36105,386 @@ function _animateTodayPRStars(mount) {
   mount.querySelectorAll('.today-pr-star-svg').forEach(el => { el.style.transition = 'fill .5s ease'; el.style.fill = el.dataset.litFill; });
   mount.querySelectorAll('.today-pr-star-num, .today-pr-star-label').forEach(el => { el.style.transition = 'color .5s ease'; el.style.color = el.dataset.litColor; });
 }
+
+// ── Home stats (every user): header graph icon → full-screen list ───────────
+// Four rows, view only. Each row's left image is a small copy of the Home
+// carousel circle for that stat (same ring, same inner picture), replaying the
+// carousel's own animation: ring fill (Total workouts), heatmap colours fading
+// in (Sets progress), PR pentagons lighting up (New records). "This month" has
+// no carousel page — thin ring + 6 mini month bars rising (_homeStatsMonthBars).
+// Closed by its X (also Android back / iPhone edge swipe — the generic back
+// handler finds the X's closeHomeStats onclick).
+const HOME_STATS_THUMB = 76; // px, the small circle's size
+function _homeStatsCounts() {
+  const now = new Date();
+  const weekStart = new Date(now); weekStart.setDate(now.getDate() - now.getDay()); weekStart.setHours(0, 0, 0, 0);
+  const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate() + 6); weekEnd.setHours(23, 59, 59, 999);
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+  const deletedIds = new Set((deletedWorkouts || []).map(dw => dw.id));
+  // Same rule as renderTodayWeekProgress's weekly count.
+  const real = (workouts || []).filter(w => !w._draft && !w._template && !deletedIds.has(w.id) && w.exercises && w.exercises.length > 0);
+  const inRange = (w, a, b) => { const d = new Date(w.date); return d >= a && d <= b; };
+  const week = real.filter(w => inRange(w, weekStart, weekEnd));
+  let sets = 0;
+  week.forEach(w => (w.exercises || []).forEach(e => { sets += doneSets(e.sets).length; }));
+  // Last 6 months, oldest first, ending with this month (crosses into last
+  // year in Jan–May) — the month row's mini bars.
+  const last6 = [];
+  for (let k = 5; k >= 0; k--) {
+    const a = new Date(now.getFullYear(), now.getMonth() - k, 1);
+    const b = new Date(a.getFullYear(), a.getMonth() + 1, 0, 23, 59, 59, 999);
+    last6.push(real.filter(w => inRange(w, a, b)).length);
+  }
+  return { week: week.length, month: real.filter(w => inRange(w, monthStart, monthEnd)).length, sets, last6 };
+}
+// Month row picture: 6 mini bars (last 6 months, this month in --accent, the
+// rest grey like Progress's chart), scaled to the highest of the 6. A month
+// with no workouts = a short grey stub (this month's stub stays accent), so a
+// new user sees 6 empty slots, not a blank circle. Drawn in the 300px space.
+function _homeStatsMonthBars(counts) {
+  const max = Math.max(1, ...counts), H = 110, STUB = 6;
+  return `<div style="display:flex;align-items:flex-end;gap:12px;height:${H}px;transform:translateY(8px);">${counts.map((n, i) => {
+    const cur = i === counts.length - 1;
+    const h = n ? Math.max(14, Math.round(n / max * H)) : STUB;
+    const col = cur ? 'var(--accent)' : (n ? 'var(--g55)' : 'var(--g33)');
+    return `<div class="hs-mbar" data-h="${h}px" style="width:22px;height:${h}px;background:${col};border-radius:5px 5px 0 0;"></div>`;
+  }).join('')}</div>`;
+}
+// The small circle: the carousel's 300×300 drawing, scaled down. `thick` =
+// the Total Workouts ring (track + accent arc filling to `frac`), otherwise
+// the thin solid accent ring of the New records / Sets progress pages.
+// `inner` = the 300×300 content inside the ring (clipped to its inner edge).
+function _homeStatsThumb(thick, frac, inner) {
+  const s = HOME_STATS_THUMB / 300;
+  const circ = 2 * Math.PI * 117.86;
+  const ring = thick
+    ? `<circle cx="150" cy="150" r="117.86" fill="none" stroke-width="25.71" style="stroke:var(--ring-track)"/>
+       <circle class="hs-arc" data-off="${(circ * (1 - Math.min(Math.max(frac, 0), 1))).toFixed(2)}" cx="150" cy="150" r="117.86" fill="none" stroke-width="25.71" stroke-linecap="round" stroke-dasharray="${circ.toFixed(2)}" stroke-dashoffset="${circ.toFixed(2)}" transform="rotate(-90 150 150)" style="stroke:var(--accent);"/>`
+    : `<circle cx="150" cy="150" r="133.5" fill="none" stroke-width="5" style="stroke:var(--accent)"/>`;
+  const clipR = thick ? 105 : 131;
+  return `<div style="position:relative;width:${HOME_STATS_THUMB}px;height:${HOME_STATS_THUMB}px;flex-shrink:0;overflow:hidden;">
+    <div style="position:absolute;left:0;top:0;width:300px;height:300px;transform:scale(${s});transform-origin:0 0;">
+      <svg width="300" height="300" viewBox="0 0 300 300" style="position:absolute;inset:0;display:block;">
+        <circle cx="150" cy="150" r="131" style="fill:var(--circle-bg)"/>${ring}
+      </svg>
+      <div class="hs-inner" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;clip-path:circle(${clipR}px at 150px 150px);-webkit-clip-path:circle(${clipR}px at 150px 150px);"></div>
+    </div>
+  </div>`;
+}
+// Deep copy of a carousel element for a thumbnail: ids removed (except inside
+// <defs>, which the copied SVG paint still points at), handlers removed.
+function _homeStatsClone(el) {
+  if (!el) return null;
+  const c = el.cloneNode(true);
+  c.removeAttribute('id');
+  c.removeAttribute('onclick');
+  c.querySelectorAll('[id]').forEach(n => { if (!n.closest('defs')) n.removeAttribute('id'); });
+  c.querySelectorAll('[onclick]').forEach(n => n.removeAttribute('onclick'));
+  return c;
+}
+function openHomeStats() {
+  closeHomeStats(true);
+  // Make sure the carousel's heatmap / PR pentagons exist to copy (normally
+  // prebuilt on idle). A fresh build starts grey/unlit — if that page is the
+  // one on Home right now, light the original up too.
+  const hmMount = document.getElementById('today-heatmap-mount');
+  const prMount = document.getElementById('today-pr-stars');
+  const onPage = p => !window._todayOnWelcome && window._todayCarouselIdx === p;
+  if (hmMount && !hmMount.firstChild && _buildTodayWeekHeatmap() && onPage(TODAY_HEATMAP_PAGE)) _revealTodayHeatmapColorsNextFrame(hmMount);
+  if (prMount && (!prMount.firstChild || window._todayWeekPRTotal === undefined) && _buildTodayWeekPRStars() && onPage(TODAY_PRS_PAGE)) requestAnimationFrame(() => requestAnimationFrame(() => _animateTodayPRStars(prMount)));
+
+  const c = _homeStatsCounts();
+  const target = workoutWeekTarget === 0 ? 0 : (workoutWeekTarget || _readWorkoutTarget() || 3);
+  const prTotal = window._todayWeekPRTotal || 0;
+  const rows = [
+    { title: 'Total workouts this week', value: target ? `${c.week} of ${target}` : `${c.week}`, thumb: _homeStatsThumb(true, target ? c.week / target : 1, ''), kind: 'week' },
+    { title: 'Sets progress this week', value: `${c.sets} set${c.sets === 1 ? '' : 's'} done`, thumb: _homeStatsThumb(false, 0, ''), kind: 'sets' },
+    { title: 'New records this week', value: `${prTotal}`, thumb: _homeStatsThumb(false, 0, ''), kind: 'prs' },
+    { title: 'Total workouts this month', value: `${c.month}`, thumb: _homeStatsThumb(false, 0, ''), kind: 'month' },
+  ];
+  const ov = document.createElement('div');
+  ov.id = 'home-stats-overlay';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:1000;max-width:430px;margin:0 auto;background:var(--bg);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);opacity:0;transform:translateY(24px);transition:opacity .25s ease,transform .25s ease;';
+  ov.innerHTML = `
+    <div style="position:relative;display:flex;align-items:center;justify-content:center;height:56px;flex-shrink:0;">
+      <span style="font-family:'DM Sans';font-size:20px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.5px;">Progress</span>
+      <button onclick="closeHomeStats()" aria-label="Close" style="position:absolute;left:12px;top:50%;margin-top:-22px;width:44px;height:44px;border:none;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;padding:0;-webkit-tap-highlight-color:transparent;transition:transform .15s;" onmousedown="this.style.transform='scale(0.9)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.9)'" ontouchend="this.style.transform=''" ontouchcancel="this.style.transform=''">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="hs-scroll" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px 16px;">
+      ${rows.map((r, i) => `
+        <div class="hs-row" data-kind="${r.kind}" onclick="_homeStatsZoom(this)" style="display:flex;align-items:center;gap:16px;padding:14px 0;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .15s;${i ? 'border-top:1px solid var(--border);' : ''}" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" onmouseleave="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''" ontouchmove="this.style.transform=''" ontouchcancel="this.style.transform=''">
+          ${r.thumb}
+          <div style="display:flex;flex-direction:column;gap:4px;min-width:0;flex:1;">
+            <span class="hs-title" style="font-family:'DM Sans';font-size:16px;font-weight:700;color:var(--text);">${r.title}</span>
+            <span class="hs-value" style="font-family:'DM Sans';font-size:22px;font-weight:800;color:var(--accent);">${r.value}</span>
+          </div>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--accent);flex-shrink:0;"><polyline points="9 6 15 12 9 18"/></svg>
+        </div>`).join('')}
+    </div>`;
+  const inner = kind => ov.querySelector(`.hs-row[data-kind="${kind}"] .hs-inner`);
+  // Total workouts (week): the carousel's own ring-page centre (count, goal
+  // segments, OUT OF n). Month: just the count, like the no-target ring.
+  const ringPane = _homeStatsClone(document.getElementById('today-circle-pane-ring'));
+  if (ringPane) { ringPane.style.width = ringPane.style.height = '300px'; ringPane.style.cursor = ''; inner('week').appendChild(ringPane); }
+  inner('month').innerHTML = _homeStatsMonthBars(c.last6);
+  const hm = _homeStatsClone(hmMount);
+  if (hm) { hm.classList.add('hs-heatmap'); inner('sets').appendChild(hm); }
+  const pr = _homeStatsClone(prMount);
+  if (pr) { pr.classList.add('hs-prs'); inner('prs').appendChild(pr); }
+  _homeStatsResetAnim(ov);
+  _homeStatsBindDrag(ov);
+  document.body.appendChild(ov);
+  // Slide in, then play each picture's animation (same timings as Home).
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    ov.style.opacity = '1'; ov.style.transform = 'none';
+    clearTimeout(window._homeStatsAnimT);
+    window._homeStatsAnimT = setTimeout(() => _homeStatsPlayAnim(ov), TODAY_CAROUSEL_COLOR_DELAY);
+  }));
+}
+// Puts every picture inside `root` back to its start state, no transition:
+// empty ring arc, grey heatmap, unlit pentagons.
+function _homeStatsResetAnim(root) {
+  root.querySelectorAll('.hs-arc').forEach(a => { a.style.transition = 'none'; a.setAttribute('stroke-dashoffset', a.getAttribute('stroke-dasharray')); });
+  root.querySelectorAll('.hs-mbar').forEach(b => { b.style.transition = 'none'; b.style.height = '0px'; });
+  const grey = _redHeatColor(0);
+  root.querySelectorAll('.hs-heatmap [data-heat-color]').forEach(el => { el.style.transition = 'none'; el.setAttribute('fill', grey); });
+  root.querySelectorAll('.hs-prs .today-pr-star-svg').forEach(el => { el.style.transition = 'none'; el.style.fill = 'var(--pr-unlit)'; });
+  root.querySelectorAll('.hs-prs .today-pr-star-num').forEach(el => { el.style.transition = 'none'; el.style.color = 'var(--pr-unlit-num)'; });
+  root.querySelectorAll('.hs-prs .today-pr-star-label').forEach(el => { el.style.transition = 'none'; el.style.color = 'var(--text-dim)'; });
+}
+// Plays them: ring fills, heatmap colours fade in, pentagons light up.
+function _homeStatsPlayAnim(root) {
+  root.querySelectorAll('.hs-arc').forEach(a => { a.style.transition = 'stroke-dashoffset .6s ease'; a.setAttribute('stroke-dashoffset', a.dataset.off); });
+  root.querySelectorAll('.hs-mbar').forEach(b => { b.style.transition = 'height .5s ease'; b.style.height = b.dataset.h; });
+  root.querySelectorAll('.hs-heatmap').forEach(m => _revealTodayHeatmapColors(m));
+  root.querySelectorAll('.hs-prs').forEach(m => _animateTodayPRStars(m));
+}
+
+// Row tap → its circle grows from the row to the centre of the screen at the
+// Home carousel's full size (300px), over a dark layer, with the row's title /
+// value under it, then replays its animation. Tap anywhere (or back) → it
+// shrinks back into the row. The layer's closeHomeStatsZoom onclick is what
+// the generic back handler taps, so back closes this first, then the list.
+const HOME_STATS_ZOOM_EASE = 'cubic-bezier(.2,.8,.3,1)';
+// Transform that puts the big circle exactly over the row's small one. Measured
+// from the layer (never transformed), not the big circle itself, so it's right
+// even when closing mid-animation. Big circle: 300px, centre 30px above the
+// layer's centre (margin -180px), leaving room for the label under it.
+// Uses offsetLeft/Top (layout position, ignores transforms) inside the layer.
+function _homeStatsThumbStart(thumb, big) {
+  const t = thumb.getBoundingClientRect(), l = big.parentElement.getBoundingClientRect();
+  const dx = (t.left + t.width / 2) - (l.left + big.offsetLeft + big.offsetWidth / 2);
+  const dy = (t.top + t.height / 2) - (l.top + big.offsetTop + big.offsetHeight / 2);
+  return `translate(${dx.toFixed(1)}px,${dy.toFixed(1)}px) scale(${(t.width / big.offsetWidth).toFixed(4)})`;
+}
+// "Total workouts this month" → Progress's WORKOUTS PER MONTH chart (year
+// arrows, total, 12 bars, avg line) without its slider and workout list.
+// Bars aren't tappable here (picking a month only fed that list). `grow` =
+// the bars rise from 0 (on open and on a year change).
+function _hsMonthlyRender(mount, grow) {
+  if (!mount) return;
+  const D = _monthlyCompute(window._hsMonthlyYear);
+  window._hsMonthlyYear = D.year;
+  const sel = window._monthlySel;
+  // No month picking here; "selected" = the current month only, which makes
+  // its X-axis label white (its bar / number stay --accent as the current month).
+  window._monthlySel = D.year === D.curY ? D.curM : null;
+  const bars = _monthlyBarsHtml(D);
+  window._monthlySel = sel;
+  const arrow = (dir, on) => `<button onclick="${on ? `_hsMonthlyYearStep(${dir})` : ''}" style="background:transparent;border:none;padding:6px 10px;cursor:${on ? 'pointer' : 'default'};opacity:${on ? 1 : .25};color:var(--gff);-webkit-tap-highlight-color:transparent;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="${dir < 0 ? '15 18 9 12 15 6' : '9 18 15 12 9 6'}"/></svg></button>`;
+  mount.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:2px;">
+      ${arrow(-1, D.year > D.minY)}
+      <span style="font-family:'DM Sans';font-size:16px;font-weight:800;color:var(--text);min-width:52px;text-align:center;">${D.year}</span>
+      ${arrow(1, D.year < D.curY)}
+    </div>
+    <div style="text-align:center;font-family:'DM Sans';font-size:12px;font-weight:600;color:var(--g88);margin-bottom:10px;">${D.total} workout${D.total === 1 ? '' : 's'}</div>
+    <div class="hs-monthly-bars" style="position:relative;display:flex;align-items:flex-end;gap:2px;">${bars}</div>`;
+  const barsEl = mount.querySelector('.hs-monthly-bars');
+  barsEl.querySelectorAll('[onclick]').forEach(el => { el.removeAttribute('onclick'); el.style.cursor = 'default'; });
+  if (grow) {
+    const cols = [...barsEl.querySelectorAll('div[style*="border-radius:4px 4px 0 0"]')];
+    cols.forEach(b => { b.dataset.h = b.style.height; b.style.transition = 'none'; b.style.height = '0px'; });
+    barsEl.getBoundingClientRect();
+    window._hsMonthlyBarsEl = cols;
+  }
+}
+function _hsMonthlyGrow() {
+  (window._hsMonthlyBarsEl || []).forEach(b => { b.style.transition = 'height .35s ease'; b.style.height = b.dataset.h; });
+  window._hsMonthlyBarsEl = null;
+}
+function _hsMonthlyYearStep(d) {
+  const mount = document.querySelector('#home-stats-overlay .hs-monthly');
+  window._hsMonthlyYear = (window._hsMonthlyYear || new Date().getFullYear()) + d;
+  _hsMonthlyRender(mount, true);
+  requestAnimationFrame(_hsMonthlyGrow);
+}
+window._hsMonthlyYearStep = _hsMonthlyYearStep;
+function _homeStatsZoom(row) {
+  const ov = document.getElementById('home-stats-overlay');
+  if (!ov || !row || ov.querySelector('.hs-zoom')) return;
+  const thumb = row.firstElementChild;
+  if (!thumb) return;
+  const layer = document.createElement('div');
+  layer.className = 'hs-zoom';
+  layer.setAttribute('onclick', 'closeHomeStatsZoom()');
+  layer.style.cssText = 'position:absolute;inset:0;z-index:5;background:#000;opacity:0;transition:opacity .3s ease;cursor:pointer;-webkit-tap-highlight-color:transparent;';
+  if (row.dataset.kind === 'month') {
+    // The chart card, centred; taps inside it don't close (year arrows).
+    layer.style.display = 'flex';
+    layer.style.alignItems = 'center';
+    layer.style.justifyContent = 'center';
+    const card = document.createElement('div');
+    card.className = 'hs-zoom-card';
+    card.setAttribute('onclick', 'event.stopPropagation()');
+    card.style.cssText = `width:calc(100% - 32px);max-width:398px;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;cursor:default;transform-origin:center center;opacity:0;transition:transform .35s ${HOME_STATS_ZOOM_EASE},opacity .25s ease;will-change:transform;`;
+    card.innerHTML = `<div class="chart-title" style="text-align:center;margin-bottom:8px;font-weight:600;-webkit-text-stroke:0;">WORKOUTS PER MONTH</div><div class="hs-monthly"></div>`;
+    layer.appendChild(card);
+    ov.appendChild(layer);
+    window._hsMonthlyYear = new Date().getFullYear();
+    _hsMonthlyRender(card.querySelector('.hs-monthly'), true);
+    card.style.transition = 'none';
+    card.style.transform = _homeStatsThumbStart(thumb, card);
+    thumb.style.visibility = 'hidden';
+    layer._thumb = thumb;
+    card.getBoundingClientRect();
+    requestAnimationFrame(() => {
+      card.style.transition = `transform .35s ${HOME_STATS_ZOOM_EASE},opacity .25s ease`;
+      card.style.transform = 'none';
+      card.style.opacity = '1';
+      layer.style.opacity = '1';
+      clearTimeout(window._homeStatsZoomT);
+      window._homeStatsZoomT = setTimeout(_hsMonthlyGrow, TODAY_CAROUSEL_COLOR_DELAY);
+    });
+    return;
+  }
+  const big = document.createElement('div');
+  big.className = 'hs-zoom-circle';
+  big.style.cssText = `position:absolute;left:50%;top:50%;width:300px;height:300px;margin:-180px 0 0 -150px;transform-origin:center center;transition:transform .35s ${HOME_STATS_ZOOM_EASE};will-change:transform;`;
+  const drawing = thumb.firstElementChild.cloneNode(true);
+  drawing.style.transform = 'none';
+  big.appendChild(drawing);
+  const label = document.createElement('div');
+  label.className = 'hs-zoom-label';
+  label.style.cssText = "position:absolute;left:16px;right:16px;top:calc(50% + 136px);display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;opacity:0;transform:translateY(12px);transition:opacity .3s ease,transform .3s ease;pointer-events:none;";
+  // Total workouts this week: no value line — the big ring already shows the
+  // count and "OUT OF n".
+  label.innerHTML = `<span style="font-family:'DM Sans';font-size:18px;font-weight:700;color:#fff;">${row.querySelector('.hs-title')?.textContent || ''}</span>
+    ${row.dataset.kind === 'week' ? '' : `<span style="font-family:'DM Sans';font-size:28px;font-weight:800;color:var(--accent);">${row.querySelector('.hs-value')?.textContent || ''}</span>`}`;
+  layer.appendChild(big);
+  layer.appendChild(label);
+  ov.appendChild(layer);
+  _homeStatsResetAnim(big);
+  // Start exactly over the row's small circle, then grow to the centre.
+  big.style.transition = 'none';
+  big.style.transform = _homeStatsThumbStart(thumb, big);
+  thumb.style.visibility = 'hidden';
+  layer._thumb = thumb;
+  big.getBoundingClientRect(); // flush the start position
+  requestAnimationFrame(() => {
+    big.style.transition = `transform .35s ${HOME_STATS_ZOOM_EASE}`;
+    big.style.transform = 'none';
+    layer.style.opacity = '1';
+    label.style.opacity = '1'; label.style.transform = 'none';
+    clearTimeout(window._homeStatsZoomT);
+    window._homeStatsZoomT = setTimeout(() => _homeStatsPlayAnim(big), TODAY_CAROUSEL_COLOR_DELAY);
+  });
+}
+function closeHomeStatsZoom() {
+  const layer = document.querySelector('#home-stats-overlay .hs-zoom');
+  if (!layer || layer._closing) return;
+  layer._closing = true;
+  clearTimeout(window._homeStatsZoomT);
+  layer.style.pointerEvents = 'none';
+  window._hsMonthlyBarsEl = null;
+  const big = layer.querySelector('.hs-zoom-circle, .hs-zoom-card');
+  const label = layer.querySelector('.hs-zoom-label');
+  const thumb = layer._thumb;
+  if (big && thumb) {
+    big.style.transition = `transform .3s ${HOME_STATS_ZOOM_EASE},opacity .3s ease`;
+    big.style.transform = _homeStatsThumbStart(thumb, big);
+    if (big.classList.contains('hs-zoom-card')) big.style.opacity = '0';
+  }
+  if (label) { label.style.opacity = '0'; label.style.transform = 'translateY(12px)'; }
+  layer.style.opacity = '0';
+  setTimeout(() => {
+    if (thumb) thumb.style.visibility = '';
+    layer.remove();
+  }, 310);
+}
+window._homeStatsZoom = _homeStatsZoom;
+window.closeHomeStatsZoom = closeHomeStatsZoom;
+// Drag down to close: the page follows the finger and closes when released
+// past 120px (or on a quick downward flick), otherwise springs back. Starts
+// from the title bar anytime, from the list only when it's scrolled to the
+// top (so normal scrolling still works). Not while a picture is enlarged.
+function _homeStatsBindDrag(ov) {
+  let y0 = 0, x0 = 0, t0 = 0, dy = 0, live = false, armed = false;
+  ov.addEventListener('touchstart', e => {
+    live = false; armed = false; dy = 0;
+    if (e.touches.length !== 1 || ov.querySelector('.hs-zoom') || ov._closing) return;
+    const sc = ov.querySelector('.hs-scroll');
+    const inList = sc && sc.contains(e.target);
+    if (inList && sc.scrollTop > 0) return;
+    armed = true;
+    y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; t0 = performance.now();
+  }, { passive: true });
+  ov.addEventListener('touchmove', e => {
+    if (!armed) return;
+    const t = e.touches[0];
+    const d = t.clientY - y0, dx = Math.abs(t.clientX - x0);
+    if (!live) {
+      if (d < -6 || (dx > 8 && dx > Math.abs(d))) { armed = false; return; } // scroll up / sideways
+      if (d < 8) return;
+      live = true;
+      ov.style.transition = 'none';
+      // Cancel a row's press shrink — this is a drag, not a tap.
+      ov.querySelectorAll('.hs-row').forEach(r => { r.style.transform = ''; });
+    }
+    e.preventDefault();
+    dy = Math.max(0, d);
+    ov.style.transform = `translateY(${dy}px)`;
+  }, { passive: false });
+  const end = () => {
+    if (!armed) return;
+    armed = false;
+    if (!live) return;
+    live = false;
+    const v = dy / Math.max(1, performance.now() - t0); // px/ms
+    if (dy > 120 || (v > 0.5 && dy > 30)) closeHomeStats(false, true);
+    else {
+      ov.style.transition = 'transform .25s cubic-bezier(.2,.8,.3,1)';
+      ov.style.transform = 'none';
+    }
+  };
+  ov.addEventListener('touchend', end);
+  ov.addEventListener('touchcancel', end);
+}
+function closeHomeStats(instant, dragged) {
+  const ov = document.getElementById('home-stats-overlay');
+  if (!ov) return;
+  clearTimeout(window._homeStatsAnimT);
+  clearTimeout(window._homeStatsZoomT);
+  ov.id = '';
+  ov._closing = true;
+  if (instant === true) { ov.remove(); return; }
+  ov.style.pointerEvents = 'none';
+  if (dragged) {
+    // Carry on down from where the finger let go.
+    ov.style.transition = 'transform .25s ease-out,opacity .25s ease-out';
+    ov.style.transform = 'translateY(100%)';
+    ov.style.opacity = '0.6';
+  } else {
+    ov.style.transition = 'opacity .25s ease,transform .25s ease';
+    ov.style.opacity = '0'; ov.style.transform = 'translateY(24px)';
+  }
+  setTimeout(() => ov.remove(), 260);
+}
+window.openHomeStats = openHomeStats;
+window.closeHomeStats = closeHomeStats;
 
 function renderMuscleHeatmap() {
   const mount = document.getElementById('heatmap-diagram-mount');
