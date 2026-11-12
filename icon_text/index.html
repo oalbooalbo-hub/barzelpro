@@ -2387,7 +2387,7 @@ window._fbModuleReady = true;
     </div>
     <div class="prog-acc-body" style="display:none;">
       <div id="monthly-info" style="display:none;margin-bottom:8px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;font-family:'DM Sans';font-size:12px;color:var(--muted);line-height:1.8;font-weight:500;">
-        <div style="color:var(--text);font-size:12px;">Completed workouts in each month of the year (2 on the same day count as 2). The dashed line is your average per month this year (months so far). Tap a month to see its workouts.</div>
+        <div style="color:var(--text);font-size:12px;">Completed workouts in each month of the year (2 on the same day count as 2). The dashed line is your average per month this year, counted from the month of your first workout (the current month included). Tap a month to see its workouts.</div>
       </div>
       <div id="monthly-mount"></div>
     </div>
@@ -22128,7 +22128,8 @@ function renderProgress() {
 // 12 bars (Jan–Dec) of completed workouts for the chosen year — counted like
 // the Home ring / "Completed workouts" pop-up: saved, has exercises, not a
 // draft/template/deleted; 2 on the same day = 2. Current month in --accent.
-// Dashed line = the year's average per month (months so far). A month is
+// Dashed line = the year's average per month (from the first-workout month
+// in the user's first year, else January; the current month counts). A month is
 // picked with the slider under the chart (same slider as exercise Stats →
 // Progress) or by tapping its bar → its workouts listed below. ‹ year ›
 // switches years. While sliding, only the bars + list update (the slider
@@ -22176,7 +22177,12 @@ function _monthlyCompute(year) {
   const counts = months.map(m => m.length);
   const total = counts.reduce((a, b) => a + b, 0);
   const last = year < curY ? 11 : curM;               // last pickable month
-  const avg = total / (last + 1);
+  // Average per month from the month of the user's first saved workout (in
+  // that first year; later years count from January), through `last` — the
+  // current month included even though it isn't over yet.
+  const first = done.reduce((m, w) => { const d = new Date(w.date); return !m || d < m ? d : m; }, null);
+  const startM = first && first.getFullYear() === year ? first.getMonth() : 0;
+  const avg = total / Math.max(1, last - startM + 1);
   return { year, curY, curM, minY, months, counts, total, last, avg, max: Math.max(1, avg, ...counts) };
 }
 function renderMonthlyWorkouts() {
