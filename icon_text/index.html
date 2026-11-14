@@ -214,7 +214,7 @@ fieldset.ss-group{min-width:0;min-inline-size:0;padding:0;margin:6px 0 8px;backg
 .ss-det-name.on{opacity:1;}
 body.ss-detail #ex-detail-bestset{display:none!important;}
 /* Superset page: its exercises listed on the top image (bottom-right, over a soft shade). */
-.ss-photo-list{position:absolute;left:0;right:0;bottom:0;z-index:3;display:flex;flex-direction:column;align-items:flex-end;gap:2px;padding:26px var(--bm-pr,16px) 10px 14px;text-align:right;background:linear-gradient(to bottom,transparent,rgba(0,0,0,.7));pointer-events:none;font-family:'DM Sans',sans-serif;font-size:24px;font-weight:900;letter-spacing:0;line-height:1.2;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6);} /* same type as the normal exercise name on the image */
+.ss-photo-list{position:absolute;left:0;right:0;bottom:0;z-index:3;display:flex;flex-direction:column;align-items:flex-end;gap:2px;padding:26px var(--bm-pr,16px) 10px 14px;text-align:right;background:linear-gradient(to bottom,transparent,rgba(0,0,0,.7));pointer-events:none;font-family:'DM Sans',sans-serif;font-size:24px;font-weight:700;letter-spacing:0;line-height:1.2;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6);} /* same type as the normal exercise name on the image */
 .ss-photo-list > div{max-width:100%;word-break:break-word;}
 body:not(.ss-detail) .ss-photo-list{display:none;}
 /* Superset page, body-map mode: "Superset" centred below the image (drops in with the set boxes). */
@@ -303,8 +303,20 @@ input,textarea,[contenteditable="true"],[contenteditable=""]{-webkit-user-select
    'DM Sans' / 'Bebas Neue' / 'Rubik' usage (CSS, inline styles, canvas
    ctx.font) draws Hebrew in Heebo while English/digits keep their own font. */
 @font-face{font-family:'Heebo';src:url('fonts/heebo-hebrew.woff2') format('woff2');font-weight:100 900;font-style:normal;font-display:swap;unicode-range:U+0590-05FF,U+FB1D-FB4F,U+20AA;}
-@font-face{font-family:'DM Sans';src:url('fonts/heebo-hebrew.woff2') format('woff2');font-weight:100 900;font-style:normal;font-display:swap;unicode-range:U+0590-05FF,U+FB1D-FB4F,U+20AA;}
-@font-face{font-family:'Bebas Neue';src:url('fonts/heebo-hebrew.woff2') format('woff2');font-weight:100 900;font-style:normal;font-display:swap;unicode-range:U+0590-05FF,U+FB1D-FB4F,U+20AA;}
+/* IMPORTANT: the browser groups a family's faces by their exact weight
+   descriptor, and only merges unicode-ranges WITHIN a group. Google serves
+   DM Sans as fixed weights 300/400/500/600/700/900 and Bebas Neue as 400, so
+   the Hebrew faces must use those exact same weights — a single 100–900
+   range face lands in its own group, never gets picked, and Hebrew falls
+   back to the phone's system font. Keep these in sync with the Google
+   Fonts <link> weights in <head>. */
+@font-face{font-family:'DM Sans';src:url('fonts/heebo-hebrew.woff2') format('woff2');font-weight:300;font-style:normal;font-display:swap;unicode-range:U+0590-05FF,U+FB1D-FB4F,U+20AA;}
+@font-face{font-family:'DM Sans';src:url('fonts/heebo-hebrew.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap;unicode-range:U+0590-05FF,U+FB1D-FB4F,U+20AA;}
+@font-face{font-family:'DM Sans';src:url('fonts/heebo-hebrew.woff2') format('woff2');font-weight:500;font-style:normal;font-display:swap;unicode-range:U+0590-05FF,U+FB1D-FB4F,U+20AA;}
+@font-face{font-family:'DM Sans';src:url('fonts/heebo-hebrew.woff2') format('woff2');font-weight:600;font-style:normal;font-display:swap;unicode-range:U+0590-05FF,U+FB1D-FB4F,U+20AA;}
+@font-face{font-family:'DM Sans';src:url('fonts/heebo-hebrew.woff2') format('woff2');font-weight:700;font-style:normal;font-display:swap;unicode-range:U+0590-05FF,U+FB1D-FB4F,U+20AA;}
+@font-face{font-family:'DM Sans';src:url('fonts/heebo-hebrew.woff2') format('woff2');font-weight:900;font-style:normal;font-display:swap;unicode-range:U+0590-05FF,U+FB1D-FB4F,U+20AA;}
+@font-face{font-family:'Bebas Neue';src:url('fonts/heebo-hebrew.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap;unicode-range:U+0590-05FF,U+FB1D-FB4F,U+20AA;}
 @font-face{font-family:'Rubik';src:url('fonts/heebo-hebrew.woff2') format('woff2');font-weight:100 900;font-style:normal;font-display:swap;unicode-range:U+0590-05FF,U+FB1D-FB4F,U+20AA;}
 :lang(he),*[dir="rtl"]{font-family:'Heebo','DM Sans',sans-serif;}
 /* Global font stack: DM Sans (its Hebrew letters come from Heebo, above) */
@@ -1715,9 +1727,11 @@ window._fbModuleReady = true;
   <!-- Home stats (every user): centered graph icon, same row/size as the
        calendar icon. Opens the full-screen #home-stats-overlay. Shown by
        _syncShareBtn (Home start screen only). Centered with
-       left/margin (not translateX) so the tap scale can own `transform`. -->
+       left/margin (not translateX) so the tap scale can own `transform`.
+       Icon drawing = the active exercise's Stats button (#ex-float-stats),
+       at the Share/Calendar size: 24×24, stroke-width 2. -->
   <div id="home-stats-btn" class="date-badge" onclick="openHomeStats()" style="display:none;position:absolute;left:50%;top:18px;margin-left:-16px;width:32px;cursor:pointer;user-select:none;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;transition:transform .15s;" onmousedown="this.style.transform='scale(0.9)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.9)'" ontouchend="this.style.transform=''" ontouchcancel="this.style.transform=''">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="20" x2="20" y2="20"/><rect x="5" y="12" width="3" height="5"/><rect x="10.5" y="7" width="3" height="10"/><rect x="16" y="4" width="3" height="13"/></svg>
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="13" width="4" height="9"/><rect x="9" y="8" width="4" height="14"/><rect x="16" y="3" width="4" height="19"/></svg>
   </div>
   <div style="display:flex;align-items:center;gap:8px;">
     <!-- Debug role badge — visible only when super_admin is viewing as another role -->
@@ -4932,6 +4946,9 @@ function closeStrengthTargetSheet(save) {
     localStorage.setItem('ironlog_workout_target', workoutWeekTarget);
     renderTodayWeekProgress();
     if (window._currentUser && window.syncToFirestore) window.syncToFirestore();
+    // Opened from Home → Progress: refresh its Total workouts picture once the
+    // sheet has slid away (the carousel ring above updates first).
+    if (window._homeStatsRefresh) setTimeout(() => window._homeStatsRefresh('week'), 250);
   } else {
     workoutWeekTarget = _readWorkoutTarget();
   }
@@ -4997,6 +5014,7 @@ function closeSetsTargetSheet(save) {
     _saveSetsTargets(window._setsTargetDraft);
     if (typeof _renderTodayWeekHeatmap === 'function') _renderTodayWeekHeatmap();
     if (window._currentUser && window.syncToFirestore) window.syncToFirestore();
+    if (window._homeStatsRefresh) setTimeout(() => window._homeStatsRefresh('sets'), 250);
   }
   window._setsTargetDraft = null;
   if (sheet.dataset.swipeClosing) { sheet.style.display = 'none'; overlay.style.display = 'none'; return; }
@@ -14709,18 +14727,50 @@ function _ssTagLast(exData) {
   // exercise (so the note is saved/recalled with it). While one is open the set
   // boxes, names and title step aside and only that box shows — like Stats.
   const firstId = () => det && det.ids[0];
+  // Switching from one open panel (Note / Timer / Stats) to another: the old
+  // one closes, the new one opens ~350ms later (exFloatAction's _ANIM_MS). In
+  // that gap nothing is "open", so the set boxes / names / title flashed back
+  // for a moment. While _swapHold is on, syncPanel keeps the ss-panel state
+  // (boxes hidden, only the first exercise's Note/Timer area shown) regardless.
+  let _swapHold = false, _swapHoldT = null;
   function syncPanel() {
     const fid = firstId();
-    const open = !!fid && !!(document.getElementById(`comment-area-${fid}`)?.classList.contains('open')
-      || document.getElementById(`timer-panel-${fid}`)?.classList.contains('open'));
+    const open = !!fid && (_swapHold || !!(document.getElementById(`comment-area-${fid}`)?.classList.contains('open')
+      || document.getElementById(`timer-panel-${fid}`)?.classList.contains('open')));
     document.body.classList.toggle('ss-panel', open);
     document.querySelectorAll('#ex-detail-overlay-body > .exercise-card').forEach(c => c.classList.toggle('ss-panel-host', open && c.id === fid));
+  }
+  // Called before a float-bar action: if a DIFFERENT panel is open now, hold
+  // the boxes hidden from this moment until the new panel is in place.
+  function holdIfSwap(action) {
+    const fid = firstId();
+    if (!fid) return;
+    const noteOpen  = !!document.getElementById(`comment-area-${fid}`)?.classList.contains('open');
+    const timerOpen = !!document.getElementById(`timer-panel-${fid}`)?.classList.contains('open');
+    const statsOpen = !!document.querySelector('#ex-detail-stats-section:not(.closing)');
+    const targetOpen = (action === 'note' && noteOpen) || (action === 'timer' && timerOpen) || (action === 'stats' && statsOpen);
+    if (targetOpen || !(noteOpen || timerOpen || statsOpen)) return; // plain open / close, not a swap
+    _swapHold = true;
+    syncPanel();
+    clearTimeout(_swapHoldT);
+    // 350ms close→open gap + a little for the new panel to be added.
+    _swapHoldT = setTimeout(() => { _swapHold = false; syncPanel(); }, 420);
   }
   function wrapFloat() {
     const _fa = window.exFloatAction;
     if (typeof _fa === 'function' && !_fa._ss) {
       window.exFloatAction = function (action) {
-        if (!det || (action !== 'note' && action !== 'timer')) return _fa.apply(this, arguments);
+        if (!det) return _fa.apply(this, arguments);
+        holdIfSwap(action);
+        if (action !== 'note' && action !== 'timer') {
+          // Stats: _fa first closes an open Note/Timer — re-sync so body.ss-panel
+          // (which hides every set box but the Note/Timer host) is cleared too.
+          // Without this it stayed on, and after Stats closed the set boxes
+          // were still hidden.
+          const r = _fa.apply(this, arguments);
+          [0, 60, 420, 800].forEach(ms => setTimeout(syncPanel, ms));
+          return r;
+        }
         // Note / Timer always act on the superset's first exercise.
         const fid = firstId(), cur = window._exDetailCardId;
         if (cur && cur !== fid) {
@@ -19095,7 +19145,10 @@ function _initSwipeDownToClose(sheetOrOverlayId, closeFn, scrollElId) {
 }
 _initSwipeDownToClose('summaryOverlay', cancelFinish, 'summaryBody');
 _initSwipeDownToClose('prStarsInfoOverlay', closePRStarsInfo);
-_initSwipeDownToClose('calendarOverlay', closeCalendar, 'calBody');
+// calendarOverlay: NOT registered here — openCalendar has its own drag-to-close
+// that only starts above the divider line (handle + header, not the SUN/MON
+// grid). Registering this generic whole-sheet drag too made the entire
+// calendar draggable again.
 // workoutPhotoModalOverlay and strength-target-sheet are defined further down
 // in the HTML than this script block — deferred to DOMContentLoaded so their
 // elements actually exist by the time getElementById looks for them (calling
@@ -23513,25 +23566,29 @@ function openCalendar() {
     const sheet = document.querySelector('#calendarOverlay .modal-sheet');
     let _swX = 0, _swY = 0;
     let _swOnGrid = false;
+    // Drag-to-close only starts in the top area ABOVE the divider line (the
+    // .modal-handle + .modal-header: X / Today / month row). Everything below
+    // it (#calBody: day grid, workout list) never closes the sheet — a
+    // slightly-diagonal month swipe used to be read as a close-drag there.
+    let _swInBody = false;
     // Which gesture this touch turns out to be — decided on the first move past
-    // a small deadzone, so a slightly-diagonal swipe doesn't get read as both a
-    // month-nav swipe and a close-drag at once. 'v' only ever starts if the body
-    // was already scrolled to the top, so it never steals a normal content scroll.
+    // a small deadzone. 'v' (close-drag) is only possible from the top area.
     let _swAxis = null;
     let _swDy = 0;
-    cb.addEventListener('touchstart', e => {
+    sheet.addEventListener('touchstart', e => {
       _swX = e.touches[0].clientX;
       _swY = e.touches[0].clientY;
-      _swOnGrid = !!e.target.closest('.cal-grid');
+      _swInBody = cb.contains(e.target);
+      _swOnGrid = _swInBody && !!e.target.closest('.cal-grid');
       _swAxis = null;
       _swDy = 0;
     }, {passive:true});
-    cb.addEventListener('touchmove', e => {
+    sheet.addEventListener('touchmove', e => {
       const dx = e.touches[0].clientX - _swX;
       const dy = e.touches[0].clientY - _swY;
       if (!_swAxis) {
         if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
-        _swAxis = (Math.abs(dy) > Math.abs(dx) && dy > 0 && cb.scrollTop <= 0) ? 'v' : 'h';
+        _swAxis = (!_swInBody && Math.abs(dy) > Math.abs(dx) && dy > 0) ? 'v' : (Math.abs(dx) > Math.abs(dy) ? 'h' : 'scroll');
         if (_swAxis === 'v' && sheet) sheet.style.transition = 'none';
       }
       if (_swAxis === 'v' && sheet) {
@@ -23562,14 +23619,14 @@ function openCalendar() {
           sheet.style.transform = '';
           setTimeout(() => { sheet.style.transition = ''; }, 250);
         }
-      } else if (_swOnGrid) {
+      } else if (_swAxis === 'h' && _swOnGrid) {
         const dx = e.changedTouches[0].clientX - _swX;
         if (Math.abs(dx) > 40) calNav(dx < 0 ? 1 : -1);
       }
       _swAxis = null;
     };
-    cb.addEventListener('touchend', _swEnd, {passive:true});
-    cb.addEventListener('touchcancel', _swEnd, {passive:true});
+    sheet.addEventListener('touchend', _swEnd, {passive:true});
+    sheet.addEventListener('touchcancel', _swEnd, {passive:true});
   }
   const now = new Date();
   calYear = now.getFullYear(); calMonth = now.getMonth();
@@ -31200,7 +31257,7 @@ function deleteCoachWorkout(id) {
                measure/cache/get wrong. -->
           <span id="ex-detail-finish-btn-close-label" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--accent);font-family:'DM Sans';font-size:18px;font-weight:900;letter-spacing:.5px;white-space:nowrap;line-height:1;">CLOSE</span>
         </button>
-        <div id="ex-detail-overlay-title" style="font-family:'DM Sans';font-size:24px;font-weight:900;color:var(--text);text-align:right;flex:1;min-width:0;word-break:break-word;padding-right:12px;"></div>
+        <div id="ex-detail-overlay-title" style="font-family:'DM Sans';font-size:24px;font-weight:700;color:var(--text);text-align:right;flex:1;min-width:0;word-break:break-word;padding-right:12px;"></div>
       </div>
       <!-- Body map mode only: all-time best set, own line below FINISH, centered — see _renderExDetailBestSet -->
       <div id="ex-detail-bestset" style="display:none;"></div>
@@ -31998,9 +32055,12 @@ function exFloatAction(action) {
 
   // Wait for close animation only when something was open and we are opening a different panel
   const _hadOpen = _anyOpen();
-  // Note ⇄ Timer: CLOSE stays hidden through the gap between the two panels.
-  const _swapNoteTimer = (action === 'note' || action === 'timer') && !_targetWasOpen && (_isNoteOpen() || _isTimerOpen());
-  if (_swapNoteTimer) window._exCloseHideHold = true;
+  // Switching panels (Note ⇄ Timer, Note/Timer → Stats, Stats → Note/Timer):
+  // CLOSE stays hidden through the gap between the old panel closing and the
+  // new one opening. (Stats hides it with visibility:hidden, Note/Timer with
+  // .ex-close-hidden — without this hold it blinked back in between.)
+  const _swapNoteTimer = !_targetWasOpen && (_isNoteOpen() || _isTimerOpen() || !!document.querySelector('#ex-detail-stats-section:not(.closing)'));
+  if (_swapNoteTimer) { window._exCloseHideHold = true; _syncExFinishReady(); }
   _closeAll();
 
   const _ANIM_MS = 350; // longest CSS close transition is comment-area at 400ms; 350 gives safe overlap
@@ -34400,7 +34460,7 @@ function _loadExDetailPhoto(exName, ctx) {
     // active workout list cards' .ex-name (but 24px / 900, like the title
     // beside FINISH) — wraps instead of ellipsis,
     // growing upward. Not class="ex-name": that class is how cards are looked up.
-    nameEl.style.cssText = "max-width:100%;font-family:'DM Sans';font-size:24px;font-weight:900;letter-spacing:0;line-height:1.2;color:var(--text);text-align:right;word-break:break-word;";
+    nameEl.style.cssText = "max-width:100%;font-family:'DM Sans';font-size:24px;font-weight:700;letter-spacing:0;line-height:1.2;color:var(--text);text-align:right;word-break:break-word;";
     nameEl.textContent = exName;
     // Right column, bottom-aligned: the name, then the best-set line.
     const nameCol = document.createElement('div');
@@ -36197,6 +36257,61 @@ function _homeStatsClone(el) {
   c.querySelectorAll('[onclick]').forEach(n => n.removeAttribute('onclick'));
   return c;
 }
+// Fills a 300×300 .hs-inner with the carousel's picture for `kind`:
+// 'week' = ring-page centre (count / goal segments / OUT OF n + chevron),
+// 'sets' = the body heatmap + the same down-chevron the carousel's Sets page
+// draws (it sits outside #today-heatmap-mount there, so it's added here).
+const HS_SETS_CHEV = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--accent);position:absolute;bottom:29px;left:50%;transform:translateX(-50%);z-index:2;pointer-events:none;"><polyline points="6 9 12 15 18 9"/></svg>`;
+function _homeStatsFillInner(innerEl, kind) {
+  if (!innerEl) return;
+  if (kind === 'week') {
+    const p = _homeStatsClone(document.getElementById('today-circle-pane-ring'));
+    if (p) { p.style.width = p.style.height = '300px'; p.style.cursor = ''; innerEl.appendChild(p); }
+  } else if (kind === 'sets') {
+    const hm = _homeStatsClone(document.getElementById('today-heatmap-mount'));
+    if (hm) { hm.classList.add('hs-heatmap'); innerEl.appendChild(hm); }
+    innerEl.insertAdjacentHTML('beforeend', HS_SETS_CHEV);
+  }
+}
+// Enlarged circle tap → the same sheet the Home carousel page opens.
+const HS_ZOOM_SHEET = { week: 'openStrengthTargetSheet', sets: 'openSetsTargetSheet' };
+// After a SAVE in one of those sheets: rebuild that row's picture (and the
+// enlarged copy, if it's the one open) from the now-updated carousel, then
+// replay its animation. Called from closeStrengthTargetSheet/closeSetsTargetSheet.
+function _homeStatsRefresh(kind) {
+  const ov = document.getElementById('home-stats-overlay');
+  if (!ov || ov._closing) return;
+  const row = ov.querySelector(`.hs-row[data-kind="${kind}"]`);
+  const oldThumb = row?.firstElementChild;
+  if (!oldThumb) return;
+  const c = _homeStatsCounts();
+  const target = workoutWeekTarget === 0 ? 0 : (workoutWeekTarget || _readWorkoutTarget() || 3);
+  const tmp = document.createElement('div');
+  tmp.innerHTML = _homeStatsThumb(kind === 'week', kind === 'week' ? (target ? c.week / target : 1) : 0, '');
+  const thumb = tmp.firstElementChild;
+  _homeStatsFillInner(thumb.querySelector('.hs-inner'), kind);
+  thumb.style.visibility = oldThumb.style.visibility;
+  oldThumb.replaceWith(thumb);
+  if (kind === 'week') {
+    const v = row.querySelector('.hs-value');
+    if (v) v.textContent = target ? `${c.week} of ${target}` : `${c.week}`;
+  }
+  const targets = [thumb];
+  const layer = ov.querySelector('.hs-zoom');
+  if (layer && layer._thumb === oldThumb) {
+    layer._thumb = thumb;
+    const big = layer.querySelector('.hs-zoom-circle');
+    if (big) {
+      const d = thumb.firstElementChild.cloneNode(true);
+      d.style.transform = 'none';
+      big.replaceChildren(d);
+      targets.push(big);
+    }
+  }
+  targets.forEach(t => _homeStatsResetAnim(t));
+  requestAnimationFrame(() => requestAnimationFrame(() => targets.forEach(t => _homeStatsPlayAnim(t))));
+}
+window._homeStatsRefresh = _homeStatsRefresh;
 function openHomeStats() {
   closeHomeStats(true);
   // Make sure the carousel's heatmap / PR pentagons exist to copy (normally
@@ -36241,11 +36356,9 @@ function openHomeStats() {
   const inner = kind => ov.querySelector(`.hs-row[data-kind="${kind}"] .hs-inner`);
   // Total workouts (week): the carousel's own ring-page centre (count, goal
   // segments, OUT OF n). Month: just the count, like the no-target ring.
-  const ringPane = _homeStatsClone(document.getElementById('today-circle-pane-ring'));
-  if (ringPane) { ringPane.style.width = ringPane.style.height = '300px'; ringPane.style.cursor = ''; inner('week').appendChild(ringPane); }
+  _homeStatsFillInner(inner('week'), 'week');
   inner('month').innerHTML = _homeStatsMonthBars(c.last6);
-  const hm = _homeStatsClone(hmMount);
-  if (hm) { hm.classList.add('hs-heatmap'); inner('sets').appendChild(hm); }
+  _homeStatsFillInner(inner('sets'), 'sets');
   const pr = _homeStatsClone(prMount);
   if (pr) { pr.classList.add('hs-prs'); inner('prs').appendChild(pr); }
   _homeStatsResetAnim(ov);
@@ -36381,6 +36494,14 @@ function _homeStatsZoom(row) {
   const drawing = thumb.firstElementChild.cloneNode(true);
   drawing.style.transform = 'none';
   big.appendChild(drawing);
+  // Same as the Home carousel: tapping the circle (incl. its chevron) opens
+  // that page's sheet — weekly workout target / weekly sets per body part.
+  // stopPropagation keeps the layer's tap-to-shrink from also firing.
+  const _sheetFn = HS_ZOOM_SHEET[row.dataset.kind];
+  if (_sheetFn) {
+    big.setAttribute('onclick', `event.stopPropagation();${_sheetFn}()`);
+    big.style.cursor = 'pointer';
+  }
   const label = document.createElement('div');
   label.className = 'hs-zoom-label';
   label.style.cssText = "position:absolute;left:16px;right:16px;top:calc(50% + 136px);display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;opacity:0;transform:translateY(12px);transition:opacity .3s ease,transform .3s ease;pointer-events:none;";
