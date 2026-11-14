@@ -2,7 +2,7 @@
  * service-worker.js — BARZELPRO PWA Service Worker v2.5.0
  */
 
-const APP_VERSION   = 'v2.5.213';
+const APP_VERSION   = 'v2.5.4';
 const STATIC_CACHE  = `barzelpro-static-${APP_VERSION}`;
 const RUNTIME_CACHE = `barzelpro-runtime-${APP_VERSION}`;
 
@@ -22,6 +22,7 @@ const STATIC_ASSETS = [
   './icons/icon-512.png',
   './images/workouts/list.json', // Workout photo → "Choose from App Photos" (see below)
   './images/welcome.webp',       // Home "Welcome" / "Welcome Back" background
+  './fonts/heebo-hebrew.woff2',  // Hebrew font (Heebo) — all Hebrew text, offline too
 ];
 
 // The app's own workout photos (./images/workouts/, listed in list.json —

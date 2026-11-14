@@ -51,7 +51,8 @@ if ('serviceWorker' in navigator) {
 <title>ALBO</title>
 <!-- localForage: IndexedDB-backed offline storage -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700;900&family=Rubik:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+<link rel="preload" href="fonts/heebo-hebrew.woff2" as="font" type="font/woff2" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="pwa-styles.css">
 <script>
   // Profile → Dark Mode: apply this phone's last theme before anything paints
@@ -296,11 +297,18 @@ html{overscroll-behavior:none;-webkit-tap-highlight-color:transparent;}*{-webkit
    long-press "copy/save" callout — restored below specifically for actual
    text-entry fields, which still need native select/copy/paste/cut. */
 input,textarea,[contenteditable="true"],[contenteditable=""]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default;}
-/* Hebrew text: always use Rubik */
-@font-face{font-family:'AppFont';src:local('Rubik');unicode-range:U+0590-05FF,U+FB1D-FB4F;}
-:lang(he),*[dir="rtl"]{font-family:'Rubik',sans-serif;}
-/* Global font stack: DM Sans with Rubik fallback for Hebrew */
-body,button,input,textarea,select{font-family:'DM Sans','Rubik',sans-serif;}
+/* Hebrew text: always Heebo (self-hosted, fonts/heebo-hebrew.woff2 — Hebrew
+   letters only, variable weight 100–900). Each @font-face below adds Hebrew
+   glyphs to an existing family name, limited by unicode-range, so every
+   'DM Sans' / 'Bebas Neue' / 'Rubik' usage (CSS, inline styles, canvas
+   ctx.font) draws Hebrew in Heebo while English/digits keep their own font. */
+@font-face{font-family:'Heebo';src:url('fonts/heebo-hebrew.woff2') format('woff2');font-weight:100 900;font-style:normal;font-display:swap;unicode-range:U+0590-05FF,U+FB1D-FB4F,U+20AA;}
+@font-face{font-family:'DM Sans';src:url('fonts/heebo-hebrew.woff2') format('woff2');font-weight:100 900;font-style:normal;font-display:swap;unicode-range:U+0590-05FF,U+FB1D-FB4F,U+20AA;}
+@font-face{font-family:'Bebas Neue';src:url('fonts/heebo-hebrew.woff2') format('woff2');font-weight:100 900;font-style:normal;font-display:swap;unicode-range:U+0590-05FF,U+FB1D-FB4F,U+20AA;}
+@font-face{font-family:'Rubik';src:url('fonts/heebo-hebrew.woff2') format('woff2');font-weight:100 900;font-style:normal;font-display:swap;unicode-range:U+0590-05FF,U+FB1D-FB4F,U+20AA;}
+:lang(he),*[dir="rtl"]{font-family:'Heebo','DM Sans',sans-serif;}
+/* Global font stack: DM Sans (its Hebrew letters come from Heebo, above) */
+body,button,input,textarea,select{font-family:'DM Sans','Heebo',sans-serif;}
 button,h1,h2,h3,h4,label,.tab,.tabs,.header,.workout-name-bar,.exercise-card .ex-header,.muscle-chip,.ex-float-bar,.modal-overlay .modal-header{user-select:none;-webkit-user-select:none;}
 img,a,svg{-webkit-touch-callout:none;-webkit-user-drag:none;user-drag:none;-webkit-user-select:none;user-select:none;}
 
