@@ -321,6 +321,79 @@ input,textarea,[contenteditable="true"],[contenteditable=""]{-webkit-user-select
 :lang(he),*[dir="rtl"]{font-family:'Heebo','DM Sans',sans-serif;}
 /* Global font stack: DM Sans (its Hebrew letters come from Heebo, above) */
 body,button,input,textarea,select{font-family:'DM Sans','Heebo',sans-serif;}
+/* Squircle corners — Workouts tab cards first (own + brand). Only where the
+   browser supports corner-shape (Android Chrome today); everywhere else (iPhone
+   Safari for now) the cards keep their normal 14px rounded corners untouched.
+   A squircle corner looks tighter than a round one at the same radius, so the
+   radius is raised to keep a similar overall size. .w2-sq-frame = the 2px
+   accent frame (selected / Today's Plan), 1px inside the card. overflow:hidden
+   on the card clips the photo to the same squircle shape. */
+@supports (corner-shape: squircle) {
+  .w2-sq{border-radius:30px!important;corner-shape:squircle;}
+  .w2-sq-frame{border-radius:29px!important;corner-shape:squircle;}
+  /* Active workout → exercise list: single exercise cards and superset group
+     boxes (normally var(--radius) = 10px → 26px squircle). Only the list —
+     not the same cards inside the exercise detail screen. */
+  #exerciseList .exercise-card,#exerciseList .ss-group{border-radius:26px;corner-shape:squircle;}
+  /* Active workout → body part chips (76×50, inline 10px). data-m = the active
+     workout's chips only (not the new-workout flow's). !important: the inline
+     style wins otherwise. */
+  #todayMuscleChips > button[data-m]{border-radius:22px!important;corner-shape:squircle;}
+  /* Active exercise → top image box (inline 12px, overflow:hidden clips the
+     photo). The body-map version inside (.ex-detail-bodymap, border-radius:
+     inherit + its own border) needs the same shape, or its round border would
+     show inside the squircle. */
+  #ex-detail-photo-tap-wrap{border-radius:28px!important;corner-shape:squircle;}
+  #ex-detail-photo-tap-wrap .ex-detail-bodymap{corner-shape:squircle;}
+  /* Active exercise → sets box (the exercise card on the detail screen,
+     normally var(--radius) = 10px). It can't clip (overflow:visible, for
+     popups), so the first set row's corner cells — which carry the done-row
+     green into the top corners (see .set-row.done:first-child below) — follow
+     the same squircle at the inner radius (28 − 1px border). !important: those
+     cell rules come later in this stylesheet. */
+  #ex-detail-overlay-body > .exercise-card{border-radius:28px;corner-shape:squircle;}
+  #ex-detail-overlay-body .set-row:first-child td:first-child{border-top-left-radius:27px!important;corner-shape:squircle;}
+  #ex-detail-overlay-body .set-row:first-child td:last-child{border-top-right-radius:27px!important;corner-shape:squircle;}
+  /* The "+" add-set strip at the bottom of the box has its own black
+     background with var(--radius) bottom corners — left at 10px round it
+     painted over the squircle's bottom border at both corners. Same inner
+     radius as the box (and as the exercise list cards: 26 − 1px). */
+  #ex-detail-overlay-body > .exercise-card .add-set-outer{border-radius:0 0 27px 27px;corner-shape:squircle;}
+  #exerciseList .exercise-card .add-set-outer{border-radius:0 0 25px 25px;corner-shape:squircle;}
+  /* Active exercise → Timer / Note / Statistics boxes (accent outline with a
+     label on the top border, inline 9px). The labels are centred, clear of the
+     corners — except the Note's date label (left:12px), which would sit on the
+     curve at this radius, so it moves in to where the top edge is straight. */
+  .timer-panel > div:first-child,.comment-area-inner,#ex-detail-stats-box{border-radius:26px!important;corner-shape:squircle;}
+  .comment-area-inner .note-date{left:26px!important;}
+  /* Workouts tab → Create New Workout (inline 14px). Its dashed outline is an
+     SVG, redrawn to the same squircle by _sqDashSync (svg data-r — keep the
+     two in sync). */
+  .w2-create-btn{border-radius:30px!important;corner-shape:squircle;}
+  /* Active workout → "+ ADD EXERCISES" (.btn-add-exercise, var(--radius), 1px
+     dashed). The same button in the new-workout flow gets an inline 12px
+     radius (see addExBtn.style.borderRadius) — the active workout clears it,
+     so "no inline border-radius" = active workout only. */
+  .btn-add-exercise:not([style*="border-radius"]){border-radius:22px;corner-shape:squircle;}
+  /* New workout (Step 1) → image box (inline 12px 12px 0 0 — square bottom,
+     it joins the Workout Name box below). Top corners only. */
+  div:has(> #nwf-hero-bg){border-radius:28px 28px 0 0!important;corner-shape:squircle;}
+  /* New workout (Step 1) → Workout Name / Description / Video link boxes
+     (.nwf-field-box, 12px). Only this page — the class is reused elsewhere. */
+  #nwf-name-page .nwf-field-box{border-radius:22px;corner-shape:squircle;}
+  /* Exercises tab → exercise list rows (inline var(--radius) = 10px,
+     overflow:hidden clips the photo strip; the selected frame is border +
+     inset shadow, both follow the shape). */
+  #exercisesTabContent div[data-exname][data-muscle]{border-radius:26px!important;corner-shape:squircle;}
+  /* Exercises tab → Create New Exercise (64px, inline 10px, dashed — its
+     outline is redrawn to match by _sqDashSync, via the dashed-buttons code). */
+  .extab-create-btn{border-radius:26px!important;corner-shape:squircle;}
+  /* Calendar → "+ Plan Workout" (60px, inline 10px, dashed — outline redrawn
+     to match by _sqDashSync). */
+  .cal-plan-btn{border-radius:26px!important;corner-shape:squircle;}
+  /* Home → START WORKOUT (100px tall, inline 26px round). */
+  #today-load-btn{border-radius:50px!important;corner-shape:squircle;}
+}
 button,h1,h2,h3,h4,label,.tab,.tabs,.header,.workout-name-bar,.exercise-card .ex-header,.muscle-chip,.ex-float-bar,.modal-overlay .modal-header{user-select:none;-webkit-user-select:none;}
 img,a,svg{-webkit-touch-callout:none;-webkit-user-drag:none;user-drag:none;-webkit-user-select:none;user-select:none;}
 
@@ -3441,6 +3514,8 @@ function _checkFinishReadyImpl() {
       addExBtn.style.borderRadius = window._isNewWorkoutFlow ? '12px' : '';
       addExBtn.style.border = window._isNewWorkoutFlow ? '1px solid var(--accent)' : '';
       addExBtn.style.color = window._isNewWorkoutFlow ? 'var(--accent)' : '';
+      // Corners just switched (squircle ⇄ 12px round): redraw its dashed outline.
+      if (window._sqDashSync) requestAnimationFrame(window._sqDashSync);
     }
   }
 
@@ -11932,6 +12007,95 @@ function updatePickModeTabs() {
 // ══════════════════════════════════════════════════════
 //  WORKOUTS TAB v2 — flat list, no box, no async jump
 // ══════════════════════════════════════════════════════
+// ── Squircle dashed outline (svg.sq-dash) ──────────────────────────────────
+// The "Create New Workout" button's dashed border is an SVG <rect rx> (CSS
+// 'dashed' can't set the dash length), and corner-shape only reshapes CSS
+// boxes — so where squircle corners are supported (see the @supports block in
+// <style>), the rect is swapped for a <path> drawn as the same squircle the
+// button's background gets: radius data-r, superellipse corners x⁴+y⁴=1
+// (= corner-shape:squircle). Redrawn whenever the Workouts list re-renders
+// or the window resizes. Elsewhere the original rounded rect stays as is.
+const _SQ_OK = !!(window.CSS && CSS.supports && CSS.supports('corner-shape', 'squircle'));
+const SQ_DASH_W = 2; // px, the dashed line's visible thickness
+function _squirclePathD(w, h, r) {
+  r = Math.max(0, Math.min(r, w / 2, h / 2));
+  const N = 16, pts = [];
+  // [centre x, centre y, x sign, y sign, from t, to t] — clockwise from top-left.
+  const corners = [[r, r, -1, -1, 0, 1], [w - r, r, 1, -1, 1, 0], [w - r, h - r, 1, 1, 0, 1], [r, h - r, -1, 1, 1, 0]];
+  corners.forEach(([cx, cy, sx, sy, a, b]) => {
+    for (let i = 0; i <= N; i++) {
+      const t = (a + (b - a) * i / N) * Math.PI / 2;
+      pts.push([cx + sx * r * Math.sqrt(Math.cos(t)), cy + sy * r * Math.sqrt(Math.sin(t))]);
+    }
+  });
+  return 'M' + pts.map(p => p[0].toFixed(2) + ' ' + p[1].toFixed(2)).join('L') + 'Z';
+}
+// Plain rounded rectangle (normal round corners) — for a host that isn't
+// squircle at the moment (see data-sq-when).
+function _roundRectPathD(w, h, r) {
+  r = Math.max(0, Math.min(r, w / 2, h / 2));
+  return `M${r} 0H${w - r}A${r} ${r} 0 0 1 ${w} ${r}V${h - r}A${r} ${r} 0 0 1 ${w - r} ${h}H${r}A${r} ${r} 0 0 1 0 ${h - r}V${r}A${r} ${r} 0 0 1 ${r} 0Z`;
+}
+// Also watches each button's own size: a list rendered while the Workouts tab
+// is hidden has 0×0 buttons, and showing the tab changes no DOM — the
+// ResizeObserver fires when they get their real size.
+const _sqDashRO = (_SQ_OK && window.ResizeObserver) ? new ResizeObserver(() => requestAnimationFrame(_sqDashSync)) : null;
+const _sqDashWatched = new WeakSet();
+function _sqDashSync() {
+  if (!_SQ_OK) return;
+  document.querySelectorAll('svg.sq-dash').forEach(svg => {
+    const host = svg.parentElement;
+    if (_sqDashRO && host && !_sqDashWatched.has(host)) { _sqDashWatched.add(host); _sqDashRO.observe(host); }
+    // Layout size (offset*), not getBoundingClientRect — the tap press scales it.
+    const w = host?.offsetWidth, h = host?.offsetHeight;
+    if (!w || !h) return;
+    let p = svg.querySelector('path.sq-dash-path');
+    if (!p) {
+      const rect = svg.querySelector('rect');
+      p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      p.setAttribute('class', 'sq-dash-path');
+      ['fill', 'stroke', 'style', 'stroke-dasharray'].forEach(a => { const v = rect?.getAttribute(a); if (v != null) p.setAttribute(a, v); });
+      // A steady 2px line drawn fully INSIDE the edge — not the rect's 3px
+      // centred on the edge with its outer half clipped off, which came out
+      // thinner here: the button's height is fractional (aspect-ratio 21/6)
+      // and offsetWidth/Height are rounded, so the clipped half wasn't even.
+      p.setAttribute('stroke-width', SQ_DASH_W);
+      // viewBox in whole px, stretched (preserveAspectRatio none) onto the
+      // real fractional box; non-scaling-stroke keeps the line and dashes in
+      // screen px.
+      p.setAttribute('vector-effect', 'non-scaling-stroke');
+      rect?.remove();
+      svg.appendChild(p);
+      svg.setAttribute('preserveAspectRatio', 'none');
+    }
+    svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    // data-r="auto": the host's own current radius (a button reused with
+    // different corners, e.g. ADD EXERCISES — squircle in the active workout,
+    // 12px round in the new-workout flow); data-sq-when: a selector the host
+    // must match to be drawn as a squircle, otherwise plain rounded corners.
+    const auto = svg.dataset.r === 'auto';
+    const r0 = auto ? (parseFloat(getComputedStyle(host).borderTopLeftRadius) || 0) : (parseFloat(svg.dataset.r) || 14);
+    const sq = !svg.dataset.sqWhen || host.matches(svg.dataset.sqWhen);
+    // Inset by half the line, so the whole 2px shows; radius follows the inset.
+    const ins = SQ_DASH_W / 2, r = Math.max(0, r0 - ins);
+    p.setAttribute('d', (sq ? _squirclePathD : _roundRectPathD)(w - 2 * ins, h - 2 * ins, r));
+    p.setAttribute('transform', `translate(${ins} ${ins})`);
+  });
+}
+window._sqDashSync = _sqDashSync;
+if (_SQ_OK) {
+  const _sqDashInit = () => {
+    const mo = new MutationObserver(() => requestAnimationFrame(_sqDashSync));
+    ['workouts2TabContent', 'workoutsTabContent'].forEach(id => {
+      const c = document.getElementById(id);
+      if (c) mo.observe(c, { childList: true, subtree: true });
+    });
+    window.addEventListener('resize', () => requestAnimationFrame(_sqDashSync));
+    requestAnimationFrame(_sqDashSync);
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _sqDashInit, { once: true });
+  else _sqDashInit();
+}
 function renderWorkoutsTab2() {
   clearTimeout(window._hiddenEmptyTimer);
   if (!window._inReplaceMode && !window._keepWorkoutsTabState) window._replacePlanId = null;
@@ -12057,10 +12221,10 @@ function renderWorkoutsTab2() {
   // (plan-a-day pick, long-press select, publish pick). Same row padding and
   // width as a card, 2/3 of its 21:9 height (= 21:6).
   const _wtabCreateBtn = (window._planStrengthKey || _isDeleteMode || _isPubPickMode) ? '' : `<div style="padding:5px 2px;">
-      <button onclick="startNewWorkout(true)" style="position:relative;width:100%;aspect-ratio:21/6;box-sizing:border-box;background:#000;border:none;border-radius:14px;color:var(--accent);font-family:'DM Sans';font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;padding:0;-webkit-tap-highlight-color:transparent;transition:transform .15s;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''" ontouchcancel="this.style.transform=''">
+      <button class="w2-create-btn" onclick="startNewWorkout(true)" style="position:relative;width:100%;aspect-ratio:21/6;box-sizing:border-box;background:#000;border:none;border-radius:14px;color:var(--accent);font-family:'DM Sans';font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;padding:0;-webkit-tap-highlight-color:transparent;transition:transform .15s;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''" ontouchcancel="this.style.transform=''">
         <!-- Dashed border drawn as SVG: CSS 'dashed' can't set the dash length.
              Stroke 3px, half clipped at the edge = 1.5px; 10px dashes, 6px gaps. -->
-        <svg aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;"><rect width="100%" height="100%" rx="14" ry="14" fill="none" style="stroke:var(--accent);" stroke-width="3" stroke-dasharray="10 6"/></svg>
+        <svg class="sq-dash" data-r="30" aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;"><rect width="100%" height="100%" rx="14" ry="14" fill="none" style="stroke:var(--accent);" stroke-width="3" stroke-dasharray="10 6"/></svg>
         <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
         Create New Workout
       </button>
@@ -12341,12 +12505,12 @@ function renderWorkoutsTab2() {
     const cardInner = `
       <div style="position:relative;-webkit-tap-highlight-color:transparent;transition:transform .15s;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" onmouseleave="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''" ontouchmove="this.style.transform=''" ontouchcancel="this.style.transform=''">
         ${(!_isPlanStrengthMode && !_isPubPickMode && !_isDeleteMode && _isTodayPlanned) ? `<span style="position:absolute;top:0;left:14px;transform:translateY(-50%);background:var(--bg);color:var(--accent);font-family:'DM Sans';font-size:10px;font-weight:800;letter-spacing:.4px;padding:0 6px;line-height:1.4;white-space:nowrap;z-index:4;">Today's Plan</span>` : ''}
-        <div id="w2-card-border-${i}"${_wtabLPAttrs} oncontextmenu="return false;" style="position:relative;display:flex;border-radius:14px;overflow:hidden;aspect-ratio:21/9;background:var(--g1a);-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;${_showAccentBorder ? 'border:1px solid transparent;background-clip:padding-box;' : 'border:1px solid var(--g2a);'}">
+        <div id="w2-card-border-${i}" class="w2-sq"${_wtabLPAttrs} oncontextmenu="return false;" style="position:relative;display:flex;border-radius:14px;overflow:hidden;aspect-ratio:21/9;background:var(--g1a);-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;${_showAccentBorder ? 'border:1px solid transparent;background-clip:padding-box;' : 'border:1px solid var(--g2a);'}">
             ${/* Accented (selected / Today's Plan): ONE continuous 2px frame on top
                of the photo — the card's own 1px border goes transparent (size
                unchanged). Two stacked 1px lines looked thinner on the rounded
                corners, where each curve is anti-aliased separately. */ ''}
-            ${_showAccentBorder ? `<div style="position:absolute;inset:0;border:2px solid var(--accent);border-radius:13px;pointer-events:none;z-index:3;"></div>` : ''}
+            ${_showAccentBorder ? `<div class="w2-sq-frame" style="position:absolute;inset:0;border:2px solid var(--accent);border-radius:13px;pointer-events:none;z-index:3;"></div>` : ''}
           <div id="w2-card-photo-${i}" style="position:relative;width:80%;flex-shrink:0;overflow:hidden;cursor:pointer;" onclick="${_wtabTapOnclick}">
             ${workoutPhoto ? `<img src="${workoutPhoto}" draggable="false" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.72);-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;pointer-events:none;">` : ''}
             ${_isDelPicked ? `<div style="position:absolute;inset:0;background:color-mix(in srgb, var(--accent) 30%, transparent);pointer-events:none;"></div>` : ''}
@@ -12466,8 +12630,8 @@ function renderWorkoutsTab2() {
         return `<div data-wlibname="${(w.name||'').replace(/"/g,'&quot;')}" ${_wSuperSplit ? '' : 'data-bp-lib="1" '}style="padding:5px 2px;${!_wSuperSplit && !_wLibOn ? 'display:none;' : ''}${_dimmed ? 'opacity:0.25;pointer-events:none;' : ''}">
           <div style="position:relative;-webkit-tap-highlight-color:transparent;transition:transform .15s;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" onmouseleave="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''" ontouchmove="this.style.transform=''" ontouchcancel="this.style.transform=''">
             ${_isTodayPlannedLib ? `<span style="position:absolute;top:0;left:14px;transform:translateY(-50%);background:var(--bg);color:var(--accent);font-family:'DM Sans';font-size:10px;font-weight:800;letter-spacing:.4px;padding:0 6px;line-height:1.4;white-space:nowrap;z-index:4;">Today's Plan</span>` : ''}
-            <div${_lpAttrs} oncontextmenu="return false;" style="position:relative;display:flex;border-radius:14px;overflow:hidden;aspect-ratio:21/9;background:var(--g1a);-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;${_accent ? 'border:1px solid transparent;background-clip:padding-box;' : 'border:1px solid var(--g2a);'}">
-              ${_accent ? `<div style="position:absolute;inset:0;border:2px solid var(--accent);border-radius:13px;pointer-events:none;z-index:3;"></div>` : ''}
+            <div class="w2-sq"${_lpAttrs} oncontextmenu="return false;" style="position:relative;display:flex;border-radius:14px;overflow:hidden;aspect-ratio:21/9;background:var(--g1a);-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;${_accent ? 'border:1px solid transparent;background-clip:padding-box;' : 'border:1px solid var(--g2a);'}">
+              ${_accent ? `<div class="w2-sq-frame" style="position:absolute;inset:0;border:2px solid var(--accent);border-radius:13px;pointer-events:none;z-index:3;"></div>` : ''}
               <div style="position:relative;width:80%;flex-shrink:0;overflow:hidden;cursor:pointer;" onclick="if(_wtabLPConsume(${_idJs}))return;${_tap}">
                 ${libPhoto ? `<img src="${libPhoto}" draggable="false" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.72);-webkit-touch-callout:none;pointer-events:none;">` : ''}
                 ${(_picked || _planPicked) ? `<div style="position:absolute;inset:0;background:color-mix(in srgb, var(--accent) 30%, transparent);pointer-events:none;"></div>` : ''}
@@ -23906,7 +24070,7 @@ function renderCalDayContent(key, ws) {
           <button onclick="event.stopPropagation();deletePlannedWorkout('${_dayStrengthPlan.planId}')" style="background:transparent;border:none;color:var(--g55);cursor:pointer;padding:6px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M3 5h14M8 5V3h4v2M5 5l1 11a1 1 0 001 1h6a1 1 0 001-1l1-11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><line x1="8" y1="9" x2="8" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="12" y1="9" x2="12" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
         </div>`
       : (realWs.length > 0 ? '' : `<div style="display:flex;gap:8px;margin-top:8px;">
-      <button ${!isPlannable ? 'disabled' : `onclick="planStrengthFromCal('${key}')"`} style="background:transparent;border:1px dashed ${isPlannable?'var(--accent)':'rgba(255,255,255,.1)'};border-radius:10px;color:${isPlannable?'var(--accent)':'var(--g44)'};font-family:'DM Sans';font-size:20px;font-weight:600;cursor:${isPlannable?'pointer':'default'};height:56px;box-sizing:border-box;padding:0 10px;line-height:1;display:flex;align-items:center;justify-content:center;flex:1;text-align:center;${!isPlannable?'pointer-events:none;':''}">+ Plan Workout</button>
+      <button class="cal-plan-btn" ${!isPlannable ? 'disabled' : `onclick="planStrengthFromCal('${key}')"`} style="background:transparent;border:1px dashed ${isPlannable?'var(--accent)':'rgba(255,255,255,.1)'};border-radius:10px;color:${isPlannable?'var(--accent)':'var(--g44)'};font-family:'DM Sans';font-size:20px;font-weight:600;cursor:${isPlannable?'pointer':'default'};height:60px;box-sizing:border-box;padding:0 10px;line-height:1;display:flex;align-items:center;justify-content:center;flex:1;text-align:center;${!isPlannable?'pointer-events:none;':''}">+ Plan Workout</button>
     </div>`);
   }
   // No "+ Plan Workout" prompt when the day already has a completed workout logged
@@ -35913,6 +36077,38 @@ const _REGION_BODY_PART = (() => {
   ['Chest', 'Back', 'Legs', 'Shoulders', 'Arms', 'Core'].forEach(bp => (W2_BODY_IDS[bp] || []).forEach(id => { if (!m[id]) m[id] = bp; }));
   return m;
 })();
+// Gives every id inside <defs> under `root` a unique name and repoints the
+// url(#…) / href="#…" references inside `root` at it. Needed for every COPY
+// of an SVG drawing: the body map's chest is drawn through two <clipPath>s
+// (cp-chest-upper / cp-chest-lower). With several copies on the page (Home
+// carousel, Progress tab, Home → Progress list + enlarged circle) they all
+// had the same clip ids, url(#…) resolved to the FIRST one in the document —
+// often inside a hidden screen — and the chest wasn't drawn at all.
+let _svgDefIdSeq = 0;
+function _uniquifySvgDefIds(root) {
+  if (!root || !root.querySelectorAll) return;
+  const map = {};
+  const seq = ++_svgDefIdSeq;
+  root.querySelectorAll('defs [id]').forEach(el => {
+    const base = el.id.replace(/-u\d+$/, ''); // a copy of a copy: don't keep growing
+    const n = `${base}-u${seq}`;
+    map[el.id] = n;
+    el.id = n;
+  });
+  if (!Object.keys(map).length) return;
+  const fixUrl = v => v.replace(/url\(\s*['"]?#([^'")\s]+)['"]?\s*\)/g, (m, id) => map[id] ? `url(#${map[id]})` : m);
+  root.querySelectorAll('*').forEach(el => {
+    ['clip-path', 'mask', 'fill', 'stroke', 'filter', 'style'].forEach(a => {
+      const v = el.getAttribute(a);
+      if (v && v.includes('url(')) el.setAttribute(a, fixUrl(v));
+    });
+    ['href', 'xlink:href'].forEach(a => {
+      const v = el.getAttribute(a);
+      if (v && v[0] === '#' && map[v.slice(1)]) el.setAttribute(a, '#' + map[v.slice(1)]);
+    });
+  });
+}
+window._uniquifySvgDefIds = _uniquifySvgDefIds;
 function _buildMuscleHeatmapDiagram(regionVal, animate, targets) {
   const w2Src = document.getElementById('w2-body-container');
   if (!w2Src) return null;
@@ -35925,6 +36121,8 @@ function _buildMuscleHeatmapDiagram(regionVal, animate, targets) {
   bc.querySelectorAll('[clip-path]').forEach(el => {
     el.setAttribute('clip-path', el.getAttribute('clip-path').replace(/url\(#([^)]+)\)/g, 'url(#heatmap-$1)'));
   });
+  // Each built diagram gets its own clip ids (chest) — see _uniquifySvgDefIds.
+  _uniquifySvgDefIds(bc);
   const svgs = bc.querySelectorAll('svg');
   if (svgs.length >= 2) svgs[1].setAttribute('viewBox', '790 -160 820 1510');
   const maxVal = Math.max(0, ...Object.values(regionVal));
@@ -36334,7 +36532,8 @@ function _homeStatsThumb(thick, frac, inner) {
   </div>`;
 }
 // Deep copy of a carousel element for a thumbnail: ids removed (except inside
-// <defs>, which the copied SVG paint still points at), handlers removed.
+// <defs>, which the copied SVG paint still points at — renamed to this copy's
+// own unique ids, see _uniquifySvgDefIds), handlers removed.
 function _homeStatsClone(el) {
   if (!el) return null;
   const c = el.cloneNode(true);
@@ -36342,6 +36541,7 @@ function _homeStatsClone(el) {
   c.removeAttribute('onclick');
   c.querySelectorAll('[id]').forEach(n => { if (!n.closest('defs')) n.removeAttribute('id'); });
   c.querySelectorAll('[onclick]').forEach(n => n.removeAttribute('onclick'));
+  _uniquifySvgDefIds(c);
   return c;
 }
 // Fills a 300×300 .hs-inner with the carousel's picture for `kind`:
@@ -36391,6 +36591,7 @@ function _homeStatsRefresh(kind) {
     if (big) {
       const d = thumb.firstElementChild.cloneNode(true);
       d.style.transform = 'none';
+      _uniquifySvgDefIds(d);
       big.replaceChildren(d);
       targets.push(big);
     }
@@ -36580,6 +36781,7 @@ function _homeStatsZoom(row) {
   big.style.cssText = `position:absolute;left:50%;top:50%;width:300px;height:300px;margin:-180px 0 0 -150px;transform-origin:center center;transition:transform .35s ${HOME_STATS_ZOOM_EASE};will-change:transform;`;
   const drawing = thumb.firstElementChild.cloneNode(true);
   drawing.style.transform = 'none';
+  _uniquifySvgDefIds(drawing); // own clip ids, not the row thumbnail's (chest)
   big.appendChild(drawing);
   // Same as the Home carousel: tapping the circle (incl. its chevron) opens
   // that page's sheet — weekly workout target / weekly sets per body part.
@@ -38109,6 +38311,20 @@ function _updateKgDisplay(val, isBWMode) {
     rect.setAttribute('stroke-dasharray', '10 6');
     svg.appendChild(rect);
     btn.appendChild(svg);
+    // ADD EXERCISES has squircle corners in the active workout (Android, see
+    // the corner-shape @supports block): hand its outline to _sqDashSync, which
+    // redraws it as a squircle there and as plain rounded corners elsewhere
+    // (new-workout flow, inline 12px). The rect above stays where unsupported.
+    // Same for the Exercises tab's Create New Exercise (always squircle there).
+    const _sqWhen = btn.classList.contains('btn-add-exercise') ? '.btn-add-exercise:not([style*="border-radius"])'
+      : btn.classList.contains('extab-create-btn') ? '.extab-create-btn'
+      : btn.classList.contains('cal-plan-btn') ? '.cal-plan-btn' : null;
+    if (_sqWhen && window._sqDashSync) {
+      svg.classList.add('sq-dash');
+      svg.dataset.r = 'auto';
+      svg.dataset.sqWhen = _sqWhen;
+      requestAnimationFrame(window._sqDashSync);
+    }
   }
   let queued = false;
   const scan = () => { queued = false; document.querySelectorAll(SEL).forEach(dashify); };
