@@ -321,78 +321,172 @@ input,textarea,[contenteditable="true"],[contenteditable=""]{-webkit-user-select
 :lang(he),*[dir="rtl"]{font-family:'Heebo','DM Sans',sans-serif;}
 /* Global font stack: DM Sans (its Hebrew letters come from Heebo, above) */
 body,button,input,textarea,select{font-family:'DM Sans','Heebo',sans-serif;}
-/* Squircle corners — Workouts tab cards first (own + brand). Only where the
-   browser supports corner-shape (Android Chrome today); everywhere else (iPhone
-   Safari for now) the cards keep their normal 14px rounded corners untouched.
-   A squircle corner looks tighter than a round one at the same radius, so the
-   radius is raised to keep a similar overall size. .w2-sq-frame = the 2px
-   accent frame (selected / Today's Plan), 1px inside the card. overflow:hidden
-   on the card clips the photo to the same squircle shape. */
+/* ── Squircle corner scale ───────────────────────────────────────────────
+   Corners are picked by the component's ROLE, not its exact size (same idea
+   as Material 3's shape scale) — change a step here and every element of that
+   role follows, inner edges included:
+     --sq-xs    12px  extra small: controls under ~45px (± / ✓ / quick-add
+                      buttons, calendar day cells)
+     --sq-s     22px  small: buttons ~45–85px (keypad keys, Cancel / Save…),
+                      chips, input boxes, float bar
+     --sq-m     28px  medium: images, sheets' top corners, sets box,
+                      Timer/Note/Statistics, chart cards, Plan Workout
+     --sq-l     36px  large: list cards (workouts, exercises, active workout cards)
+     --sq-pill 999px  pill buttons: the browser caps it at half the button's
+                      height, so every pill is a full squircle pill
+   Nested rule: anything drawn INSIDE a squircle's 1px border uses that step
+   minus 1px (calc(var(--sq-x) - 1px)), so the two curves stay concentric.
+   Squircle corners only where the browser supports corner-shape (Android
+   Chrome today); everywhere else (iPhone Safari for now) every element keeps
+   its normal rounded corners untouched. A squircle corner looks tighter than a
+   round one at the same radius, hence the larger numbers. Dashed buttons'
+   SVG outlines read the button's computed radius (_sqDashSync, data-r="auto"),
+   so they follow these variables too. */
+:root{--sq-xs:12px;--sq-s:22px;--sq-m:28px;--sq-l:36px;--sq-pill:999px;}
 @supports (corner-shape: squircle) {
-  .w2-sq{border-radius:30px!important;corner-shape:squircle;}
-  .w2-sq-frame{border-radius:29px!important;corner-shape:squircle;}
+  /* ── L: list cards ── */
+  /* Workouts tab cards (own + brand; overflow:hidden clips the photo).
+     .w2-sq-frame = the 2px accent frame (selected / Today's Plan), 1px inside. */
+  .w2-sq{border-radius:var(--sq-l)!important;corner-shape:squircle;}
+  .w2-sq-frame{border-radius:calc(var(--sq-l) - 1px)!important;corner-shape:squircle;}
+  /* Workouts tab → Create New Workout (inline 14px; dashed SVG outline
+     redrawn to match by _sqDashSync). */
+  .w2-create-btn{border-radius:var(--sq-l)!important;corner-shape:squircle;}
+  /* Exercises tab → exercise list rows (inline var(--radius) = 10px,
+     overflow:hidden clips the photo strip; the selected frame is border +
+     inset shadow, both follow the shape). */
+  #exercisesTabContent div[data-exname][data-muscle]{border-radius:var(--sq-l)!important;corner-shape:squircle;}
+  /* Exercises tab → Create New Exercise (64px, inline 10px, dashed — outline
+     redrawn to match by _sqDashSync, via the dashed-buttons code). */
+  .extab-create-btn{border-radius:var(--sq-l)!important;corner-shape:squircle;}
   /* Active workout → exercise list: single exercise cards and superset group
-     boxes (normally var(--radius) = 10px → 26px squircle). Only the list —
-     not the same cards inside the exercise detail screen. */
-  #exerciseList .exercise-card,#exerciseList .ss-group{border-radius:26px;corner-shape:squircle;}
-  /* Active workout → body part chips (76×50, inline 10px). data-m = the active
-     workout's chips only (not the new-workout flow's). !important: the inline
-     style wins otherwise. */
-  #todayMuscleChips > button[data-m]{border-radius:22px!important;corner-shape:squircle;}
+     boxes (normally var(--radius) = 10px). Only the list — not the same cards
+     inside the exercise detail screen (sets box, M below). */
+  #exerciseList .exercise-card,#exerciseList .ss-group{border-radius:var(--sq-l);corner-shape:squircle;}
+  /* …and the card's flying copy while it opens / closes the exercise page
+     (_exFlyGhost: a clone appended to <body>, outside #exerciseList — without
+     this it showed plain 10px corners for the length of the flight). */
+  .ex-fly-ghost > .exercise-card,.ex-fly-ghost > .ss-group{border-radius:var(--sq-l);corner-shape:squircle;}
+  /* The "+" add-set strip (own black background, var(--radius) bottom
+     corners) — inside the card's 1px border. */
+  #exerciseList .exercise-card .add-set-outer{border-radius:0 0 calc(var(--sq-l) - 1px) calc(var(--sq-l) - 1px);corner-shape:squircle;}
+
+  /* ── M: images, boxes ── */
   /* Active exercise → top image box (inline 12px, overflow:hidden clips the
      photo). The body-map version inside (.ex-detail-bodymap, border-radius:
      inherit + its own border) needs the same shape, or its round border would
      show inside the squircle. */
-  #ex-detail-photo-tap-wrap{border-radius:28px!important;corner-shape:squircle;}
+  #ex-detail-photo-tap-wrap{border-radius:var(--sq-m)!important;corner-shape:squircle;}
   #ex-detail-photo-tap-wrap .ex-detail-bodymap{corner-shape:squircle;}
   /* Active exercise → sets box (the exercise card on the detail screen,
      normally var(--radius) = 10px). It can't clip (overflow:visible, for
      popups), so the first set row's corner cells — which carry the done-row
-     green into the top corners (see .set-row.done:first-child below) — follow
-     the same squircle at the inner radius (28 − 1px border). !important: those
-     cell rules come later in this stylesheet. */
-  #ex-detail-overlay-body > .exercise-card{border-radius:28px;corner-shape:squircle;}
-  #ex-detail-overlay-body .set-row:first-child td:first-child{border-top-left-radius:27px!important;corner-shape:squircle;}
-  #ex-detail-overlay-body .set-row:first-child td:last-child{border-top-right-radius:27px!important;corner-shape:squircle;}
-  /* The "+" add-set strip at the bottom of the box has its own black
-     background with var(--radius) bottom corners — left at 10px round it
-     painted over the squircle's bottom border at both corners. Same inner
-     radius as the box (and as the exercise list cards: 26 − 1px). */
-  #ex-detail-overlay-body > .exercise-card .add-set-outer{border-radius:0 0 27px 27px;corner-shape:squircle;}
-  #exerciseList .exercise-card .add-set-outer{border-radius:0 0 25px 25px;corner-shape:squircle;}
+     green into the top corners (see .set-row.done:first-child below) — and
+     the "+" add-set strip at the bottom follow it 1px inside the border.
+     !important on the cells: their own rules come later in this stylesheet. */
+  #ex-detail-overlay-body > .exercise-card{border-radius:var(--sq-m);corner-shape:squircle;}
+  #ex-detail-overlay-body .set-row:first-child td:first-child{border-top-left-radius:calc(var(--sq-m) - 1px)!important;corner-shape:squircle;}
+  #ex-detail-overlay-body .set-row:first-child td:last-child{border-top-right-radius:calc(var(--sq-m) - 1px)!important;corner-shape:squircle;}
+  #ex-detail-overlay-body > .exercise-card .add-set-outer{border-radius:0 0 calc(var(--sq-m) - 1px) calc(var(--sq-m) - 1px);corner-shape:squircle;}
   /* Active exercise → Timer / Note / Statistics boxes (accent outline with a
      label on the top border, inline 9px). The labels are centred, clear of the
      corners — except the Note's date label (left:12px), which would sit on the
-     curve at this radius, so it moves in to where the top edge is straight. */
-  .timer-panel > div:first-child,.comment-area-inner,#ex-detail-stats-box{border-radius:26px!important;corner-shape:squircle;}
-  .comment-area-inner .note-date{left:26px!important;}
-  /* Workouts tab → Create New Workout (inline 14px). Its dashed outline is an
-     SVG, redrawn to the same squircle by _sqDashSync (svg data-r — keep the
-     two in sync). */
-  .w2-create-btn{border-radius:30px!important;corner-shape:squircle;}
+     curve, so it moves in to where the top edge is straight (= the radius). */
+  .timer-panel > div:first-child,.comment-area-inner,#ex-detail-stats-box{border-radius:var(--sq-m)!important;corner-shape:squircle;}
+  .comment-area-inner .note-date{left:var(--sq-m)!important;}
+  /* New workout (Step 1) → image box (inline 12px 12px 0 0) — all four
+     corners. */
+  div:has(> #nwf-hero-bg){border-radius:var(--sq-m)!important;corner-shape:squircle;}
+  /* Calendar → "+ Plan Workout" (60px, inline 10px, dashed — outline redrawn
+     to match by _sqDashSync). */
+  .cal-plan-btn{border-radius:var(--sq-m)!important;corner-shape:squircle;}
+
+  /* ── S: chips, inputs, small buttons ── */
+  /* Active workout → body part chips (76×50, inline 10px). data-m = the active
+     workout's chips only (not the new-workout flow's). */
+  #todayMuscleChips > button[data-m]{border-radius:var(--sq-s)!important;corner-shape:squircle;}
   /* Active workout → "+ ADD EXERCISES" (.btn-add-exercise, var(--radius), 1px
      dashed). The same button in the new-workout flow gets an inline 12px
      radius (see addExBtn.style.borderRadius) — the active workout clears it,
      so "no inline border-radius" = active workout only. */
-  .btn-add-exercise:not([style*="border-radius"]){border-radius:22px;corner-shape:squircle;}
-  /* New workout (Step 1) → image box (inline 12px 12px 0 0 — square bottom,
-     it joins the Workout Name box below). Top corners only. */
-  div:has(> #nwf-hero-bg){border-radius:28px 28px 0 0!important;corner-shape:squircle;}
+  .btn-add-exercise:not([style*="border-radius"]){border-radius:var(--sq-s);corner-shape:squircle;}
   /* New workout (Step 1) → Workout Name / Description / Video link boxes
      (.nwf-field-box, 12px). Only this page — the class is reused elsewhere. */
-  #nwf-name-page .nwf-field-box{border-radius:22px;corner-shape:squircle;}
-  /* Exercises tab → exercise list rows (inline var(--radius) = 10px,
-     overflow:hidden clips the photo strip; the selected frame is border +
-     inset shadow, both follow the shape). */
-  #exercisesTabContent div[data-exname][data-muscle]{border-radius:26px!important;corner-shape:squircle;}
-  /* Exercises tab → Create New Exercise (64px, inline 10px, dashed — its
-     outline is redrawn to match by _sqDashSync, via the dashed-buttons code). */
-  .extab-create-btn{border-radius:26px!important;corner-shape:squircle;}
-  /* Calendar → "+ Plan Workout" (60px, inline 10px, dashed — outline redrawn
-     to match by _sqDashSync). */
-  .cal-plan-btn{border-radius:26px!important;corner-shape:squircle;}
-  /* Home → START WORKOUT (100px tall, inline 26px round). */
-  #today-load-btn{border-radius:50px!important;corner-shape:squircle;}
+  #nwf-name-page .nwf-field-box{border-radius:var(--sq-s);corner-shape:squircle;}
+
+  /* ── M: images (more) ── */
+  /* Top-only image boxes (square bottom — they join what's below): the
+     active workout's top image (+ its no-photo placeholder) and the Exercises
+     tab's exercise detail image. */
+  .sq-top-img{border-radius:var(--sq-m) var(--sq-m) 0 0!important;corner-shape:squircle;}
+  /* Workout info sheet photo, New Exercise photo box, workout photo preview,
+     App Photos grid tiles. */
+  #w2-sheet-photo-wrap,#newExPhotoBox,#workoutPhotoPh,#app-workout-photos-grid > button{border-radius:var(--sq-m)!important;corner-shape:squircle;}
+
+  /* ── M: bottom sheets (top corners) ── */
+  /* .modal-sheet: only the plain bottom sheets (no inline radius). Some use
+     the class as a CENTRED popup (inline border-radius:20px, all four
+     corners → M all round, below) or full-screen (inline 0 → left alone). */
+  .modal-sheet:not([style*="border-radius"]),.delete-confirm-sheet,.kg-inline-editor.open,.kg-inline-editor-closing,
+  #w2-sheet,#sets-target-sheet,#strength-target-sheet,#ex-detail-menu-sheet,#set-options-sheet,#share-qr-modal{
+    border-radius:var(--sq-m) var(--sq-m) 0 0!important;corner-shape:squircle;}
+  .modal-sheet[style*="border-radius:20px"]{border-radius:var(--sq-m)!important;corner-shape:squircle;}
+  /* The calendar drops from the top — all four corners. */
+  #calendarOverlay .modal-sheet{border-radius:var(--sq-m)!important;corner-shape:squircle;}
+
+  /* ── S / M: bars, panels, cards ── */
+  #ex-float-bar{border-radius:var(--sq-s)!important;corner-shape:squircle;}   /* Note / Timer / Stats bar */
+  .hs-zoom-card,.chart-card,.summary-box,.cal-workout-item{border-radius:var(--sq-m)!important;corner-shape:squircle;}
+
+  /* ── Buttons by height: under ~45px → XS, ~45–85px → S (a 12px squircle
+     on a 56px key looks SHARPER than the old 10px round one). ── */
+  /* XS: sets-target − / + (44px), calendar day cells, set ✓ buttons, timer
+     presets, the KG editor's ± and +1.25 / +2.5 / +5 (~40px). */
+  .sq-xs-btn,.cal-day,.set-done-btn,.timer-preset,#kg-editor-sheet .editor-tap-btn{border-radius:var(--sq-xs)!important;corner-shape:squircle;}
+  /* S: KG/REP keypad keys (56px), Cancel / Prev / Save (56px), the REP − / +
+     (82px), workout-target − / + (64px). */
+  .kg-pad-btn,#kg-editor-sheet .editor-action-btn,#kg-editor-sheet button[onclick^="repsEditorDelta"],.sq-s-btn{border-radius:var(--sq-s)!important;corner-shape:squircle;}
+  /* The KG / REP editor sheet itself (body-level, inline 20px 20px 0 0). */
+  #kg-editor-sheet{border-radius:var(--sq-m) var(--sq-m) 0 0!important;corner-shape:squircle;}
+
+  /* ── App-wide defaults (zero specificity via :where, so every rule above
+     and any later specific rule wins). They catch the many inline-styled
+     elements by their single inline radius value — the trailing ";" keeps out
+     mixed values like "10px 0 0 10px" (joined button groups), which stay as
+     they are. ── */
+  /* Action buttons & text inputs (Cancel / Save / Confirm…, ~44–56px) → S. */
+  :where(button[style*="border-radius:10px;"],input[style*="border-radius:10px;"],textarea[style*="border-radius:10px;"],select[style*="border-radius:10px;"],
+         button[style*="border-radius:12px;"],input[style*="border-radius:12px;"],textarea[style*="border-radius:12px;"],select[style*="border-radius:12px;"],
+         button[style*="border-radius:14px;"],input[style*="border-radius:14px;"],textarea[style*="border-radius:14px;"],select[style*="border-radius:14px;"]){border-radius:var(--sq-s)!important;corner-shape:squircle;}
+  /* Bordered / surface panels & cards (popup menus, list boxes, session
+     cards, chart cards, summary tiles) → M. Only ones with a border or a
+     surface background — plain layout boxes (e.g. the week-status day
+     columns) aren't visible shapes and are left alone. */
+  :where(div[style*="border-radius:10px;"][style*="border:1px"],
+         div[style*="border-radius:12px;"][style*="border:1px"],
+         div[style*="border-radius:14px;"][style*="border:1px"],
+         div[style*="border-radius:10px;"][style*="background:var(--g16)"],
+         div[style*="border-radius:14px;"][style*="background:var(--g16)"],
+         div[style*="border-radius:10px;"][style*="background:var(--surface"]){border-radius:var(--sq-m)!important;corner-shape:squircle;}
+  /* Toasts (inline 28px) and toggle-switch tracks → Pill. */
+  :where([style*="border-radius:28px;"],.bp-lib-track,[id^="timer-autostart-track-"],#soundToggleSwitch,#darkModeToggleSwitch){border-radius:var(--sq-pill)!important;corner-shape:squircle;}
+  /* Stylesheet components (class rules further down). */
+  :where(.btn-load-history,.btn-clear-workout,.btn-del-yes,.btn-del-yes-solid,.btn-del-cancel,.btn-save,.btn-save-edit,
+         .btn-summary-yes,.btn-summary-no,.btn-summary-cancel,.btn-save-workout-summary,.btn-discard,.timer-ctrl-btn,
+         .search-input,.custom-input,.custom-select,.exercise-select){border-radius:var(--sq-s)!important;corner-shape:squircle;}
+  :where(.history-card,.trash-item,.edit-ex-card,.ex-list-item,.load-hist-item,.exhist-session,.exhist-best-box,.sms-box,
+         .prog-info-panel,.prog-acc-placeholder,#reps-popup,#kgEditorSheet){border-radius:var(--sq-m)!important;corner-shape:squircle;}
+  :where(#reps-popup .reps-pop-btn){border-radius:var(--sq-xs)!important;corner-shape:squircle;}
+  :where(.muscle-pill,.time-pill){border-radius:var(--sq-pill)!important;corner-shape:squircle;}
+  /* A bottom sheet built in JS (workout photo step). */
+  #workout-photo-step-panel{border-radius:var(--sq-m) var(--sq-m) 0 0!important;corner-shape:squircle;}
+
+  /* ── Pill: buttons ── */
+  /* Home → START WORKOUT (100px), Workout info → START WORKOUT, active
+     exercise SAVE & DONE / CLOSE (58px), FIND A COACH, new workout SAVE,
+     the toast. --sq-pill (999px) is capped at half each one's height. */
+  #today-load-btn,#w2-sheet-start-btn,#ex-detail-finish-btn,#today-coach-btn,#nwf-bottom-bar > button,.toast{
+    border-radius:var(--sq-pill)!important;corner-shape:squircle;}
 }
 button,h1,h2,h3,h4,label,.tab,.tabs,.header,.workout-name-bar,.exercise-card .ex-header,.muscle-chip,.ex-float-bar,.modal-overlay .modal-header{user-select:none;-webkit-user-select:none;}
 img,a,svg{-webkit-touch-callout:none;-webkit-user-drag:none;user-drag:none;-webkit-user-select:none;user-select:none;}
@@ -5057,7 +5151,7 @@ function openSetsTargetSheet() {
   const rows = document.getElementById('sets-target-rows');
   if (!sheet || !rows) return;
   window._setsTargetDraft = _getSetsTargets();
-  const btn = (part, d) => `<button onclick="event.stopPropagation();_adjustSetsTarget('${part}',${d},this)" style="width:44px;height:44px;border-radius:12px;border:1px solid var(--border);background:var(--g33);color:var(--text);font-size:30px;font-weight:300;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;-webkit-tap-highlight-color:transparent;">${d < 0 ? '&minus;' : '+'}</button>`;
+  const btn = (part, d) => `<button class="sq-xs-btn" onclick="event.stopPropagation();_adjustSetsTarget('${part}',${d},this)" style="width:44px;height:44px;border-radius:12px;border:1px solid var(--border);background:var(--g33);color:var(--text);font-size:30px;font-weight:300;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;-webkit-tap-highlight-color:transparent;">${d < 0 ? '&minus;' : '+'}</button>`;
   rows.innerHTML = SETS_TARGET_PARTS.map((p, i) => `
     <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;${i ? 'border-top:1px solid var(--g2a);' : ''}">
       <span style="font-family:'DM Sans';font-size:17px;font-weight:700;color:var(--text);">${p}</span>
@@ -6257,7 +6351,7 @@ function _setWorkoutHeroPhoto(name) {
       </button>
     </div>
     <div id="workout-hero-progress-wrap" style="height:6px;background:transparent;display:none;gap:3px;width:80%;margin:-2px auto;"></div>` : ''}
-    <div ${window._isNewWorkoutFlow ? '' : `onclick="if(window._todayInfoPanelOpen)_closeTodayInfoPanel()"`} style="position:relative;margin:${window._isNewWorkoutFlow ? '0' : '4px'} 10px 0;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;">
+    <div class="sq-top-img" ${window._isNewWorkoutFlow ? '' : `onclick="if(window._todayInfoPanelOpen)_closeTodayInfoPanel()"`} style="position:relative;margin:${window._isNewWorkoutFlow ? '0' : '4px'} 10px 0;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;">
       <img src="${photo}" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;filter:brightness(0.85);">
       ${window._isNewWorkoutFlow ? `<button onclick="event.stopPropagation();_openPhotoModalFromHero()" style="position:absolute;top:8px;right:8px;z-index:4;background:rgba(0,0,0,0.55);border:none;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>` : ''}
       ${(localStorage.getItem(`ironlog_workout_video_${name}`) && localStorage.getItem(`ironlog_workout_video_broken_${name}`) !== '1') ? `<button onclick="event.stopPropagation();const _v=localStorage.getItem('ironlog_workout_video_${name}');if(_v)window.open(_v,'_blank');" style="position:absolute;top:8px;left:10px;z-index:4;display:flex;align-items:center;gap:5px;background:transparent;border:none;padding:4px 6px;border-radius:4px;cursor:pointer;-webkit-tap-highlight-color:transparent;"><svg width="13" height="13" viewBox="0 0 24 24" fill="var(--accent)" stroke="none"><polygon points="5,3 19,12 5,21"/></svg><span style="color:var(--accent);font-family:'DM Sans';font-size:11px;font-weight:700;letter-spacing:.5px;">PLAY</span></button>` : ''}
@@ -6294,7 +6388,7 @@ function _setWorkoutHeroPhoto(name) {
   } else if (window._isNewWorkoutFlow && name) {
     // New workout with no photo — black placeholder matching hero geometry
     el.style.display = 'block';
-    el.innerHTML = `<div style="position:relative;margin:0 10px;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;background:var(--g00);">
+    el.innerHTML = `<div class="sq-top-img" style="position:relative;margin:0 10px;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;background:var(--g00);">
       <button onclick="event.stopPropagation();_openPhotoModalFromHero()" style="position:absolute;top:8px;right:8px;z-index:4;background:rgba(0,0,0,0.55);border:none;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
       <div style="position:absolute;bottom:0;left:0;right:0;padding:10px 14px 12px;pointer-events:none;text-align:right;">
         <div id="workout-hero-name" data-name="${name||''}" onclick="_startHeroNameEdit(this)" style="font-family:'DM Sans';font-size:20px;font-weight:900;color:#fff;max-width:60%;margin-left:auto;line-height:1.2;pointer-events:auto;cursor:pointer;-webkit-tap-highlight-color:transparent;${_heroNameDir(name)}">${_heroNameHtml(name)}</div>
@@ -12017,6 +12111,7 @@ function updatePickModeTabs() {
 // or the window resizes. Elsewhere the original rounded rect stays as is.
 const _SQ_OK = !!(window.CSS && CSS.supports && CSS.supports('corner-shape', 'squircle'));
 const SQ_DASH_W = 2; // px, the dashed line's visible thickness
+window._SQ_OK = _SQ_OK;
 function _squirclePathD(w, h, r) {
   r = Math.max(0, Math.min(r, w / 2, h / 2));
   const N = 16, pts = [];
@@ -12074,8 +12169,12 @@ function _sqDashSync() {
     // 12px round in the new-workout flow); data-sq-when: a selector the host
     // must match to be drawn as a squircle, otherwise plain rounded corners.
     const auto = svg.dataset.r === 'auto';
-    const r0 = auto ? (parseFloat(getComputedStyle(host).borderTopLeftRadius) || 0) : (parseFloat(svg.dataset.r) || 14);
-    const sq = !svg.dataset.sqWhen || host.matches(svg.dataset.sqWhen);
+    const hcs = getComputedStyle(host);
+    const r0 = auto ? (parseFloat(hcs.borderTopLeftRadius) || 0) : (parseFloat(svg.dataset.r) || 14);
+    // Squircle or plain round: data-sq-when if given, else the host's own
+    // computed corner shape (anything but "round"), else squircle.
+    const shape = (hcs.getPropertyValue('corner-top-left-shape') || hcs.getPropertyValue('corner-shape') || '').trim();
+    const sq = svg.dataset.sqWhen ? host.matches(svg.dataset.sqWhen) : (shape ? shape !== 'round' : true);
     // Inset by half the line, so the whole 2px shows; radius follows the inset.
     const ins = SQ_DASH_W / 2, r = Math.max(0, r0 - ins);
     p.setAttribute('d', (sq ? _squirclePathD : _roundRectPathD)(w - 2 * ins, h - 2 * ins, r));
@@ -12224,7 +12323,7 @@ function renderWorkoutsTab2() {
       <button class="w2-create-btn" onclick="startNewWorkout(true)" style="position:relative;width:100%;aspect-ratio:21/6;box-sizing:border-box;background:#000;border:none;border-radius:14px;color:var(--accent);font-family:'DM Sans';font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;padding:0;-webkit-tap-highlight-color:transparent;transition:transform .15s;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''" ontouchcancel="this.style.transform=''">
         <!-- Dashed border drawn as SVG: CSS 'dashed' can't set the dash length.
              Stroke 3px, half clipped at the edge = 1.5px; 10px dashes, 6px gaps. -->
-        <svg class="sq-dash" data-r="30" aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;"><rect width="100%" height="100%" rx="14" ry="14" fill="none" style="stroke:var(--accent);" stroke-width="3" stroke-dasharray="10 6"/></svg>
+        <svg class="sq-dash" data-r="auto" aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;"><rect width="100%" height="100%" rx="14" ry="14" fill="none" style="stroke:var(--accent);" stroke-width="3" stroke-dasharray="10 6"/></svg>
         <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
         Create New Workout
       </button>
@@ -31376,7 +31475,7 @@ function deleteCoachWorkout(id) {
         <svg width="20" height="20" viewBox="0 0 24 24" fill="#A0A0A0"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
       </button>
     </div>
-    <div style="position:relative;margin:0 10px;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;">
+    <div class="sq-top-img" style="position:relative;margin:0 10px;aspect-ratio:21/9;overflow:hidden;border-radius:12px 12px 0 0;">
       <img id="extab-ex-photo-img" src="" style="width:100%;height:100%;object-fit:cover;display:block;">
     </div>
     <div style="padding:10px 10px 4px;">
@@ -31496,9 +31595,9 @@ function deleteCoachWorkout(id) {
   <div style="font-family:'DM Sans';font-size:18px;font-weight:800;color:var(--text);text-align:center;margin-bottom:18px;letter-spacing:.3px;">MY WEEKLY TARGET</div>
   <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:28px;">
     <div style="display:flex;align-items:center;justify-content:center;gap:0;">
-      <button onclick="event.stopPropagation();_adjustStrengthTarget(-1,this)" style="width:64px;height:64px;border-radius:16px;border:1px solid var(--border);background:var(--g33);color:var(--text);font-size:46px;font-weight:300;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">−</button>
+      <button class="sq-s-btn" onclick="event.stopPropagation();_adjustStrengthTarget(-1,this)" style="width:64px;height:64px;border-radius:16px;border:1px solid var(--border);background:var(--g33);color:var(--text);font-size:46px;font-weight:300;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">−</button>
       <span id="strength-target-val" style="font-family:'DM Sans';font-size:54px;font-weight:800;color:var(--text);line-height:1;width:120px;text-align:center;">3</span>
-      <button onclick="event.stopPropagation();_adjustStrengthTarget(1,this)" style="width:64px;height:64px;border-radius:16px;border:1px solid var(--border);background:var(--g33);color:var(--text);font-size:46px;font-weight:300;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">+</button>
+      <button class="sq-s-btn" onclick="event.stopPropagation();_adjustStrengthTarget(1,this)" style="width:64px;height:64px;border-radius:16px;border:1px solid var(--border);background:var(--g33);color:var(--text);font-size:46px;font-weight:300;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">+</button>
     </div>
     <span style="font-family:'DM Sans';font-size:12px;font-weight:600;color:var(--gcc);letter-spacing:.5px;margin-top:10px;">WORKOUTS / WEEK</span>
   </div>
@@ -38315,14 +38414,18 @@ function _updateKgDisplay(val, isBWMode) {
     // the corner-shape @supports block): hand its outline to _sqDashSync, which
     // redraws it as a squircle there and as plain rounded corners elsewhere
     // (new-workout flow, inline 12px). The rect above stays where unsupported.
-    // Same for the Exercises tab's Create New Exercise (always squircle there).
+    // Every dashed button where squircle corners are supported: the app-wide
+    // squircle defaults give many of them squircle backgrounds, so their
+    // outline is handed to _sqDashSync too — it reads each button's own
+    // computed radius + corner shape and draws squircle or plain round to
+    // match. (data-sq-when kept for the ones whose shape switches by state.)
     const _sqWhen = btn.classList.contains('btn-add-exercise') ? '.btn-add-exercise:not([style*="border-radius"])'
       : btn.classList.contains('extab-create-btn') ? '.extab-create-btn'
       : btn.classList.contains('cal-plan-btn') ? '.cal-plan-btn' : null;
-    if (_sqWhen && window._sqDashSync) {
+    if (window._sqDashSync && window._SQ_OK) {
       svg.classList.add('sq-dash');
       svg.dataset.r = 'auto';
-      svg.dataset.sqWhen = _sqWhen;
+      if (_sqWhen) svg.dataset.sqWhen = _sqWhen;
       requestAnimationFrame(window._sqDashSync);
     }
   }
