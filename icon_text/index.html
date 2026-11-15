@@ -5246,8 +5246,23 @@ const _imgCacheBust = `?v=${Date.now()}`;
 
 // Default workout image
 const _workoutDefaultPhoto = `images/workout_default.webp${_imgCacheBust}`;
+// Order: this device's photo → the published brand workout's photo (same
+// name) → the default image. The brand step matters after "delete browsing
+// data": a brand workout the user has used (_adoptLibWorkout) — or the super
+// admin's own copy of one they published — is a workout of their own, shown
+// instead of the brand row, and its photo lived only in localStorage. The
+// brand library (Firestore / brand_library.json) still has it.
+function _brandWorkoutPhoto(name) {
+  const k = (name || '').trim().toLowerCase();
+  if (!k) return null;
+  const find = list => (list || []).find(w => w && w.photo && typeof w.photo === 'string' && (w.name || '').trim().toLowerCase() === k);
+  const w = find(typeof _libraryWorkouts !== 'undefined' ? _libraryWorkouts : null)
+    || find(typeof _defaultWorkouts !== 'undefined' ? _defaultWorkouts : null);
+  return w ? w.photo : null;
+}
 function _getWorkoutPhoto(name) {
   return (name ? localStorage.getItem(`ironlog_workout_photo_${name}`) : null)
+    || _brandWorkoutPhoto(name)
     || _workoutDefaultPhoto
     || null;
 }
@@ -26062,7 +26077,13 @@ window._onAuthReady = (user) => {
   // Once the brand library arrives, re-check Home's START WORKOUT — a new
   // user (or one right after Delete All Data) may only have brand workouts,
   // which weren't loaded yet when Home first drew.
-  if (typeof loadLibrary === 'function') loadLibrary().then(() => { if (typeof renderTodayPlanCard === 'function') renderTodayPlanCard(); }, () => {});
+  // Also redraws the Workouts tab: the user's own copies of brand workouts can
+  // now take their photo from the brand library (_getWorkoutPhoto), which only
+  // exists once it has loaded.
+  if (typeof loadLibrary === 'function') loadLibrary().then(() => {
+    if (typeof renderTodayPlanCard === 'function') renderTodayPlanCard();
+    if (typeof renderWorkoutsTab2 === 'function') renderWorkoutsTab2();
+  }, () => {});
 
   // Restore debug role if super_admin had one saved
   setTimeout(_restoreDebugRoleIfAny, 300);
@@ -26098,6 +26119,9 @@ window.syncToFirestore = function() {
     // Library/brand-default workouts this user deleted from their ALL list
     // (see _hardDeleteWorkoutNames) — hidden for them only.
     hiddenLibWorkouts: _getHiddenLibNames(),
+    // Workout → App Photo path (see _appWorkoutPhotosForCloud) — so a photo
+    // picked from App Photos survives "delete browsing data" / a new device.
+    appWorkoutPhotos: window._appWorkoutPhotosForCloud ? window._appWorkoutPhotosForCloud() : [],
     brandContentOff: _LS.get('ironlog_brand_off') === '1',
     // Set by Delete All Data — other devices see it and wipe their local
     // copy instead of re-uploading it (see loadFromFirestore).
@@ -26215,6 +26239,10 @@ function _applyCloudUserData(data) {
       if (s.lastTimerSecs) { lastTimerSecs = s.lastTimerSecs; localStorage.setItem('ironlog_last_timer', s.lastTimerSecs); }
       if (s.miniChartRange) { miniChartRange = s.miniChartRange; localStorage.setItem('ironlog_mini_range', s.miniChartRange); }
     }
+    // App Photo choices: restore any this device lost (after the workout merge
+    // above, so restored workouts get theirs). Cloud without the list yet (first
+    // run after this update) or a different list → upload this device's.
+    if (window._restoreAppWorkoutPhotos && window._restoreAppWorkoutPhotos(data.appWorkoutPhotos)) _localExtras = true;
     if (typeof renderTodayWeekProgress === 'function') renderTodayWeekProgress();
     if (typeof renderTodayPlanCard === 'function') renderTodayPlanCard();
     // This device has things the cloud doesn't → unsynced (flag set after
@@ -35264,6 +35292,7 @@ function _removeWorkoutPhoto() {
   const _wName = w ? w.name : (document.getElementById('workoutName')?.value || '').trim();
   if (!_wName) return;
   localStorage.removeItem(`ironlog_workout_photo_${_wName}`);
+  _queueAppPhotoSync(); // drop it from the cloud's App Photo list too
   _wPhotoEdited(_wName); // back to PENDING (super admin)
   renderWorkoutsTab2();
   // Refresh whichever preview is currently on screen so it doesn't keep
@@ -35540,9 +35569,66 @@ function _updateWorkoutCropPreview() {
 // Writes a workout photo, and if localStorage is full, prunes photo entries for
 // workouts that no longer exist (renamed/deleted workouts leave their old photo
 // key behind forever otherwise) and retries once before giving up.
+// ── Cloud backup of App Photo choices ──────────────────────────────────────
+// Workout photos live only in localStorage (ironlog_workout_photo_<name>), so
+// "delete browsing data" lost them and workouts restored from the cloud showed
+// the default image. App Photos (images/workouts/…) are just a path, so the
+// name → path list rides along in the user's cloud doc (appWorkoutPhotos,
+// written by syncToFirestore, restored in _applyCloudUserData). The user's own
+// uploaded photos (data: URLs) are NOT backed up (not in scope yet).
+// Returns the clean App Photo path for a stored photo value, or null (own
+// photo, default image, anything else). Also used to sanitize cloud values.
+function _appPhotoPathOf(photo) {
+  if (!photo || typeof photo !== 'string') return null;
+  if (!photo.startsWith('data:') && !/^(\.\/)?images\/workouts\/[^/]+$/.test(photo.split('?')[0])) return null;
+  const file = _appPhotoFileOf(photo, _appPhotoMap()); // data: → only a known App Photo copy
+  if (!file || !/^[^/\\]+\.(webp|jpe?g|png|avif)$/i.test(file)) return null;
+  return _APP_WORKOUT_PHOTOS_DIR + encodeURIComponent(file);
+}
+// [{ name, photo }] for every workout (and recycle-bin workout) using an App Photo.
+function _appWorkoutPhotosForCloud() {
+  const names = new Set([...(workouts || []).filter(w => !w._draft), ...(deletedWorkouts || [])]
+    .map(w => w && w.name).filter(Boolean));
+  const out = [];
+  names.forEach(n => {
+    const p = _appPhotoPathOf(localStorage.getItem(`ironlog_workout_photo_${n}`));
+    if (p) out.push({ name: n, photo: p });
+  });
+  return out;
+}
+// Cloud → this device: fills in only workouts with NO photo here (a photo
+// chosen on this device is kept). Returns true if this device's list then
+// differs from the cloud's (→ caller uploads, e.g. first run after this update).
+function _restoreAppWorkoutPhotos(cloudList) {
+  const list = Array.isArray(cloudList) ? cloudList : [];
+  list.forEach(e => {
+    if (!e || typeof e.name !== 'string' || !e.name) return;
+    const p = _appPhotoPathOf(e.photo);
+    if (!p) return;
+    const key = `ironlog_workout_photo_${e.name}`;
+    if (!localStorage.getItem(key)) { try { localStorage.setItem(key, p); } catch (_) {} }
+  });
+  const sig = l => JSON.stringify(l.map(e => [e.name, e.photo]).sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)));
+  return sig(_appWorkoutPhotosForCloud()) !== sig(list.filter(e => e && e.name && _appPhotoPathOf(e.photo)).map(e => ({ name: e.name, photo: _appPhotoPathOf(e.photo) })));
+}
+// A photo picked/removed on an existing workout doesn't save the workout
+// itself, so nothing else would sync it — upload shortly after (debounced).
+function _queueAppPhotoSync() {
+  clearTimeout(window._appPhotoSyncT);
+  window._appPhotoSyncT = setTimeout(() => {
+    if (!window._currentUser || !window.syncToFirestore) return;
+    if (window._markUnsynced) window._markUnsynced();
+    window.syncToFirestore();
+  }, 1500);
+}
+window._appWorkoutPhotosForCloud = _appWorkoutPhotosForCloud;
+window._restoreAppWorkoutPhotos = _restoreAppWorkoutPhotos;
+window._queueAppPhotoSync = _queueAppPhotoSync;
+
 function _saveWorkoutPhotoWithRetry(key, url) {
   try {
     localStorage.setItem(key, url);
+    _queueAppPhotoSync();
     return true;
   } catch (e) {
     if (!(e && (e.name === 'QuotaExceededError' || e.code === 22))) {
@@ -35557,6 +35643,7 @@ function _saveWorkoutPhotoWithRetry(key, url) {
   });
   try {
     localStorage.setItem(key, url);
+    _queueAppPhotoSync();
     return true;
   } catch (e2) {
     showToast('Storage full — photo not saved');
