@@ -52,6 +52,9 @@ if ('serviceWorker' in navigator) {
 <!-- localForage: IndexedDB-backed offline storage -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
 <link rel="preload" href="fonts/heebo-hebrew.woff2" as="font" type="font/woff2" crossorigin>
+<!-- Home title font (the app name above "Welcome Back"): to change it, replace
+     fonts/logo/logo.woff2 with any .woff2 file, keeping that exact file name. -->
+<link rel="preload" href="fonts/logo/logo.woff2" as="font" type="font/woff2" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="pwa-styles.css">
 <script>
@@ -681,6 +684,16 @@ body.desktop-mode .pages-wrap {
    sides and bottom only: clip-path in place of its overflow:hidden. */
 #today-week-welcome{color:#fff;justify-content:flex-start;box-sizing:border-box;}
 #today-week-welcome-line{position:relative;top:var(--welcome-y,0px);}
+/* Home title: the app name (BRAND_CONFIG.name → data-title) IN PLACE OF the
+   "Welcome" / "Welcome Back" text (removed 2026-11-18). The line element keeps
+   its spot (top = --welcome-y, 50px below the header logo) and its text is
+   still written by _applyWeekWelcome, but shrunk to font-size:0 — only the
+   ::before (the app name, same 40px size / 1.1 line box as the old text) shows.
+   To bring the Welcome text back: drop the font-size:0 and the ::before.
+   Font: fonts/logo/logo.woff2 (currently Bruno Ace); Bebas Neue if missing. */
+@font-face{font-family:'AppTitle';src:url(fonts/logo/logo.woff2) format('woff2');font-weight:400;font-style:normal;font-display:block;}
+#today-week-welcome-line{font-size:0;}
+#today-week-welcome-line::before{content:attr(data-title);display:block;white-space:nowrap;font-family:'AppTitle','Bebas Neue',sans-serif;font-size:40px;font-weight:400;line-height:1.1;letter-spacing:1px;color:#fff;}
 /* Black pill behind the carousel dots, readable on the home photo. A pseudo-element
    so it adds no layout: the home column keeps its exact spacing. */
 #today-carousel-dots{position:relative;}
@@ -1963,7 +1976,8 @@ window._fbModuleReady = true;
       <!-- The carousel's first page, "Welcome" / "Welcome Back" (no circle) —
            and, with no workout completed this week, shown alone instead of
            everything else in this box (see _applyWeekWelcome), same space. -->
-      <div id="today-week-welcome" aria-live="polite"><span id="today-week-welcome-line">Welcome</span></div>
+      <div id="today-week-welcome" role="heading" aria-level="1" aria-label=""><span id="today-week-welcome-line" data-title="" aria-hidden="true">Welcome</span></div>
+      <script>(function(){ var n = (window.BRAND_CONFIG && window.BRAND_CONFIG.name) || ''; var l = document.getElementById('today-week-welcome-line'); if (l) l.setAttribute('data-title', n); var w = document.getElementById('today-week-welcome'); if (w) w.setAttribute('aria-label', n); })();</script>
       <!-- This Week + the circle pages: slides in from the right after Welcome. -->
       <div id="today-week-main">
       <!-- Sits above the carousel track, not inside either slide, so it never
