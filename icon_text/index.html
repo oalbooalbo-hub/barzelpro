@@ -2117,7 +2117,13 @@ window._fbModuleReady = true;
     </button>
     <!-- Top: logo + title -->
     <div style="display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;">
-      <img class="brand-logo" src="./logo.svg" alt="logo" style="width:clamp(120px,40vw,180px);height:auto;object-fit:contain;" onerror="this.style.display='none'">
+      <!-- App name in the Home title's font (AppTitle = fonts/logo/logo.woff2),
+           in place of the logo image (2026-11-18). The box keeps the old logo's
+           exact size (width clamp(120px,40vw,180px) × logo.svg's 586:626 ratio)
+           so nothing else on the screen moves. Text set in openShareQR. -->
+      <div style="width:clamp(120px,40vw,180px);aspect-ratio:586/626;display:flex;align-items:center;justify-content:center;overflow:visible;">
+        <span id="share-qr-app-title" style="white-space:nowrap;font-family:'AppTitle','Bebas Neue',sans-serif;font-size:40px;font-weight:400;line-height:1.1;letter-spacing:1px;color:#fff;"></span>
+      </div>
     </div>
     <!-- Middle: QR box with URL inside -->
     <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
@@ -2125,7 +2131,7 @@ window._fbModuleReady = true;
         <div id="share-qr-canvas" style="width:198px;height:198px;"></div>
 
       </div>
-      <div id="share-qr-title" style="font-family:'DM Sans';font-size:18px;font-weight:700;color:var(--text-strong);letter-spacing:.5px;text-align:center;margin-top:12px;"></div>
+      <!-- The "SHARE" title under the QR (#share-qr-title) was removed 2026-11-18. -->
     </div>
     <!-- Bottom: share + close -->
     <div style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%;max-width:380px;">
@@ -33742,17 +33748,12 @@ function openShareQR() {
   const tagline = window.BRAND_CONFIG?.tagline || 'Track your workouts, monitor progress.';
   const titleEl = document.getElementById('share-qr-title');
   const tagEl = document.getElementById('share-qr-tagline');
-  // Two lines ("SHARE" / the app name) instead of one — built via separate
-  // text nodes rather than a template string, so a brand name never risks
-  // being interpreted as HTML.
-  if (titleEl) {
-    titleEl.innerHTML = '';
-    const _shareLine = document.createElement('div');
-    _shareLine.textContent = 'SHARE';
-    const _nameLine = document.createElement('div');
-    _nameLine.textContent = appName.toUpperCase();
-    titleEl.append(_shareLine, _nameLine);
-  }
+  const _appTitleEl = document.getElementById('share-qr-app-title');
+  if (_appTitleEl) _appTitleEl.textContent = appName;
+  // The "SHARE" title under the QR was removed (2026-11-18); the app name
+  // shows above the QR in #share-qr-app-title. titleEl is null now — kept as a
+  // guard in case the title element is ever brought back.
+  if (titleEl) titleEl.textContent = 'SHARE';
   if (tagEl) tagEl.textContent = tagline;
   // Generate QR
   const qrEl = document.getElementById('share-qr-canvas');
