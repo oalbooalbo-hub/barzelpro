@@ -21475,6 +21475,7 @@ async function _runDeleteAllData() {
     _LS.set('ironlog_data_reset_at', resetAt);
     _setBrandContentOff(true);
     _markSynced(); // the cloud already has exactly this (empty + brand off)
+    if (window._pushWorkoutStats) window._pushWorkoutStats(); // Admin Panel → 0 workouts
   }));
   step(100, 'Done ✓');
   await _sleep(600);
@@ -26219,7 +26220,9 @@ window._onAuthReady = (user) => {
   const roleEl = document.getElementById('userMenuRole');
   if (nameEl) nameEl.textContent = user.displayName || 'User';
   if (emailEl) emailEl.textContent = user.email || '';
-  if (roleEl) { roleEl.textContent = roleLabels[role] || role; roleEl.style.color = color; }
+  // Profile: clients get no role title — hidden (display:none also drops its
+  // margin-top, closing the gap under the email).
+  if (roleEl) { roleEl.textContent = roleLabels[role] || role; roleEl.style.color = color; roleEl.style.display = role === 'client' ? 'none' : ''; }
 
   // Role-gated buttons: set every one explicitly (shown OR hidden). Signing
   // out doesn't reload the page, so a previous user's buttons (e.g. a super
@@ -26373,6 +26376,33 @@ window._onAuthReady = (user) => {
   setTimeout(_restoreDebugRoleIfAny, 300);
 };
 
+// Admin Panel (super admin): workouts saved + last saved date per user.
+// A "saved workout" = a logged session in `workouts` (not a _template, not a
+// _draft). Stored on users/{uid}.workoutStats[brandId] so the panel reads it
+// from the users query it already does — no per-user workout reads.
+function _calcWorkoutStats(list) {
+  let count = 0, last = 0;
+  (list || []).forEach(w => {
+    if (!w || w._draft || w._template) return;
+    count++;
+    const t = new Date(w.date).getTime();
+    if (t > last) last = t;
+  });
+  return { count, lastSavedAt: last || null };
+}
+let _lastPushedWorkoutStatsKey = null;
+function _pushWorkoutStats() {
+  if (!window._currentUser || !window._fbDb) return;
+  const uid = window._currentUser.uid, brandId = window.BRAND_ID || 'default';
+  const stats = _calcWorkoutStats(workouts);
+  const key = `${uid}|${brandId}|${stats.count}|${stats.lastSavedAt}`;
+  if (key === _lastPushedWorkoutStatsKey) return; // unchanged since last write
+  window._fbSetDoc(window._fbDoc(window._fbDb, 'users', uid), { workoutStats: { [brandId]: stats } }, { merge: true })
+    .then(() => { _lastPushedWorkoutStatsKey = key; })
+    .catch(e => console.warn('[WorkoutStats] write failed:', e.message));
+}
+window._pushWorkoutStats = _pushWorkoutStats;
+
 // Firestore sync - exposed as window globals, called from regular scripts
 // Returns a Promise<boolean>: true once Firestore confirms the write, false
 // when it can't sync right now (not signed in, offline → queued, or error).
@@ -26417,7 +26447,7 @@ window.syncToFirestore = function() {
       miniChartRange: miniChartRange,
     },
     updatedAt: new Date().toISOString()
-  }).then(() => { _markSynced(_ver); return true; })
+  }).then(() => { _markSynced(_ver); _pushWorkoutStats(); return true; })
     .catch(e => { console.warn('Firestore sync failed:', e.message); return false; });
 };
 
@@ -27304,13 +27334,14 @@ function renderAdminUsers(search = '') {
     const editableRoles = ALL_ROLES.filter(r => r !== u.brandRole && (canEditSiteManager || r !== 'brand_admin'));
     const licData = window._cachedLicenses || {};
 
-    return `<div style="background:var(--g14);border:1px solid var(--g2a);border-radius:12px;padding:14px;margin-bottom:10px;">
+    return `<div data-uid="${u.id}" style="background:var(--g14);border:1px solid var(--g2a);border-radius:12px;padding:14px;margin-bottom:10px;">
       <div style="display:flex;align-items:center;gap:12px;">
         <div style="width:40px;height:40px;border-radius:50%;background:${color}22;border:1px solid ${color}55;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:${color};flex-shrink:0;">${initials}</div>
         <div style="flex:1;min-width:0;">
           <div style="font-weight:700;font-size:14px;color:var(--gf0);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${u.displayName||'—'} ${isSelf?'<span style="color:var(--g55);font-size:11px;">(you)</span>':''}</div>
           <div style="font-size:12px;color:var(--g66);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${u.email||u.id}</div>
           ${siteLabel !== '—' ? `<div style="font-size:11px;color:#a78bfa;margin-top:2px;">Site: ${siteLabel}</div>` : ''}
+          ${myRole === 'super_admin' ? `<div class="admin-wkt-stats" style="font-size:11px;color:var(--g88);margin-top:2px;">${_adminWorkoutStatsLabel(u)}</div>` : ''}
         </div>
         <span style="background:${color}22;color:${color};border:1px solid ${color}44;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;flex-shrink:0;">${ROLE_LABELS[u.brandRole]||u.brandRole}</span>
       </div>
@@ -27330,6 +27361,42 @@ function renderAdminUsers(search = '') {
         </div>` : ''}
     </div>`;
   }).join('');
+  if (myRole === 'super_admin') _adminBackfillWorkoutStats();
+}
+
+// Super admin → Admin Panel: "37 workouts · Last: 18 Nov 2026" per user,
+// from users/{uid}.workoutStats[brandId] (written by _pushWorkoutStats).
+function _adminWorkoutStatsLabel(u) {
+  const s = u.workoutStats?.[window.BRAND_ID || 'default'];
+  if (!s) return 'Workouts: …'; // not counted yet — _adminBackfillWorkoutStats fills it in
+  const n = s.count || 0;
+  const last = s.lastSavedAt ? new Date(s.lastSavedAt).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : 'never';
+  return `${n} workout${n === 1 ? '' : 's'} · Last: ${last}`;
+}
+
+// One-time recount for users who haven't synced since workoutStats was
+// added: read their userData doc once, count, and store the result on their
+// users doc (super admin may write any user) so it's never read again.
+const _adminStatsBackfillTried = new Set();
+function _adminBackfillWorkoutStats() {
+  if (!window._fbDb) return;
+  const brandId = window.BRAND_ID || 'default';
+  const todo = _adminUsers.filter(u => !u.workoutStats?.[brandId] && !_adminStatsBackfillTried.has(u.id));
+  todo.forEach(u => {
+    _adminStatsBackfillTried.add(u.id);
+    window._fbGetDoc(window._fbDoc(window._fbDb, 'userData', brandId, 'users', u.id)).then(snap => {
+      const stats = _calcWorkoutStats(snap.exists() ? snap.data().workouts : []);
+      u.workoutStats = { ...(u.workoutStats || {}), [brandId]: stats };
+      window._fbSetDoc(window._fbDoc(window._fbDb, 'users', u.id), { workoutStats: { [brandId]: stats } }, { merge: true })
+        .catch(e => console.warn('[WorkoutStats] backfill save failed:', u.id, e.message));
+      // Update just this row's line (no full re-render: keeps scroll / open selects).
+      const label = _adminWorkoutStatsLabel(u);
+      document.querySelectorAll(`#adminUsersList [data-uid="${u.id}"] .admin-wkt-stats`).forEach(el => { el.textContent = label; });
+    }).catch(e => {
+      console.warn('[WorkoutStats] backfill read failed:', u.id, e.message);
+      document.querySelectorAll(`#adminUsersList [data-uid="${u.id}"] .admin-wkt-stats`).forEach(el => { el.textContent = 'Workouts: unavailable'; });
+    });
+  });
 }
 
 function changeUserRole(uid, newRole, force = false) {
@@ -30337,7 +30404,7 @@ function _refreshUserMenuForRole(role) {
   const color = roleColors[role] || '#888';
   // Update role label in menu
   const roleEl = document.getElementById('userMenuRole');
-  if (roleEl) { roleEl.textContent = ROLE_LABELS[role] || role; roleEl.style.color = color; }
+  if (roleEl) { roleEl.textContent = ROLE_LABELS[role] || role; roleEl.style.color = color; roleEl.style.display = role === 'client' ? 'none' : ''; } // no title for clients (see _onAuthReady)
   // Show/hide role-gated buttons
   const adminBtn = document.getElementById('userMenuAdminBtn');
   const superBtn = document.getElementById('userMenuSuperBtn');
