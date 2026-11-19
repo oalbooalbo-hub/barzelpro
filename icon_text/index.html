@@ -579,7 +579,7 @@ body.desktop-mode .pages-wrap {
 .focus-mode-dimmed{opacity:0.08;pointer-events:none;transition:opacity .2s;}
 
 .ex-name-block{flex:1;min-width:0;}
-.ex-name{font-family:'DM Sans';font-size:17px;font-weight:600;letter-spacing:0;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ex-name{font-family:'DM Sans';font-size:19px;font-weight:600;letter-spacing:0;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .ex-header-btns{display:flex;gap:4px;flex-shrink:0;align-items:center;}
 /* ── UNIFIED CHEVRON (same everywhere) ─────────── */
 .btn-chevron,.hcard-chevron{background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--muted);width:34px;height:34px;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:all .25s;font-size:15px;line-height:1;}
@@ -36663,6 +36663,10 @@ function _buildTodayWeekPRStars() {
 function _resetTodayPRSpread(mount) {
   const mid = mount && mount.querySelector('.today-pr-col-mid');
   if (!mid) return;
+  // All three numbers stay hidden until the slide-out has finished
+  // (_playTodayPRSpread fades them in).
+  clearTimeout(mount._prNumT);
+  mount.querySelectorAll('.today-pr-star-num').forEach(n => { n.style.opacity = '0'; });
   const midC = mid.offsetLeft + mid.offsetWidth / 2;
   mount.querySelectorAll('.today-pr-col-side').forEach(col => {
     clearTimeout(col._spreadT);
@@ -36675,6 +36679,14 @@ function _resetTodayPRSpread(mount) {
 }
 function _playTodayPRSpread(mount) {
   if (!mount) return;
+  // Numbers: start fading in (.3s fade) .07s into the .5s movement — at once
+  // if nothing is stacked (already in place → no movement).
+  const moving = [...mount.querySelectorAll('.today-pr-col-side')].some(c => c.style.transform);
+  const nums = mount.querySelectorAll('.today-pr-star-num');
+  nums.forEach(n => { n.style.transition = 'color .5s ease, opacity .3s ease'; }); // keeps the light-up's colour fade
+  clearTimeout(mount._prNumT);
+  const showNums = () => nums.forEach(n => { n.style.opacity = '1'; });
+  if (moving) mount._prNumT = setTimeout(showNums, 70); else showNums();
   mount.querySelectorAll('.today-pr-col-side').forEach(col => {
     if (!col.style.transform) return; // not stacked → already in place
     col.style.transition = 'transform .5s cubic-bezier(.2,.8,.3,1)';
