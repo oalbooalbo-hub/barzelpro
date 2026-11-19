@@ -1814,16 +1814,17 @@ window._fbModuleReady = true;
     /* vw-scaled + nowrap: always one line, any phone width */
     #app-load-tag-main{font-family:'DM Sans';font-size:clamp(20px,8.6vw,44px);font-weight:900;color:var(--gff);white-space:nowrap;letter-spacing:-.3px;line-height:1.1;}
     #app-load-tag-main span{display:inline-block;opacity:0;}
-    /* Staggered reveal, once: Create → • → Plan → • → Record (~2s in all). */
+    /* Staggered reveal, once: Create → • → Plan → • → Record (~2.6s in all —
+       10% slower than the original .6s/.5s durations and gaps, starting at .5s). */
     @keyframes appLoadWordIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
     @keyframes appLoadDotIn{0%{opacity:0;transform:scale(0);}70%{opacity:1;transform:scale(1.35);}100%{opacity:1;transform:scale(1);}}
-    #app-load-tag-main .alt-w{animation:appLoadWordIn .6s cubic-bezier(.2,.7,.3,1) both;}
-    #app-load-tag-main .alt-d{color:var(--accent,#e8ff47);animation:appLoadDotIn .5s ease-out both;}
-    #app-load-tag-main span:nth-child(1){animation-delay:.1s;}
-    #app-load-tag-main span:nth-child(2){animation-delay:.45s;}
-    #app-load-tag-main span:nth-child(3){animation-delay:.75s;}
-    #app-load-tag-main span:nth-child(4){animation-delay:1.1s;}
-    #app-load-tag-main span:nth-child(5){animation-delay:1.4s;}
+    #app-load-tag-main .alt-w{animation:appLoadWordIn .66s cubic-bezier(.2,.7,.3,1) both;}
+    #app-load-tag-main .alt-d{color:var(--accent,#e8ff47);animation:appLoadDotIn .55s ease-out both;}
+    #app-load-tag-main span:nth-child(1){animation-delay:.5s;}
+    #app-load-tag-main span:nth-child(2){animation-delay:.885s;}
+    #app-load-tag-main span:nth-child(3){animation-delay:1.215s;}
+    #app-load-tag-main span:nth-child(4){animation-delay:1.6s;}
+    #app-load-tag-main span:nth-child(5){animation-delay:1.93s;}
     #app-load-tag-main{margin-bottom:26px;}
 /* LOADING stays hidden; fades in only if boot runs past the 3s minimum (+ the overlay's .35s fade-out, so it never flashes on a normal open). */
 #app-load-word{opacity:0;animation:appLoadTagIn .4s ease-out 3.4s both;}
@@ -1947,7 +1948,7 @@ window._fbModuleReady = true;
 <div id="workoutsToggleBar" style="display:none;position:fixed;bottom:calc(56px + env(safe-area-inset-bottom));left:0;right:0;z-index:28;background:var(--bg);padding:8px 16px;border-top:1px solid var(--border);max-width:430px;margin:0 auto;box-sizing:border-box;"></div>
 <div id="exercisesToggleBar" style="display:none;position:fixed;top:env(safe-area-inset-top,0px);left:0;right:0;z-index:28;background:var(--bg);padding:8px 16px;border-bottom:1px solid var(--border);max-width:430px;margin:0 auto;box-sizing:border-box;"></div>
 <div id="w2ToggleBar" style="display:none;position:fixed;top:env(safe-area-inset-top,0px);left:0;right:0;z-index:28;background:var(--bg);padding:8px 16px;border-bottom:1px solid var(--border);max-width:430px;margin:0 auto;box-sizing:border-box;"></div>
-<div id="profileToggleBar" style="display:none;position:fixed;top:env(safe-area-inset-top,0px);left:0;right:0;z-index:28;background:var(--bg);padding:8px 16px;border-bottom:1px solid var(--border);max-width:430px;margin:0 auto;box-sizing:border-box;">
+<div id="profileToggleBar" style="display:none;position:fixed;top:env(safe-area-inset-top,0px);left:0;right:0;z-index:28;background:var(--bg);padding:8px 16px;max-width:430px;margin:0 auto;box-sizing:border-box;">
   <div style="display:flex;justify-content:center;font-family:'DM Sans';font-size:20px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.5px;padding:10px 0 6px;">Profile</div>
 </div>
 <div id="progressToggleBar" style="display:none;position:sticky;top:0;z-index:20;background:var(--bg);padding:8px 16px 0;">
@@ -10153,11 +10154,20 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
   const _totalExSessions = _chartWtMap.size;
 
   const _volStr = _maxVol >= 1000 ? (_maxVol / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : String(Math.round(_maxVol));
+  // This carousel serves the exercise-detail overlay in every context — its
+  // photo wrap's data-ctx: 'session' (active workout), 'edit' (new workout
+  // flow), 'extab' (Exercises tab).
+  const _ctx = document.getElementById('ex-detail-photo-wrap')?.dataset.ctx || '';
   // Pages: 1 YOUR BEST (default) · 2 PROGRESS · 3 ALL SESSIONS (same cards as
-  // the Exercises tab's — _exAllSessionsHtml).
-  const slides = [{ val: 'YOUR BEST' }, { val: 'PROGRESS' }, { val: 'ALL SESSIONS' }];
-  const TABLE_IDX = 0, PROG_IDX = 1, ALL_IDX = 2;
-  let _cur = TABLE_IDX; // default to the YOUR BEST slide
+  // the Exercises tab's — _exAllSessionsHtml). In the ACTIVE WORKOUT only, YOUR
+  // BEST is hidden (PROGRESS first): its pane is still built below but never
+  // shown (TABLE_IDX -1). To bring it back there: drop the _ctx check.
+  const SHOW_YOUR_BEST = _ctx !== 'session';
+  const slides = SHOW_YOUR_BEST
+    ? [{ val: 'YOUR BEST' }, { val: 'PROGRESS' }, { val: 'ALL SESSIONS' }]
+    : [{ val: 'PROGRESS' }, { val: 'ALL SESSIONS' }];
+  const TABLE_IDX = SHOW_YOUR_BEST ? 0 : -1, PROG_IDX = SHOW_YOUR_BEST ? 1 : 0, ALL_IDX = SHOW_YOUR_BEST ? 2 : 1;
+  let _cur = SHOW_YOUR_BEST ? TABLE_IDX : PROG_IDX; // first page
 
   if (titleEl) { titleEl.textContent = slides[_cur].val; titleEl.style.color = 'var(--gcc)'; }
 
@@ -10178,7 +10188,7 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
   const _mKeys = ['wt','rm','vol'], _mLabels = ['MAX','BEST SET','VOL'], _mColors = [BP_COLORS.pr.max,BP_COLORS.pr.bestSet,BP_COLORS.pr.vol];
   const progPane = document.createElement('div');
   progPane.id = 'ex-detail-stats-prog-pane';
-  progPane.style.cssText = 'display:none;padding:2px 16px 0;';
+  progPane.style.cssText = `display:${_cur === PROG_IDX ? 'block' : 'none'};padding:2px 16px 0;`;
   const metricBtns = [];
   const metricBar = document.createElement('div');
   metricBar.style.cssText = 'position:relative;display:flex;gap:0;margin-bottom:10px;border-bottom:1px solid var(--border);';
@@ -10190,12 +10200,12 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
   metricIndicator.style.cssText = `position:absolute;bottom:-1px;left:0;height:2px;width:calc(100%/3);background:${_mColors[0]};transition:left .25s cubic-bezier(.4,0,.2,1),background .25s ease;`;
   _mLabels.forEach((lbl, i) => {
     const btn = document.createElement('button');
-    btn.style.cssText = `flex:1;border:none;background:transparent;font-family:'DM Sans';font-size:14px;font-weight:700;padding:8px 0;cursor:pointer;color:${i===0?_mColors[0]:'var(--g55)'};transition:color .15s;`;
+    btn.style.cssText = `flex:1;border:none;background:transparent;font-family:'DM Sans';font-size:14px;font-weight:700;padding:8px 0;cursor:pointer;color:${i===0?_mColors[0]:'var(--g77)'};transition:color .15s;`;
     btn.textContent = lbl;
     btn.onclick = () => {
       if (_mKeys[i] === _progMetric) return;
       _progMetric = _mKeys[i];
-      metricBtns.forEach((b, j) => { b.style.color = j===i ? _mColors[j] : 'var(--g55)'; });
+      metricBtns.forEach((b, j) => { b.style.color = j===i ? _mColors[j] : 'var(--g77)'; });
       metricIndicator.style.left = `calc(100%/3*${i})`;
       metricIndicator.style.background = _mColors[i];
       _renderProgChart();
@@ -10228,7 +10238,7 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
   const _chevSvg = `<svg style="vertical-align:middle;margin-left:3px;" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
   const periodWrap = document.createElement('div');
   periodWrap.style.cssText = 'position:relative;';
-  // Only relevant to the PROGRESS slide, which isn't the default (YOUR BEST is).
+  // Only relevant to the PROGRESS slide (the first page while YOUR BEST is hidden).
   if (_totalExSessions < 2 || _cur !== PROG_IDX) periodWrap.style.display = 'none';
   const periodBtn = document.createElement('button');
   periodBtn.style.cssText = `background:transparent;border:1px solid var(--g33);border-radius:6px;color:var(--accent);font-family:'DM Sans';font-size:11px;font-weight:700;padding:3px 8px;cursor:pointer;line-height:1.4;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;`;
@@ -10346,7 +10356,7 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
   // Progress pane's own metric bar/indicator pattern below) ─────────────────
   const tablePane = document.createElement('div');
   tablePane.id = 'ex-detail-stats-table-pane';
-  tablePane.style.cssText = 'display:flex;flex-direction:column;height:100%;box-sizing:border-box;padding:0 16px;';
+  tablePane.style.cssText = `display:${_cur === TABLE_IDX ? 'flex' : 'none'};flex-direction:column;height:100%;box-sizing:border-box;padding:0 16px;`;
   const _fn = n => n % 1 === 0 ? String(n) : String(Math.round(n * 100) / 100);
   // BW/BW+ sets store the resolved total kg, not the "BW+X" the user actually
   // entered — show that original notation here instead of the equivalent number.
@@ -10383,12 +10393,12 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
   bestIndicator.style.cssText = `position:absolute;bottom:-1px;left:calc(100%/3*${_bestDefaultIdx});height:2px;width:calc(100%/3);background:${_mColors[_bestDefaultIdx]};transition:left .25s cubic-bezier(.4,0,.2,1),background .25s ease;`;
   const bestBtns = _mLabels.map((lbl, i) => {
     const btn = document.createElement('button');
-    btn.style.cssText = `flex:1;border:none;background:transparent;font-family:'DM Sans';font-size:14px;font-weight:700;padding:8px 0;cursor:pointer;color:${i===_bestDefaultIdx?_mColors[i]:'var(--g55)'};transition:color .15s;`;
+    btn.style.cssText = `flex:1;border:none;background:transparent;font-family:'DM Sans';font-size:14px;font-weight:700;padding:8px 0;cursor:pointer;color:${i===_bestDefaultIdx?_mColors[i]:'var(--g77)'};transition:color .15s;`;
     btn.textContent = lbl;
     btn.onclick = () => {
       if (_mKeys[i] === _bestMetric) return;
       _bestMetric = _mKeys[i];
-      bestBtns.forEach((b, j) => { b.style.color = j===i ? _mColors[j] : 'var(--g55)'; });
+      bestBtns.forEach((b, j) => { b.style.color = j===i ? _mColors[j] : 'var(--g77)'; });
       bestIndicator.style.left = `calc(100%/3*${i})`;
       bestIndicator.style.background = _mColors[i];
       _renderBestVal();
@@ -10604,6 +10614,57 @@ function _buildExDetailStatsCarousel(exDef, exName, titleEl) {
   if (window._exStatsReopenOnSessions) {
     window._exStatsReopenOnSessions = false;
     setTimeout(() => goTo(ALL_IDX), 0);
+  } else if (_ctx === 'extab' || _ctx === 'session') {
+    // Exercises tab / active workout → Stats open: the opening page's MAX /
+    // BEST SET / VOL row (YOUR BEST in the Exercises tab, PROGRESS in the
+    // active workout) plays the Filters switch's "it's filtered" cue
+    // (_exFiltToggle). Not in the new workout flow ('edit').
+    if (_cur === TABLE_IDX && bestBar.parentNode === tablePane)
+      _statsRowIntro(bestBar, bestBtns, bestIndicator, () => _mKeys.indexOf(_bestMetric), bestBigVal, 0);
+    else if (_cur === PROG_IDX && metricBar.parentNode === progPane)
+      _statsRowIntro(metricBar, metricBtns, metricIndicator, () => _mKeys.indexOf(_progMetric), chartCard, 10);
+  }
+
+  // Same sequence/timings as Filters turning on: the row unfolds from nothing,
+  // arrives all WHITE with nothing selected (white names + white line, no
+  // underline, content below hidden), settles over .6s to its colors with the
+  // selected tab's underline, then the content (big number / chart) fades in
+  // with a 6px rise. Starts after the Stats section's own slide-up. A tab tap
+  // during the intro still decides what it settles to (selFn).
+  function _statsRowIntro(bar, btns, ind, selFn, content, mb) {
+    const D = 260, ease = 'cubic-bezier(.4,0,.2,1)';
+    const btnT = btns[0]?.style.transition || '', indT = ind.style.transition;
+    Object.assign(bar.style, { overflow: 'hidden', height: '0px', opacity: '0', borderBottomColor: '#fff' });
+    if (mb) bar.style.marginBottom = '0px';
+    btns.forEach(b => { b.style.transition = 'none'; b.style.color = '#fff'; });
+    ind.style.transition = 'none'; ind.style.opacity = '0';
+    content.style.opacity = '0';
+    const settle = () => {
+      const sel = selFn();
+      bar.style.transition = 'border-bottom-color .6s ease';
+      bar.style.borderBottomColor = 'var(--border)';
+      btns.forEach((b, j) => { b.style.transition = 'color .6s ease'; b.style.color = j === sel ? _mColors[j] : 'var(--g77)'; });
+      ind.style.transition = 'opacity .6s ease'; ind.style.opacity = '';
+      // The content comes in only once the row has fully settled.
+      setTimeout(() => {
+        bar.style.transition = '';
+        btns.forEach(b => { b.style.transition = btnT; });
+        ind.style.transition = indT;
+        content.style.opacity = '';
+        content.animate?.([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: D, easing: 'ease-out' });
+      }, 650);
+    };
+    setTimeout(() => {
+      if (!bar.isConnected) return;
+      bar.style.height = ''; if (mb) bar.style.marginBottom = '';
+      const h = bar.offsetHeight;
+      const a = bar.animate([{ height: '0px', marginBottom: '0px', opacity: 0 }, { height: h + 'px', marginBottom: mb + 'px', opacity: 1 }], { duration: D, easing: ease });
+      bar.style.opacity = '';
+      // PROGRESS's chart is fitted to the box's leftover height
+      // (_fitProgChartToBox) — re-fit now that the row has its real height.
+      a.onfinish = () => { bar.style.overflow = ''; if (bar === metricBar) _fitProgChartToBox(); };
+      setTimeout(settle, D + 150);
+    }, 300);
   }
 
   return { dots, panesContainer, periodWrap };
@@ -31604,7 +31665,7 @@ function deleteCoachWorkout(id) {
     <button id="ex-detail-back-btn-nophoto" onclick="document.getElementById('page-exercises')?.classList.contains('active') ? closeExTabDetail() : _maybeCloseExDetail()" style="background:transparent;border:none;color:var(--accent);cursor:pointer;display:flex;align-items:center;padding:0;flex-shrink:0;-webkit-tap-highlight-color:transparent;">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/></svg>
     </button>
-    <div id="ex-detail-overlay-title-nophoto" style="font-family:'DM Sans';font-size:18px;font-weight:900;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+    <div id="ex-detail-overlay-title-nophoto" style="font-family:'DM Sans';font-size:18px;font-weight:600;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
     <button id="ex-detail-menu-btn-nophoto" onclick="openExDetailMenu()" style="background:transparent;border:none;cursor:pointer;padding:4px;-webkit-tap-highlight-color:transparent;">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--muted)"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
     </button>
@@ -31636,7 +31697,7 @@ function deleteCoachWorkout(id) {
                measure/cache/get wrong. -->
           <span id="ex-detail-finish-btn-close-label" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--accent);font-family:'DM Sans';font-size:18px;font-weight:900;letter-spacing:.5px;white-space:nowrap;line-height:1;">CLOSE</span>
         </button>
-        <div id="ex-detail-overlay-title" style="font-family:'DM Sans';font-size:24px;font-weight:700;color:var(--text);text-align:right;flex:1;min-width:0;word-break:break-word;padding-right:12px;"></div>
+        <div id="ex-detail-overlay-title" style="font-family:'DM Sans';font-size:24px;font-weight:600;color:var(--text);text-align:right;flex:1;min-width:0;word-break:break-word;padding-right:12px;"></div>
       </div>
       <!-- Body map mode only: all-time best set, own line below FINISH, centered — see _renderExDetailBestSet -->
       <div id="ex-detail-bestset" style="display:none;"></div>
@@ -34834,7 +34895,7 @@ function _loadExDetailPhoto(exName, ctx) {
     // active workout list cards' .ex-name (but 24px / 900, like the title
     // beside FINISH) — wraps instead of ellipsis,
     // growing upward. Not class="ex-name": that class is how cards are looked up.
-    nameEl.style.cssText = "max-width:100%;font-family:'DM Sans';font-size:24px;font-weight:700;letter-spacing:0;line-height:1.2;color:var(--text);text-align:right;word-break:break-word;";
+    nameEl.style.cssText = "max-width:100%;font-family:'DM Sans';font-size:24px;font-weight:600;letter-spacing:0;line-height:1.2;color:var(--text);text-align:right;word-break:break-word;";
     nameEl.textContent = exName;
     // Right column, bottom-aligned: the name, then the best-set line.
     const nameCol = document.createElement('div');
@@ -36551,12 +36612,17 @@ function _buildTodayWeekPRStars() {
   const px = v => +(v * S).toFixed(1);
   const star = (color, n, label, baseSize, baseLift, z) => {
     const lit = n > 0;
+    // This page only: the record colour under a 20% black overlay (outline,
+    // number and label). colors.js / the rest of the app keep the real colour.
+    color = `color-mix(in srgb, ${color} 80%, #000)`;
     const size = px(baseSize), lift = px(baseLift);
     // The z-index sits on the star box, not the column, so no column forms its
     // own stacking context — that lets every label (z-index 3) sit above ALL
     // the pentagons and their drop-shadows (BEST SET's shadow spills sideways
     // and down onto the MAX / VOL labels otherwise).
-    return `<span style="position:relative;width:${px(81)}px;display:flex;flex-direction:column;align-items:center;gap:${px(8)}px;">
+    // .today-pr-col-side / -mid: MAX / VOL slide out from behind BEST SET
+    // when the page opens (_resetTodayPRSpread / _playTodayPRSpread).
+    return `<span class="${z > 1 ? 'today-pr-col-mid' : 'today-pr-col-side'}" style="position:relative;width:${px(81)}px;display:flex;flex-direction:column;align-items:center;gap:${px(8)}px;">
       <span style="position:relative;z-index:${z};width:${px(81)}px;height:${px(104)}px;display:flex;align-items:center;justify-content:center;">
         <span style="position:absolute;left:50%;top:50%;width:${size}px;height:${size}px;margin-left:${-size / 2}px;margin-top:${-size / 2 - lift + 8}px;display:flex;align-items:center;justify-content:center;">
           ${!lit
@@ -36566,12 +36632,14 @@ function _buildTodayWeekPRStars() {
             // filled with the circle's black background instead of see-through,
             // so it still sits in front and hides the MAX / VOL edges behind it.
             ? `<svg class="today-pr-star-empty" width="${size}" height="${size}" viewBox="0 0 24 24" style="position:absolute;inset:0;overflow:visible;"><path d="${_PR_SATIN_PATH}" style="fill:${z > 1 ? 'var(--circle-bg)' : 'none'};stroke:var(--pr-empty-stroke)" stroke-width=".6"/></svg>`
-            : `<svg class="today-pr-star-svg" data-lit-fill="${lit ? color : 'var(--pr-unlit)'}" width="${size}" height="${size}" viewBox="0 0 24 24" style="fill:var(--pr-unlit);position:absolute;inset:0;overflow:visible;transition:fill .5s ease;filter:${z > 1
-              // BEST SET (in front): a wider, darker, softer shadow that falls
-              // onto the MAX / VOL pentagons on both sides.
-              ? `drop-shadow(${(-size * 0.07).toFixed(1)}px ${(size * 0.03).toFixed(1)}px ${(size * 0.09).toFixed(1)}px rgba(0,0,0,.95)) drop-shadow(${(size * 0.07).toFixed(1)}px ${(size * 0.03).toFixed(1)}px ${(size * 0.09).toFixed(1)}px rgba(0,0,0,.95))`
-              : `drop-shadow(0 ${(size * 0.025).toFixed(1)}px ${(size * 0.04).toFixed(1)}px rgba(0,0,0,.55))`};">${_PR_SATIN_SVG}</svg>
-          <span class="today-pr-star-num" data-lit-color="${lit ? '#fff' : 'var(--pr-unlit-num)'}" style="position:relative;font-size:${px(42)}px;font-weight:800;color:var(--pr-unlit-num);line-height:1;text-shadow:0 0 4px rgba(0,0,0,.6);transform:translateY(${(size * 3 / 68).toFixed(1)}px);transition:color .5s ease;">${n}</span>`}
+            // 1+ records: outline only, in the record colour, filled with the
+            // circle's black background (no colour fill / satin / shadow); the
+            // number and label in the record colour. The outline (stroke)
+            // fades grey → colour like the number/label (data-lit-stroke, see
+            // _animateTodayPRStars). The black fill also lets BEST SET (in
+            // front) hide the MAX / VOL edges behind it.
+            : `<svg class="today-pr-star-svg" data-lit-stroke="${color}" width="${size}" height="${size}" viewBox="0 0 24 24" style="fill:var(--circle-bg);stroke:var(--pr-unlit);position:absolute;inset:0;overflow:visible;transition:stroke .5s ease;"><path d="${_PR_SATIN_PATH}" stroke-width="1"/></svg>
+          <span class="today-pr-star-num" data-lit-color="${lit ? color : 'var(--pr-unlit-num)'}" style="position:relative;font-size:${px(42)}px;font-weight:800;color:var(--pr-unlit-num);line-height:1;transform:translateY(${(size * 3 / 68).toFixed(1)}px);transition:color .5s ease;">${n}</span>`}
         </span>
       </span>
       <span class="today-pr-star-label" data-lit-color="${lit ? color : 'var(--text-dim)'}" style="position:relative;z-index:3;font-family:'DM Sans',sans-serif;font-size:18px;font-weight:700;font-synthesis:none;-webkit-font-smoothing:antialiased;color:var(--text-dim);letter-spacing:.3px;line-height:${px(24)}px;white-space:nowrap;transition:color .5s ease;">${label}</span>
@@ -36581,7 +36649,42 @@ function _buildTodayWeekPRStars() {
   // _PR_SATIN_DEFS: shared clip/gradients/texture for the satin pentagons.
   mount.innerHTML = _PR_SATIN_DEFS + star(BP_COLORS.pr.max, maxN, 'MAX', 106, 0, 1) + star(BP_COLORS.pr.bestSet, bestSetN, 'BEST SET', 126, 6, 2) + star(BP_COLORS.pr.vol, volN, 'VOL', 106, 0, 1);
   mount.dataset.sig = sig;
+  _resetTodayPRSpread(mount); // freshly built → start stacked, like the unlit colours
   return true;
+}
+
+// Opening animation: MAX / VOL start stacked behind BEST SET (centred on it,
+// labels hidden so the three don't overlap) and slide out to their places,
+// labels fading in — together with the colour light-up (_animateTodayPRStars).
+// A transform makes the side column its own stacking context at level 0, so
+// it stays under BEST SET's star box (z-index 2) while it moves; the
+// transform is cleared at the end to restore the normal stacking. Offsets use
+// offsetLeft (layout, unaffected by the Home stats zoom's scale transforms).
+function _resetTodayPRSpread(mount) {
+  const mid = mount && mount.querySelector('.today-pr-col-mid');
+  if (!mid) return;
+  const midC = mid.offsetLeft + mid.offsetWidth / 2;
+  mount.querySelectorAll('.today-pr-col-side').forEach(col => {
+    clearTimeout(col._spreadT);
+    const dx = midC - (col.offsetLeft + col.offsetWidth / 2);
+    col.style.transition = 'none';
+    col.style.transform = `translateX(${dx.toFixed(1)}px)`;
+    const lab = col.querySelector('.today-pr-star-label');
+    if (lab) lab.style.opacity = '0';
+  });
+}
+function _playTodayPRSpread(mount) {
+  if (!mount) return;
+  mount.querySelectorAll('.today-pr-col-side').forEach(col => {
+    if (!col.style.transform) return; // not stacked → already in place
+    col.style.transition = 'transform .5s cubic-bezier(.2,.8,.3,1)';
+    col.style.transform = 'translateX(0)';
+    const lab = col.querySelector('.today-pr-star-label');
+    // Label keeps its colour transition (set by _animateTodayPRStars) + fades in.
+    if (lab) { lab.style.transition = 'color .5s ease, opacity .5s ease'; lab.style.opacity = '1'; }
+    clearTimeout(col._spreadT);
+    col._spreadT = setTimeout(() => { col.style.transition = ''; col.style.transform = ''; }, 550);
+  });
 }
 // Rebuild if needed, then light up after the slide settles.
 function _renderTodayWeekPRStars() {
@@ -36624,9 +36727,10 @@ function _showTodayWeekPRStars() {
   clearTimeout(window._todayPRStarsColorTimer);
   if (!mount.firstChild) _buildTodayWeekPRStars(); // not prebuilt yet (first ever swipe)
   else {
-    mount.querySelectorAll('.today-pr-star-svg').forEach(el => { el.style.transition = 'none'; el.style.fill = 'var(--pr-unlit)'; });
+    mount.querySelectorAll('.today-pr-star-svg').forEach(el => { el.style.transition = 'none'; el.style.stroke = 'var(--pr-unlit)'; });
     mount.querySelectorAll('.today-pr-star-num').forEach(el => { el.style.transition = 'none'; el.style.color = 'var(--pr-unlit-num)'; });
     mount.querySelectorAll('.today-pr-star-label').forEach(el => { el.style.transition = 'none'; el.style.color = 'var(--text-dim)'; });
+    _resetTodayPRSpread(mount); // MAX / VOL back behind BEST SET
   }
   window._todayPRStarsColorTimer = setTimeout(() => {
     // Just-rebuilt pentagons need a painted unlit frame first, or the color
@@ -36643,8 +36747,9 @@ window._prebuildTodayWeekPRStars = _prebuildTodayWeekPRStars;
 // _showTodayWeekPRStars switched it off for the instant unlit reset.
 function _animateTodayPRStars(mount) {
   if (!mount) return;
-  mount.querySelectorAll('.today-pr-star-svg').forEach(el => { el.style.transition = 'fill .5s ease'; el.style.fill = el.dataset.litFill; });
+  mount.querySelectorAll('.today-pr-star-svg').forEach(el => { el.style.transition = 'stroke .5s ease'; el.style.stroke = el.dataset.litStroke; });
   mount.querySelectorAll('.today-pr-star-num, .today-pr-star-label').forEach(el => { el.style.transition = 'color .5s ease'; el.style.color = el.dataset.litColor; });
+  _playTodayPRSpread(mount); // after the colour transitions above (it extends the labels')
 }
 
 // ── Home stats (every user): header graph icon → full-screen list ───────────
@@ -36848,9 +36953,10 @@ function _homeStatsResetAnim(root) {
   root.querySelectorAll('.hs-mbar').forEach(b => { b.style.transition = 'none'; b.style.height = '0px'; });
   const grey = _redHeatColor(0);
   root.querySelectorAll('.hs-heatmap [data-heat-color]').forEach(el => { el.style.transition = 'none'; el.setAttribute('fill', grey); });
-  root.querySelectorAll('.hs-prs .today-pr-star-svg').forEach(el => { el.style.transition = 'none'; el.style.fill = 'var(--pr-unlit)'; });
+  root.querySelectorAll('.hs-prs .today-pr-star-svg').forEach(el => { el.style.transition = 'none'; el.style.stroke = 'var(--pr-unlit)'; });
   root.querySelectorAll('.hs-prs .today-pr-star-num').forEach(el => { el.style.transition = 'none'; el.style.color = 'var(--pr-unlit-num)'; });
   root.querySelectorAll('.hs-prs .today-pr-star-label').forEach(el => { el.style.transition = 'none'; el.style.color = 'var(--text-dim)'; });
+  root.querySelectorAll('.hs-prs').forEach(m => _resetTodayPRSpread(m)); // MAX / VOL behind BEST SET
 }
 // Plays them: ring fills, heatmap colours fade in, pentagons light up.
 function _homeStatsPlayAnim(root) {
@@ -37684,12 +37790,21 @@ function _hideAppLoadingOverlay() {
   if (!el || el.dataset.hidden === '1') return;
   el.dataset.hidden = '1';
   const MIN_MS = 3000;
+  // "LOADING" under the tagline (#app-load-word) starts fading in at 3.4s
+  // (.4s fade) — only when boot runs past the 3s minimum. Once it has
+  // started showing it stays FULLY visible ≥1.5s before the overlay fades
+  // out (3.4 + .4 + 1.5 = 5.3s), so it never just flashes. Ready before it
+  // starts → it's cancelled, so it can't peek through the overlay's fade-out.
+  const WORD_IN_MS = 3400, WORD_FADE_MS = 400, WORD_MIN_MS = 1500;
   const elapsed = performance.now() - (window._appLoadStart || 0);
-  const remain = Math.max(0, MIN_MS - elapsed);
+  let hideAt = Math.max(elapsed, MIN_MS);
+  const word = document.getElementById('app-load-word');
+  if (elapsed >= WORD_IN_MS) hideAt = Math.max(hideAt, WORD_IN_MS + WORD_FADE_MS + WORD_MIN_MS);
+  else if (word) { word.style.animation = 'none'; word.style.opacity = '0'; }
   setTimeout(() => {
     el.style.opacity = '0';
     setTimeout(() => { el.style.display = 'none'; }, 350);
-  }, remain);
+  }, hideAt - elapsed);
 }
 window._hideAppLoadingOverlay = _hideAppLoadingOverlay;
 // Safety net — never leave the user stuck behind the loading screen if some
