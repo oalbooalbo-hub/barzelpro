@@ -213,11 +213,11 @@ fieldset.ss-group{min-width:0;min-inline-size:0;padding:0;margin:6px 0 8px;backg
 .ss-act-name span.ss-act-dot{display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0;overflow:visible;transition:background .2s;}
 /* Superset exercise page: each exercise's name above its set box; the box last
    touched (Note / Timer / Stats apply to it) is full strength, the others dimmed. */
-.ss-det-name{font-family:'DM Sans',sans-serif;font-size:18px;font-weight:800;text-align:right;color:var(--gff);padding:16px 12px 8px;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.ss-det-name{font-family:'DM Sans',sans-serif;font-size:18px;font-weight:600;text-align:right;color:var(--gff);padding:16px 12px 8px;cursor:pointer;-webkit-tap-highlight-color:transparent;}
 .ss-det-name.on{opacity:1;}
 body.ss-detail #ex-detail-bestset{display:none!important;}
 /* Superset page: its exercises listed on the top image (bottom-right, over a soft shade). */
-.ss-photo-list{position:absolute;left:0;right:0;bottom:0;z-index:3;display:flex;flex-direction:column;align-items:flex-end;gap:2px;padding:26px var(--bm-pr,16px) 10px 14px;text-align:right;background:linear-gradient(to bottom,transparent,rgba(0,0,0,.7));pointer-events:none;font-family:'DM Sans',sans-serif;font-size:24px;font-weight:700;letter-spacing:0;line-height:1.2;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6);} /* same type as the normal exercise name on the image */
+.ss-photo-list{position:absolute;left:0;right:0;bottom:0;z-index:3;display:flex;flex-direction:column;align-items:flex-end;gap:2px;padding:26px var(--bm-pr,16px) 10px 14px;text-align:right;background:linear-gradient(to bottom,transparent,rgba(0,0,0,.7));pointer-events:none;font-family:'DM Sans',sans-serif;font-size:24px;font-weight:600;letter-spacing:0;line-height:1.2;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6);} /* same type as the normal exercise name on the image */
 .ss-photo-list > div{max-width:100%;word-break:break-word;}
 body:not(.ss-detail) .ss-photo-list{display:none;}
 /* Superset page, body-map mode: "Superset" centred below the image (drops in with the set boxes). */
@@ -2714,8 +2714,10 @@ window._fbModuleReady = true;
       <div class="nwf-field" id="newEx-name-field" style="margin-top:0;">
         <div id="newEx-name-title" class="nwf-field-label">Exercise Name<span id="newExDuplicateNote" style="display:none;color:#ff4747;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;transform:translateY(1px);">Name already exists</span></div>
         <div id="newEx-name-box" class="nwf-field-box">
-          <input id="newExInput" type="text" autocomplete="off" enterkeyhint="done" style="width:100%;background:transparent;border:none;outline:none;color:var(--gff);font-family:'DM Sans',sans-serif;font-size:18px;font-weight:600;caret-color:#34d399;-webkit-text-fill-color:var(--gff);box-sizing:border-box;" oninput="const _hb=/[\u0590-\u05FF]/.test(this.value);this.style.direction=_hb?'rtl':'ltr';this.style.textAlign=_hb?'right':'left';document.getElementById('newExDuplicateNote').style.display='none';_newExNameBoxBorder('#444');_nwfSyncFieldFloatByEl(this);_newExSyncSave();" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onfocus="_newExFieldFocus('newEx-name-title','newEx-name-box',true)" onblur="_newExFieldFocus('newEx-name-title','newEx-name-box',false);_newExCheckDuplicate()"/>
+          <input id="newExInput" type="text" autocomplete="off" enterkeyhint="done" style="width:100%;background:transparent;border:none;outline:none;color:var(--gff);font-family:'DM Sans',sans-serif;font-size:18px;font-weight:600;caret-color:#34d399;-webkit-text-fill-color:var(--gff);box-sizing:border-box;" oninput="const _hb=/[\u0590-\u05FF]/.test(this.value);this.style.direction=_hb?'rtl':'ltr';this.style.textAlign=_hb?'right':'left';_newExClearDuplicate();_nwfSyncFieldFloatByEl(this);_newExSyncSave();" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onfocus="_newExClearDuplicate();_newExFieldFocus('newEx-name-title','newEx-name-box',true)" onblur="_newExFieldFocus('newEx-name-title','newEx-name-box',false);_newExCheckDuplicate()"/>
         </div>
+        <!-- Name taken (clients): why + one tap to the existing exercise (_newExShowDupAction). -->
+        <div id="newExDupAction" style="display:none;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;font-family:'DM Sans',sans-serif;"></div>
       </div>
       <!-- Body part -->
       <div>
@@ -7389,6 +7391,16 @@ function renderExercisesTab() {
       _myNames.add(ex.name);
       _customExes.push({ name: ex.name, muscle: ex.muscle || selected });
     });
+    // App exercises brought in from New Exercise (_exPinApp) are theirs too —
+    // which also keeps them out of APP EXERCISES and visible with Preset
+    // Library off (_exAppExes below excludes MY EXERCISES names).
+    if (!_isBrandContentOff()) _exPinnedApp().forEach(n => {
+      if (_myNames.has(n) || hiddenEx.includes(n)) return;
+      const d = _exDefByName(n);
+      if (!d || (d.muscle || 'Chest') !== selected) return;
+      _myNames.add(n);
+      _customExes.push({ name: n, muscle: selected });
+    });
   }
   // Super admin: CUSTOM → PENDING, ALL → PUBLISHED (see _exSuperLists). Logged-
   // only exercises (not custom/library/default) are passed in as history.
@@ -7472,6 +7484,7 @@ function renderExercisesTab() {
       if (!all.length) return;
       const mine = new Set(customExercises.filter(e => e.muscle === m && !hiddenEx.includes(e.name)).map(e => e.name));
       (byMuscle[m] || []).forEach(ex => { if (!_exLibDef(ex.name) && !_exIsDefaultName(ex.name)) mine.add(ex.name); });
+      _exPinnedApp().forEach(n => mine.add(n)); // brought in from New Exercise — theirs, not preset
       const app = all.filter(e => !mine.has(e.name) && (_exLibDef(e.name) || _exIsDefaultName(e.name)));
       app.forEach(e => _exAppSet.add(e.name));
       _longAll.push(...all);
@@ -7700,6 +7713,8 @@ function renderExercisesTab() {
     // workout cards' (and the select-all circle over them).
     if (_pickMode || _exDelMode) requestAnimationFrame(_alignPickCircles);
   }
+  // Picking for a workout: mark the exercises already in it ("ADDED").
+  if (_pickMode) _markPickAddedRows(el);
 
   // Cards always start collapsed (minimized view by default)
 }
@@ -8069,6 +8084,52 @@ function confirmRenameEx() {
 // sub-muscles and (verified) video link as the admin's own definition — so
 // editing any of those automatically sends it back to PENDING.
 const _exNormName = s => (s || '').trim().toLowerCase();
+
+// ── App exercises brought into MY EXERCISES (clients) ─────────────────────
+// From New Exercise: typing an app (brand library / default) exercise's name
+// offers "Add to my exercises" instead of a dead-end "Name already exists".
+// The exercise is then treated as the user's own in the Exercises tab lists
+// (shown even with the Preset Library switch off) — same exercise, so it
+// keeps the app's photo / video / history. Saved on the device.
+const _exNameKey = s => (s || '').trim().replace(/\s+/g, ' ').toLowerCase(); // case + extra spaces ignored
+function _exPinnedApp() {
+  try { const a = JSON.parse(_LS.get('bp_ex_pinned_app') || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; }
+}
+function _exIsPinnedApp(name) { const k = _exNameKey(name); return _exPinnedApp().some(n => _exNameKey(n) === k); }
+function _exPinApp(name) {
+  const a = _exPinnedApp();
+  if (!a.some(n => _exNameKey(n) === _exNameKey(name))) { a.push(name); _LS.set('bp_ex_pinned_app', JSON.stringify(a)); }
+  // Deleted from their list earlier → bring it back.
+  let hid = []; try { hid = JSON.parse(_LS.get('ironlog_hidden_ex') || '[]'); } catch (e) {}
+  const left = hid.filter(n => _exNameKey(n) !== _exNameKey(name));
+  if (left.length !== hid.length) _LS.set('ironlog_hidden_ex', JSON.stringify(left));
+}
+// Which existing exercise a New Exercise name collides with (clients):
+// { kind:'mine'|'app', name, muscle } or null. 'mine' = their own custom
+// exercise, a pinned app exercise, or one they've logged; 'app' = a brand
+// library / default exercise not in their list. Their deleted (hidden) own
+// exercises don't count (re-creating one brings it back, as before).
+function _newExNameMatch(name) {
+  const k = _exNameKey(name);
+  if (!k) return null;
+  let hid = []; try { hid = JSON.parse(_LS.get('ironlog_hidden_ex') || '[]'); } catch (e) {}
+  const isHid = n => hid.some(h => _exNameKey(h) === _exNameKey(n));
+  const own = (customExercises || []).find(e => _exNameKey(e.name) === k && !isHid(e.name));
+  if (own) return { kind: 'mine', name: own.name, muscle: own.muscle || 'Chest' };
+  if (!_isBrandContentOff()) {
+    let app = (typeof _libraryExercises !== 'undefined' ? _libraryExercises : []).find(e => e && _exNameKey(e.name) === k) || null;
+    if (!app) for (const [m, items] of Object.entries(_defaultExercises || {})) {
+      const it = (items || []).find(i => i && _exNameKey(i.name) === k);
+      if (it) { app = { ...it, muscle: it.muscle || m }; break; }
+    }
+    if (app) return { kind: (_exIsPinnedApp(app.name) && !isHid(app.name)) ? 'mine' : 'app', name: app.name, muscle: app.muscle || 'Chest' };
+  }
+  for (const w of (workouts || [])) {
+    const e = (w.exercises || []).find(x => _exNameKey(x.name) === k);
+    if (e && !isHid(e.name)) return { kind: 'mine', name: e.name, muscle: e.muscle || 'Chest' };
+  }
+  return null;
+}
 // A video link counts only if its reachability check didn't fail
 // (ironlog_ex_video_broken_* — set by the field/overlay verifiers).
 function _exVerifiedVideo(name, url) {
@@ -8606,12 +8667,72 @@ function pickExercise(exName) {
     return;
   }
 
+  // No duplicates: an exercise that's already in the workout can't be picked
+  // again (its row shows "ADDED", see _markPickAddedRows).
+  const _inWk = _pickInWorkoutNames();
+  if (_inWk.has(ex.name) || (ex.label && _inWk.has(ex.label))) { _showPickInfoToast('Already in this workout'); return; }
+
   // Toggle selection
   const idx = _pickModeSelected.findIndex(e => e.name === ex.name);
   if (idx >= 0) { _pickModeSelected.splice(idx, 1); } else { _pickModeSelected.push(ex); }
   _updatePickModeDoneBtn();
   _renderExercisesTabKeepScroll();
 }
+
+// ── Picker: exercises already in the workout ─────────────────────────────
+// Adding exercises to a workout (new/edit workout flow or an active workout —
+// not Replace / edit-past-session): names of the cards already in
+// #exerciseList. Cards store label || name (addExerciseCard), so labels are
+// mapped back to their exercise names too.
+function _pickAddsToWorkout() {
+  return _pickMode && !window._pickModeIsReplace && !window._editHistPickerMode;
+}
+function _pickInWorkoutNames() {
+  const s = new Set();
+  if (!_pickAddsToWorkout()) return s;
+  document.querySelectorAll('#exerciseList .exercise-card').forEach(c => { if (c.dataset.exname) s.add(c.dataset.exname); });
+  if (s.size && typeof getAllExercises === 'function') getAllExercises().forEach(e => { if (e.label && s.has(e.label)) s.add(e.name); });
+  return s;
+}
+// After the picker list renders (every view shares data-exname rows): dim
+// rows already in the workout, swap their circle for a muted filled ✓, and
+// tag them "ADDED" under the name. Tapping one → _showPickInfoToast.
+function _markPickAddedRows(root) {
+  const names = _pickInWorkoutNames();
+  if (!root || !names.size) return;
+  root.querySelectorAll('[data-exname]').forEach(row => {
+    if (!names.has(row.dataset.exname)) return;
+    row.classList.add('pick-added');
+    row.style.opacity = '.5';
+    const chk = row.querySelector('.picker-check');
+    if (chk) {
+      chk.style.border = '2px solid var(--g77)';
+      chk.style.background = 'var(--g77)';
+      chk.innerHTML = '<svg width="15" height="15" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    }
+    const nm = row.querySelector('[dir="auto"]');
+    if (nm && !row.querySelector('.pick-added-tag')) nm.insertAdjacentHTML('afterend', `<div class="pick-added-tag" style="font-family:'DM Sans';font-size:11px;font-weight:800;letter-spacing:.6px;color:var(--gcc);margin-top:3px;text-align:right;">ADDED</div>`);
+  });
+}
+// Neutral info toast above the picker's ADD button (same spot/motion as the
+// red "Select at least 1 exercise" warning).
+function _showPickInfoToast(msg) {
+  const wrap = document.getElementById('pick-mode-btns');
+  if (!wrap) return;
+  let t = document.getElementById('pick-mode-info-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'pick-mode-info-toast';
+    t.style.cssText = "position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%) translateY(8px);opacity:0;pointer-events:none;background:var(--g2a);color:var(--gff);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;padding:11px 22px;border-radius:28px;white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,.45);transition:opacity .25s ease, transform .25s ease;";
+    wrap.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  t.style.transform = 'translateX(-50%) translateY(0)';
+  clearTimeout(t._hideTimer);
+  t._hideTimer = setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(-50%) translateY(8px)'; }, 1800);
+}
+window._markPickAddedRows = _markPickAddedRows;
 
 // Re-render exercises tab preserving scroll position of the list box
 function _renderExercisesTabKeepScroll() {
@@ -9192,6 +9313,7 @@ function closeNewExModal() {
   _setNewExHeaderIcon('close');
   const note = document.getElementById('newExDuplicateNote');
   if (note) note.style.display = 'none';
+  _newExShowDupAction(null);
   _newExNameBoxBorder('#444');
   window._newExPhotoMode = false;
   window._newExPhoto = null;
@@ -9210,22 +9332,96 @@ function _newExCheckDuplicate() {
   if (!inp) return false;
   const name = inp.value.trim();
   const oldName = window._editExName || null;
-  let isDup = false;
+  let isDup = false, _dupMatch = null;
   if (name && name !== oldName) {
     if (window._exploreExerciseMode) {
       isDup = (_libraryExercises||[]).some(e => e.name === name);
     } else if (window._coachMode) {
       isDup = (_coachExercises||[]).some(e => e.name === name);
-    } else {
+    } else if (window._currentUserData?.role === 'super_admin') {
       const hidden = JSON.parse(_LS.get('ironlog_hidden_ex') || '[]');
       isDup = _exerciseNameExistsInAnyList(name) && !hidden.includes(name);
+    } else {
+      // Clients: case / extra spaces ignored; brand library included; the
+      // row under the field says what it is and offers the existing one.
+      // An APP exercise's name isn't an error for a new exercise: Save adds it
+      // to their exercises with their settings (confirmNewEx) — only the
+      // neutral info line shows. Their OWN exercise's name stays an error.
+      const m = _newExNameMatch(name);
+      const hit = !!m && !(oldName && _exNameKey(m.name) === _exNameKey(oldName));
+      _dupMatch = hit ? m : null;
+      isDup = hit && !(m.kind === 'app' && !oldName);
+      if (hit && m.kind === 'app' && !oldName) _newExPrefillFromApp(m);
     }
   }
   if (note) note.style.display = isDup ? 'inline' : 'none';
   _newExNameBoxBorder(isDup ? '#ff4747' : '#444');
+  _newExShowDupAction(_dupMatch);
   if (saveBtn) _newExSyncSave(); // name + no duplicate + body part
   return isDup;
 }
+// Row under the Exercise Name field when the name is taken (clients, new
+// exercise — not when renaming): an app exercise → "Add to my exercises";
+// their own → "Show it". Both land on that exercise in the Exercises tab.
+function _newExShowDupAction(m) {
+  const row = document.getElementById('newExDupAction');
+  if (!row) return;
+  window._newExDupMatch = m || null;
+  if (!m || window._editExName) { row.style.display = 'none'; row.innerHTML = ''; return; }
+  // An app exercise's name gets no message at all — its body part / muscles
+  // are pre-filled instead (_newExPrefillFromApp) and Save adds it.
+  if (m.kind === 'app') { row.style.display = 'none'; row.innerHTML = ''; return; }
+  row.innerHTML = `<div style="flex:1;min-width:0;font-size:14px;font-weight:500;color:var(--gcc);line-height:1.35;">You already have this exercise.</div>
+    <button type="button" onmousedown="event.preventDefault()" onclick="_newExUseExisting()" style="flex-shrink:0;background:transparent;border:1px solid var(--accent);border-radius:100px;color:var(--accent);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;padding:8px 14px;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent;">Show it</button>`;
+  row.style.display = 'flex';
+}
+// New exercise named like an APP exercise (clients): its body part and
+// muscles become the form's starting point — only if no body part is picked
+// yet (the user's own choice is never overwritten); kept if the name is then
+// changed. A short pulse on the body-part button and the muscle list shows
+// what got filled in. Photo / video are left empty (empty = the app's stay).
+function _newExPrefillFromApp(m) {
+  if (!m || m.kind !== 'app' || window._editExName || window._newExMuscle) return;
+  const def = _exDefByName(m.name);
+  const bp = def?.muscle || m.muscle;
+  if (!bp) return;
+  window._newExMuscle = bp;
+  window._newExCompoundMuscles = def?.compoundMuscles || [];
+  window._newExSelectedSubMuscles = def?.subMuscles || [];
+  const _bpNote = document.getElementById('newExBodyPartNote');
+  if (_bpNote) _bpNote.style.visibility = 'hidden';
+  _renderNewExPills(bp);
+  _nExSetupBodySVG();
+  _nExHighlightMuscle(bp, true); // true = keep the sub-muscles just set
+  if (!window._newExPhoto) {
+    const _nxDef = document.getElementById('newExPhotoDefaultImg');
+    if (_nxDef) { _nxDef.src = _EX_DEFAULT_PHOTOS[bp] || ''; _nxDef.style.display = 'block'; }
+  }
+  _newExSyncSave();
+  const pulse = [{ transform: 'scale(1)' }, { transform: 'scale(1.08)' }, { transform: 'scale(1)' }];
+  const pills = document.getElementById('newExMusclePills');
+  const i = ['Chest','Back','Legs','Shoulders','Arms','Core','Mix'].indexOf(bp);
+  pills?.children[i]?.animate?.(pulse, { duration: 450, easing: 'ease-out' });
+  setTimeout(() => _nExListEl()?.querySelectorAll('.nex-ml-item.on').forEach((el, j) =>
+    el.animate?.(pulse, { duration: 400, delay: j * 40, easing: 'ease-out' })), 250);
+}
+// While typing: no check (the name may still be on its way to a different
+// one) — just drop any warning shown for the previous name. The check runs
+// when the field is left (onblur → _newExCheckDuplicate) and on Save.
+function _newExClearDuplicate() {
+  const note = document.getElementById('newExDuplicateNote');
+  if (note && note.style.display !== 'none') { note.style.display = 'none'; _newExNameBoxBorder('#444'); }
+  _newExShowDupAction(null);
+}
+window._newExClearDuplicate = _newExClearDuplicate;
+function _newExUseExisting() {
+  const m = window._newExDupMatch;
+  if (!m) return;
+  if (m.kind === 'app') _exPinApp(m.name);
+  _newExShowDupAction(null);
+  _newExCloseAndLand(m.name, m.muscle, m.kind === 'app' ? 'added' : 'show'); // closes New Exercise, lands + spotlight
+}
+window._newExUseExisting = _newExUseExisting;
 // One-time "NEW" flash on a just-created exercise's card, so the user can spot
 // where it landed in the list — shown once per exercise (tracked by name), never
 // again for that same exercise after.
@@ -9505,7 +9701,43 @@ function confirmNewEx() {
     return;
   }
 
-  const exists = _exerciseNameExistsInAnyList(name);
+  // Clients: an APP exercise's name → Save adds that exercise to their own
+  // list (same as "Add to my exercises") with THEIR settings as their own
+  // version (an own copy under the app's exact name — _exDefByName reads it
+  // first): body part + sub-muscles always; video / photo only if they set
+  // one (else the app's stay). History stays together (same name). Lands
+  // with the "ADDED" spotlight.
+  // Their OWN exercise's name → stops with the red note + "Show it".
+  const _isSuperNE = window._currentUserData?.role === 'super_admin';
+  if (!_isSuperNE) {
+    const _m = _newExNameMatch(name);
+    if (_m && _m.kind === 'app') {
+      const appName = _m.name;
+      // Photo was stored above under the typed spelling — move it to the
+      // app exercise's real name.
+      if (_newPhotoToSave && window.localforage) {
+        window.localforage.setItem(`ironlog_ex_photo_${appName}`, _newPhotoToSave).catch(() => showToast('Photo save failed'));
+        if (appName !== name) window.localforage.removeItem(`ironlog_ex_photo_${name}`).catch(() => {});
+      }
+      _exPinApp(appName); // theirs from now on (+ un-deleted if it was)
+      const ci = customExercises.findIndex(e => _exNameKey(e.name) === _exNameKey(appName));
+      const own = { name: appName, label: appName, muscle, subMuscles, custom: true, ...(videoUrl ? { videoUrl } : {}) };
+      if (ci >= 0) customExercises[ci] = { ...customExercises[ci], ...own };
+      else customExercises.push(own);
+      saveCustom();
+      _newExCloseAndLand(appName, muscle, 'added');
+      return;
+    }
+    if (_m) {
+      const note = document.getElementById('newExDuplicateNote');
+      if (note) note.style.display = 'inline';
+      _newExNameBoxBorder('#ff4747');
+      _newExShowDupAction(_m);
+      document.getElementById('newExInput')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+  }
+  const exists = _isSuperNE ? _exerciseNameExistsInAnyList(name) : false;
   const hidden = JSON.parse(_LS.get('ironlog_hidden_ex') || '[]');
   const isHidden = hidden.includes(name);
   if (exists && !isHidden) {
@@ -9544,7 +9776,10 @@ function confirmNewEx() {
 // exercise's row; the row then gets the one-time "NEW" badge with the accent
 // border glow (_flashNewExBadgeOnce → _flashWorkoutCardBadge), same as a new
 // workout's card.
-function _newExCloseAndLand(name, muscle) {
+// mode: omitted = a just-created exercise (one-time "NEW" flash, as before);
+// 'show' / 'added' = an existing one from New Exercise's name check
+// (_newExUseExisting) → _spotlightExRow, without / with an "ADDED" badge.
+function _newExCloseAndLand(name, muscle, mode) {
   closeNewExModal();
   // Super admin → PENDING ('custom'), as before. Clients keep ALL / MY
   // EXERCISES; from APP EXERCISES or COACH (where a new exercise isn't
@@ -9554,12 +9789,53 @@ function _newExCloseAndLand(name, muscle) {
   window._exTabMuscle = muscle;
   renderExercisesTab();
   setTimeout(() => {
-    const rows = [...document.querySelectorAll('#exercisesTabContent [data-exname]')];
-    const row = rows.find(r => r.dataset.exname === name) || rows[rows.length - 1];
+    const _find = () => [...document.querySelectorAll('#exercisesTabContent [data-exname]')].find(r => r.dataset.exname === name && r.offsetParent);
+    let row = _find();
+    // Landing on an existing exercise (New Exercise → "Show it" / "Add to my
+    // exercises"): it must really be on screen — not in this view → ALL.
+    if (!row && mode && _exTabView !== 'all') { _exTabView = 'all'; renderExercisesTab(); row = _find(); }
+    if (!row && !mode) { const rows = [...document.querySelectorAll('#exercisesTabContent [data-exname]')]; row = rows[rows.length - 1]; }
     if (!row) return;
     row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    _flashNewExBadgeOnce(row, name);
+    if (mode) setTimeout(() => _spotlightExRow(row, mode === 'added' ? 'ADDED' : ''), 450); // after the scroll settles
+    else _flashNewExBadgeOnce(row, name);
   }, 100);
+}
+
+// Find-it highlight for one Exercises-tab row (every time, not once per
+// name): for ~1.5s every other row (and section title) dims to 35% so only
+// this one stands out, while its border glows --accent and pulses twice;
+// optional badge (e.g. 'ADDED') top-right, same look as the NEW badge
+// (_flashWorkoutCardBadge). Everything fades back to its own state after.
+function _spotlightExRow(row, label) {
+  if (!row || !row.isConnected) return;
+  const root = document.getElementById('exercisesTabContent');
+  const others = root ? [...root.querySelectorAll('[data-exname], .extab-sec-title, .extab-create-btn')].filter(el => el !== row && !el.contains(row)) : [];
+  const saved = others.map(el => [el, el.style.opacity, el.style.transition]);
+  others.forEach(el => { el.style.transition = 'opacity .25s ease'; el.style.opacity = '.35'; });
+  const acc = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#7CD9D7';
+  const off = getComputedStyle(row).boxShadow;
+  const on = `0 0 8px ${acc}, 0 0 18px ${acc}`;
+  const bOff = getComputedStyle(row).borderColor;
+  row.animate?.([
+    { boxShadow: off, borderColor: bOff }, { boxShadow: on, borderColor: acc, offset: .2 },
+    { boxShadow: off, borderColor: bOff, offset: .45 }, { boxShadow: on, borderColor: acc, offset: .65 },
+    { boxShadow: off, borderColor: bOff }
+  ], { duration: 1500, easing: 'ease-in-out' });
+  let badge = null;
+  if (label) {
+    if (!row.style.position) row.style.position = 'relative';
+    badge = document.createElement('div');
+    badge.textContent = label;
+    badge.style.cssText = "position:absolute;top:8px;right:8px;font-family:'DM Sans';font-size:12px;font-weight:900;letter-spacing:.5px;color:var(--accent);opacity:0;transform:translateY(-4px) scale(.85);transition:opacity .25s ease,transform .25s cubic-bezier(.2,.8,.3,1);pointer-events:none;z-index:5;";
+    row.appendChild(badge);
+    requestAnimationFrame(() => requestAnimationFrame(() => { badge.style.opacity = '1'; badge.style.transform = 'translateY(0) scale(1)'; }));
+  }
+  setTimeout(() => {
+    saved.forEach(([el, o]) => { el.style.opacity = o; });
+    if (badge) { badge.style.opacity = '0'; badge.style.transform = 'translateY(-4px) scale(.85)'; }
+    setTimeout(() => { saved.forEach(([el, , t]) => { el.style.transition = t; }); badge?.remove(); }, 300);
+  }, 1500);
 }
 
 function toggleExTabCard(safeIdOrEl) {
