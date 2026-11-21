@@ -2027,8 +2027,12 @@ window._fbModuleReady = true;
               <!-- Page 1: PR pentagons. Panes 1/2 are their own GPU layers
                    (will-change) so what _todayCarouselWarmUp draws ahead of
                    time is kept and reused instead of being drawn mid-slide. -->
-              <div id="today-circle-pane-prs" style="width:300px;height:300px;flex-shrink:0;display:flex;align-items:center;justify-content:center;will-change:transform;">
+              <!-- Tapping opens the same "New personal records" info sheet as the
+                   active workout's pentagons (openPRStarsInfo, 'home' = no
+                   workout-pentagon spotlight); same chevron as page 2. -->
+              <div id="today-circle-pane-prs" onclick="openPRStarsInfo('home')" style="position:relative;width:300px;height:300px;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;will-change:transform;">
                 <div id="today-pr-stars" style="display:flex;gap:0;align-items:flex-start;justify-content:center;transform:translateY(-1px);"></div>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--accent);position:absolute;bottom:29px;left:50%;transform:translateX(-50%);z-index:2;pointer-events:none;"><polyline points="6 9 12 15 18 9"/></svg>
               </div>
               <!-- Page 2: tapping opens the weekly sets target sheet; the chevron
                    is page 3's (same size/colour). -->
@@ -19809,9 +19813,12 @@ document.addEventListener('DOMContentLoaded', () => {
   _initSwipeDownToClose('workout-share-qr-modal', closeWorkoutShareQR);
 });
 
-function openPRStarsInfo() {
+// from: omitted = the active workout's pentagons (they're spotlit + lit up
+// above the dark layer); 'home' = Home → New records page's circle — just
+// the sheet (its pentagons aren't the workout's).
+function openPRStarsInfo(from) {
   if (window._historyPush) window._historyPush('prStarsInfo');
-  const starsEl = document.getElementById('workout-pr-stars');
+  const starsEl = from === 'home' ? null : document.getElementById('workout-pr-stars');
   const spot = document.getElementById('prStarsSpotlight');
   // The whole screen darkens; a copy of the stars, at their exact spot, sits
   // above the dark layer so they alone stay bright — with no box around them.
@@ -19840,8 +19847,14 @@ function openPRStarsInfo() {
     clearTimeout(window._prStarsFadeTimer);
     window._prStarsFadeTimer = setTimeout(() => _lit.forEach(el => el.classList.remove('pr-stars-fading')), 550);
   }
-  document.getElementById('prStarsInfoOverlay').classList.add('open');
-  const _sheet = document.querySelector('#prStarsInfoOverlay .modal-sheet');
+  const _ovl = document.getElementById('prStarsInfoOverlay');
+  // From Home: no spotlight layer to darken the screen, so the overlay dims
+  // it itself; and above the Home stats screen (z-index 1000), like the
+  // carousel's other sheets. Both undone on close (closePRStarsInfo).
+  if (from === 'home') { _ovl.style.zIndex = '9000'; _ovl.style.background = 'rgba(0,0,0,.6)'; }
+  else { _ovl.style.zIndex = ''; _ovl.style.background = ''; }
+  _ovl.classList.add('open');
+  const _sheet = _ovl.querySelector('.modal-sheet');
   if (_sheet) _sheet.style.animation = 'sheetUp .25s ease';
 }
 window.openPRStarsInfo = openPRStarsInfo;
@@ -19865,6 +19878,7 @@ function closePRStarsInfo() {
   };
   const _finish = () => {
     _ovl.classList.remove('open');
+    _ovl.style.zIndex = ''; _ovl.style.background = ''; // Home opening's own layer / dim
     document.getElementById('prStarsSpotlight')?.classList.remove('open');
     _unlight();
     if (_sheet) _sheet.style.animation = '';
@@ -37135,8 +37149,9 @@ function _homeStatsFillInner(innerEl, kind) {
     innerEl.insertAdjacentHTML('beforeend', HS_SETS_CHEV);
   }
 }
-// Enlarged circle tap → the same sheet the Home carousel page opens.
-const HS_ZOOM_SHEET = { week: 'openStrengthTargetSheet', sets: 'openSetsTargetSheet' };
+// Enlarged circle tap → the same sheet the Home carousel page opens (call
+// expressions) — New records: the "New personal records" info sheet.
+const HS_ZOOM_SHEET = { week: 'openStrengthTargetSheet()', sets: 'openSetsTargetSheet()', prs: "openPRStarsInfo('home')" };
 // After a SAVE in one of those sheets: rebuild that row's picture (and the
 // enlarged copy, if it's the one open) from the now-updated carousel, then
 // replay its animation. Called from closeStrengthTargetSheet/closeSetsTargetSheet.
@@ -37223,7 +37238,9 @@ function openHomeStats() {
   inner('month').innerHTML = _homeStatsMonthBars(c.last6);
   _homeStatsFillInner(inner('sets'), 'sets');
   const pr = _homeStatsClone(prMount);
-  if (pr) { pr.classList.add('hs-prs'); inner('prs').appendChild(pr); }
+  // + the same chevron the carousel's New records page now has (it sits
+  // outside #today-pr-stars there, so it's added here — as for Sets).
+  if (pr) { pr.classList.add('hs-prs'); inner('prs').appendChild(pr); inner('prs').insertAdjacentHTML('beforeend', HS_SETS_CHEV); }
   _homeStatsResetAnim(ov);
   _homeStatsBindDrag(ov);
   document.body.appendChild(ov);
@@ -37364,7 +37381,7 @@ function _homeStatsZoom(row) {
   // stopPropagation keeps the layer's tap-to-shrink from also firing.
   const _sheetFn = HS_ZOOM_SHEET[row.dataset.kind];
   if (_sheetFn) {
-    big.setAttribute('onclick', `event.stopPropagation();${_sheetFn}()`);
+    big.setAttribute('onclick', `event.stopPropagation();${_sheetFn}`);
     big.style.cursor = 'pointer';
   }
   const label = document.createElement('div');
