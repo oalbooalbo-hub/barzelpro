@@ -1584,6 +1584,9 @@ async function createUserDoc(user) {
     };
     if (inviteData?.siteId) userData.siteIds = [inviteData.siteId];
     if (inviteData?.accountExpires) userData.accountExpires = inviteData.accountExpires;
+    // Invited as a brand / ops admin → the brand they manage (firestore.rules
+    // allow this only when the pending invite says so).
+    if (['brand_admin', 'ops_admin'].includes(inviteData?.role)) userData.adminBrand = BRAND_ID;
 
     await setDoc(userRef, userData);
 
@@ -1596,8 +1599,12 @@ async function createUserDoc(user) {
     const roles = data.roles || {};
     const brands = data.brands || [];
     const updates = {};
-    if (!roles[BRAND_ID]) {
-      updates[`roles.${BRAND_ID}`] = data.role || 'client';
+    // Only `brands` here. This used to also write `roles.<brand>`, but setDoc
+    // stores a dotted key as a literal top-level field (not inside the roles
+    // map), so it never set a role — and firestore.rules now block users from
+    // writing any role field on their own profile. The role still falls back
+    // to data.role || 'client' below, exactly as before.
+    if (!roles[BRAND_ID] && !brands.includes(BRAND_ID)) {
       updates.brands = [...new Set([...brands, BRAND_ID])];
     }
     if (Object.keys(updates).length) {
@@ -2253,9 +2260,13 @@ window._fbModuleReady = true;
 <div class="modal-overlay" id="dataModalOverlay" onclick="if(event.target===this)closeDataModal()">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
-    <div class="modal-header">
-      <div class="modal-title">📦 MY DATA</div>
-      <button class="modal-close" onclick="closeDataModal()">✕</button>
+    <!-- Title centred, no icon; X on the left in Home → Share's style
+         (plain grey line X, no circle — see #share-qr-modal). -->
+    <div class="modal-header" style="position:relative;justify-content:center;">
+      <button onclick="closeDataModal()" aria-label="Close" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <div class="modal-title">MY DATA</div>
     </div>
     <div class="modal-body" id="dataModalBody" style="padding-bottom:24px;">
       <!-- Stats row -->
@@ -2267,22 +2278,22 @@ window._fbModuleReady = true;
         <button onclick="runSyncToCloud()" style="width:100%;background:transparent;border:none;border-top:1px solid var(--g2a);color:var(--gff);font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9"/><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/></svg>
           <span style="display:flex;flex-direction:column;gap:2px;">
-            <span>Sync to Cloud</span>
+            <span>Save my data to cloud</span>
             <!-- "Last synced 2 min ago" / "Not synced yet" — see _refreshSyncIndicators -->
             <span id="dataSyncStatus" style="font-size:12px;font-weight:500;color:var(--g77);"></span>
           </span>
         </button>
-        <button onclick="exportDataWithDialog()" style="width:100%;background:transparent;border:none;border-top:1px solid var(--g2a);color:var(--gff);font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
+        <button onclick="exportData()" style="width:100%;background:transparent;border:none;border-top:1px solid var(--g2a);color:var(--gff);font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Download Backup
+          Download backup to phone
         </button>
         <label for="importFileInput" style="width:100%;box-sizing:border-box;background:transparent;border-top:1px solid var(--g2a);color:var(--gff);font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          Load Backup File
+          Load backup from phone
         </label>
         <button onclick="loadBrandLibraryForMe()" style="width:100%;background:transparent;border:none;border-top:1px solid var(--g2a);color:var(--gff);font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><polyline points="9 10 12 13 15 10"/><line x1="12" y1="6" x2="12" y2="13"/></svg>
-          Load Brand Library
+          Install brand library
         </button>
         <!-- Client users only (shown by openDataModal). -->
         <button id="dataDeleteAllBtn" onclick="openDeleteAllData()" style="width:100%;background:transparent;border:none;border-top:1px solid var(--g2a);color:#ff4747;font-family:'DM Sans';font-size:15px;font-weight:600;padding:16px 8px;cursor:pointer;text-align:left;display:none;align-items:center;gap:14px;-webkit-tap-highlight-color:transparent;">
@@ -2324,7 +2335,11 @@ window._fbModuleReady = true;
 <!-- PROFILE -->
 <div class="page" id="page-profile" style="padding-top:calc(60px + env(safe-area-inset-top));padding-bottom:calc(120px + env(safe-area-inset-bottom));padding-left:16px;padding-right:16px;">
   <div id="userMenuName" style="padding:12px 4px 16px;border-bottom:1px solid var(--border);margin-bottom:10px;">
-    <div id="userMenuDisplayName" style="font-weight:700;font-size:17px;color:var(--text);"></div>
+    <!-- Tap the name (or its pencil) → Your Name sheet (openNameModal). -->
+    <div onclick="openNameModal()" style="display:inline-flex;align-items:center;gap:8px;max-width:100%;cursor:pointer;-webkit-tap-highlight-color:transparent;">
+      <div id="userMenuDisplayName" style="font-weight:700;font-size:17px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;"></div>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#A0A0A0" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;" aria-label="Edit name"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+    </div>
     <div id="userMenuEmail" style="font-size:13px;color:var(--text-dim);margin-top:2px;"></div>
     <div id="userMenuRole" style="font-size:12px;font-weight:700;margin-top:6px;"></div>
   </div>
@@ -2831,6 +2846,21 @@ window._fbModuleReady = true;
     <div style="display:flex;gap:10px;">
       <button onclick="closeBWModal()" style="flex:1;background:transparent;border:1px solid var(--g55);border-radius:10px;color:var(--gff);font-family:'DM Sans';font-size:18px;font-weight:700;padding:12px;cursor:pointer;">CANCEL</button>
       <button onclick="confirmBWModal()" style="flex:1;background:var(--accent);border:none;border-radius:10px;color:var(--g00);font-family:'DM Sans';font-size:18px;font-weight:700;padding:12px;cursor:pointer;">SAVE</button>
+    </div>
+  </div>
+</div>
+
+<!-- NAME MODAL (Profile → tap your name). Same look as the BW modal above. -->
+<div class="modal-overlay" id="nameModalOverlay" style="align-items:center;padding:0 16px;" onclick="if(event.target===this)closeNameModal()">
+  <div class="modal-sheet" style="padding:4px 20px 32px;border-radius:20px;border:1px solid var(--border);margin-bottom:20vh;">
+    <div class="modal-handle"></div>
+    <div class="modal-title" style="margin-top:24px;margin-bottom:6px;">YOUR NAME</div>
+    <div style="font-size:13px;color:var(--ga0);margin-bottom:18px;">Shown on your profile and to your coach.</div>
+    <input id="nameInput" type="text" maxlength="30" autocomplete="name" autocapitalize="words" spellcheck="false" placeholder="Your name" style="width:100%;background:var(--g1a);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans';font-size:18px;font-weight:700;padding:12px 14px;box-sizing:border-box;outline:none;margin-bottom:8px;" oninput="_nameModalValidate()" onkeydown="if(event.key==='Enter')confirmNameModal()"/>
+    <div id="nameModalMsg" style="font-size:12px;color:#ff4747;min-height:16px;margin-bottom:12px;"></div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="closeNameModal()" style="flex:1;background:transparent;border:1px solid var(--g55);border-radius:10px;color:var(--gff);font-family:'DM Sans';font-size:18px;font-weight:700;padding:12px;cursor:pointer;">CANCEL</button>
+      <button id="nameModalSave" onclick="confirmNameModal()" style="flex:1;background:var(--accent);border:none;border-radius:10px;color:var(--g00);font-family:'DM Sans';font-size:18px;font-weight:700;padding:12px;cursor:pointer;">SAVE</button>
     </div>
   </div>
 </div>
@@ -4158,6 +4188,8 @@ function toggleAppSound() {
   _setSoundLocal(next, uid);
   _updateSoundToggleUI();
   _saveSoundToAccount(next, uid);
+  // Turned on mid-timer: this tap unlocks the 00:00 sound too (iPhone).
+  if (next) _primeSound('timerDone');
 }
 // On sign-in: the account's saved choice wins. None saved yet → this user's
 // own last choice on this phone (from before it was saved in accounts —
@@ -4256,8 +4288,40 @@ function _playSound(key) {
   const src = window.SOUNDS && window.SOUNDS[key];
   if (!src) return;
   try {
+    // Primed on an earlier tap (see _primeSound) → reuse that element; it's
+    // the only one iPhone lets play without a tap right now.
+    const primed = _primedAudio[key];
+    if (primed) {
+      primed.muted = false;
+      primed.currentTime = 0;
+      primed.play().catch(() => {});
+      return;
+    }
     const audio = new Audio(src);
     audio.play().catch(() => {});
+  } catch (e) {}
+}
+
+// For sounds that play LATER than the tap that started them (the rest timer
+// reaching 00:00). iPhone only lets an <audio> play without a tap if that same
+// element was already played once during a tap — so on the starting tap this
+// plays it silently (muted) and stops it, which "unlocks" it; _playSound then
+// reuses it. Also preloads the file (and so caches it for offline). Only while
+// App Sound is on.
+const _primedAudio = {};
+function _primeSound(key) {
+  if (!_isSoundEnabled()) return;
+  const src = window.SOUNDS && window.SOUNDS[key];
+  if (!src) return;
+  try {
+    let a = _primedAudio[key];
+    if (!a) { a = _primedAudio[key] = new Audio(src); a.preload = 'auto'; }
+    if (a._unlocked) return;
+    a.muted = true;
+    const reset = () => { a.pause(); a.currentTime = 0; a.muted = false; };
+    const p = a.play();
+    if (p && p.then) p.then(() => { a._unlocked = true; reset(); }, reset);
+    else reset();
   } catch (e) {}
 }
 
@@ -15138,6 +15202,11 @@ function _ssTagLast(exData) {
     });
     cs.forEach(c => {
       if (c === primary) return;
+      // A finished exercise is locked (lockExerciseCard: kg fields, reps +/−,
+      // ✓, add/delete set, note — disabled, 40% faded). openExDetail unlocks
+      // only the card it opens (the primary); unlock the other members too, or
+      // after SAVE & DONE their sets can't be edited when the superset is reopened.
+      try { unlockExerciseCard(c.id); } catch (e) {}
       const ph = document.createElement('div');
       ph.id = c.id + '_ph';
       ph.style.cssText = 'height:0;';
@@ -18755,6 +18824,8 @@ function startTimer(id) {
   t.running = true;
   t.startedAt = Date.now();
   t.remainingAtStart = t.remaining;
+  // Unlock the 00:00 sound on this tap (iPhone), if App Sound is on.
+  _primeSound('timerDone');
   // Clear done state when restarting
   const dispClr = document.getElementById(`timer-display-${id}`);
   if (dispClr) { dispClr.classList.remove('done'); dispClr.classList.add('running'); }
@@ -18796,6 +18867,11 @@ function startTimer(id) {
       if (disp) { disp.classList.remove('running'); disp.classList.add('done'); }
       // Vibrate if supported
       if (navigator.vibrate) navigator.vibrate([200,100,200]);
+      // Short sound (App Sound on) — only if it really just ended. After the
+      // app was in the background / screen locked, this tick runs on return,
+      // possibly minutes late; a late ding would be confusing, so skip it.
+      const _endedAt = t.startedAt + t.remainingAtStart * 1000;
+      if (Date.now() - _endedAt < 3000) _playSound('timerDone');
       // If card is collapsed, mark chevron red — stays until user interacts
       const card = document.getElementById(id);
       const chevBtn = document.getElementById(`chev-${id}`);
@@ -19808,6 +19884,8 @@ document.addEventListener('DOMContentLoaded', () => {
   _initSwipeDownToClose('share-qr-modal', closeShareQR);
   // Profile → Body Weight modal.
   _initSwipeDownToClose('bwModalOverlay', closeBWModal);
+  // Profile → Your Name modal.
+  _initSwipeDownToClose('nameModalOverlay', closeNameModal);
   _initSwipeDownToClose('dataModalOverlay', closeDataModal, 'dataModalBody'); // Profile → My Data
   // Active workout → Share workout QR page.
   _initSwipeDownToClose('workout-share-qr-modal', closeWorkoutShareQR);
@@ -21422,28 +21500,59 @@ function openDataModal() {
       { val: workouts.filter(w=>w._template).length, label: 'Custom Workouts', color: '#7ec8e3' },
       { val: customExercises.length, label: 'Custom Exercises', color: '#a78bfa' },
     ];
-    stats.innerHTML = items.map(it => `
-      <div style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 8px;text-align:center;">
+    // Plain info, not boxes (boxes read as tappable): 3 columns split by thin
+    // vertical lines, same grey as the list's divider lines below.
+    stats.style.gap = '0';
+    stats.innerHTML = items.map((it, i) => `
+      <div style="flex:1;min-width:0;padding:6px 8px;text-align:center;${i ? 'border-left:1px solid var(--g2a);' : ''}">
         <div style="font-family:'Bebas Neue';font-size:26px;color:${it.color};letter-spacing:1px;">${it.val}</div>
-        <div style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;">${it.label}</div>
+        <div style="font-size:10px;color:var(--text-soft);font-weight:600;text-transform:uppercase;letter-spacing:.5px;">${it.label}</div>
       </div>`).join('');
   }
   // Delete All Data — client users only.
   const _delAllBtn = document.getElementById('dataDeleteAllBtn');
   if (_delAllBtn) _delAllBtn.style.display = window._currentUserData?.role === 'super_admin' ? 'none' : 'flex';
-  _refreshSyncIndicators(); // "Last synced …" under Sync to Cloud
-  document.getElementById('dataModalOverlay').classList.add('open');
+  _refreshSyncIndicators(); // "Last synced …" under Save my data to cloud
+  // Open like the app's other bottom sheets: slides up (sheetUp .25s) while
+  // the dark background fades in.
+  const ov = document.getElementById('dataModalOverlay');
+  const sheet = ov.querySelector('.modal-sheet');
+  clearTimeout(window._dataModalCloseT); window._dataModalCloseT = null; // reopened mid-close
+  ov.style.transition = 'none';
+  ov.style.opacity = '0';
+  ov.classList.add('open');
+  if (sheet) { sheet.style.animation = 'none'; void sheet.offsetWidth; sheet.style.animation = 'sheetUp .25s ease'; }
+  void ov.offsetWidth; // start the fade from 0
+  ov.style.transition = 'opacity .25s ease';
+  ov.style.opacity = '1';
 }
 
+// Close: the reverse — slides down (sheetSlideDown .2s) while the background
+// fades out. After a swipe-down the sheet is already off-screen (see
+// _initSwipeDownToClose), so only the background fades.
 function closeDataModal() {
-  document.getElementById('dataModalOverlay').classList.remove('open');
+  const ov = document.getElementById('dataModalOverlay');
+  if (!ov.classList.contains('open') || window._dataModalCloseT) return;
+  const sheet = ov.querySelector('.modal-sheet');
+  // After a swipe the gesture code resets the sheet's transform right after
+  // calling this; a 0s sheetSlideDown (forwards) holds it off-screen anyway,
+  // since an animation outranks the inline transform.
+  if (sheet) sheet.style.animation = sheet.dataset.swipeClosing ? 'sheetSlideDown 0s forwards' : 'sheetSlideDown .2s ease forwards';
+  ov.style.transition = 'opacity .2s ease';
+  ov.style.opacity = '0';
+  window._dataModalCloseT = setTimeout(() => {
+    window._dataModalCloseT = null;
+    ov.classList.remove('open');
+    ov.style.transition = ''; ov.style.opacity = '';
+    if (sheet) sheet.style.animation = '';
+  }, 220);
 }
 
-// My Data → "Load Brand Library": brings back every published (Firestore
+// My Data → "Install brand library": brings back every published (Firestore
 // library) and brand-default workout/exercise this user deleted/hid, by
 // dropping them from the per-user hide lists. Nothing is copied or
 // overwritten — anything the user already has stays exactly as it is.
-// Core of Load Brand Library (no UI): fresh library, brand content switched
+// Core of Install brand library (no UI): fresh library, brand content switched
 // back ON, and every hidden library/default workout/exercise un-hidden.
 // Returns { ok:false } if the library couldn't be fetched (nothing changed),
 // else { ok:true, restoredW, restoredEx, wasOff }. Also used by the
@@ -21505,7 +21614,7 @@ window.loadBrandLibraryForMe = loadBrandLibraryForMe;
 //  "Couldn't reach the cloud" with Try again / Close. Photos stay on device.
 // ══════════════════════════════════════════════════════
 // ── Sync status indicators ────────────────────────────────────────────────
-//  • My Data → under "Sync to Cloud": "Last synced 2 min ago" (grey) or
+//  • My Data → under "Save my data to cloud": "Last synced 2 min ago" (grey) or
 //    "Not synced yet" (orange).
 //  • Profile tab: small orange dot once changes have stayed unsynced for
 //    2+ minutes while online (not for brief gaps a background sync fixes).
@@ -21706,6 +21815,12 @@ function _wipeLocalUserData() {
       .catch(() => {});
   }
   if (typeof _invalidateExCache === 'function') _invalidateExCache();
+  // Body weight (Profile → Body Weight): one value, in memory + the users/{uid}
+  // profile doc (cleared in the cloud by _runDeleteAllData). Clearing _userBW
+  // also stops "Save my data to cloud" from uploading the old value again.
+  if (typeof _userBW !== 'undefined') _userBW = null;
+  if (window._currentUserData) delete window._currentUserData.bodyWeight;
+  if (typeof _updateBWMenuLabel === 'function') _updateBWMenuLabel();
   // Only ever run once the cloud copy is empty too (Delete All Data, after the
   // cloud reset; or another device's reset marker) — device = cloud now.
   _markSynced();
@@ -21720,7 +21835,7 @@ function openDeleteAllData() {
   overlay.innerHTML = `
     <div class="delete-confirm-sheet">
       <div class="delete-confirm-title">Delete All Data ?</div>
-      <div class="delete-confirm-sub" style="line-height:1.55;">This permanently deletes all your workouts, workout history, exercises, plans and settings — <b>from this device and from the cloud</b> — and hides all brand content. Your account stays. <span style="color:#ff4747;">This can't be undone.</span></div>
+      <div class="delete-confirm-sub" style="line-height:1.55;">This permanently deletes all your workouts, workout history, exercises, plans, body weight and settings —<b>from this device and from the cloud</b> — and hides all brand content. Your account stays. <span style="color:#ff4747;">This can't be undone.</span></div>
       <button id="_delAllBackup" style="width:100%;margin:0 0 14px;background:transparent;border:1px solid var(--accent);border-radius:12px;color:var(--accent);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;padding:12px;cursor:pointer;">Download backup first</button>
       <div style="font-family:'DM Sans';font-size:12px;color:var(--g88);margin-bottom:6px;">Type <b style="color:var(--gff);">DELETE</b> to confirm</div>
       <input id="_delAllInput" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" style="width:100%;box-sizing:border-box;background:var(--g11);border:1px solid var(--g44);border-radius:10px;color:var(--gff);font-family:'DM Sans',sans-serif;font-size:16px;font-weight:700;letter-spacing:1px;padding:12px;margin-bottom:16px;outline:none;">
@@ -21793,11 +21908,15 @@ async function _runDeleteAllData() {
     step(10, 'Deleting from cloud…');
     const uid = window._currentUser.uid, brandId = window.BRAND_ID || 'default';
     const ref = window._fbDoc(window._fbDb, 'userData', brandId, 'users', uid);
+    //    + body weight, which lives on the users/{uid} profile doc, not userData.
     await atLeast(900, Promise.race([
-      window._fbSetDoc(ref, {
-        workouts: [], deletedWorkouts: [], customExercises: [], plannedWorkouts: [],
-        hiddenLibWorkouts: [], brandContentOff: true, dataResetAt: resetAt, settings: {}, updatedAt: resetAt,
-      }),
+      Promise.all([
+        window._fbSetDoc(ref, {
+          workouts: [], deletedWorkouts: [], customExercises: [], plannedWorkouts: [],
+          hiddenLibWorkouts: [], brandContentOff: true, dataResetAt: resetAt, settings: {}, updatedAt: resetAt,
+        }),
+        window._fbSetDoc(window._fbDoc(window._fbDb, 'users', uid), { bodyWeight: null }, { merge: true }),
+      ]),
       _sleep(15000).then(() => { throw new Error('The cloud didn\'t respond'); }),
     ]));
     step(45, 'Deleting all data…');
@@ -21861,7 +21980,7 @@ async function _runDeleteAllData() {
     if (!r.ok) {
       step(100, '');
       ov.innerHTML = `<div style="width:100%;max-width:340px;text-align:center;font-family:'DM Sans',sans-serif;">
-        <div style="font-size:16px;color:var(--gcc);line-height:1.5;margin-bottom:22px;">Couldn't reach the brand library. You can do it any time from My Data → Load Brand Library.</div>
+        <div style="font-size:16px;color:var(--gcc);line-height:1.5;margin-bottom:22px;">Couldn't reach the brand library. You can do it any time from My Data → Install brand library.</div>
         <button id="_delAllOk" style="width:100%;background:var(--accent);border:1px solid var(--accent);border-radius:12px;color:var(--g00);font-size:15px;font-weight:700;padding:14px;cursor:pointer;">OK</button></div>`;
       ov.querySelector('#_delAllOk').onclick = finish;
       return;
@@ -21962,6 +22081,7 @@ function _saveBackupFile(blob, filename) {
   if (!needsTap) { _backupSaveNow(blob, filename); return; }
   const overlay = document.createElement('div');
   overlay.className = 'delete-confirm-overlay';
+  overlay.style.zIndex = '9000'; // above the My Data sheet (.modal-overlay 250) — the class's 200 hid it behind
   overlay.innerHTML = `
     <div class="delete-confirm-sheet" style="max-width:340px;">
       <div class="delete-confirm-title">Backup Ready</div>
@@ -21977,65 +22097,14 @@ function _saveBackupFile(blob, filename) {
 }
 window._saveBackupFile = _saveBackupFile;
 
-function exportDataWithDialog() {
-  const overlay = document.createElement('div');
-  overlay.className = 'delete-confirm-overlay';
-  overlay.innerHTML = `
-    <div class="delete-confirm-sheet" style="max-width:340px;">
-      <div class="delete-confirm-title">Download Backup</div>
-      <div class="delete-confirm-sub" style="margin-bottom:16px;line-height:1.6;">Do you want to merge with a previous backup first?<br><span style="color:var(--muted);font-size:12px;">Merging adds back any workouts, exercises or history that were deleted from the current data.</span></div>
-      <div class="delete-confirm-btns" style="flex-direction:column;gap:8px;">
-        <button class="btn-del-yes" id="_exportMergeBtn" style="background:rgba(232,255,71,.15);border-color:rgba(232,255,71,.4);color:var(--accent);">Merge with previous backup first</button>
-        <button class="btn-del-cancel" id="_exportDirectBtn" style="width:100%;">Download current data only</button>
-      </div>
-    </div>`;
-  document.body.appendChild(overlay);
-  overlay.querySelector('#_exportDirectBtn').onclick = () => { overlay.remove(); exportData(); };
-  overlay.querySelector('#_exportMergeBtn').onclick = () => {
-    overlay.remove();
-    // Trigger file picker to select previous backup, then merge and download
-    const input = document.createElement('input');
-    input.type = 'file'; input.accept = '.json';
-    input.onchange = e => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = ev => {
-        try {
-          const prev = JSON.parse(ev.target.result);
-          // Merge previous backup INTO current data (add back anything missing)
-          if (Array.isArray(prev.workouts)) {
-            const ids = new Set(workouts.map(w => w.id));
-            _unremoveWorkoutIds(prev.workouts.map(w => w.id)); // restoring a backup is deliberate
-            prev.workouts.filter(w => !ids.has(w.id)).forEach(w => workouts.push(w));
-          }
-          if (Array.isArray(prev.deletedWorkouts)) {
-            const ids = new Set(deletedWorkouts.map(w => w.id));
-            prev.deletedWorkouts.filter(w => !ids.has(w.id)).forEach(w => deletedWorkouts.push(w));
-          }
-          if (Array.isArray(prev.customExercises)) {
-            const names = new Set(customExercises.map(e => e.name));
-            prev.customExercises.filter(e => !names.has(e.name)).forEach(e => customExercises.push(e));
-          }
-          if (Array.isArray(prev.plannedWorkouts)) {
-            const ids = new Set((plannedWorkouts||[]).map(p => p.planId));
-            prev.plannedWorkouts.filter(p => p.type !== 'cardio' && !ids.has(p.planId)).forEach(p => plannedWorkouts.push(p));
-          }
-          exportData(true);
-        } catch { showToast('Invalid backup file'); }
-      };
-      reader.readAsText(file);
-    };
-    input.click();
-  };
-}
-
-function exportData(merged = false) {
+// My Data → Download backup to phone: a clean snapshot of the current data, straight
+// away (no merge-with-previous-backup option any more).
+function exportData() {
   // Strip any emoji from exercise names before exporting
   const stripEmoji = str => (str||'').replace(/[\u{1F000}-\u{1FFFF}]|[\u{2600}-\u{27FF}]|[\uD800-\uDBFF][\uDC00-\uDFFF]/gu, '').trim();
 
-  if (!merged) {
-    // "Current data only" — clean snapshot of active app state, no deleted/hidden items
+  {
+    // Current data only — active app state, no deleted/hidden items
     const hiddenEx = JSON.parse(_LS.get('ironlog_hidden_ex') || '[]');
     const deletedTabNames = JSON.parse(_LS.get('ironlog_deleted_tab_names') || '[]');
     const activeWorkouts = workouts
@@ -22064,32 +22133,7 @@ function exportData(merged = false) {
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     _saveBackupFile(blob, _appFileBase() + '_my_data.json'); // overwrites the same file where possible
-    return;
   }
-
-  // Merged export — include everything
-  const cleanWorkouts = workouts.map(w => ({
-    ...w,
-    exercises: (w.exercises||[]).map(e => ({ ...e, name: stripEmoji(e.name), label: stripEmoji(e.label||e.name) }))
-  }));
-  const cleanCustomEx = customExercises.map(({ emoji, equipment, custom, ...e }) => ({ ...e, name: stripEmoji(e.name), label: stripEmoji(e.label||e.name) }));
-  const data = {
-    version: 2,
-    exportedAt: new Date().toISOString(),
-    workouts: cleanWorkouts,
-    deletedWorkouts: deletedWorkouts,
-    customExercises: cleanCustomEx,
-    plannedWorkouts: plannedWorkouts,
-    hiddenExercises: JSON.parse(_LS.get('ironlog_hidden_ex') || '[]'),
-    settings: {
-      workoutWeekTarget: workoutWeekTarget,
-      setsTargets: _getSetsTargets(),
-      lastTimerSecs: lastTimerSecs,
-      miniChartRange: miniChartRange,
-    }
-  };
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  _saveBackupFile(blob, _appFileBase() + '_merged_backup.json'); // overwrites the same file where possible
 }
 
 function importData(input) {
@@ -25281,7 +25325,7 @@ window._setHiddenLibNames = _setHiddenLibNames;
 // "Brand content off" (client users): set by My Data → Delete All Data. While
 // on, NO brand-library / brand-default workouts or exercises show for this
 // user — including ones published later. Turned back off by "Sync to brand
-// library? → YES" or My Data → Load Brand Library. Synced to their userData.
+// library? → YES" or My Data → Install brand library. Synced to their userData.
 function _isBrandContentOff() {
   return window._currentUserData?.role !== 'super_admin' && _LS.get('ironlog_brand_off') === '1';
 }
@@ -26246,15 +26290,11 @@ document.getElementById("installBtn").addEventListener("click", async () => {
 
     <!-- USERS TAB -->
     <div id="adminTabContentUsers">
-      <div id="adminStats" style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;"></div>
+      <!-- Search, then ONE row of role chips with their counts (filters the
+           list; rendered by renderAdminStats), then a plain list of users —
+           tap a user → User details sheet (openAdminUserSheet) to edit. -->
       <input id="adminSearch" type="text" placeholder="Search by name or email..." oninput="filterAdminUsers(this.value)" style="width:100%;background:var(--g14);border:1px solid var(--g2a);border-radius:10px;color:var(--gf0);font-family:'DM Sans';font-size:14px;padding:12px;outline:none;margin-bottom:12px;box-sizing:border-box;"/>
-      <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
-        <button onclick="filterAdminByRole('all')" id="adminRoleAll" style="background:#a78bfa;color:#000;border:none;border-radius:20px;padding:5px 12px;font-family:'DM Sans';font-size:11px;font-weight:700;cursor:pointer;">All</button>
-        <button onclick="filterAdminByRole('brand_admin')" id="adminRoleBrandAdmin" style="background:transparent;color:var(--g88);border:1px solid var(--g33);border-radius:20px;padding:5px 12px;font-family:'DM Sans';font-size:11px;font-weight:700;cursor:pointer;">Brand Admin</button>
-        <button onclick="filterAdminByRole('site_manager')" id="adminRoleSiteManager" style="background:transparent;color:var(--g88);border:1px solid var(--g33);border-radius:20px;padding:5px 12px;font-family:'DM Sans';font-size:11px;font-weight:700;cursor:pointer;">Site Mgr</button>
-        <button onclick="filterAdminByRole('coach')" id="adminRoleCoach" style="background:transparent;color:var(--g88);border:1px solid var(--g33);border-radius:20px;padding:5px 12px;font-family:'DM Sans';font-size:11px;font-weight:700;cursor:pointer;">Coach</button>
-        <button onclick="filterAdminByRole('client')" id="adminRoleClient" style="background:transparent;color:var(--g88);border:1px solid var(--g33);border-radius:20px;padding:5px 12px;font-family:'DM Sans';font-size:11px;font-weight:700;cursor:pointer;">Client</button>
-      </div>
+      <div id="adminRoleChips" style="display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;"></div>
       <div id="adminUsersList"></div>
     </div>
 
@@ -26569,7 +26609,9 @@ window._onAuthReady = (user) => {
   const nameEl = document.getElementById('userMenuDisplayName');
   const emailEl = document.getElementById('userMenuEmail');
   const roleEl = document.getElementById('userMenuRole');
-  if (nameEl) nameEl.textContent = user.displayName || 'User';
+  // The cloud profile's name first (what Profile → Your Name edits and what
+  // coaches / admins see), then the sign-in account's.
+  if (nameEl) nameEl.textContent = window._currentUserData?.displayName || user.displayName || 'User';
   if (emailEl) emailEl.textContent = user.email || '';
   // Profile: clients get no role title — hidden (display:none also drops its
   // margin-top, closing the gap under the email).
@@ -27013,7 +27055,13 @@ function runBulkInvite() {
       const existing = existingByEmail[email];
       if (existing) {
         // User exists — update their role
-        const update = { [`roles.${brandId}`]: role, brands: [...new Set([...(existing.brands||[]), brandId])] };
+        // Nested roles object, not a "roles.<brand>" key — setDoc would store
+        // that as one literal field and the role would never apply (see
+        // _doChangeUserRole).
+        const update = { roles: { [brandId]: role }, brands: [...new Set([...(existing.brands||[]), brandId])] };
+        // Brand / ops admin → the brand they manage (firestore.rules: adminBrand).
+        if (['brand_admin', 'ops_admin'].includes(role)) update.adminBrand = brandId;
+        else if (existing.adminBrand) update.adminBrand = null;
         if (siteId) update.siteIds = [...new Set([...(existing.siteIds||[]), siteId])];
         if (expiry) update.accountExpires = expiry;
         return window._fbSetDoc(window._fbDoc(window._fbDb,'users',existing.id), update, { merge:true })
@@ -27287,6 +27335,8 @@ let _adminTab = 'users';
 const ROLE_COLORS = { super_admin:'#ff4747', ops_admin:'#ff8c42', brand_admin:'#f472b6', site_manager:'#a78bfa', coach:'#7ec8e3', client:'#e8ff47' };
 const ROLE_LABELS = { super_admin:'Super Admin', ops_admin:'Ops Admin', brand_admin:'Brand Admin', site_manager:'Site Manager', coach:'Coach', client:'Client' };
 const ALL_ROLES = ['brand_admin','site_manager','coach','client'];
+// Roles that manage a brand's users from the Admin Panel (need adminBrand).
+const ADMIN_ROLES = ['brand_admin','ops_admin'];
 
 function openAdminPanel() {
   const role = window._currentUserData?.role;
@@ -27298,6 +27348,9 @@ function openAdminPanel() {
 }
 
 function closeAdminPanel() {
+  // A User details sheet left open would otherwise stay on screen alone.
+  const _uSheet = document.getElementById('adminUserSheetOverlay');
+  if (_uSheet) { clearTimeout(window._adminSheetCloseT); window._adminSheetCloseT = null; _uSheet.style.display = 'none'; _adminSheetUid = null; }
   document.getElementById('adminPanelOverlay').style.display = 'none';
 }
 
@@ -27605,6 +27658,16 @@ function loadAdminUsers() {
       data.brandRole = data.roles?.[brandId] || data.role || 'client';
       return data;
     });
+    // Brand / ops admins made before adminBrand existed: give them this brand
+    // once (only the super admin may write it), or firestore.rules keep them
+    // out of their own Admin Panel.
+    if (window._currentUserData?.role === 'super_admin') {
+      _adminUsers.filter(u => ADMIN_ROLES.includes(u.brandRole) && u.adminBrand !== brandId).forEach(u => {
+        window._fbSetDoc(window._fbDoc(window._fbDb, 'users', u.id), { adminBrand: brandId }, { merge: true })
+          .then(() => { u.adminBrand = brandId; })
+          .catch(e => console.warn('[adminBrand] backfill failed:', u.id, e.message));
+      });
+    }
     // Also cache license data for use in renderAdminUsers
     window._fbGetDoc(window._fbDoc(window._fbDb, 'brands', brandId)).then(bSnap => {
       window._cachedLicenses = bSnap.exists() ? (bSnap.data().licenses || {}) : {};
@@ -27614,106 +27677,218 @@ function loadAdminUsers() {
   }).catch(e => { list.innerHTML = `<div style="color:#ff4747;padding:16px;">Error: ${e.message}</div>`; });
 }
 
+// Users tab: ONE row of role chips with their counts ("All 24", "Coach 3"…).
+// Tapping a chip filters the list. (Replaces the old count boxes + the
+// separate filter row, which showed the same thing twice.)
 function renderAdminStats() {
-  const counts = {};
+  const el = document.getElementById('adminRoleChips');
+  if (!el) return;
+  const counts = { all: _adminUsers.length };
   ALL_ROLES.forEach(r => counts[r] = 0);
   _adminUsers.forEach(u => { if (counts[u.brandRole] !== undefined) counts[u.brandRole]++; });
-  document.getElementById('adminStats').innerHTML = ALL_ROLES.map(role =>
-    `<div style="flex:1;min-width:60px;background:var(--g14);border:1px solid var(--g2a);border-radius:10px;padding:8px;text-align:center;">
-      <div style="font-size:18px;font-weight:700;color:${ROLE_COLORS[role]};">${counts[role]}</div>
-      <div style="font-size:9px;color:var(--g55);font-weight:600;margin-top:1px;">${ROLE_LABELS[role].toUpperCase()}</div>
-    </div>`
-  ).join('');
+  const short = { brand_admin: 'Brand Admin', site_manager: 'Site Mgr', coach: 'Coach', client: 'Client' };
+  el.innerHTML = ['all', ...ALL_ROLES].map(r => {
+    const on = _adminRoleFilter === r;
+    const label = r === 'all' ? 'All' : short[r];
+    return `<button onclick="filterAdminByRole('${r}')" style="flex-shrink:0;display:flex;align-items:center;gap:6px;background:${on ? '#a78bfa' : 'transparent'};color:${on ? 'var(--g00)' : 'var(--g88)'};border:1px solid ${on ? '#a78bfa' : 'var(--g33)'};border-radius:20px;padding:6px 12px;font-family:'DM Sans';font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent;">${label}<span style="font-weight:800;color:${on ? 'var(--g00)' : (r === 'all' ? 'var(--gcc)' : ROLE_COLORS[r])};">${counts[r]}</span></button>`;
+  }).join('');
 }
 
 function filterAdminByRole(role) {
   _adminRoleFilter = role;
-  ['all','brand_admin','site_manager','coach','client'].forEach(r => {
-    const id = 'adminRole' + (r==='all'?'All':r==='brand_admin'?'BrandAdmin':r==='site_manager'?'SiteManager':r==='coach'?'Coach':'Client');
-    const btn = document.getElementById(id);
-    if (btn) { btn.style.background = r===role?'#a78bfa':'transparent'; btn.style.color = r===role?'var(--g00)':'var(--g88)'; }
-  });
+  renderAdminStats();
   renderAdminUsers();
 }
 
 function filterAdminUsers(q) { renderAdminUsers(q.toLowerCase()); }
 
-function renderAdminUsers(search = '') {
+function _adminInitials(u) { return (u.displayName || u.email || '?').slice(0, 2).toUpperCase(); }
+function _adminEsc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+// Users tab list: plain rows split by thin lines (no boxes, no controls) —
+// initials, name (+ "you"), email, the super admin's workouts line, role
+// badge, ›. Tap → User details sheet. `search` defaults to the search field.
+function renderAdminUsers(search) {
+  if (search === undefined) search = (document.getElementById('adminSearch')?.value || '').toLowerCase();
   const myRole = window._currentUserData?.role;
   const myUid = window._currentUser?.uid;
-  const coaches = _adminUsers.filter(u => u.brandRole === 'coach');
-  const sites = _adminSites;
+  const list = document.getElementById('adminUsersList');
 
-  let users = _adminUsers.filter(u => {
+  const users = _adminUsers.filter(u => {
     if (_adminRoleFilter !== 'all' && u.brandRole !== _adminRoleFilter) return false;
     if (search && !`${u.email||''} ${u.displayName||''}`.toLowerCase().includes(search)) return false;
     return true;
   });
 
   if (!users.length) {
-    document.getElementById('adminUsersList').innerHTML = '<div style="text-align:center;padding:40px;color:var(--g55);font-size:13px;">No users found</div>';
+    list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--g55);font-size:13px;">No users found</div>';
     return;
   }
 
-  const canEdit = ['super_admin','ops_admin','brand_admin'].includes(myRole);
-  const canEditSiteManager = ['super_admin','brand_admin'].includes(myRole);
-
-  document.getElementById('adminUsersList').innerHTML = users.map(u => {
+  list.innerHTML = users.map((u, i) => {
     const isSelf = u.id === myUid;
     const color = ROLE_COLORS[u.brandRole] || '#888';
-    const initials = (u.displayName || u.email || '?').slice(0,2).toUpperCase();
-    const siteLabel = u.siteIds?.length ? u.siteIds.map(sid => sites.find(s=>s.id===sid)?.name||sid).join(', ') : '—';
-
-    const coachSelect = u.brandRole === 'client' && canEdit && coaches.length ? `
-      <div style="margin-top:8px;display:flex;align-items:center;gap:8px;">
-        <span style="font-size:11px;color:var(--g55);font-weight:600;flex-shrink:0;">Coach:</span>
-        <select onchange="assignCoach('${u.id}',this.value)" style="flex:1;background:var(--g1e);border:1px solid var(--g33);border-radius:7px;color:var(--gf0);font-family:'DM Sans';font-size:12px;padding:5px 8px;">
-          <option value="">— None —</option>
-          ${coaches.map(c=>`<option value="${c.id}" ${u.coachId===c.id?'selected':''}>${c.displayName||c.email}</option>`).join('')}
-        </select>
-      </div>` : '';
-
-    const siteSelect = canEdit && sites.length ? `
-      <div style="margin-top:8px;display:flex;align-items:center;gap:8px;">
-        <span style="font-size:11px;color:var(--g55);font-weight:600;flex-shrink:0;">Site:</span>
-        <select onchange="assignSite('${u.id}',this.value)" style="flex:1;background:var(--g1e);border:1px solid var(--g33);border-radius:7px;color:var(--gf0);font-family:'DM Sans';font-size:12px;padding:5px 8px;">
-          <option value="">— None —</option>
-          ${sites.map(s=>`<option value="${s.id}" ${(u.siteIds||[]).includes(s.id)?'selected':''}>${s.name}</option>`).join('')}
-        </select>
-      </div>` : '';
-
-    const editableRoles = ALL_ROLES.filter(r => r !== u.brandRole && (canEditSiteManager || r !== 'brand_admin'));
-    const licData = window._cachedLicenses || {};
-
-    return `<div data-uid="${u.id}" style="background:var(--g14);border:1px solid var(--g2a);border-radius:12px;padding:14px;margin-bottom:10px;">
-      <div style="display:flex;align-items:center;gap:12px;">
-        <div style="width:40px;height:40px;border-radius:50%;background:${color}22;border:1px solid ${color}55;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:${color};flex-shrink:0;">${initials}</div>
-        <div style="flex:1;min-width:0;">
-          <div style="font-weight:700;font-size:14px;color:var(--gf0);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${u.displayName||'—'} ${isSelf?'<span style="color:var(--g55);font-size:11px;">(you)</span>':''}</div>
-          <div style="font-size:12px;color:var(--g66);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${u.email||u.id}</div>
-          ${siteLabel !== '—' ? `<div style="font-size:11px;color:#a78bfa;margin-top:2px;">Site: ${siteLabel}</div>` : ''}
-          ${myRole === 'super_admin' ? `<div class="admin-wkt-stats" style="font-size:11px;color:var(--g88);margin-top:2px;">${_adminWorkoutStatsLabel(u)}</div>` : ''}
-        </div>
-        <span style="background:${color}22;color:${color};border:1px solid ${color}44;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;flex-shrink:0;">${ROLE_LABELS[u.brandRole]||u.brandRole}</span>
+    return `<div data-uid="${u.id}" onclick="openAdminUserSheet('${u.id}')" style="display:flex;align-items:center;gap:12px;padding:12px 2px;${i ? 'border-top:1px solid var(--g2a);' : ''}cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .15s;" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''" ontouchmove="this.style.transform=''" ontouchcancel="this.style.transform=''">
+      <div style="width:40px;height:40px;border-radius:50%;background:${color}22;border:1px solid ${color}55;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:${color};flex-shrink:0;">${_adminEsc(_adminInitials(u))}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;font-size:15px;color:var(--gf0);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${_adminEsc(u.displayName||'—')}${isSelf ? ' <span style="color:var(--g55);font-size:12px;font-weight:600;">(you)</span>' : ''}</div>
+        <div style="font-size:12px;color:var(--gaa);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px;">${_adminEsc(u.email||u.id)}</div>
+        ${myRole === 'super_admin' ? `<div class="admin-wkt-stats" style="font-size:11px;color:var(--g77);margin-top:2px;">${_adminWorkoutStatsLabel(u)}</div>` : ''}
       </div>
-      ${coachSelect}
-      ${siteSelect}
-      ${canEdit && !isSelf && editableRoles.length ? `
-        <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">
-          ${editableRoles.map(r => {
-            const lic = licData[r];
-            const isLocked = lic?.locked;
-            const isOver = lic?.limit > 0 && lic?.used >= lic?.limit;
-            const indicator = isLocked ? ' 🔒' : isOver ? ` (${lic.used}/${lic.limit})` : '';
-            const borderColor = isLocked ? '#ff474744' : isOver ? '#ff8c4244' : `${ROLE_COLORS[r]}44`;
-            const textColor = isLocked ? '#ff4747' : isOver ? '#ff8c42' : ROLE_COLORS[r];
-            return `<button onclick="changeUserRole('${u.id}','${r}')" style="flex:1;min-width:80px;background:transparent;border:1px solid ${borderColor};border-radius:7px;color:${textColor};font-family:'DM Sans';font-size:11px;font-weight:700;padding:6px;cursor:pointer;">→ ${ROLE_LABELS[r]}${indicator}</button>`;
-          }).join('')}
-        </div>` : ''}
+      <span style="color:${color};font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;flex-shrink:0;">${ROLE_LABELS[u.brandRole]||u.brandRole}</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--g55)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-left:-4px;"><polyline points="9 6 15 12 9 18"/></svg>
     </div>`;
   }).join('');
   if (myRole === 'super_admin') _adminBackfillWorkoutStats();
 }
+
+// ── User details sheet (Admin Panel → Users → tap a user) ────────────────
+// Everything the old card showed, edited in one deliberate place: role (one
+// ticked list, with the license lock / quota indicators; asks before
+// changing), coach (clients), site, and — super admin — workouts.
+// Bottom sheet above the Admin Panel (9000): slides up like the app's other
+// sheets; X (Home → Share style), tap outside or swipe down closes it.
+let _adminSheetUid = null;
+function _adminUserSheetEl() {
+  let ov = document.getElementById('adminUserSheetOverlay');
+  if (ov) return ov;
+  ov = document.createElement('div');
+  ov.id = 'adminUserSheetOverlay';
+  ov.style.cssText = 'display:none;position:fixed;inset:0;z-index:9100;max-width:430px;margin:0 auto;background:rgba(0,0,0,.6);align-items:flex-end;justify-content:center;';
+  ov.addEventListener('click', e => { if (e.target === ov) closeAdminUserSheet(); });
+  ov.innerHTML = `<div class="modal-sheet" style="position:relative;padding:4px 18px 24px;">
+      <div class="modal-handle"></div>
+      <button onclick="closeAdminUserSheet()" aria-label="Close" style="position:absolute;top:14px;left:12px;background:transparent;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;z-index:1;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <div id="adminUserSheetBody" style="flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;"></div>
+    </div>`;
+  document.body.appendChild(ov);
+  _initSwipeDownToClose('adminUserSheetOverlay', closeAdminUserSheet, 'adminUserSheetBody');
+  return ov;
+}
+
+function _renderAdminUserSheet() {
+  const u = _adminUsers.find(x => x.id === _adminSheetUid);
+  const body = document.getElementById('adminUserSheetBody');
+  if (!u || !body) return;
+  const myRole = window._currentUserData?.role;
+  const isSelf = u.id === window._currentUser?.uid;
+  const canEdit = ['super_admin','ops_admin','brand_admin'].includes(myRole);
+  const canEditBrandAdmin = ['super_admin','brand_admin'].includes(myRole);
+  const color = ROLE_COLORS[u.brandRole] || '#888';
+  const coaches = _adminUsers.filter(x => x.brandRole === 'coach');
+  const sites = _adminSites;
+  const licData = window._cachedLicenses || {};
+  const section = t => `<div style="font-size:11px;font-weight:700;letter-spacing:1px;color:var(--g77);margin:22px 0 6px;">${t}</div>`;
+  const selectStyle = "width:100%;background:var(--g1a);border:1px solid var(--g33);border-radius:10px;color:var(--gf0);font-family:'DM Sans';font-size:15px;padding:11px 12px;";
+
+  // ROLE — one list, current role ticked. Read-only for yourself, for roles
+  // outside the brand list (super / ops admin), or without edit rights.
+  const roleEditable = canEdit && !isSelf && ALL_ROLES.includes(u.brandRole);
+  const roles = ALL_ROLES.filter(r => r === u.brandRole || canEditBrandAdmin || r !== 'brand_admin');
+  const roleRows = roleEditable ? roles.map((r, i) => {
+    const cur = r === u.brandRole;
+    const lic = licData[r];
+    const isLocked = !cur && lic?.locked;
+    const isOver = !cur && lic?.limit > 0 && lic?.used >= lic?.limit;
+    const note = isLocked ? '<span style="color:#ff4747;font-size:12px;font-weight:700;">🔒 Locked</span>'
+      : isOver ? `<span style="color:#ff8c42;font-size:12px;font-weight:700;">${lic.used}/${lic.limit} used</span>` : '';
+    return `<div ${cur ? '' : `onclick="_adminConfirmRoleChange('${u.id}','${r}')"`} style="display:flex;align-items:center;gap:12px;padding:13px 2px;${i ? 'border-top:1px solid var(--g2a);' : ''}cursor:${cur ? 'default' : 'pointer'};-webkit-tap-highlight-color:transparent;">
+        <span style="width:10px;height:10px;border-radius:50%;background:${ROLE_COLORS[r]};flex-shrink:0;"></span>
+        <span style="flex:1;font-size:15px;font-weight:${cur ? 800 : 600};color:${cur ? 'var(--gff)' : 'var(--gcc)'};">${ROLE_LABELS[r]}</span>
+        ${note}
+        ${cur ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${ROLE_COLORS[r]}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>` : ''}
+      </div>`;
+  }).join('') : `<div style="display:flex;align-items:center;gap:12px;padding:13px 2px;"><span style="width:10px;height:10px;border-radius:50%;background:${color};"></span><span style="font-size:15px;font-weight:800;color:var(--gff);">${ROLE_LABELS[u.brandRole]||u.brandRole}</span>${isSelf ? '<span style="font-size:12px;color:var(--g77);">— you can\'t change your own role</span>' : ''}</div>`;
+
+  const coachHtml = u.brandRole === 'client' && canEdit && coaches.length ? section('COACH') + `
+      <select onchange="assignCoach('${u.id}',this.value)" style="${selectStyle}">
+        <option value="">— None —</option>
+        ${coaches.map(c => `<option value="${c.id}" ${u.coachId === c.id ? 'selected' : ''}>${_adminEsc(c.displayName || c.email)}</option>`).join('')}
+      </select>` : '';
+  const siteHtml = canEdit && sites.length ? section('SITE') + `
+      <select onchange="assignSite('${u.id}',this.value)" style="${selectStyle}">
+        <option value="">— None —</option>
+        ${sites.map(s => `<option value="${s.id}" ${(u.siteIds || []).includes(s.id) ? 'selected' : ''}>${_adminEsc(s.name)}</option>`).join('')}
+      </select>` : '';
+  const activityHtml = myRole === 'super_admin' ? section('ACTIVITY') + `<div class="admin-wkt-stats" style="font-size:15px;color:var(--gcc);padding:4px 2px;">${_adminWorkoutStatsLabel(u)}</div>` : '';
+
+  body.innerHTML = `
+    <div style="display:flex;flex-direction:column;align-items:center;text-align:center;padding-top:22px;">
+      <div style="width:64px;height:64px;border-radius:50%;background:${color}22;border:1px solid ${color}55;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:22px;color:${color};">${_adminEsc(_adminInitials(u))}</div>
+      <div style="font-size:20px;font-weight:800;color:var(--gff);margin-top:12px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${_adminEsc(u.displayName || '—')}${isSelf ? ' <span style="color:var(--g55);font-size:13px;font-weight:600;">(you)</span>' : ''}</div>
+      <div style="font-size:13px;color:var(--gaa);margin-top:3px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${_adminEsc(u.email || u.id)}</div>
+    </div>
+    ${section('ROLE')}${roleRows}
+    ${coachHtml}
+    ${siteHtml}
+    ${activityHtml}`;
+}
+
+function openAdminUserSheet(uid) {
+  if (!_adminUsers.find(x => x.id === uid)) return;
+  _adminSheetUid = uid;
+  const ov = _adminUserSheetEl();
+  _renderAdminUserSheet();
+  const sheet = ov.querySelector('.modal-sheet');
+  clearTimeout(window._adminSheetCloseT); window._adminSheetCloseT = null;
+  ov.style.transition = 'none'; ov.style.opacity = '0';
+  ov.style.display = 'flex';
+  sheet.style.animation = 'none'; void sheet.offsetWidth; sheet.style.animation = 'sheetUp .25s ease';
+  void ov.offsetWidth;
+  ov.style.transition = 'opacity .25s ease'; ov.style.opacity = '1';
+  const body = document.getElementById('adminUserSheetBody');
+  if (body) body.scrollTop = 0;
+}
+
+function closeAdminUserSheet() {
+  const ov = document.getElementById('adminUserSheetOverlay');
+  if (!ov || ov.style.display === 'none' || window._adminSheetCloseT) return;
+  const sheet = ov.querySelector('.modal-sheet');
+  // After a swipe the sheet is already off-screen; a 0s slide holds it there.
+  sheet.style.animation = sheet.dataset.swipeClosing ? 'sheetSlideDown 0s forwards' : 'sheetSlideDown .2s ease forwards';
+  ov.style.transition = 'opacity .2s ease'; ov.style.opacity = '0';
+  window._adminSheetCloseT = setTimeout(() => {
+    window._adminSheetCloseT = null;
+    ov.style.display = 'none'; ov.style.transition = ''; ov.style.opacity = '';
+    sheet.style.animation = '';
+    _adminSheetUid = null;
+  }, 220);
+}
+
+// Re-draws the open sheet (if it shows `uid`) and the list after a change.
+function _adminRefreshAfterEdit(uid) {
+  renderAdminUsers();
+  renderAdminStats();
+  if (_adminSheetUid && (!uid || uid === _adminSheetUid)) _renderAdminUserSheet();
+}
+
+// Role tap → "Change Dana from Client to Coach?" first, then the existing
+// license checks (changeUserRole: lock / quota dialogs) and the save.
+function _adminConfirmRoleChange(uid, newRole) {
+  const u = _adminUsers.find(x => x.id === uid);
+  if (!u || u.brandRole === newRole) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'delete-confirm-overlay';
+  overlay.style.zIndex = '9200'; // above the User details sheet (9100)
+  overlay.innerHTML = `
+    <div class="delete-confirm-sheet">
+      <div class="delete-confirm-title">Change role ?</div>
+      <div class="delete-confirm-sub" style="line-height:1.55;">Change <b style="color:var(--gff);">${_adminEsc(u.displayName || u.email || 'this user')}</b> from <b style="color:${ROLE_COLORS[u.brandRole] || '#888'};">${ROLE_LABELS[u.brandRole] || u.brandRole}</b> to <b style="color:${ROLE_COLORS[newRole]};">${ROLE_LABELS[newRole]}</b>?</div>
+      <div class="delete-confirm-btns">
+        <button class="btn-del-cancel" id="_admRoleCancel">Cancel</button>
+        <button class="btn-del-yes-solid" id="_admRoleGo" style="background:#a78bfa;color:var(--g00);">Change</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  overlay.querySelector('#_admRoleCancel').onclick = () => overlay.remove();
+  overlay.querySelector('#_admRoleGo').onclick = () => { overlay.remove(); changeUserRole(uid, newRole); };
+}
+window.openAdminUserSheet = openAdminUserSheet;
+window.closeAdminUserSheet = closeAdminUserSheet;
+window._adminConfirmRoleChange = _adminConfirmRoleChange;
 
 // Super admin → Admin Panel: "37 workouts · Last: 18 Nov 2026" per user,
 // from users/{uid}.workoutStats[brandId] (written by _pushWorkoutStats).
@@ -27743,6 +27918,7 @@ function _adminBackfillWorkoutStats() {
       // Update just this row's line (no full re-render: keeps scroll / open selects).
       const label = _adminWorkoutStatsLabel(u);
       document.querySelectorAll(`#adminUsersList [data-uid="${u.id}"] .admin-wkt-stats`).forEach(el => { el.textContent = label; });
+      if (_adminSheetUid === u.id) document.querySelectorAll('#adminUserSheetBody .admin-wkt-stats').forEach(el => { el.textContent = label; });
     }).catch(e => {
       console.warn('[WorkoutStats] backfill read failed:', u.id, e.message);
       document.querySelectorAll(`#adminUsersList [data-uid="${u.id}"] .admin-wkt-stats`).forEach(el => { el.textContent = 'Workouts: unavailable'; });
@@ -27783,33 +27959,42 @@ function _doChangeUserRole(uid, newRole, lic, brandId) {
   const ref = window._fbDoc(window._fbDb, 'users', uid);
   const user = _adminUsers.find(u => u.id === uid);
   const oldRole = user?.brandRole;
-  const update = { [`roles.${brandId}`]: newRole };
+  // ROLE FIX: setDoc stores a dotted key ("roles.<brand>") as ONE literal
+  // top-level field, not inside the roles map — so role changes never stuck
+  // (the app reads roles[brand]). A nested object with merge:true merges into
+  // the existing roles map, keeping the user's roles in other brands.
+  const update = { roles: { [brandId]: newRole } };
   if (!user?.brands?.includes(brandId)) {
     update.brands = [...(user?.brands||[]), brandId];
   }
+  // adminBrand: the ONE brand a brand / ops admin manages — firestore.rules
+  // let them read and edit only that brand's users (see isAdminOf there).
+  // Set when they become an admin here, cleared when they stop being one.
+  if (ADMIN_ROLES.includes(newRole)) update.adminBrand = brandId;
+  else if (user?.adminBrand) update.adminBrand = null;
   window._fbSetDoc(ref, update, { merge: true }).then(() => {
-    if (user) { user.brandRole = newRole; if (!user.roles) user.roles = {}; user.roles[brandId] = newRole; }
+    if (user) { user.brandRole = newRole; if (!user.roles) user.roles = {}; user.roles[brandId] = newRole; if ('adminBrand' in update) user.adminBrand = update.adminBrand; }
     // Update license counts
     if (lic !== null && window._fbDb) {
       const brandRef = window._fbDoc(window._fbDb, 'brands', brandId);
-      const licUpdate = {};
-      if (newRole !== oldRole) {
-        if (lic) licUpdate[`licenses.${newRole}.used`] = Math.max(0, (lic.used||0) + 1);
+      // Same dotted-key fix: nested, so limit / locked stay as they are.
+      if (newRole !== oldRole && lic) {
         // We don't decrement old role here to keep it simple — loadAdminLicenses recalculates
-      }
-      if (Object.keys(licUpdate).length) {
-        window._fbSetDoc(brandRef, licUpdate, { merge: true }).catch(() => {});
+        window._fbSetDoc(brandRef, { licenses: { [newRole]: { used: Math.max(0, (lic.used||0) + 1) } } }, { merge: true }).catch(() => {});
       }
     }
-    renderAdminUsers(document.getElementById('adminSearch')?.value?.toLowerCase()||'');
-    renderAdminStats();
-  }).catch(e => {})
+    _adminRefreshAfterEdit(uid);
+  }).catch(e => {
+    console.error('Role change failed:', e);
+    alert('Couldn\'t change the role — ' + (e?.code === 'permission-denied' ? 'you don\'t have permission to change this user.' : 'check your connection and try again.'));
+  });
   }
 
 function showLicenseBlockDialog(newRole, uid) {
   const myRole = window._currentUserData?.role;
   const overlay = document.createElement('div');
   overlay.className = 'delete-confirm-overlay';
+  overlay.style.zIndex = '9200'; // above the Admin Panel (9000) + User details sheet (9100) — was hidden behind them
   overlay.innerHTML = `<div class="delete-confirm-sheet">
     <div class="delete-confirm-title" style="color:#ff4747;">Role Locked</div>
     <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6;">
@@ -27827,6 +28012,7 @@ function showLicenseBlockDialog(newRole, uid) {
 function showLicenseWarningDialog(newRole, uid, lic) {
   const overlay = document.createElement('div');
   overlay.className = 'delete-confirm-overlay';
+  overlay.style.zIndex = '9200'; // above the Admin Panel (9000) + User details sheet (9100) — was hidden behind them
   overlay.innerHTML = `<div class="delete-confirm-sheet">
     <div class="delete-confirm-title" style="color:#ff8c42;">License Limit Reached</div>
     <div style="font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.6;">
@@ -27848,7 +28034,11 @@ function assignCoach(clientId, coachId) {
   window._fbSetDoc(ref, { coachId: coachId||null }, { merge: true }).then(() => {
     const client = _adminUsers.find(u => u.id === clientId);
     if (client) client.coachId = coachId||null;
-  }).catch(e => {})
+  }).catch(e => {
+    console.error('Assign coach failed:', e);
+    alert('Couldn\'t change the coach — check your connection and try again.');
+    _adminRefreshAfterEdit(clientId); // put the dropdown back to the saved coach
+  })
   }
 
 function assignSite(userId, siteId) {
@@ -27858,7 +28048,11 @@ function assignSite(userId, siteId) {
   const newSites = siteId ? [...new Set([...currentSites, siteId])] : [];
   window._fbSetDoc(ref, { siteIds: newSites }, { merge: true }).then(() => {
     if (user) user.siteIds = newSites;
-  }).catch(e => {})
+  }).catch(e => {
+    console.error('Assign site failed:', e);
+    alert('Couldn\'t change the site — check your connection and try again.');
+    _adminRefreshAfterEdit(userId); // put the dropdown back to the saved site
+  })
   }
 
 // ── SITES TAB ────────────────────────────────────────
@@ -33405,6 +33599,75 @@ async function confirmBWModal() {
   if (_kgBWMode) { _refreshBWCell(); }
 }
 
+// ── YOUR NAME (Profile → tap the name) ───────────────────────────────────
+// Saved to BOTH places the app reads a name from: the users/{uid} profile doc
+// (coaches, Admin Panel, shared items, Profile) and the sign-in account
+// (fallback). Needs a connection, so the two can't drift apart offline.
+// firestore.rules only lets a user change a few fields of their own profile,
+// displayName (1–30 chars) among them.
+const NAME_MAX = 30;
+function _nameModalValidate() {
+  const v = (document.getElementById('nameInput')?.value || '').trim();
+  const msg = document.getElementById('nameModalMsg');
+  const save = document.getElementById('nameModalSave');
+  const ok = v.length > 0;
+  if (msg) msg.textContent = '';
+  if (save) { save.disabled = !ok; save.style.opacity = ok ? '1' : '.4'; }
+  return ok;
+}
+window._nameModalValidate = _nameModalValidate;
+function openNameModal() {
+  if (!window._currentUser) return;
+  const overlay = document.getElementById('nameModalOverlay');
+  const input = document.getElementById('nameInput');
+  if (!overlay || !input) return;
+  input.value = (window._currentUserData?.displayName || window._currentUser?.displayName || '').slice(0, NAME_MAX);
+  _nameModalValidate();
+  overlay.classList.add('open');
+  setTimeout(() => input.focus(), 200);
+}
+window.openNameModal = openNameModal;
+function closeNameModal() {
+  document.getElementById('nameModalOverlay')?.classList.remove('open');
+  document.getElementById('nameInput')?.blur();
+}
+window.closeNameModal = closeNameModal;
+async function confirmNameModal() {
+  const input = document.getElementById('nameInput');
+  const msg = document.getElementById('nameModalMsg');
+  const save = document.getElementById('nameModalSave');
+  const name = (input?.value || '').trim().replace(/\s+/g, ' ').slice(0, NAME_MAX);
+  if (!_nameModalValidate() || !name) return;
+  if (save?.dataset.busy) return;
+  const user = window._fbAuth?.currentUser;
+  if (!user) return;
+  if (name === (window._currentUserData?.displayName || '')) { closeNameModal(); return; }
+  if (!navigator.onLine) { if (msg) msg.textContent = 'No internet connection — your name wasn\'t changed.'; return; }
+  if (save) { save.dataset.busy = '1'; save.style.opacity = '.4'; }
+  try {
+    await Promise.race([
+      window._fbSetDoc(window._fbDoc(window._fbDb, 'users', user.uid), { displayName: name }, { merge: true }),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 15000)),
+    ]);
+  } catch (e) {
+    console.error('Name save error:', e);
+    if (msg) msg.textContent = 'Couldn\'t save your name — check your connection and try again.';
+    if (save) { delete save.dataset.busy; save.style.opacity = '1'; }
+    return;
+  }
+  window._currentUserData = { ...(window._currentUserData || {}), displayName: name };
+  // Sign-in account's name too (best effort — the profile doc is what counts).
+  try {
+    const { updateProfile } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+    await updateProfile(user, { displayName: name });
+  } catch (e) { console.warn('Auth name update skipped:', e?.message); }
+  const nameEl = document.getElementById('userMenuDisplayName');
+  if (nameEl) nameEl.textContent = name;
+  if (save) { delete save.dataset.busy; save.style.opacity = '1'; }
+  closeNameModal();
+}
+window.confirmNameModal = confirmNameModal;
+
 function kgPadBW() {
   if (!_userBW) {
     // No body weight yet: hide the keypad so it doesn't cover the BW window;
@@ -37217,7 +37480,7 @@ function openHomeStats() {
     <div style="position:relative;display:flex;align-items:center;justify-content:center;height:56px;flex-shrink:0;">
       <span style="font-family:'DM Sans';font-size:20px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.5px;">Progress</span>
       <button onclick="closeHomeStats()" aria-label="Close" style="position:absolute;left:12px;top:50%;margin-top:-22px;width:44px;height:44px;border:none;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;padding:0;-webkit-tap-highlight-color:transparent;transition:transform .15s;" onmousedown="this.style.transform='scale(0.9)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(0.9)'" ontouchend="this.style.transform=''" ontouchcancel="this.style.transform=''">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#A0A0A0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg><!-- same X as Home → Share / My Data -->
       </button>
     </div>
     <div class="hs-scroll" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px 16px;">
@@ -37379,9 +37642,12 @@ function _homeStatsZoom(row) {
   // Same as the Home carousel: tapping the circle (incl. its chevron) opens
   // that page's sheet — weekly workout target / weekly sets per body part.
   // stopPropagation keeps the layer's tap-to-shrink from also firing.
+  // The box is a 300px square but the circle is round: a tap in its corners
+  // (outside the ring) is "outside the circle" → let it reach the layer, which
+  // only shrinks the circle back (no sheet).
   const _sheetFn = HS_ZOOM_SHEET[row.dataset.kind];
   if (_sheetFn) {
-    big.setAttribute('onclick', `event.stopPropagation();${_sheetFn}`);
+    big.setAttribute('onclick', `if(_hsZoomTapOutsideCircle(event,this))return;event.stopPropagation();${_sheetFn}`);
     big.style.cursor = 'pointer';
   }
   const label = document.createElement('div');
@@ -37410,6 +37676,16 @@ function _homeStatsZoom(row) {
     window._homeStatsZoomT = setTimeout(() => _homeStatsPlayAnim(big), TODAY_CAROUSEL_COLOR_DELAY);
   });
 }
+// True when a tap on the enlarged circle's 300px box lands outside the drawn
+// circle (ring outer edge: r 133.5 + half the 5px stroke = 136px of 300).
+// Measured on screen, so it's right at any scale.
+function _hsZoomTapOutsideCircle(e, box) {
+  const r = box.getBoundingClientRect();
+  const dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+  const rad = 136 * r.width / 300;
+  return dx * dx + dy * dy > rad * rad;
+}
+window._hsZoomTapOutsideCircle = _hsZoomTapOutsideCircle;
 function closeHomeStatsZoom() {
   const layer = document.querySelector('#home-stats-overlay .hs-zoom');
   if (!layer || layer._closing) return;
