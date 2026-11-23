@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0a0a0a">
+  <!-- The page is already dark: stops Chrome's "darken websites" / Samsung
+       Internet's dark mode from repainting it differently on some phones. -->
+  <meta name="color-scheme" content="dark">
   <meta name="description" content="Track your workouts, monitor progress, and crush your fitness goals.">
   <link rel="icon" href="./logo.svg" type="image/svg+xml">
   <link rel="shortcut icon" href="./logo.svg">
@@ -14,11 +17,15 @@
   <!-- Preconnect for fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- The app's own font (same link as index.html) — without it every phone
+       showed its system font (Roboto / Samsung / Xiaomi…). -->
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;900&display=swap" rel="stylesheet">
 
   <style>
     /* Critical CSS inlined for instant LCP */
     *{box-sizing:border-box;margin:0;padding:0;}
     :root{
+      color-scheme:dark;
       --bg:#0a0a0a;
       --surface:#141414;
       --border:#2a2a2a;
@@ -92,15 +99,29 @@
     /* ── BOTTOM CTA ── */
     /* Placed relative to Home's START WORKOUT (#today-load-btn; 100px tall, top at
        50% + 183px on every phone): centred on it, then 50px higher. Fixed, so it
-       stays out of the flow and the logo doesn't move. */
+       stays out of the flow and the logo doesn't move.
+       Limits, so it looks right on every screen height: never closer than 32px
+       under the logo (--logo-limit, measured by placeInstallBtn below) and never
+       closer than 16px to the bottom edge / navigation bar. */
     .bottom{
       position:fixed;
       left:0;
       right:0;
-      top:calc(50dvh + 151px);
+      top:clamp(
+        var(--logo-limit, 0px),
+        calc(50dvh + 151px),
+        calc(100dvh - 64px - max(env(safe-area-inset-bottom), 24px) - 16px)
+      );
       display:flex;
       justify-content:center;
     }
+
+    /* Android help sheet (no INSTALL button possible in this browser) —
+       same look as the iPhone one. */
+    .help-step{display:flex;align-items:center;gap:14px;}
+    .help-num{width:28px;height:28px;background:#2c2c2e;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;font-weight:700;color:#fff;}
+    .help-txt{font-size:15px;color:#ebebf5;line-height:1.4;}
+    .help-txt b{color:#fff;}
 
     .btn-install{
       width:min(100vw - 32px,380px);
@@ -142,8 +163,13 @@
 <div class="screen">
   <div class="top">
     <!-- LCP element: SVG logo -->
-    <img src="./logo.svg" alt="icon_test_2" class="logo-img" width="280" height="120" onerror="this.style.display='none';document.getElementById('logo-fallback').style.display='block'">
-    <div class="logo" id="logo-fallback" style="display:none;">icon_test_2</div>
+    <img src="./logo.svg" alt="ALBO" class="logo-img" width="280" height="120" onload="window.placeInstallBtn&&placeInstallBtn()" onerror="this.style.display='none';document.getElementById('logo-fallback').style.display='block';window.placeInstallBtn&&placeInstallBtn()">
+    <div class="logo" id="logo-fallback" style="display:none;">ALBO</div>
+    <script>
+      // The app's name from config.js (also on the fallback text logo).
+      (function () { var n = window.BRAND_CONFIG && window.BRAND_CONFIG.name; if (!n) return;
+        document.getElementById('logo-fallback').textContent = n; document.querySelector('.logo-img').alt = n; })();
+    </script>
 <div class="bottom">
     <!-- Android / Desktop: native install prompt -->
     <button class="btn-install" id="btn-install" style="display:none;" onclick="triggerInstall()">
@@ -181,8 +207,74 @@
     e.preventDefault();
     _deferredPrompt = e;
     document.getElementById('btn-install').style.display = 'flex';
-    
+    hideAndroidHelp(); // the real button arrived after all
   });
+
+  // ── INSTALL button limit: never closer than 32px under the logo ──────────
+  // (the CSS clamp on .bottom reads --logo-limit). Re-measured when the logo
+  // image loads and when the screen size changes (address bar, rotation).
+  function placeInstallBtn() {
+    const img = document.querySelector('.logo-img');
+    const logo = img && img.style.display !== 'none' ? img : document.getElementById('logo-fallback');
+    if (!logo) return;
+    const r = logo.getBoundingClientRect();
+    if (r.height) document.documentElement.style.setProperty('--logo-limit', Math.round(r.bottom + 32) + 'px');
+  }
+  window.addEventListener('resize', placeInstallBtn);
+  window.addEventListener('load', placeInstallBtn);
+
+  // ── Android: no INSTALL button possible → show how to install instead ─────
+  // The button only appears when the browser offers installation
+  // (beforeinstallprompt). Samsung Internet, Xiaomi / Huawei / Oppo browsers,
+  // Firefox and in-app browsers (Instagram, Facebook…) never do; Chrome also
+  // skips it for a while after the prompt was dismissed. Then the page showed
+  // only the logo — now, if nothing arrives within 2.5s, a short guide for
+  // THIS browser slides up (same look as the iPhone one).
+  const UA = navigator.userAgent;
+  const isAndroid = /android/i.test(UA);
+  function androidHelpSteps(name) {
+    if (/FBAN|FBAV|FB_IAB|Instagram|Line\/|Twitter|; wv\)/i.test(UA)) return {
+      title: `Install ${name}:`,
+      steps: ['Tap <b>⋮</b> at the top right', 'Choose <b>Open in browser</b> (or Open in Chrome)', 'Then tap <b>INSTALL</b> there'],
+    };
+    if (/SamsungBrowser/i.test(UA)) return {
+      title: `Install ${name}:`,
+      steps: ['Tap <b>☰</b> (menu) at the bottom right', 'Choose <b>Add page to</b>', 'Then choose <b>Home screen</b>'],
+    };
+    if (/Firefox/i.test(UA)) return {
+      title: `Install ${name}:`,
+      steps: ['Tap <b>⋮</b> (menu)', 'Choose <b>Install</b> (or <b>Add to Home screen</b>)'],
+    };
+    if (/MiuiBrowser|XiaoMi|HuaweiBrowser|HeyTapBrowser|OPR\/|EdgA|YaBrowser|UCBrowser|VivoBrowser/i.test(UA)) return {
+      title: `Install ${name}:`,
+      steps: ['Open this page in <b>Chrome</b>', 'Then tap <b>INSTALL</b>'],
+    };
+    return { // Chrome that didn't offer it (prompt dismissed recently, etc.)
+      title: `Install ${name}:`,
+      steps: ['Tap <b>⋮</b> at the top right', 'Choose <b>Install app</b> (or <b>Add to Home screen</b>)'],
+    };
+  }
+  function showAndroidHelp() {
+    const sheet = document.getElementById('android-install-sheet');
+    if (!sheet || _deferredPrompt) return;
+    const name = (window.BRAND_CONFIG && window.BRAND_CONFIG.name) || 'App';
+    const h = androidHelpSteps(name);
+    document.getElementById('android-help-title').textContent = h.title;
+    document.getElementById('android-help-steps').innerHTML = h.steps
+      .map((s, i) => `<div class="help-step"><div class="help-num">${i + 1}</div><div class="help-txt">${s}</div></div>`).join('');
+    const inner = sheet.firstElementChild;
+    sheet.style.display = 'block';
+    inner.style.transform = 'translateY(100%)';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      inner.style.transition = 'transform 450ms cubic-bezier(.22,1,.36,1)';
+      inner.style.transform = 'translateY(0)';
+    }));
+  }
+  function hideAndroidHelp() {
+    const sheet = document.getElementById('android-install-sheet');
+    if (sheet) sheet.style.display = 'none';
+  }
+  if (isAndroid && !isInstalled) setTimeout(showAndroidHelp, 2500);
 
   // iOS Safari: show bottom sheet with slide-up animation. Waits for the page:
   // the sheet's markup comes after this script.
@@ -221,6 +313,7 @@
   // ── Service Worker registration ───────────────────────────────────────────
   // Show success modal on install
   window.addEventListener('appinstalled', () => {
+    hideAndroidHelp();
     window.location.replace('./success.html');
   });
 
@@ -294,6 +387,16 @@
       <button onclick="closeInstallSuccess()" style="width:100%;padding:20px;background:#e8ff47;color:#000;border:none;border-radius:14px;font-family:'DM Sans',sans-serif;font-size:18px;font-weight:900;cursor:pointer;letter-spacing:.5px;-webkit-tap-highlight-color:transparent;">GOT IT, CONTINUE</button>
     </div>
 
+  </div>
+
+  <!-- Android Install Help Sheet — shown when this browser can't offer the
+       INSTALL button (showAndroidHelp picks the steps for the browser). -->
+  <div id="android-install-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:100;max-width:430px;margin:0 auto;">
+    <div style="background:#1c1c1e;border-radius:20px 20px 0 0;padding:20px 24px calc(24px + env(safe-area-inset-bottom));box-shadow:0 -8px 40px rgba(0,0,0,.6);">
+      <div style="width:36px;height:4px;background:#48484a;border-radius:2px;margin:0 auto 20px;"></div>
+      <div id="android-help-title" style="font-size:18px;font-weight:700;color:#fff;margin-bottom:16px;"></div>
+      <div id="android-help-steps" style="display:flex;flex-direction:column;gap:14px;"></div>
+    </div>
   </div>
 
   <!-- iOS Install Bottom Sheet -->
