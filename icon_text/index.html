@@ -1674,6 +1674,13 @@ onAuthStateChanged(auth, async (user) => {
             return true;
           }
         }
+        // ── BLOCKED IN THIS BRAND (Admin Panel → Block user) ──
+        if ((userData.blockedBrands || []).includes(BRAND_ID)) {
+          await signOut(auth);
+          showExpiredScreen(null, 'blocked');
+          if (window._hideAppLoadingOverlay) window._hideAppLoadingOverlay();
+          return true;
+        }
         // ─────────────────────────────────────────────────
         return false;
       })(), 4000);
@@ -1756,15 +1763,41 @@ function showExpiredScreen(expiryDate, type) {
   const el = document.createElement('div');
   el.id = 'expiredScreen';
   el.style.cssText = 'position:fixed;inset:0;z-index:99999;background:var(--g0a);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;';
-  const formattedDate = new Date(expiryDate).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  // type 'blocked' (Admin Panel → Block user): same screen, no date.
+  const blocked = type === 'blocked';
+  const formattedDate = blocked ? '' : new Date(expiryDate).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  const title = blocked ? 'ACCOUNT BLOCKED' : 'ACCESS EXPIRED';
+  const text = blocked
+    ? 'Your access to this app has been blocked. Please contact your site manager.'
+    : `Your ${type === 'account' ? 'account' : 'coaching period'} expired on <strong style="color:var(--g88);">${formattedDate}</strong>. Please contact your site manager to renew access.`;
   el.innerHTML = `
     <img class="brand-logo" src="logo.svg" alt="Logo" style="height:48px;width:auto;margin-bottom:32px;" onerror="this.style.display='none'"/>
     <div style="width:64px;height:64px;border-radius:50%;background:#ff474722;border:2px solid #ff4747;display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:20px;">🔒</div>
-    <div style="font-family:'Bebas Neue';font-size:28px;color:#ff4747;letter-spacing:1px;margin-bottom:8px;">ACCESS EXPIRED</div>
-    <div style="font-size:14px;color:var(--g55);text-align:center;line-height:1.7;max-width:280px;margin-bottom:32px;">Your ${type === 'account' ? 'account' : 'coaching period'} expired on <strong style="color:var(--g88);">${formattedDate}</strong>. Please contact your site manager to renew access.</div>
+    <div style="font-family:'Bebas Neue';font-size:28px;color:#ff4747;letter-spacing:1px;margin-bottom:8px;">${title}</div>
+    <div style="font-size:14px;color:var(--g55);text-align:center;line-height:1.7;max-width:280px;margin-bottom:32px;">${text}</div>
     <button onclick="window._fbSignOut&&window._fbSignOut().then(()=>{document.getElementById('expiredScreen').remove();})" style="background:transparent;border:1px solid var(--g33);border-radius:10px;color:var(--g66);font-family:'DM Sans';font-size:14px;font-weight:600;padding:12px 24px;cursor:pointer;">Back to Login</button>`;
   document.body.appendChild(el);
 }
+
+// Blocked while already inside the app: the sign-in check above only runs at
+// login, so also re-check each time the app comes back to the screen (at most
+// every 30s, online only) and sign out onto the BLOCKED screen. firestore.rules
+// already refuse a blocked user's data / library; this just shows them why.
+let _blockCheckAt = 0;
+async function _checkBlockedNow() {
+  const u = auth.currentUser;
+  if (!u || !navigator.onLine || document.getElementById('expiredScreen')) return;
+  if (Date.now() - _blockCheckAt < 30000) return;
+  _blockCheckAt = Date.now();
+  try {
+    const snap = await getDoc(doc(db, 'users', u.uid));
+    if ((snap.data()?.blockedBrands || []).includes(BRAND_ID)) {
+      await signOut(auth);
+      showExpiredScreen(null, 'blocked');
+    }
+  } catch (e) { /* offline / no answer — try again next time */ }
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') _checkBlockedNow(); });
 
 function showAuthScreen() {
   document.getElementById('auth-screen')?.style && (document.getElementById('auth-screen').style.display = 'flex');
@@ -27686,13 +27719,20 @@ function renderAdminStats() {
   const counts = { all: _adminUsers.length };
   ALL_ROLES.forEach(r => counts[r] = 0);
   _adminUsers.forEach(u => { if (counts[u.brandRole] !== undefined) counts[u.brandRole]++; });
-  const short = { brand_admin: 'Brand Admin', site_manager: 'Site Mgr', coach: 'Coach', client: 'Client' };
-  el.innerHTML = ['all', ...ALL_ROLES].map(r => {
+  const short = { brand_admin: 'Brand Admin', site_manager: 'Site Mgr', coach: 'Coach', client: 'Client', blocked: 'Blocked' };
+  counts.blocked = _adminUsers.filter(_adminIsBlocked).length;
+  // "Blocked N" only when someone is blocked (or it's the current filter).
+  const chips = ['all', ...ALL_ROLES, ...(counts.blocked || _adminRoleFilter === 'blocked' ? ['blocked'] : [])];
+  el.innerHTML = chips.map(r => {
     const on = _adminRoleFilter === r;
     const label = r === 'all' ? 'All' : short[r];
-    return `<button onclick="filterAdminByRole('${r}')" style="flex-shrink:0;display:flex;align-items:center;gap:6px;background:${on ? '#a78bfa' : 'transparent'};color:${on ? 'var(--g00)' : 'var(--g88)'};border:1px solid ${on ? '#a78bfa' : 'var(--g33)'};border-radius:20px;padding:6px 12px;font-family:'DM Sans';font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent;">${label}<span style="font-weight:800;color:${on ? 'var(--g00)' : (r === 'all' ? 'var(--gcc)' : ROLE_COLORS[r])};">${counts[r]}</span></button>`;
+    const numColor = on ? 'var(--g00)' : r === 'all' ? 'var(--gcc)' : r === 'blocked' ? '#ff4747' : ROLE_COLORS[r];
+    return `<button onclick="filterAdminByRole('${r}')" style="flex-shrink:0;display:flex;align-items:center;gap:6px;background:${on ? '#a78bfa' : 'transparent'};color:${on ? 'var(--g00)' : 'var(--g88)'};border:1px solid ${on ? '#a78bfa' : 'var(--g33)'};border-radius:20px;padding:6px 12px;font-family:'DM Sans';font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent;">${label}<span style="font-weight:800;color:${numColor};">${counts[r]}</span></button>`;
   }).join('');
 }
+
+// Blocked in THIS brand (Admin Panel → Block user) — users/{uid}.blockedBrands.
+function _adminIsBlocked(u) { return (u?.blockedBrands || []).includes(window.BRAND_ID); }
 
 function filterAdminByRole(role) {
   _adminRoleFilter = role;
@@ -27715,7 +27755,8 @@ function renderAdminUsers(search) {
   const list = document.getElementById('adminUsersList');
 
   const users = _adminUsers.filter(u => {
-    if (_adminRoleFilter !== 'all' && u.brandRole !== _adminRoleFilter) return false;
+    if (_adminRoleFilter === 'blocked') { if (!_adminIsBlocked(u)) return false; }
+    else if (_adminRoleFilter !== 'all' && u.brandRole !== _adminRoleFilter) return false;
     if (search && !`${u.email||''} ${u.displayName||''}`.toLowerCase().includes(search)) return false;
     return true;
   });
@@ -27727,7 +27768,9 @@ function renderAdminUsers(search) {
 
   list.innerHTML = users.map((u, i) => {
     const isSelf = u.id === myUid;
-    const color = ROLE_COLORS[u.brandRole] || '#888';
+    const blocked = _adminIsBlocked(u);
+    // Blocked: grey initials circle + red BLOCKED in place of the role.
+    const color = blocked ? '#777' : (ROLE_COLORS[u.brandRole] || '#888');
     return `<div data-uid="${u.id}" onclick="openAdminUserSheet('${u.id}')" style="display:flex;align-items:center;gap:12px;padding:12px 2px;${i ? 'border-top:1px solid var(--g2a);' : ''}cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .15s;" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''" ontouchmove="this.style.transform=''" ontouchcancel="this.style.transform=''">
       <div style="width:40px;height:40px;border-radius:50%;background:${color}22;border:1px solid ${color}55;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:${color};flex-shrink:0;">${_adminEsc(_adminInitials(u))}</div>
       <div style="flex:1;min-width:0;">
@@ -27735,7 +27778,7 @@ function renderAdminUsers(search) {
         <div style="font-size:12px;color:var(--gaa);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px;">${_adminEsc(u.email||u.id)}</div>
         ${myRole === 'super_admin' ? `<div class="admin-wkt-stats" style="font-size:11px;color:var(--g77);margin-top:2px;">${_adminWorkoutStatsLabel(u)}</div>` : ''}
       </div>
-      <span style="color:${color};font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;flex-shrink:0;">${ROLE_LABELS[u.brandRole]||u.brandRole}</span>
+      <span style="color:${blocked ? '#ff4747' : color};font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;flex-shrink:0;">${blocked ? 'Blocked' : (ROLE_LABELS[u.brandRole]||u.brandRole)}</span>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--g55)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-left:-4px;"><polyline points="9 6 15 12 9 18"/></svg>
     </div>`;
   }).join('');
@@ -27783,24 +27826,43 @@ function _renderAdminUserSheet() {
   const section = t => `<div style="font-size:11px;font-weight:700;letter-spacing:1px;color:var(--g77);margin:22px 0 6px;">${t}</div>`;
   const selectStyle = "width:100%;background:var(--g1a);border:1px solid var(--g33);border-radius:10px;color:var(--gf0);font-family:'DM Sans';font-size:15px;padding:11px 12px;";
 
-  // ROLE — one list, current role ticked. Read-only for yourself, for roles
-  // outside the brand list (super / ops admin), or without edit rights.
+  // ROLE — one list, current role ticked, and "Blocked" as its last option
+  // (Block user). While blocked, Blocked is ticked and the role is kept (its
+  // row says "kept"): tapping it unblocks; tapping another role unblocks and
+  // changes the role. Read-only for yourself, for roles outside the brand
+  // list (super / ops admin), or without edit rights.
+  // Blocking: same limits as role changes (and firestore.rules) — never
+  // yourself or a super admin; an ops admin can't block brand / ops admins.
+  const blocked = _adminIsBlocked(u);
+  const targetIsSuper = u.brandRole === 'super_admin' || u.role === 'super_admin';
+  const canBlock = canEdit && !isSelf && !targetIsSuper && (myRole !== 'ops_admin' || !ADMIN_ROLES.includes(u.brandRole));
   const roleEditable = canEdit && !isSelf && ALL_ROLES.includes(u.brandRole);
   const roles = ALL_ROLES.filter(r => r === u.brandRole || canEditBrandAdmin || r !== 'brand_admin');
-  const roleRows = roleEditable ? roles.map((r, i) => {
-    const cur = r === u.brandRole;
+  const tick = c => `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+  const rowStyle = (i, clickable) => `display:flex;align-items:center;gap:12px;padding:13px 2px;${i ? 'border-top:1px solid var(--g2a);' : ''}cursor:${clickable ? 'pointer' : 'default'};-webkit-tap-highlight-color:transparent;`;
+  let roleRows = roleEditable ? roles.map((r, i) => {
+    const isRole = r === u.brandRole;
+    const cur = isRole && !blocked;
     const lic = licData[r];
-    const isLocked = !cur && lic?.locked;
-    const isOver = !cur && lic?.limit > 0 && lic?.used >= lic?.limit;
+    const isLocked = !isRole && lic?.locked;
+    const isOver = !isRole && lic?.limit > 0 && lic?.used >= lic?.limit;
     const note = isLocked ? '<span style="color:#ff4747;font-size:12px;font-weight:700;">🔒 Locked</span>'
-      : isOver ? `<span style="color:#ff8c42;font-size:12px;font-weight:700;">${lic.used}/${lic.limit} used</span>` : '';
-    return `<div ${cur ? '' : `onclick="_adminConfirmRoleChange('${u.id}','${r}')"`} style="display:flex;align-items:center;gap:12px;padding:13px 2px;${i ? 'border-top:1px solid var(--g2a);' : ''}cursor:${cur ? 'default' : 'pointer'};-webkit-tap-highlight-color:transparent;">
-        <span style="width:10px;height:10px;border-radius:50%;background:${ROLE_COLORS[r]};flex-shrink:0;"></span>
+      : isOver ? `<span style="color:#ff8c42;font-size:12px;font-weight:700;">${lic.used}/${lic.limit} used</span>`
+      : (isRole && blocked) ? '<span style="color:var(--g77);font-size:12px;font-weight:600;">kept</span>' : '';
+    const tap = cur ? '' : (isRole && blocked) ? `_adminConfirmBlock('${u.id}', false)` : `_adminConfirmRoleChange('${u.id}','${r}')`;
+    return `<div ${tap ? `onclick="${tap}"` : ''} style="${rowStyle(i, !!tap)}">
+        <span style="width:10px;height:10px;border-radius:50%;background:${ROLE_COLORS[r]};flex-shrink:0;${blocked ? 'opacity:.5;' : ''}"></span>
         <span style="flex:1;font-size:15px;font-weight:${cur ? 800 : 600};color:${cur ? 'var(--gff)' : 'var(--gcc)'};">${ROLE_LABELS[r]}</span>
         ${note}
-        ${cur ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${ROLE_COLORS[r]}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>` : ''}
+        ${cur ? tick(ROLE_COLORS[r]) : ''}
       </div>`;
-  }).join('') : `<div style="display:flex;align-items:center;gap:12px;padding:13px 2px;"><span style="width:10px;height:10px;border-radius:50%;background:${color};"></span><span style="font-size:15px;font-weight:800;color:var(--gff);">${ROLE_LABELS[u.brandRole]||u.brandRole}</span>${isSelf ? '<span style="font-size:12px;color:var(--g77);">— you can\'t change your own role</span>' : ''}</div>`;
+  }).join('') : `<div style="display:flex;align-items:center;gap:12px;padding:13px 2px;"><span style="width:10px;height:10px;border-radius:50%;background:${color};"></span><span style="flex:1;font-size:15px;font-weight:800;color:var(--gff);">${ROLE_LABELS[u.brandRole]||u.brandRole}</span>${isSelf ? '<span style="font-size:12px;color:var(--g77);">— you can\'t change your own role</span>' : ''}</div>`;
+  // Last option: Block User (red lock instead of a colour dot; ticked while blocked).
+  if (canBlock) roleRows += `<div ${blocked ? '' : `onclick="_adminConfirmBlock('${u.id}', true)"`} style="${rowStyle(1, !blocked)}">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ff4747" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin:0 -1px;"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        <span style="flex:1;font-size:15px;font-weight:${blocked ? 800 : 600};color:#ff4747;">Block User</span>
+        ${blocked ? tick('#ff4747') : ''}
+      </div>`;
 
   const coachHtml = u.brandRole === 'client' && canEdit && coaches.length ? section('COACH') + `
       <select onchange="assignCoach('${u.id}',this.value)" style="${selectStyle}">
@@ -27819,12 +27881,53 @@ function _renderAdminUserSheet() {
       <div style="width:64px;height:64px;border-radius:50%;background:${color}22;border:1px solid ${color}55;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:22px;color:${color};">${_adminEsc(_adminInitials(u))}</div>
       <div style="font-size:20px;font-weight:800;color:var(--gff);margin-top:12px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${_adminEsc(u.displayName || '—')}${isSelf ? ' <span style="color:var(--g55);font-size:13px;font-weight:600;">(you)</span>' : ''}</div>
       <div style="font-size:13px;color:var(--gaa);margin-top:3px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${_adminEsc(u.email || u.id)}</div>
+      ${blocked ? '<div style="margin-top:8px;color:#ff4747;font-size:11px;font-weight:800;letter-spacing:.8px;">🔒 BLOCKED</div>' : ''}
     </div>
     ${section('ROLE')}${roleRows}
     ${coachHtml}
     ${siteHtml}
     ${activityHtml}`;
 }
+
+// Block / Unblock → asks first, then adds / removes this brand in the user's
+// blockedBrands (their other brands untouched). They're signed out at their
+// next login or when they next return to the app (_checkBlockedNow).
+function _adminConfirmBlock(uid, block) {
+  const u = _adminUsers.find(x => x.id === uid);
+  if (!u) return;
+  const brandId = window.BRAND_ID;
+  const name = _adminEsc(u.displayName || u.email || 'this user');
+  const overlay = document.createElement('div');
+  overlay.className = 'delete-confirm-overlay';
+  overlay.style.zIndex = '9200'; // above the User details sheet (9100)
+  overlay.innerHTML = `
+    <div class="delete-confirm-sheet">
+      <div class="delete-confirm-title">${block ? 'Block user ?' : 'Unblock user ?'}</div>
+      <div class="delete-confirm-sub" style="line-height:1.55;">${block
+        ? `Block <b style="color:var(--gff);">${name}</b>? They'll be signed out and can't use the app until you unblock them. Their data is kept.`
+        : `Unblock <b style="color:var(--gff);">${name}</b>? They can sign in and use the app again, with all their data.`}</div>
+      <div class="delete-confirm-btns">
+        <button class="btn-del-cancel" id="_admBlkCancel">Cancel</button>
+        <button class="btn-del-yes-solid" id="_admBlkGo" style="${block ? '' : 'background:var(--accent);color:var(--g00);'}">${block ? 'Block' : 'Unblock'}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  overlay.querySelector('#_admBlkCancel').onclick = () => overlay.remove();
+  overlay.querySelector('#_admBlkGo').onclick = () => {
+    overlay.remove();
+    const cur = u.blockedBrands || [];
+    const next = block ? [...new Set([...cur, brandId])] : cur.filter(b => b !== brandId);
+    window._fbSetDoc(window._fbDoc(window._fbDb, 'users', uid), { blockedBrands: next }, { merge: true }).then(() => {
+      u.blockedBrands = next;
+      _adminRefreshAfterEdit(uid);
+    }).catch(e => {
+      console.error('Block / unblock failed:', e);
+      alert(`Couldn't ${block ? 'block' : 'unblock'} this user — ` + (e?.code === 'permission-denied' ? 'you don\'t have permission to change this user.' : 'check your connection and try again.'));
+    });
+  };
+}
+window._adminConfirmBlock = _adminConfirmBlock;
 
 function openAdminUserSheet(uid) {
   if (!_adminUsers.find(x => x.id === uid)) return;
@@ -27869,13 +27972,14 @@ function _adminRefreshAfterEdit(uid) {
 function _adminConfirmRoleChange(uid, newRole) {
   const u = _adminUsers.find(x => x.id === uid);
   if (!u || u.brandRole === newRole) return;
+  const wasBlocked = _adminIsBlocked(u); // ROLE list while Blocked: unblock + change role
   const overlay = document.createElement('div');
   overlay.className = 'delete-confirm-overlay';
   overlay.style.zIndex = '9200'; // above the User details sheet (9100)
   overlay.innerHTML = `
     <div class="delete-confirm-sheet">
-      <div class="delete-confirm-title">Change role ?</div>
-      <div class="delete-confirm-sub" style="line-height:1.55;">Change <b style="color:var(--gff);">${_adminEsc(u.displayName || u.email || 'this user')}</b> from <b style="color:${ROLE_COLORS[u.brandRole] || '#888'};">${ROLE_LABELS[u.brandRole] || u.brandRole}</b> to <b style="color:${ROLE_COLORS[newRole]};">${ROLE_LABELS[newRole]}</b>?</div>
+      <div class="delete-confirm-title">${wasBlocked ? 'Unblock & change role ?' : 'Change role ?'}</div>
+      <div class="delete-confirm-sub" style="line-height:1.55;">${wasBlocked ? 'Unblock and change' : 'Change'} <b style="color:var(--gff);">${_adminEsc(u.displayName || u.email || 'this user')}</b> from <b style="color:${ROLE_COLORS[u.brandRole] || '#888'};">${ROLE_LABELS[u.brandRole] || u.brandRole}</b> to <b style="color:${ROLE_COLORS[newRole]};">${ROLE_LABELS[newRole]}</b>?</div>
       <div class="delete-confirm-btns">
         <button class="btn-del-cancel" id="_admRoleCancel">Cancel</button>
         <button class="btn-del-yes-solid" id="_admRoleGo" style="background:#a78bfa;color:var(--g00);">Change</button>
@@ -27884,7 +27988,20 @@ function _adminConfirmRoleChange(uid, newRole) {
   document.body.appendChild(overlay);
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
   overlay.querySelector('#_admRoleCancel').onclick = () => overlay.remove();
-  overlay.querySelector('#_admRoleGo').onclick = () => { overlay.remove(); changeUserRole(uid, newRole); };
+  overlay.querySelector('#_admRoleGo').onclick = () => {
+    overlay.remove();
+    if (!wasBlocked) { changeUserRole(uid, newRole); return; }
+    // Unblock first (this brand only), then the usual role change + license checks.
+    const next = (u.blockedBrands || []).filter(b => b !== window.BRAND_ID);
+    window._fbSetDoc(window._fbDoc(window._fbDb, 'users', uid), { blockedBrands: next }, { merge: true }).then(() => {
+      u.blockedBrands = next;
+      _adminRefreshAfterEdit(uid);
+      changeUserRole(uid, newRole);
+    }).catch(e => {
+      console.error('Unblock failed:', e);
+      alert('Couldn\'t unblock this user — ' + (e?.code === 'permission-denied' ? 'you don\'t have permission to change this user.' : 'check your connection and try again.'));
+    });
+  };
 }
 window.openAdminUserSheet = openAdminUserSheet;
 window.closeAdminUserSheet = closeAdminUserSheet;
