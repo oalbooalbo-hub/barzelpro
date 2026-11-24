@@ -1509,11 +1509,19 @@ async function _uploadLibraryWorkoutPhoto(workoutId, dataUrl, targetBrandId) {
 window._uploadLibraryWorkoutPhoto = _uploadLibraryWorkoutPhoto;
 
 // Load brand config from Firestore and apply to UI
-async function loadBrandConfig() {
+// refresh: the re-read when the app comes back to the screen (see below) —
+// on failure it leaves everything exactly as it is.
+async function loadBrandConfig(refresh) {
   if (BRAND_ID === 'super') return;
-  window._brandConfigLoadFailed = false;
+  window._brandCfgReadAt = Date.now();
+  if (!refresh) window._brandConfigLoadFailed = false;
   try {
     const snap = await getDoc(doc(db, 'brands', BRAND_ID));
+    if (refresh) {
+      // Back on screen: apply only a real brand doc (never fall back to defaults).
+      if (snap.exists()) { window._brandConfig = snap.data(); applyBrandConfig(window._brandConfig); window._brandConfigLoadFailed = false; }
+      return;
+    }
     if (snap.exists()) {
       const cfg = snap.data();
       window._brandConfig = cfg;
@@ -1525,6 +1533,7 @@ async function loadBrandConfig() {
     }
   } catch(e) {
     console.warn('Brand config load failed:', e.message);
+    if (refresh) return; // keep what's there (offline, no answer…)
     // Retried in onAuthStateChanged once createUserDoc has run: a brand-new
     // user isn't a brand member yet, so the rules refuse this first read.
     window._brandConfigLoadFailed = true;
@@ -1599,15 +1608,25 @@ async function createUserDoc(user) {
     const roles = data.roles || {};
     const brands = data.brands || [];
     const updates = {};
-    // Only `brands` here. This used to also write `roles.<brand>`, but setDoc
-    // stores a dotted key as a literal top-level field (not inside the roles
-    // map), so it never set a role — and firestore.rules now block users from
-    // writing any role field on their own profile. The role still falls back
-    // to data.role || 'client' below, exactly as before.
     if (!roles[BRAND_ID] && !brands.includes(BRAND_ID)) {
       updates.brands = [...new Set([...brands, BRAND_ID])];
     }
-    if (Object.keys(updates).length) {
+    // Account with no role in THIS brand (made in another brand, or before
+    // the "roles.<brand>" literal-key fix): the rules didn't count it as a
+    // member — no brand library. Add it here as a client, exactly what a new
+    // sign-up gets (firestore.rules allow a user only that: one new brand,
+    // as 'client'). Only for accounts that are clients anyway — an old
+    // account whose legacy `role` is staff (coach…) is left for an admin to
+    // set in the Admin Panel, so it isn't demoted to client here.
+    const legacyRole = data.role || 'client';
+    if (!roles[BRAND_ID] && legacyRole === 'client') {
+      updates.roles = { [BRAND_ID]: 'client' };
+    }
+    if (updates.roles) {
+      // Once per account; not awaited — the user never waits for it (the
+      // role is 'client' either way, below).
+      setDoc(userRef, updates, { merge: true }).catch(e => console.warn('[Brand] join failed:', e.message));
+    } else if (Object.keys(updates).length) {
       await setDoc(userRef, updates, { merge: true });
     }
   }
@@ -1798,6 +1817,19 @@ async function _checkBlockedNow() {
   } catch (e) { /* offline / no answer — try again next time */ }
 }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') _checkBlockedNow(); });
+
+// Brand settings (Admin Panel → Branding: Coach list, Body map image,
+// Progress, Video links, colour) are read at sign-in. But Android often keeps
+// the app running in the background for days — tapping its icon just brings it
+// back, so a change made since was never picked up. Re-read them when the app
+// comes back to the screen (online, at most every 2 minutes): one small read
+// in the background, nothing to wait for; the next open always has the
+// super admin's current settings.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible' || !auth.currentUser || !navigator.onLine) return;
+  if (Date.now() - (window._brandCfgReadAt || 0) < 120000) return;
+  loadBrandConfig(true);
+});
 
 function showAuthScreen() {
   document.getElementById('auth-screen')?.style && (document.getElementById('auth-screen').style.display = 'flex');
